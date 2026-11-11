@@ -7,7 +7,7 @@
 
 ## 실행 방법
 
-1. **Unity 6 LTS (6000.0.x)** 로 `MuscleBattle/` 폴더를 프로젝트로 엽니다.
+1. **Unity 6 (6000.x, 개발 기준 6000.6.7f1)** 로 `MuscleBattle/` 폴더를 프로젝트로 엽니다.
    (Built-in Render Pipeline + uGUI만 사용합니다. 2022.3 LTS에서 열 경우 `Packages/manifest.json`의 `com.unity.ugui`를 `1.0.0`으로 바꾸세요.)
 2. 처음 열면 에디터 스크립트가 자동으로 `Assets/MuscleBattle/Scenes/MuscleBattle.unity`를 만들고 Build Settings / WebGL 설정을 적용합니다.
    (수동: 메뉴 **MUSCLE BATTLE → Setup Project**)
