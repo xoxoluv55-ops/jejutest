@@ -66,6 +66,27 @@ namespace MuscleBattle.EditorTools
                 EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
         }
 
+        [MenuItem("MUSCLE BATTLE/Characters/Check Character Models", priority = 10)]
+        public static void CheckModels()
+        {
+            Directory.CreateDirectory("Assets/MuscleBattle/Resources/Characters");
+            AssetDatabase.Refresh();
+            foreach (var def in CharacterDatabase.All)
+            {
+                string path = string.IsNullOrEmpty(def.ModelResourcePath) ? "Characters/" + def.Id : def.ModelResourcePath;
+                var go = Resources.Load<GameObject>(path);
+                if (go == null)
+                {
+                    Debug.LogWarning($"[MuscleBattle] {def.NameEn}: no model at Resources/{path} -> prototype visual. Put {def.Id}.vrm (or a Humanoid prefab named {def.Id}) in Assets/MuscleBattle/Resources/Characters/.");
+                    continue;
+                }
+                var anim = go.GetComponentInChildren<Animator>();
+                bool ok = anim != null && anim.avatar != null && anim.avatar.isHuman;
+                if (ok) Debug.Log($"[MuscleBattle] {def.NameEn}: OK - Humanoid model '{go.name}' will replace the prototype visual.");
+                else Debug.LogError($"[MuscleBattle] {def.NameEn}: '{go.name}' found but it has no Humanoid Avatar (set Rig > Animation Type = Humanoid, or import the .vrm with UniVRM).");
+            }
+        }
+
         [MenuItem("MUSCLE BATTLE/Build/WebGL (iPad Safari)", priority = 20)]
         public static void BuildWebGL() => Build(BuildTarget.WebGL, "Builds/WebGL");
 

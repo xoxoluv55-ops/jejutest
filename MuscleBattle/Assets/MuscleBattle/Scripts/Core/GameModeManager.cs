@@ -144,6 +144,7 @@ namespace MuscleBattle
             var go = new GameObject(side == 0 ? "Fighter_P1" : "Fighter_P2");
             go.transform.SetParent(transform, false);
             var f = go.AddComponent<FighterController>();
+            go.AddComponent<CharacterIdentity>().Set(def, side);
             var rig = FighterRig.Build(go.transform, def, f);
             f.Init(def, side, _combat, rig);
             _fighters[side] = f;

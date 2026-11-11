@@ -25,7 +25,10 @@ namespace MuscleBattle
         readonly Transform[] _bones = new Transform[JointCount];
         readonly Quaternion[] _current = new Quaternion[JointCount];
         float _hipY;
-        Transform _visual;
+        Transform _visual;          // PrototypeVisual: primitive body + the pose-driver skeleton
+        Transform _visualRoot;      // VisualRoot: production Humanoid model lives here
+        HumanoidVisual _humanoid;
+        public bool HasHumanoid => _humanoid != null;
         readonly List<Renderer> _bodyRenderers = new List<Renderer>();
         readonly Dictionary<MuscleGroup, List<Renderer>> _muscles = new Dictionary<MuscleGroup, List<Renderer>>();
         readonly List<Material> _muscleMats = new List<Material>();
@@ -59,9 +62,11 @@ namespace MuscleBattle
         void Construct()
         {
             _mpb = new MaterialPropertyBlock();
-            _visual = new GameObject("Visual").transform;
+            _visual = new GameObject("PrototypeVisual").transform;
             _visual.SetParent(transform, false);
             _visual.localScale = Vector3.one * Def.Height;
+            _visualRoot = new GameObject("VisualRoot").transform;
+            _visualRoot.SetParent(transform, false);
 
             float b = Def.Bulk;
             var rim = Def.Energy.WithAlpha(0.85f);
@@ -143,6 +148,48 @@ namespace MuscleBattle
 
             for (int i = 0; i < JointCount; i++) _current[i] = Quaternion.identity;
             _hipY = 0;
+
+            AttachHumanoid();
+        }
+
+        /// <summary>
+        /// Swap the visual to a production Humanoid model if one exists for this fighter
+        /// (Resources/Characters/{id}). Game logic is untouched: the primitive skeleton keeps driving poses.
+        /// </summary>
+        void AttachHumanoid()
+        {
+            _humanoid = HumanoidVisual.TryCreate(_visualRoot, transform, Def, _bones);
+            if (_humanoid == null) return;
+
+            ApplyTPose();
+            _humanoid.Calibrate();
+
+            // move muscle holograms + trails onto the model's bones, re-centred on the model's joints
+            foreach (var list in _muscles.Values)
+                foreach (var r in list) Rehome(r.transform);
+            foreach (var t in _trails) Rehome(t.transform);
+
+            foreach (var r in _visual.GetComponentsInChildren<Renderer>(true)) r.enabled = false; // hide PrototypeVisual
+            for (int i = 0; i < JointCount; i++) _bones[i].localRotation = _current[i] = Quaternion.identity;
+            _bones[(int)J.Hips].localPosition = new Vector3(0, 0.98f, 0);
+        }
+
+        void Rehome(Transform t)
+        {
+            int idx = System.Array.IndexOf(_bones, t.parent);
+            var target = _humanoid.Bone(idx);
+            if (target == null) return;
+            t.position += target.position - t.parent.position;
+            t.SetParent(target, true);
+        }
+
+        /// <summary>Driver skeleton in T-pose (arms out, palms down) for retarget calibration.</summary>
+        void ApplyTPose()
+        {
+            for (int i = 0; i < JointCount; i++) _bones[i].localRotation = Quaternion.identity;
+            _bones[(int)J.ShoulderL].localRotation = Quaternion.Euler(0, 0, -90);
+            _bones[(int)J.ShoulderR].localRotation = Quaternion.Euler(0, 0, 90);
+            _bones[(int)J.Hips].localPosition = new Vector3(0, 0.98f, 0);
         }
 
         Transform Bone(J j, Transform parent, Vector3 localPos)
@@ -364,6 +411,7 @@ namespace MuscleBattle
                 _bones[i].localRotation = Pose[i];
             }
             _bones[(int)J.Hips].localPosition = new Vector3(0, closeUp ? 0.93f : 0.98f, 0);
+            _humanoid?.Apply();
         }
 
         /// <summary>World position of a muscle overlay (the one nearest <paramref name="near"/> when there are left/right copies).</summary>
@@ -383,14 +431,18 @@ namespace MuscleBattle
             return best;
         }
 
-        public Transform LimbTransform(Limb limb) => limb switch
+        public Transform LimbTransform(Limb limb)
         {
-            Limb.LeftHand => _bones[(int)J.HandL],
-            Limb.RightHand => _bones[(int)J.HandR],
-            Limb.LeftFoot => _bones[(int)J.FootL],
-            Limb.RightFoot => _bones[(int)J.FootR],
-            _ => _bones[(int)J.Chest],
-        };
+            int j = limb switch
+            {
+                Limb.LeftHand => (int)J.HandL,
+                Limb.RightHand => (int)J.HandR,
+                Limb.LeftFoot => (int)J.FootL,
+                Limb.RightFoot => (int)J.FootR,
+                _ => (int)J.Chest,
+            };
+            return (_humanoid != null ? _humanoid.Bone(j) : null) ?? _bones[j];
+        }
 
         // ------------------------------------------------------------------
         // Animation
@@ -410,6 +462,7 @@ namespace MuscleBattle
             }
             _hipY = Mathf.Lerp(_hipY, hipY, k);
             _bones[(int)J.Hips].localPosition = new Vector3(0, 0.98f + _hipY, 0);
+            _humanoid?.Apply();
 
             UpdateTrails();
             UpdateFlashAndGlow(dt);
@@ -463,7 +516,8 @@ namespace MuscleBattle
             }
             _mpb.SetFloat("_Flash", flash);
             _mpb.SetColor("_FlashColor", _flashColor);
-            foreach (var r in _bodyRenderers) r.SetPropertyBlock(_mpb);
+            if (_humanoid != null) _humanoid.SetFlash(_flashColor, flash);
+            else foreach (var r in _bodyRenderers) r.SetPropertyBlock(_mpb);
 
             if (_glowTime > 0)
             {

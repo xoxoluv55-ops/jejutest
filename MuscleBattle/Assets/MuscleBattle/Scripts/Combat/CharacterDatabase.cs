@@ -55,6 +55,7 @@ namespace MuscleBattle
                 Shoes = new Color(0.95f, 0.95f, 0.95f), Gloves = new Color(0.12f, 0.12f, 0.14f),
                 Energy = Palette.Nerve, EnergyAlt = Palette.Mastery,
                 HairStyle = HairStyle.ShortSpiky, ChestMark = "PT",
+                ModelResourcePath = "Characters/jin", // VRoid VRM -> Resources/Characters/jin (see docs/CHARACTER_PIPELINE.md)
                 SpecialName = "숄더 어브덕션 러시", SpecialNameEn = "Shoulder Abduction Rush",
                 UltimateName = "스캐퓰러 포스 커플", UltimateNameEn = "Scapular Force Couple",
                 SignatureMuscles = "삼각근 + 극상근 (Deltoid + Supraspinatus)",
@@ -126,6 +127,7 @@ namespace MuscleBattle
                 Shoes = new Color(0.12f, 0.12f, 0.12f), Gloves = new Color(0.10f, 0.10f, 0.10f),
                 Energy = Palette.MuscleHot, EnergyAlt = Palette.Muscle,
                 HairStyle = HairStyle.SlickBack, SleevelessTop = true, ChestMark = "SC",
+                ModelResourcePath = "Characters/ray",
                 SpecialName = "데드리프트 브레이커", SpecialNameEn = "Deadlift Breaker",
                 UltimateName = "포스테리어 체인 슬램", UltimateNameEn = "Posterior Chain Slam",
                 SignatureMuscles = "대둔근 + 햄스트링 (Gluteus Maximus + Hamstrings)",
