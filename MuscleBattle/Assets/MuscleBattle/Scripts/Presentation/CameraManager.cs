@@ -193,7 +193,9 @@ namespace MuscleBattle
             float roll = (Mathf.PerlinNoise(time, 7.7f) - 0.5f) * 6f * s;
 
             transform.position = p;
-            transform.rotation = Quaternion.LookRotation((_look - p).normalized, Vector3.up) * Quaternion.Euler(0, 0, roll);
+            var lookDir = _look - p;
+            if (lookDir.sqrMagnitude < 1e-6f) lookDir = Vector3.forward; // first frame before any target: avoid zero-vector warning
+            transform.rotation = Quaternion.LookRotation(lookDir.normalized, Vector3.up) * Quaternion.Euler(0, 0, roll);
             transform.position += transform.right * offset.x + transform.up * offset.y;
             Cam.fieldOfView = _fov;
 

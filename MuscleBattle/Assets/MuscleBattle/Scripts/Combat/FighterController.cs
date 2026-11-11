@@ -49,6 +49,14 @@ namespace MuscleBattle
         public bool MoveConnected { get; set; }
         public bool ArmorUsed { get; set; }
 
+        // MUSCLE LINK (set by MuscleSkillSystem for the current special)
+        public bool MoveHeld { get; set; }            // frozen in start-up while choosing muscles / link visualisation
+        public float LinkDamageMul { get; set; } = 1f;
+        public int LinkExtraHits { get; set; }
+        public LinkResult LastLink { get; set; }
+        public int MuscleLinks { get; set; }
+        public int PerfectLinks { get; set; }
+
         // stats for the result screen
         public int MaxCombo { get; set; }
         public int CounterHits { get; set; }
@@ -81,7 +89,7 @@ namespace MuscleBattle
             State == FighterState.Knockdown || State == FighterState.GetUp || State == FighterState.KO ||
             State == FighterState.Grabbed || State == FighterState.Throwing || State == FighterState.Intro ||
             State == FighterState.Victory || State == FighterState.Lose ||
-            (State == FighterState.Dodge && StateFrame >= 2 && StateFrame <= 15);
+            (State == FighterState.Dodge && StateFrame >= 2 && StateFrame <= 15) || MoveHeld;
 
         public bool IsActiveFrame => State == FighterState.Attack && CurrentMove != null &&
                                      MoveFrame >= CurrentMove.Startup && MoveFrame < CurrentMove.Startup + CurrentMove.Active;
@@ -116,6 +124,7 @@ namespace MuscleBattle
             JuggleCount = 0;
             Adrenaline = false;
             CurrentMove = null;
+            MoveHeld = false;
             _buffer = Buttons.None;
             SetState(FighterState.Intro);
             ApplyTransform(true);
@@ -125,6 +134,7 @@ namespace MuscleBattle
         {
             Meter = 0;
             MaxCombo = CounterHits = PerfectCounters = PerfectGuards = SpecialsLanded = RoundWins = 0;
+            MuscleLinks = PerfectLinks = 0;
             MovesUsed.Clear();
         }
 
@@ -308,6 +318,10 @@ namespace MuscleBattle
             LastHitFrame = -100;
             MoveConnected = false;
             ArmorUsed = false;
+            MoveHeld = false;
+            LinkDamageMul = 1f;
+            LinkExtraHits = 0;
+            LastLink = LinkResult.None;
             FaceOpponent(1f);
             _lockedFacing = true;
             MovesUsed.Add(m.Id);
@@ -318,6 +332,7 @@ namespace MuscleBattle
         void TickAttack(InputFrame input)
         {
             var m = CurrentMove;
+            if (MoveHeld) return; // charging a Muscle Skill: hold the start-up pose
             MoveFrame++;
 
             // lunge during startup + active

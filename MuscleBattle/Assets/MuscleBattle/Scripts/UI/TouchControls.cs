@@ -13,6 +13,9 @@ namespace MuscleBattle
     public sealed class TouchControls : MonoBehaviour
     {
         public Vector2 Move { get; private set; }
+        /// <summary>True while the muscle cards are up: cards overlap the button cluster, so taps must go to the cards only.</summary>
+        public static bool Suppressed;
+        CanvasGroup _group;
         public Buttons Held { get; private set; }
 
         sealed class Btn
@@ -43,6 +46,8 @@ namespace MuscleBattle
             rt.Stretch();
             var tc = rt.gameObject.AddComponent<TouchControls>();
             tc._root = rt;
+            tc._group = rt.gameObject.AddComponent<CanvasGroup>();
+            tc._group.blocksRaycasts = false;
             tc._canvas = canvas.GetComponentInParent<Canvas>();
             tc.Build();
             return tc;
@@ -121,6 +126,16 @@ namespace MuscleBattle
         {
             if (!_root.gameObject.activeInHierarchy) return;
             float dt = Time.unscaledDeltaTime;
+            _group.alpha = Mathf.MoveTowards(_group.alpha, Suppressed ? 0.12f : 1f, dt * 8f);
+            if (Suppressed)
+            {
+                Move = Vector2.zero;
+                Held = Buttons.None;
+                _stickFinger = -1;
+                _stickKnob.anchoredPosition = Vector2.zero;
+                foreach (var b in _buttons) b.Finger = -1;
+                return;
+            }
 
             // gather pointers (touches, or the mouse as finger 999 when there are no touches)
             var pointers = new List<(int id, Vector2 pos, TouchPhase phase)>(Input.touchCount + 1);

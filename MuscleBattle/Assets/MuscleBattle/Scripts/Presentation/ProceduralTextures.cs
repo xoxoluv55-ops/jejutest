@@ -258,6 +258,76 @@ namespace MuscleBattle
             return c;
         });
 
+        // ---------------- anatomy card renders ----------------
+        /// <summary>
+        /// Small posterior view of the right shoulder with ONE muscle highlighted (red fibre energy),
+        /// bone in white/gold, body outline in cyan - the MUSCLE BATTLE visual language (§13).
+        /// Shapes are schematic (location teaching), not measured anatomical coordinates.
+        /// </summary>
+        public static Texture2D MuscleIcon(string key) => Make("muscle_" + key, 128, 128, (u, v) =>
+        {
+            bool Body(float x, float y)
+            {
+                float top = x < 0.18f ? 0.9f : Mathf.Lerp(0.88f, 0.74f, (x - 0.18f) / 0.54f);
+                bool torso = x > 0.02f && x < 0.68f && y > 0.02f && y < top;
+                bool neck = x > 0.04f && x < 0.2f && y < 0.98f;
+                bool arm = SegDist(new Vector2(x, y), new Vector2(0.78f, 0.66f), new Vector2(0.84f, 0.06f)) < 0.105f;
+                bool cap = Vector2.Distance(new Vector2(x, y), new Vector2(0.74f, 0.68f)) < 0.11f;
+                return torso || neck || arm || cap;
+            }
+            var p = new Vector2(u, v);
+            const float e = 1.5f / 128f;
+            bool inside = Body(u, v);
+            bool edge = inside != Body(u + e, v) || inside != Body(u - e, v) || inside != Body(u, v + e) || inside != Body(u, v - e);
+
+            // scapula + spine of scapula + humerus (bone)
+            var sup = new Vector2(0.28f, 0.74f); var inf = new Vector2(0.33f, 0.3f); var lat = new Vector2(0.68f, 0.64f);
+            float bone = Mathf.Min(SegDist(p, sup, inf), Mathf.Min(SegDist(p, inf, lat), SegDist(p, lat, sup)));
+            bone = Mathf.Min(bone, SegDist(p, new Vector2(0.3f, 0.66f), new Vector2(0.75f, 0.72f)));
+            bone = Mathf.Min(bone, SegDist(p, new Vector2(0.79f, 0.62f), new Vector2(0.83f, 0.12f)));
+            float boneA = 1f - Smooth(0.006f, 0.014f, bone);
+
+            float m = 0; float angle = 0;
+            switch (key)
+            {
+                case "supraspinatus": m = RotEllipse(p, new Vector2(0.5f, 0.715f), 0.21f, 0.04f, 8f); angle = 8f; break;
+                case "deltoid": m = RotEllipse(p, new Vector2(0.775f, 0.6f), 0.105f, 0.18f, -6f); angle = 84f; break;
+                case "teres_major": m = RotEllipse(p, new Vector2(0.6f, 0.44f), 0.21f, 0.055f, 18f); angle = 18f; break;
+                case "latissimus": m = Mathf.Max(RotEllipse(p, new Vector2(0.38f, 0.22f), 0.33f, 0.17f, 22f), RotEllipse(p, new Vector2(0.68f, 0.44f), 0.14f, 0.04f, 35f)); angle = 28f; break;
+            }
+            float rad = angle * Mathf.Deg2Rad;
+            float along = -Mathf.Sin(rad) * u + Mathf.Cos(rad) * v;
+            float fiber = 0.65f + 0.35f * Mathf.Abs(Mathf.Sin(along * 140f));
+
+            var c = new Color(0, 0, 0, 0);
+            if (inside) c = new Color(Palette.Nerve.r * 0.25f, Palette.Nerve.g * 0.25f, Palette.Nerve.b * 0.35f, 0.55f);
+            if (m > 0)
+            {
+                var mc = Color.Lerp(Palette.Muscle, Palette.MuscleHot, (1 - m) * 0.8f) * fiber;
+                c = Color.Lerp(c, new Color(mc.r, mc.g, mc.b, 1f), Mathf.Clamp01(m * 4f));
+            }
+            if (boneA > 0) c = Color.Lerp(c, new Color(Palette.Bone.r, Palette.Bone.g * 0.95f, Palette.Bone.b * 0.8f, 1f), boneA * 0.85f);
+            if (edge) c = new Color(Palette.Nerve.r, Palette.Nerve.g, Palette.Nerve.b, 1f);
+            return c;
+        });
+
+        static float SegDist(Vector2 p, Vector2 a, Vector2 b)
+        {
+            var ab = b - a;
+            float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / ab.sqrMagnitude);
+            return Vector2.Distance(p, a + ab * t);
+        }
+
+        /// <summary>0 outside, rising to 1 at the centre of a rotated ellipse.</summary>
+        static float RotEllipse(Vector2 p, Vector2 c, float rx, float ry, float deg)
+        {
+            float r = -deg * Mathf.Deg2Rad;
+            var d = p - c;
+            var q = new Vector2(d.x * Mathf.Cos(r) - d.y * Mathf.Sin(r), d.x * Mathf.Sin(r) + d.y * Mathf.Cos(r));
+            float k = new Vector2(q.x / rx, q.y / ry).magnitude;
+            return Mathf.Clamp01(1f - k);
+        }
+
         static float Hash(float x, float y)
         {
             float h = Mathf.Sin(x * 127.1f + y * 311.7f) * 43758.5453f;

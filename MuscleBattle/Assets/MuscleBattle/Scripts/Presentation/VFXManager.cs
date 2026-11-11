@@ -107,6 +107,59 @@ namespace MuscleBattle
             Emit("charge", f.ChestPosition, Vector3.up, f.Def.Energy, Mathf.RoundToInt(50 * Q.ParticleScale), 1.3f);
         }
 
+        /// <summary>
+        /// Energy pulled from a muscle into the striking limb (Knowledge -> Muscle -> Attack, made visible):
+        /// a glowing beam plus particles streaming along it, running on unscaled time (works in slow motion).
+        /// </summary>
+        public void EnergyFlow(Vector3 from, Transform to, Color color, float seconds)
+        {
+            if (to == null) return;
+            StartCoroutine(EnergyFlowRoutine(from, to, color, seconds));
+        }
+
+        System.Collections.IEnumerator EnergyFlowRoutine(Vector3 from, Transform to, Color color, float seconds)
+        {
+            var go = new GameObject("EnergyFlow");
+            go.transform.SetParent(transform, false);
+            var lr = go.AddComponent<LineRenderer>();
+            lr.positionCount = 2;
+            lr.useWorldSpace = true;
+            lr.material = MBAssets.SharedAdditive("fiber_line", ProceduralTextures.Fiber);
+            lr.textureMode = LineTextureMode.Tile;
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lr.widthCurve = new AnimationCurve(new Keyframe(0, 0.16f), new Keyframe(1, 0.06f));
+            var spark = _pools.TryGetValue("charge", out var pool) ? pool.Items[0] : null;
+            float t = 0;
+            while (t < seconds)
+            {
+                t += Time.unscaledDeltaTime;
+                float k = t / seconds;
+                var end = Vector3.Lerp(from, to.position, Mathf.SmoothStep(0, 1, Mathf.Min(1, k * 1.6f)));
+                lr.SetPosition(0, from);
+                lr.SetPosition(1, end);
+                var c = Color.Lerp(Color.white, color, k);
+                c.a = Mathf.Sin(Mathf.PI * k);
+                lr.startColor = c;
+                lr.endColor = c;
+                if (spark != null && Random.value < 0.6f * Q.ParticleScale + 0.2f)
+                {
+                    var ep = new ParticleSystem.EmitParams
+                    {
+                        position = Vector3.Lerp(from, end, Random.value),
+                        velocity = (to.position - from).normalized * 3f,
+                        startColor = color,
+                        startSize = 0.09f,
+                        startLifetime = 0.25f,
+                        applyShapeToPosition = false,
+                    };
+                    spark.Emit(ep, 1);
+                }
+                yield return null;
+            }
+            Emit("flare", to.position, Vector3.forward, Color.Lerp(color, Color.white, 0.4f), 0, 1.6f);
+            Destroy(go);
+        }
+
         public void ScreenFlash(Color c, float strength)
         {
             Hud.Instance?.ScreenFlash(c, strength);

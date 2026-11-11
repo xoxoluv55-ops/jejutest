@@ -70,6 +70,7 @@ namespace MuscleBattle
             var stage = Add<StageManager>("Stage");
             stage.Build();
             _combat = Add<CombatManager>("Combat");
+            Add<MuscleSkillSystem>("MuscleSkill");
             _combat.MatchFinished += OnMatchFinished;
 
             // UI

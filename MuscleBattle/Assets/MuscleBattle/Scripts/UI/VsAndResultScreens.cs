@@ -199,7 +199,7 @@ namespace MuscleBattle
 
             // stats (right)
             var statPanel = UIKit.Panel(Root, "Stats", Palette.NerveDeep);
-            statPanel.Place(new Vector2(1, 0.6f), new Vector2(1, 0.5f), new Vector2(-40, 0), new Vector2(460, 330));
+            statPanel.Place(new Vector2(1, 0.6f), new Vector2(1, 0.5f), new Vector2(-40, 0), new Vector2(460, 380));
             UIKit.SlantPlate(statPanel, "배틀 기록", 30, new Color(0.08f, 0.2f, 0.45f), Color.white, new Vector2(0.5f, 1), Vector2.zero, new Vector2(280, 52));
             _stats = UIKit.Label(statPanel, "", 26, Color.white, TextAnchor.UpperLeft, false);
             _stats.lineSpacing = 1.4f;
@@ -252,6 +252,7 @@ namespace MuscleBattle
                 $"라운드  {w.RoundWins} - {w.Opponent.RoundWins}\n" +
                 $"스페셜 / 얼티밋 적중  {w.SpecialsLanded}\n" +
                 $"퍼펙트 카운터  {w.PerfectCounters}\n" +
+                $"머슬 링크  {w.MuscleLinks}  (PERFECT {w.PerfectLinks})\n" +
                 $"최대 콤보  {w.MaxCombo} HIT";
             _mission.text = $"다음 도전 과제!  CPU 상대 3연승 ({Mathf.Min(3, winStreak)}/3)";
             if (_co != null) StopCoroutine(_co);

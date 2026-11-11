@@ -13,6 +13,7 @@ namespace MuscleBattle
     public sealed class Hud : MonoBehaviour
     {
         public static Hud Instance { get; private set; }
+        public MuscleSelectUI MuscleSelect { get; private set; }
 
         sealed class Side
         {
@@ -148,6 +149,8 @@ namespace MuscleBattle
             _commentaryText = UIKit.Label(_commentary, "", 24, Color.white, TextAnchor.MiddleLeft, false);
             _commentaryText.rectTransform.Place(new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(110, 0), new Vector2(850, 70));
             _commentary.gameObject.SetActive(false);
+
+            MuscleSelect = MuscleSelectUI.Create(_root);
 
             _flash = UIKit.Img(_root, "Flash", UIKit.White, new Color(1, 1, 1, 0));
             _flash.rectTransform.Stretch();

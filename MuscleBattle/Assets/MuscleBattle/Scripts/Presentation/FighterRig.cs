@@ -31,6 +31,9 @@ namespace MuscleBattle
         readonly List<Material> _muscleMats = new List<Material>();
         MaterialPropertyBlock _mpb;
         TrailRenderer[] _trails; // hands L/R, feet L/R
+        Material _trailNormal, _trailFiber;
+        Gradient _gradNormal, _gradFiber;
+        bool _fiberTrails;
         float _flash;
         Color _flashColor = Color.white;
         MuscleGroup _glowMask;
@@ -292,6 +295,16 @@ namespace MuscleBattle
             var q = QualityProfile.Current;
             _trails = new TrailRenderer[4];
             var targets = new[] { haL, haR, ftL, ftR };
+            _trailNormal = MBAssets.AdditiveMaterial(ProceduralTextures.Streak, Color.white, 2f);
+            _trailFiber = MBAssets.AdditiveMaterial(ProceduralTextures.Fiber, Color.white, 2.4f);
+            _trailFiber.mainTextureScale = new Vector2(4, 1);
+            _gradNormal = new Gradient();
+            _gradNormal.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Def.Energy, 0.3f), new GradientColorKey(Def.EnergyAlt, 1) },
+                new[] { new GradientAlphaKey(0.9f, 0), new GradientAlphaKey(0.5f, 0.5f), new GradientAlphaKey(0, 1) });
+            // MUSCLE LINK trail: red/orange muscle-fibre energy (§13)
+            _gradFiber = new Gradient();
+            _gradFiber.SetKeys(new[] { new GradientColorKey(Palette.MuscleHot, 0), new GradientColorKey(Palette.Muscle, 0.5f), new GradientColorKey(new Color(0.5f, 0.05f, 0.05f), 1) },
+                new[] { new GradientAlphaKey(1f, 0), new GradientAlphaKey(0.7f, 0.5f), new GradientAlphaKey(0, 1) });
             for (int i = 0; i < 4; i++)
             {
                 var go = new GameObject("Trail" + i);
@@ -302,11 +315,9 @@ namespace MuscleBattle
                 tr.minVertexDistance = 0.03f;
                 tr.widthMultiplier = i < 2 ? 0.2f : 0.26f;
                 tr.widthCurve = new AnimationCurve(new Keyframe(0, 1), new Keyframe(1, 0));
-                tr.material = MBAssets.AdditiveMaterial(ProceduralTextures.Streak, Color.white, 2f);
-                var g = new Gradient();
-                g.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Def.Energy, 0.3f), new GradientColorKey(Def.EnergyAlt, 1) },
-                    new[] { new GradientAlphaKey(0.9f, 0), new GradientAlphaKey(0.5f, 0.5f), new GradientAlphaKey(0, 1) });
-                tr.colorGradient = g;
+                tr.material = _trailNormal;
+                tr.colorGradient = _gradNormal;
+                tr.textureMode = LineTextureMode.Tile;
                 tr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 tr.emitting = false;
                 _trails[i] = tr;
@@ -355,6 +366,23 @@ namespace MuscleBattle
             _bones[(int)J.Hips].localPosition = new Vector3(0, closeUp ? 0.93f : 0.98f, 0);
         }
 
+        /// <summary>World position of a muscle overlay (the one nearest <paramref name="near"/> when there are left/right copies).</summary>
+        public Vector3 MuscleAnchor(MuscleGroup group, Vector3 near)
+        {
+            var best = ChestBone.position;
+            float bestD = float.MaxValue;
+            foreach (var kv in _muscles)
+            {
+                if ((kv.Key & group) == 0) continue;
+                foreach (var r in kv.Value)
+                {
+                    float d = (r.transform.position - near).sqrMagnitude;
+                    if (d < bestD) { bestD = d; best = r.transform.position; }
+                }
+            }
+            return best;
+        }
+
         public Transform LimbTransform(Limb limb) => limb switch
         {
             Limb.LeftHand => _bones[(int)J.HandL],
@@ -393,6 +421,19 @@ namespace MuscleBattle
                                                      Fighter.MoveFrame >= Fighter.CurrentMove.Startup - 3 &&
                                                      Fighter.MoveFrame < Fighter.CurrentMove.Startup + Fighter.CurrentMove.Active + 2);
             var m = Fighter.CurrentMove;
+            bool fiber = m != null && m.Kind >= MoveKind.Special &&
+                         (Fighter.LastLink == LinkResult.Perfect || Fighter.LastLink == LinkResult.Link);
+            if (fiber != _fiberTrails)
+            {
+                _fiberTrails = fiber;
+                for (int i = 0; i < 4; i++)
+                {
+                    _trails[i].material = fiber ? _trailFiber : _trailNormal;
+                    _trails[i].colorGradient = fiber ? _gradFiber : _gradNormal;
+                    _trails[i].widthMultiplier = (i < 2 ? 0.2f : 0.26f) * (fiber ? 1.8f : 1f);
+                    _trails[i].time = (QualityProfile.Current != null ? QualityProfile.Current.TrailTime : 0.2f) * (fiber ? 1.8f : 1f);
+                }
+            }
             for (int i = 0; i < 4; i++)
             {
                 bool on = false;

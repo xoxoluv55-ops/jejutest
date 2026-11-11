@@ -67,6 +67,7 @@ namespace MuscleBattle
 
         public void Abort()
         {
+            MuscleSkillSystem.Instance?.Cancel();
             StopAllCoroutines();
             Phase = MatchPhase.Idle;
             TimeController.Instance?.Clear();
@@ -80,6 +81,7 @@ namespace MuscleBattle
             RoundNumber++;
             Phase = MatchPhase.RoundIntro;
             _koHandled = false;
+            MuscleSkillSystem.Instance?.Cancel();
             _hitStop = 0;
             _freeze = 0;
             TimeLeft = GameSettings.RoundTime;
@@ -124,12 +126,23 @@ namespace MuscleBattle
         void Step()
         {
             bool fighting = Phase == MatchPhase.Fighting;
-            if (fighting) foreach (var f in Fighters) f.PollInput();
+            var skill = MuscleSkillSystem.Instance;
+            // the selecting fighter's devices are read by MuscleSkillSystem every frame instead
+            if (fighting)
+                foreach (var f in Fighters)
+                    if (skill == null || skill.Selector != f) f.PollInput();
 
             if (_hitStop > 0) { _hitStop--; return; }
             if (_freeze > 0) { _freeze--; return; }
 
-            foreach (var f in Fighters) f.Tick();
+            // while a Muscle Skill is chosen / visualised the world keeps moving (slow motion) but an
+            // opponent already in hit-stun or juggled stays frozen so the knowledge pause never drops a combo
+            bool held = Fighters[0].MoveHeld || Fighters[1].MoveHeld;
+            foreach (var f in Fighters)
+            {
+                if (held && !f.MoveHeld && IsInComboState(f)) continue;
+                f.Tick();
+            }
             if (!fighting) return;
 
             ResolveHits(Fighters[0], Fighters[1]);
@@ -146,7 +159,7 @@ namespace MuscleBattle
                 }
             }
 
-            TimeLeft -= TickDt;
+            if (!held) TimeLeft -= TickDt; // the clock does not run while choosing muscles
             if (TimeLeft <= 0 && Phase == MatchPhase.Fighting)
             {
                 TimeLeft = 0;
@@ -162,8 +175,9 @@ namespace MuscleBattle
             if (!a.IsActiveFrame || d.IsInvulnerable) return;
             var m = a.CurrentMove;
             if (m.Kind == MoveKind.Counter) return;
-            if (m.Hits <= 1 && a.MoveConnected) return;
-            if (m.Hits > 1 && (a.HitsDone >= m.Hits || a.MoveFrame - a.LastHitFrame < m.HitInterval)) return;
+            int totalHits = m.Hits + a.LinkExtraHits; // PERFECT MUSCLE LINK = combo extension
+            if (totalHits <= 1 && a.MoveConnected) return;
+            if (totalHits > 1 && (a.HitsDone >= totalHits || a.MoveFrame - a.LastHitFrame < m.HitInterval)) return;
 
             var center = a.HitboxCenter(m);
             float bottom = d.Height + (d.IsDown ? 0f : 0.15f);
@@ -247,9 +261,10 @@ namespace MuscleBattle
             combo.Hits++;
 
             float scale = combo.Hits <= 2 ? 1f : Mathf.Max(m.Kind == MoveKind.Ultimate ? 0.6f : 0.35f, 1f - 0.1f * (combo.Hits - 2));
-            float damage = m.Damage * scale * d.Def.DamageTaken * (counterHit ? 1.25f : 1f);
+            float damage = m.Damage * scale * d.Def.DamageTaken * (counterHit ? 1.25f : 1f) * a.LinkDamageMul;
             bool launch = m.Launch > 0 || (d.IsAirborne && d.JuggleCount < 99);
-            bool lastHitOfMulti = m.Hits > 1 && a.HitsDone >= m.Hits;
+            int totalHits = m.Hits + a.LinkExtraHits;
+            bool lastHitOfMulti = totalHits > 1 && a.HitsDone >= totalHits;
             var hitMove = m;
             if (lastHitOfMulti && m.Kind != MoveKind.Throw)
             {
@@ -344,14 +359,71 @@ namespace MuscleBattle
             if (m.Muscles != MuscleGroup.None && m.Impact >= ImpactTier.Medium)
                 f.Rig?.GlowMuscles(m.Muscles, (m.Startup + m.Active) * TickDt + 0.25f, m.Kind >= MoveKind.Special ? f.Def.Energy : Palette.Muscle);
 
+            if ((m.Kind == MoveKind.Special || m.Kind == MoveKind.Ultimate) && MuscleSkillSystem.Instance != null && MuscleSkillSystem.Instance.TryBegin(f, m))
+                return; // presentation continues in OnMuscleSkillResolved
+            PlaySkillPresentation(f, m, LinkResult.None);
+        }
+
+        static bool IsInComboState(FighterController f) =>
+            f.State == FighterState.Hit || f.State == FighterState.Air || f.State == FighterState.GuardStun || f.State == FighterState.Grabbed;
+
+        /// <summary>Knowledge -> Muscle Visualization -> Attack (called when the muscle cards resolve).</summary>
+        public void OnMuscleSkillResolved(FighterController f, MoveData m, MuscleQuestion q, LinkResult r)
+        {
+            if (Phase != MatchPhase.Fighting || f.State != FighterState.Attack || f.CurrentMove != m) return;
+            StartCoroutine(LinkSequence(f, m, q, r));
+        }
+
+        IEnumerator LinkSequence(FighterController f, MoveData m, MuscleQuestion q, LinkResult r)
+        {
+            bool good = r == LinkResult.Perfect || r == LinkResult.Link;
+            if (good)
+            {
+                f.MoveHeld = true;
+                TimeController.Instance?.SlowMotion(0.3f, 1.4f);
+                CameraManager.Instance?.Focus(f, 1.1f, 0.5f);
+                var limb = f.Rig != null ? f.Rig.LimbTransform(m.Limb) : null;
+                // light the correct muscles one after another, then pull their energy into the striking arm
+                var lit = MuscleGroup.None;
+                foreach (var o in q.Options)
+                {
+                    if (!o.Correct) continue;
+                    lit |= o.Group;
+                    f.Rig?.GlowMuscles(lit, 1.6f, r == LinkResult.Perfect ? Palette.MuscleHot : Palette.Muscle);
+                    AudioManager.Instance?.PlaySfx("ui_skill", 0.8f, 1.1f);
+                    if (f.Rig != null && limb != null)
+                        VFXManager.Instance?.EnergyFlow(f.Rig.MuscleAnchor(o.Group, limb.position), limb, Palette.MuscleHot, 0.5f);
+                    yield return new WaitForSecondsRealtime(0.22f);
+                }
+                Hud.Instance?.Callout(f.Side, r == LinkResult.Perfect ? "PERFECT MUSCLE LINK!" : "MUSCLE LINK!", r == LinkResult.Perfect ? Palette.Gold : Palette.Nerve, true);
+                AudioManager.Instance?.Announce(r == LinkResult.Perfect ? "perfect_link" : "muscle_link");
+                yield return new WaitForSecondsRealtime(0.35f);
+                f.MoveHeld = false;
+            }
+            else if (r == LinkResult.Miss)
+            {
+                Hud.Instance?.Callout(f.Side, "MUSCLE LINK FAILED", Palette.TextDim);
+            }
+            else if (r == LinkResult.Partial)
+            {
+                Hud.Instance?.Callout(f.Side, "PARTIAL LINK", Color.white);
+            }
+            PlaySkillPresentation(f, m, r);
+        }
+
+        void PlaySkillPresentation(FighterController f, MoveData m, LinkResult r)
+        {
+            bool weak = r == LinkResult.Miss;
+            bool perfect = r == LinkResult.Perfect;
             if (m.Kind == MoveKind.Special)
             {
-                _freeze = 18;
+                _freeze = weak ? 6 : 18;
                 TimeController.Instance?.SlowMotion(0.55f, 0.45f);
                 Hud.Instance?.SkillCutIn(f, m, false);
-                VFXManager.Instance?.SuperFlash(f, f.Def.Energy, false);
-                AudioManager.Instance?.PlaySfx("special", 0.9f);
-                AudioManager.Instance?.Announce("special");
+                if (!weak) VFXManager.Instance?.SuperFlash(f, perfect ? Palette.MuscleHot : f.Def.Energy, perfect);
+                AudioManager.Instance?.PlaySfx("special", weak ? 0.5f : 0.9f);
+                if (r == LinkResult.None || r == LinkResult.Partial) AudioManager.Instance?.Announce("special");
+                if (perfect) StageManager.Instance?.ImpactPulse(ImpactTier.Ultimate);
                 CameraManager.Instance?.Focus(f, 0.55f, 0.65f);
             }
             else if (m.Kind == MoveKind.Ultimate)
@@ -361,7 +433,7 @@ namespace MuscleBattle
                 Hud.Instance?.SkillCutIn(f, m, true);
                 VFXManager.Instance?.SuperFlash(f, f.Def.Energy, true);
                 AudioManager.Instance?.PlaySfx("special", 1f);
-                AudioManager.Instance?.Announce("muscle_link");
+                AudioManager.Instance?.Announce("special");
                 CameraManager.Instance?.Cinematic(f, 1.8f);
                 StageManager.Instance?.ImpactPulse(ImpactTier.Ultimate);
             }

@@ -262,7 +262,7 @@ namespace MuscleBattle
             p.Role.text = d.RoleKo + "  (" + d.RoleEn + ")";
             p.Quote.text = d.Quote;
             p.Specialties.text = "전문 분야  ·  " + string.Join("  ·  ", d.Specialties);
-            p.Skills.text = "▸ " + d.SpecialName + "\n▸ " + d.UltimateName + "\n▸ " + d.SignatureMuscles.Split('(')[0].Trim();
+            p.Skills.text = "▶ " + d.SpecialName + "\n▶ " + d.UltimateName + "\n▶ " + d.SignatureMuscles.Split('(')[0].Trim();
             int[] stats = { d.Power, d.Speed, d.Technique, d.Reach, d.Durability };
             for (int k = 0; k < 5; k++)
             {
