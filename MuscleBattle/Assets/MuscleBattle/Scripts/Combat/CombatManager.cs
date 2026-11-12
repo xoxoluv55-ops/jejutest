@@ -290,8 +290,8 @@ namespace MuscleBattle
             _hitStop = HitStopFrames(tier) + (counterHit ? 3 : 0);
             Color sparkColor = m.Kind == MoveKind.Ultimate || m.Kind == MoveKind.Special ? a.Def.Energy : Palette.Muscle;
             VFXManager.Instance?.HitSpark(contact, push, sparkColor, tier);
-            if (tier >= ImpactTier.Heavy) VFXManager.Instance?.Shockwave(contact, sparkColor);
             d.Rig?.Flash(Color.white, 0.09f);
+            d.Rig?.Recoil(tier, counterHit);
             AudioManager.Instance?.PlayImpact(m.Sfx, tier, contact);
             CameraManager.Instance?.Shake(ShakeFor(tier) * (counterHit ? 1.3f : 1f));
             if (tier >= ImpactTier.Heavy) CameraManager.Instance?.Punch(tier == ImpactTier.Ultimate ? 0.12f : 0.06f);
@@ -299,6 +299,8 @@ namespace MuscleBattle
 
             if (counterHit)
             {
+                VFXManager.Instance?.ScreenFlash(Color.white, 0.3f);
+                CameraManager.Instance?.Focus(d, 0.3f, 0.75f);
                 Hud.Instance?.Callout(a.Side, "COUNTER!", Palette.Gold);
                 AudioManager.Instance?.Announce("counter");
             }

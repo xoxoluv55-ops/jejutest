@@ -42,19 +42,41 @@ namespace MuscleBattle
         // ------------------------------------------------------------------
         public void HitSpark(Vector3 pos, Vector3 dir, Color color, ImpactTier tier)
         {
-            float t = (int)tier;
-            Emit("flare", pos, dir, Color.Lerp(color, Color.white, 0.55f), 0, 1.2f + t * 0.45f);
-            Emit("spark", pos, dir, Color.Lerp(color, Palette.MuscleHot, 0.3f), Mathf.RoundToInt((10 + t * 10) * Q.ParticleScale), 1f + t * 0.25f);
-            if (tier >= ImpactTier.Medium)
-                Emit("fiber", pos, dir, color, Mathf.RoundToInt((6 + t * 6) * Q.ParticleScale), 1f + t * 0.2f);
+            switch (tier)
+            {
+                case ImpactTier.Light:
+                    // light: small, quick spark
+                    Emit("flare", pos, dir, Color.Lerp(color, Color.white, 0.6f), 0, 0.7f);
+                    Emit("spark", pos, dir, Color.Lerp(color, Palette.MuscleHot, 0.3f), Mathf.RoundToInt(8 * Q.ParticleScale), 0.7f);
+                    break;
+                case ImpactTier.Medium:
+                    Emit("flare", pos, dir, Color.Lerp(color, Color.white, 0.55f), 0, 1.3f);
+                    Emit("spark", pos, dir, Color.Lerp(color, Palette.MuscleHot, 0.3f), Mathf.RoundToInt(18 * Q.ParticleScale), 1.05f);
+                    Emit("fiber", pos, dir, color, Mathf.RoundToInt(8 * Q.ParticleScale), 1f);
+                    break;
+                default:
+                    // heavy / ultimate: big impact - flare, shockwave ring, fibre burst, debris sparks, screen pop
+                    float big = tier == ImpactTier.Ultimate ? 1.35f : 1f;
+                    Emit("flare", pos, dir, Color.Lerp(color, Color.white, 0.5f), 0, 2.6f * big);
+                    Emit("ring", pos, dir, Color.Lerp(color, Color.white, 0.3f), 1, 1.9f * big);
+                    Emit("spark", pos, dir, Color.Lerp(color, Palette.MuscleHot, 0.3f), Mathf.RoundToInt(34 * Q.ParticleScale * big), 1.5f);
+                    Emit("fiber", pos, dir, color, Mathf.RoundToInt(20 * Q.ParticleScale * big), 1.5f);
+                    ScreenFlash(Color.Lerp(color, Color.white, 0.6f), 0.12f * big);
+                    break;
+            }
         }
 
         public void GuardSpark(Vector3 pos, Vector3 facing, bool perfect)
         {
-            var c = perfect ? Palette.Gold : Palette.Nerve;
-            Emit("guard", pos, facing, c, 1, perfect ? 1.4f : 1f);
+            // guard = blue shield flash (perfect guard = gold rim on top)
+            Emit("guard", pos, facing, Palette.Nerve, 1, perfect ? 1.9f : 1.5f);
+            Emit("flare", pos, facing, Color.Lerp(Palette.Nerve, Color.white, 0.4f), 0, perfect ? 1.8f : 1.1f);
             Emit("spark", pos, facing, Palette.Nerve, Mathf.RoundToInt((perfect ? 22 : 10) * Q.ParticleScale), 0.8f);
-            if (perfect) Emit("ring", pos, facing, Palette.Gold, 1, 1.2f);
+            if (perfect)
+            {
+                Emit("ring", pos, facing, Palette.Gold, 1, 1.4f);
+                ScreenFlash(Palette.Nerve, 0.15f);
+            }
         }
 
         public void CounterFlash(Vector3 pos)

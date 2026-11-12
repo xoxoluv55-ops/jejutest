@@ -36,7 +36,9 @@ namespace MuscleBattle
         TrailRenderer[] _trails; // hands L/R, feet L/R
         Material _trailNormal, _trailFiber;
         Gradient _gradNormal, _gradFiber;
-        bool _fiberTrails;
+        int _trailStyle = -1;
+        float _recoil;
+        bool _stagger;
         float _flash;
         Color _flashColor = Color.white;
         MuscleGroup _glowMask;
@@ -379,6 +381,13 @@ namespace MuscleBattle
             _move = m;
         }
 
+        /// <summary>Body recoil on hit: head snaps back, torso bends away; heavy hits stagger the legs.</summary>
+        public void Recoil(ImpactTier tier, bool counter)
+        {
+            _recoil = tier switch { ImpactTier.Light => 0.45f, ImpactTier.Medium => 0.7f, _ => 1f } * (counter ? 1.2f : 1f);
+            _stagger = tier >= ImpactTier.Heavy || counter;
+        }
+
         public void Flash(Color c, float seconds)
         {
             _flashColor = c;
@@ -476,15 +485,26 @@ namespace MuscleBattle
             var m = Fighter.CurrentMove;
             bool fiber = m != null && m.Kind >= MoveKind.Special &&
                          (Fighter.LastLink == LinkResult.Perfect || Fighter.LastLink == LinkResult.Link);
-            if (fiber != _fiberTrails)
+            // a different trail per attack type: punch = short arc, kick = longer arc, heavy = wide, muscle skill = fibre
+            int style = m == null ? 0 : fiber ? 4 : m.Kind == MoveKind.Light ? 1 : (m.Kind == MoveKind.Kick || m.Kind == MoveKind.Launcher) ? 2 : 3;
+            if (style != _trailStyle)
             {
-                _fiberTrails = fiber;
+                _trailStyle = style;
+                float baseTime = QualityProfile.Current != null ? QualityProfile.Current.TrailTime : 0.2f;
+                (float time, float width) = style switch
+                {
+                    1 => (0.45f, 0.6f),  // light punch: short thin arc
+                    2 => (1.2f, 1.25f),  // kick: longer, wider arc
+                    3 => (0.9f, 1.3f),   // heavy / special
+                    4 => (1.8f, 1.8f),   // muscle link: fibre trail
+                    _ => (0.6f, 0.8f),
+                };
                 for (int i = 0; i < 4; i++)
                 {
                     _trails[i].material = fiber ? _trailFiber : _trailNormal;
                     _trails[i].colorGradient = fiber ? _gradFiber : _gradNormal;
-                    _trails[i].widthMultiplier = (i < 2 ? 0.2f : 0.26f) * (fiber ? 1.8f : 1f);
-                    _trails[i].time = (QualityProfile.Current != null ? QualityProfile.Current.TrailTime : 0.2f) * (fiber ? 1.8f : 1f);
+                    _trails[i].widthMultiplier = (i < 2 ? 0.2f : 0.26f) * width;
+                    _trails[i].time = baseTime * time;
                 }
             }
             for (int i = 0; i < 4; i++)
@@ -705,6 +725,23 @@ namespace MuscleBattle
             }
 
             if (f.Adrenaline && f.State != FighterState.KO) hipY -= 0.02f;
+
+            // additive hit recoil on top of the state pose
+            if (_recoil > 0.01f && (f.State == FighterState.Hit || f.State == FighterState.GuardStun || f.State == FighterState.Air))
+            {
+                float r = _recoil;
+                Pose[(int)J.Spine] = Pose[(int)J.Spine] * Quaternion.Euler(-14f * r, 0, 6f * r);
+                Pose[(int)J.Chest] = Pose[(int)J.Chest] * Quaternion.Euler(-18f * r, 8f * r, 0);
+                Pose[(int)J.Head] = Pose[(int)J.Head] * Quaternion.Euler(-26f * r, 10f * r, 0);
+                if (_stagger)
+                {
+                    Pose[(int)J.KneeL] = Pose[(int)J.KneeL] * Quaternion.Euler(25f * r, 0, 0);
+                    Pose[(int)J.KneeR] = Pose[(int)J.KneeR] * Quaternion.Euler(35f * r, 0, 0);
+                    hipY -= 0.09f * r;
+                }
+                sharpness = Mathf.Max(sharpness, 45f);
+            }
+            _recoil = Mathf.MoveTowards(_recoil, 0, Time.deltaTime * (_stagger ? 1.6f : 3f));
             return Pose;
         }
 

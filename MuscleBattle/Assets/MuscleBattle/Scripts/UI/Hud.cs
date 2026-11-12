@@ -35,6 +35,14 @@ namespace MuscleBattle
             public float LastHp = 1f;
             public RectTransform CalloutRoot;
             public float MeterDenied;
+            // quality pass
+            public RectTransform HpBar, MeterRoot, PortraitRoot;
+            public Image HpFlash, HpEdge, PortraitTint, ComboGlow;
+            public Text ComboRank;
+            public float HpFlashA, BarShake, PortraitHit, MeterShown, MaxPulse, LevelPunch;
+            public int LastLevel, LastRank;
+            public Vector2 HpBarPos, PortraitPos;
+            public Image[] MeterLead = new Image[3];
         }
 
         readonly Side[] _sides = { new Side(), new Side() };
@@ -167,13 +175,19 @@ namespace MuscleBattle
             s.Root = UIKit.Node(left ? "P1" : "P2", _root).Place(anchor, anchor, Vector2.zero, new Vector2(900, 220));
 
             // portrait
-            s.PortraitFrame = UIKit.Img(s.Root, "PortraitFrame", UIKit.Round, accent.WithAlpha(0.9f));
-            s.PortraitFrame.rectTransform.Place(anchor, anchor, new Vector2(16 * dir, -14), new Vector2(150, 150));
+            s.PortraitFrame = UIKit.Img(s.Root, "PortraitFrame", UIKit.Round, new Color(0.04f, 0.02f, 0.1f, 0.95f));
+            s.PortraitRoot = s.PortraitFrame.rectTransform.Place(anchor, anchor, new Vector2(16 * dir, -14), new Vector2(150, 150));
+            s.PortraitPos = s.PortraitRoot.anchoredPosition;
             var mask = UIKit.Node("Mask", s.PortraitFrame.rectTransform);
             mask.Stretch(5);
             mask.gameObject.AddComponent<RectMask2D>();
             s.Portrait = UIKit.Raw(mask, "Portrait", null);
             s.Portrait.rectTransform.Stretch();
+            if (!left) s.Portrait.uvRect = new Rect(1, 0, -1, 1); // P2 looks toward the centre
+            s.PortraitTint = UIKit.Img(mask, "HitTint", UIKit.White, Palette.HpDamage.WithAlpha(0));
+            s.PortraitTint.rectTransform.Stretch();
+            var pEdge = UIKit.Img(s.PortraitRoot, "Edge", UIKit.RoundOutline, Color.Lerp(accent, Color.white, 0.25f));
+            pEdge.rectTransform.Stretch(-3);
             var tagBg = UIKit.Img(s.Root, "Tag", UIKit.Para, accent);
             tagBg.rectTransform.Place(anchor, anchor, new Vector2(10 * dir, -8), new Vector2(64, 34));
             var tagT = UIKit.Label(tagBg.rectTransform, left ? "P1" : "CPU", 22, Color.white);
@@ -182,6 +196,8 @@ namespace MuscleBattle
 
             // HP bar (mirrored container for P2 so the slant faces outward)
             var bar = UIKit.Node("HpBar", s.Root).Place(anchor, anchor, new Vector2(180 * dir, -40), new Vector2(660, 50));
+            s.HpBar = bar;
+            s.HpBarPos = bar.anchoredPosition;
             if (!left) bar.localScale = new Vector3(-1, 1, 1);
             s.HpBack = UIKit.Img(bar, "Back", UIKit.Para, new Color(0.05f, 0.02f, 0.1f, 0.9f));
             s.HpBack.rectTransform.Stretch(-4);
@@ -199,8 +215,14 @@ namespace MuscleBattle
             shine.rectTransform.anchorMin = new Vector2(0, 0.5f);
             shine.rectTransform.anchorMax = Vector2.one;
             shine.rectTransform.offsetMin = shine.rectTransform.offsetMax = Vector2.zero;
+            s.HpFlash = UIKit.Img(bar, "HitFlash", UIKit.Para, new Color(1, 1, 1, 0));
+            s.HpFlash.rectTransform.Stretch();
+            s.HpFlash.type = Image.Type.Filled;
+            s.HpFlash.fillMethod = Image.FillMethod.Horizontal;
+            s.HpFlash.fillOrigin = 1;
             var edge = UIKit.Img(bar, "Edge", UIKit.ParaOutline, Color.Lerp(accent, Color.white, 0.3f));
             edge.rectTransform.Stretch(-4);
+            s.HpEdge = edge;
 
             // sub bar (blue / purple stripe from the concept art)
             var stripe = UIKit.Img(s.Root, "Stripe", UIKit.Para, Color.Lerp(Palette.NerveDeep, Palette.Mastery, 0.5f).WithAlpha(0.9f));
@@ -228,6 +250,7 @@ namespace MuscleBattle
             // special meter (bottom corners)
             var meterAnchor = new Vector2(left ? 0 : 1, 0);
             var mRoot = UIKit.Node("Meter", s.Root.parent).Place(meterAnchor, meterAnchor, new Vector2(30 * dir, 30), new Vector2(540, 90));
+            s.MeterRoot = mRoot;
             var mLabel = UIKit.Label(mRoot, left ? "SPECIAL" : "EX MUSCLE", 30, left ? Palette.Nerve : Palette.MuscleHot, left ? TextAnchor.UpperLeft : TextAnchor.UpperRight, true, true, true);
             mLabel.rectTransform.Place(new Vector2(left ? 0 : 1, 1), new Vector2(left ? 0 : 1, 1), Vector2.zero, new Vector2(300, 36));
             s.MeterLabel = UIKit.Label(mRoot, "Lv.0", 48, Palette.Gold, left ? TextAnchor.LowerRight : TextAnchor.LowerLeft, true, true, true);
@@ -244,6 +267,9 @@ namespace MuscleBattle
                 fill.fillOrigin = left ? 0 : 1;
                 var glow = UIKit.Img(back.rectTransform, "Glow", UIKit.Glow, (left ? Palette.Nerve : Palette.MuscleHot).WithAlpha(0));
                 glow.rectTransform.Stretch(-18);
+                var lead = UIKit.Img(back.rectTransform, "Lead", UIKit.Glow, Color.white.WithAlpha(0));
+                lead.rectTransform.Place(new Vector2(left ? 0 : 1, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(40, 56));
+                s.MeterLead[k] = lead;
                 var segEdge = UIKit.Img(back.rectTransform, "Edge", UIKit.ParaOutline, Color.white.WithAlpha(0.5f));
                 segEdge.rectTransform.Stretch(-2);
                 s.Meter[k] = fill;
@@ -253,12 +279,16 @@ namespace MuscleBattle
             // combo counter (concept image 2: "14 HIT COMBO!")
             var comboAnchor = new Vector2(left ? 0 : 1, 0.62f);
             s.ComboRoot = UIKit.Node("Combo", _root).Place(comboAnchor, new Vector2(left ? 0 : 1, 0.5f), new Vector2(40 * dir, 0), new Vector2(520, 200));
+            s.ComboGlow = UIKit.Img(s.ComboRoot, "Glow", UIKit.Glow, Palette.MuscleHot.WithAlpha(0.35f));
+            s.ComboGlow.rectTransform.Place(new Vector2(left ? 0 : 1, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(110 * dir, 20), new Vector2(360, 260));
             s.ComboNumber = UIKit.Label(s.ComboRoot, "", 130, Palette.HpYellow, left ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight, true, true, true);
             s.ComboNumber.rectTransform.Place(new Vector2(left ? 0 : 1, 0.5f), new Vector2(left ? 0 : 1, 0.5f), new Vector2(0, 20), new Vector2(220, 150));
             s.ComboText = UIKit.Label(s.ComboRoot, "HIT COMBO!", 46, Color.white, left ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight, true, true, true);
             s.ComboText.rectTransform.Place(new Vector2(left ? 0 : 1, 0.5f), new Vector2(left ? 0 : 1, 0.5f), new Vector2(190 * dir, 14), new Vector2(330, 60));
             s.ComboDamage = UIKit.Label(s.ComboRoot, "", 32, Palette.MuscleHot, left ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight);
             s.ComboDamage.rectTransform.Place(new Vector2(left ? 0 : 1, 0.5f), new Vector2(left ? 0 : 1, 0.5f), new Vector2(20 * dir, -66), new Vector2(480, 44));
+            s.ComboRank = UIKit.Label(s.ComboRoot, "", 54, Palette.Gold, left ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight, true, true, true);
+            s.ComboRank.rectTransform.Place(new Vector2(left ? 0 : 1, 0.5f), new Vector2(left ? 0 : 1, 0.5f), new Vector2(200 * dir, 72), new Vector2(330, 64));
             s.ComboRoot.gameObject.SetActive(false);
 
             s.CalloutRoot = UIKit.Node("Callouts", _root).Place(new Vector2(left ? 0 : 1, 0.45f), new Vector2(left ? 0 : 1, 0.5f), new Vector2(50 * dir, 0), new Vector2(600, 60));
@@ -302,8 +332,25 @@ namespace MuscleBattle
                 var s = _sides[i];
                 var f = _combat.Fighters[i];
                 float hp = f.HpRatio;
-                if (hp < s.LastHp - 0.0001f) s.TrailDelay = 0.55f;
+                if (hp < s.LastHp - 0.0001f)
+                {
+                    float lost = s.LastHp - hp;
+                    s.TrailDelay = 0.55f;
+                    s.PortraitHit = 1f;
+                    if (lost > 0.04f) { s.HpFlashA = 0.9f; s.BarShake = Mathf.Min(1f, lost * 8f); } // heavy hit: bar flash + shake
+                    else s.HpFlashA = Mathf.Max(s.HpFlashA, 0.35f);
+                }
                 s.LastHp = hp;
+                s.HpFlashA = Mathf.MoveTowards(s.HpFlashA, 0, dt * 4f);
+                s.HpFlash.fillAmount = s.Trail; // flash the chunk that was just lost + remaining bar
+                s.HpFlash.SetAlpha(s.HpFlashA);
+                s.BarShake = Mathf.MoveTowards(s.BarShake, 0, dt * 3f);
+                float sh = s.BarShake * 10f;
+                s.HpBar.anchoredPosition = s.HpBarPos + new Vector2(Random.Range(-sh, sh), Random.Range(-sh, sh) * 0.5f);
+                s.PortraitHit = Mathf.MoveTowards(s.PortraitHit, 0, dt * 3.5f);
+                float ph = s.PortraitHit * 8f;
+                s.PortraitRoot.anchoredPosition = s.PortraitPos + new Vector2(Random.Range(-ph, ph), Random.Range(-ph, ph));
+                s.PortraitTint.SetAlpha(s.PortraitHit * 0.45f);
                 s.HpFill.fillAmount = hp;
                 if (s.TrailDelay > 0) s.TrailDelay -= dt;
                 else s.Trail = Mathf.MoveTowards(s.Trail, hp, dt * 0.6f);
@@ -312,17 +359,34 @@ namespace MuscleBattle
                 var hpColor = hp > 0.5f ? Color.Lerp(Palette.HpOrange, Palette.HpYellow, (hp - 0.5f) * 2f) : Color.Lerp(Palette.HpDamage, Palette.HpOrange, hp * 2f);
                 if (f.Adrenaline) hpColor = Color.Lerp(hpColor, Color.white, 0.25f + 0.25f * Mathf.Sin(Time.unscaledTime * 12f));
                 s.HpFill.color = hpColor;
+                // low HP: subtle red pulse on the bar edge
+                float lowPulse = hp < 0.25f && hp > 0 ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f) : 0f;
+                s.HpEdge.color = Color.Lerp(Color.Lerp(Palette.PlayerColor(i), Color.white, 0.3f), Palette.HpDamage, lowPulse);
                 s.HpPercent.text = Mathf.CeilToInt(hp * 100f) + "%";
 
+                // animated meter fill with a bright leading edge
+                s.MeterShown = Mathf.MoveTowards(s.MeterShown, f.Meter, dt * Mathf.Max(60f, Mathf.Abs(f.Meter - s.MeterShown) * 4f));
+                int lv = Mathf.FloorToInt(f.Meter / 100f);
+                if (lv > s.LastLevel) { s.LevelPunch = 1f; if (lv >= 3) s.MaxPulse = 1f; }
+                s.LastLevel = lv;
+                s.LevelPunch = Mathf.MoveTowards(s.LevelPunch, 0, dt * 3f);
+                bool max = lv >= 3;
+                float maxBeat = max ? 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 7f) : 0f;
+                s.MeterRoot.localScale = Vector3.one * (1f + s.LevelPunch * 0.12f + maxBeat * 0.03f);
                 for (int k = 0; k < 3; k++)
                 {
-                    float seg = Mathf.Clamp01((f.Meter - k * 100f) / 100f);
+                    float seg = Mathf.Clamp01((s.MeterShown - k * 100f) / 100f);
                     s.Meter[k].fillAmount = seg;
-                    float glow = seg >= 1f ? 0.45f + 0.25f * Mathf.Sin(Time.unscaledTime * 5f + k) : 0f;
+                    float glow = seg >= 1f ? (max ? 0.55f + 0.4f * maxBeat : 0.3f + 0.15f * Mathf.Sin(Time.unscaledTime * 4f + k)) : 0f;
                     s.MeterGlow[k].SetAlpha(glow);
+                    bool filling = seg > 0.01f && seg < 0.999f;
+                    var leadRt = s.MeterLead[k].rectTransform;
+                    float w = ((RectTransform)leadRt.parent).rect.width;
+                    leadRt.anchoredPosition = new Vector2((i == 0 ? 1 : -1) * w * seg, 0);
+                    s.MeterLead[k].SetAlpha(filling ? 0.6f + 0.3f * Mathf.Sin(Time.unscaledTime * 12f) : 0f);
+                    s.Meter[k].color = Color.Lerp(i == 0 ? Palette.Nerve : Palette.MuscleHot, Color.white, max ? maxBeat * 0.35f : 0f);
                     s.Pips[k].color = k < f.RoundWins ? Palette.Gold : new Color(0.1f, 0.05f, 0.15f, 0.9f);
                 }
-                int lv = Mathf.FloorToInt(f.Meter / 100f);
                 s.MeterLabel.text = lv >= 3 ? "Lv.3 MAX" : "Lv." + lv;
                 if (s.MeterDenied > 0)
                 {
@@ -334,7 +398,11 @@ namespace MuscleBattle
                 if (s.ComboRoot.gameObject.activeSelf)
                 {
                     s.ComboPunch = Mathf.MoveTowards(s.ComboPunch, 0, dt * 4f);
-                    s.ComboNumber.rectTransform.localScale = Vector3.one * (1f + s.ComboPunch * 0.35f);
+                    int hits = _combat.ComboHits(i);
+                    float grow = 1f + Mathf.Min(hits, 20) * 0.025f; // bigger as the combo grows
+                    s.ComboNumber.rectTransform.localScale = Vector3.one * grow * (1f + s.ComboPunch * 0.35f);
+                    s.ComboRank.rectTransform.localScale = Vector3.one * (1f + s.ComboPunch * 0.2f);
+                    s.ComboGlow.SetAlpha((0.2f + Mathf.Min(hits, 12) * 0.03f) * (0.8f + 0.2f * Mathf.Sin(Time.unscaledTime * 10f)));
                     if (s.ComboTimer > 0)
                     {
                         s.ComboTimer -= dt;
@@ -385,6 +453,15 @@ namespace MuscleBattle
             s.ComboDamage.text = "총 데미지  " + Mathf.RoundToInt(damage);
             s.ComboPunch = 1f;
             s.ComboTimer = 0;
+            // tiers: 2-4 yellow, 5-9 orange, 10+ red-gold, with GOOD / GREAT / AMAZING
+            var c = hits >= 10 ? Color.Lerp(Palette.HpDamage, Palette.Gold, 0.5f + 0.5f * Mathf.Sin(hits)) : hits >= 5 ? Palette.MuscleHot : Palette.HpYellow;
+            s.ComboNumber.color = c;
+            s.ComboGlow.color = c.WithAlpha(s.ComboGlow.color.a);
+            int rank = hits >= 10 ? 3 : hits >= 6 ? 2 : hits >= 3 ? 1 : 0;
+            s.ComboRank.text = rank switch { 3 => "AMAZING!!", 2 => "GREAT!", 1 => "GOOD", _ => "" };
+            s.ComboRank.color = rank == 3 ? Palette.Gold : rank == 2 ? Palette.MuscleHot : Palette.Nerve;
+            if (rank > s.LastRank && rank > 0) AudioManager.Instance?.PlaySfx("ui_correct", 0.35f + rank * 0.1f, 0.9f + rank * 0.1f);
+            s.LastRank = rank;
             if (hits == 5) Commentary(CommentaryCombo(side, hits));
             if (hits == 8) Commentary($"{Name(side)}! {hits}히트 콤보! 근육 연쇄가 멈추지 않습니다!");
         }
@@ -392,6 +469,7 @@ namespace MuscleBattle
         public void ComboEnded(int side)
         {
             var s = _sides[side];
+            s.LastRank = 0;
             if (s.ComboRoot.gameObject.activeSelf && s.ComboTimer <= 0) s.ComboTimer = 1.1f;
         }
 

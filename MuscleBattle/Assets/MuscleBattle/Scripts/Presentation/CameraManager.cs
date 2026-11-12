@@ -45,6 +45,7 @@ namespace MuscleBattle
             Cam.backgroundColor = new Color(0.04f, 0.03f, 0.1f);
             Cam.allowHDR = false;   // built-in RP: LDR keeps WebGL fast
             Cam.allowMSAA = true;
+            Cam.cullingMask = ~(1 << PortraitStudio.Layer); // portrait studio renders on its own layer
         }
 
         public void SetFighters(FighterController a, FighterController b)
