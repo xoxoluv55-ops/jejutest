@@ -54,8 +54,8 @@ Shader "MuscleBattle/Floor"
                 col += ShadeSH9(float4(0,1,0,1)) * 0.15;
                 // polished floor: planar reflection of the fighters, slightly rippled by the hex pattern
                 float2 suv = i.screen.xy / max(i.screen.w, 1e-4) + (t.a - 0.5) * 0.004;
-                fixed3 refl = tex2D(_ReflectionTex, suv).rgb;
-                col += refl * _Reflect;
+                fixed3 reflCol = tex2D(_ReflectionTex, suv).rgb;
+                col += reflCol * _Reflect;
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return fixed4(col, 1);
             }
