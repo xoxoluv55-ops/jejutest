@@ -46,7 +46,7 @@ namespace MuscleBattle
             return rt;
         }
 
-        static Color Background(FighterDefinition def) => Color.Lerp(def.Energy, new Color(0.03f, 0.01f, 0.08f), 0.72f);
+        static Color Background(FighterDefinition def) => Color.Lerp(def.Energy, new Color(0.05f, 0.02f, 0.12f), 0.5f);
 
         static IEnumerator Render(FighterDefinition def, bool closeUp, RenderTexture rt, int slot)
         {
@@ -54,7 +54,14 @@ namespace MuscleBattle
             studio.transform.position = new Vector3(slot * 12f, -200, 0);
             var holder = new GameObject("Fighter").transform;
             holder.SetParent(studio.transform, false);
-            holder.rotation = Quaternion.Euler(0, 180, 0); // face the camera (-Z)
+            // face the stage key light: the character shader is lit by the main directional light only,
+            // so a fighter turned away from it renders as a dark silhouette
+            var key = StageManager.Instance != null ? StageManager.Instance.KeyLight : null;
+            var toLight = key != null ? -key.transform.forward : Vector3.back;
+            toLight.y = 0;
+            if (toLight.sqrMagnitude < 0.01f) toLight = Vector3.back;
+            toLight.Normalize();
+            holder.rotation = Quaternion.LookRotation(toLight, Vector3.up);
             var rig = FighterRig.Build(holder, def, null);
             rig.PoseForPortrait(closeUp);
 
@@ -73,7 +80,8 @@ namespace MuscleBattle
 
             var head = rig.HeadBone != null ? rig.HeadBone.position + Vector3.up * 0.06f * def.Height : studio.transform.position + Vector3.up * 1.62f * def.Height;
             var target = closeUp ? head : studio.transform.position + new Vector3(0, 1.05f * def.Height, 0);
-            camGo.transform.position = target + new Vector3(closeUp ? -0.32f : -0.6f, closeUp ? 0.02f : 0.1f, closeUp ? -1.3f : -4.4f);
+            var side = Vector3.Cross(Vector3.up, toLight);
+            camGo.transform.position = target + toLight * (closeUp ? 1.3f : 4.4f) + side * (closeUp ? 0.32f : 0.6f) + Vector3.up * (closeUp ? 0.02f : 0.1f);
             camGo.transform.LookAt(target);
 
             var keyLight = new GameObject("Key").AddComponent<Light>();

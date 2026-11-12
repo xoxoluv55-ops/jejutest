@@ -22,6 +22,8 @@ namespace MuscleBattle
         float _holoGlitch;
         Light _key;
 
+        public Light KeyLight => _key;
+
         void Awake() { Instance = this; }
 
         public void Build()
