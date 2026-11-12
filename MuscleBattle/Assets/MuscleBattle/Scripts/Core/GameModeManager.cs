@@ -61,6 +61,7 @@ namespace MuscleBattle
             camGo.AddComponent<Camera>();
             camGo.AddComponent<AudioListener>();
             camGo.AddComponent<CameraManager>();
+            camGo.AddComponent<BloomEffect>(); // active on PC High only
             foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None))
                 if (l.type == LightType.Directional && l.transform.parent == null) l.gameObject.SetActive(false);
 
@@ -147,6 +148,7 @@ namespace MuscleBattle
             go.AddComponent<CharacterIdentity>().Set(def, side);
             var rig = FighterRig.Build(go.transform, def, f);
             f.Init(def, side, _combat, rig);
+            foreach (var t in go.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = PlanarReflection.FighterLayer; // reflected by the floor
             _fighters[side] = f;
             if (_fighters[1 - side] != null)
             {

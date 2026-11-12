@@ -32,6 +32,9 @@ Shader "MuscleBattle/Toon"
             sampler2D _MainTex; float4 _MainTex_ST;
             fixed4 _Color, _ShadeColor, _RimColor, _Emission, _FlashColor;
             half _RimPower, _Gloss, _Flash;
+            // stage lighting rig (set globally by StageManager): cool fill light + coloured back rim
+            float4 _MB_FillDir; fixed4 _MB_FillColor;
+            float4 _MB_RimDir; fixed4 _MB_RimLight;
 
             struct v2f
             {
@@ -69,6 +72,8 @@ Shader "MuscleBattle/Toon"
                 fixed3 shade = albedo.rgb * _ShadeColor.rgb * 0.75;
                 fixed3 col = lerp(shade, lit, ramp);
                 col += albedo.rgb * ShadeSH9(float4(n, 1)) * 0.45;
+                // fill light (no shadows) lifts the dark side so faces/bodies stay readable
+                col += albedo.rgb * _MB_FillColor.rgb * saturate(dot(n, normalize(_MB_FillDir.xyz + 1e-4)));
 
                 float3 h = normalize(l + v);
                 half spec = pow(saturate(dot(n, h)), 48) * _Gloss * ramp;
@@ -76,6 +81,9 @@ Shader "MuscleBattle/Toon"
 
                 half rim = pow(1.0 - saturate(dot(n, v)), _RimPower);
                 col += _RimColor.rgb * rim * _RimColor.a;
+                // back rim light: bright edge on the side facing the stage back light (separates fighters from the background)
+                half back = saturate(dot(n, normalize(_MB_RimDir.xyz + 1e-4)));
+                col += _MB_RimLight.rgb * pow(1.0 - saturate(dot(n, v)), 2.0) * back * 1.4;
                 col += _Emission.rgb;
                 col = lerp(col, _FlashColor.rgb, _Flash);
                 UNITY_APPLY_FOG(i.fogCoord, col);

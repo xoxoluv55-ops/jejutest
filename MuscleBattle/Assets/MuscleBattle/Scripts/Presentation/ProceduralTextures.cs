@@ -328,6 +328,47 @@ namespace MuscleBattle
             return Mathf.Clamp01(1f - k);
         }
 
+        /// <summary>Backlit crowd: silhouettes (heads + shoulders) against a purple glow, phone-light sparkles.</summary>
+        public static Texture2D Crowd(int size) => Make("crowd" + size, size, size / 4, (u, v) =>
+        {
+            var glow = Color.Lerp(new Color(0.35f, 0.18f, 0.6f), new Color(0.06f, 0.04f, 0.14f), v);
+            float x = u * 18f;
+            float cell = Mathf.Floor(x);
+            float fx = x - cell - 0.5f;
+            float jitter = Hash(cell, 1.7f);
+            float headY = 0.55f + jitter * 0.18f;
+            float head = new Vector2(fx * 1.2f, (v - headY) * 2.2f).magnitude < 0.28f ? 1 : 0;
+            float shoulders = (v < headY - 0.08f && Mathf.Abs(fx) < 0.48f - (headY - 0.08f - v) * -0.2f) ? 1 : 0;
+            // second, farther row (smaller, offset)
+            float x2 = u * 26f + 0.5f;
+            float c2 = Mathf.Floor(x2);
+            float f2 = x2 - c2 - 0.5f;
+            float h2 = 0.78f + Hash(c2, 3.1f) * 0.12f;
+            float back = (new Vector2(f2 * 1.2f, (v - h2) * 2.6f).magnitude < 0.25f || (v < h2 - 0.06f && Mathf.Abs(f2) < 0.42f)) ? 1 : 0;
+            float sil = Mathf.Max(head, shoulders);
+            var c = glow;
+            if (back > 0) c = Color.Lerp(c, new Color(0.08f, 0.05f, 0.16f), 0.75f);
+            if (sil > 0) c = new Color(0.03f, 0.02f, 0.06f);
+            float phone = Hash(Mathf.Floor(u * 90f), Mathf.Floor(v * 12f));
+            if (phone > 0.985f && v > 0.3f) c += new Color(0.9f, 0.9f, 1f) * 0.8f;
+            c.a = 1;
+            return c;
+        }, true, TextureWrapMode.Repeat);
+
+        /// <summary>LED ticker: segmented light blocks in the stage colours.</summary>
+        public static Texture2D LedBand => Make("ledband", 256, 16, (u, v) =>
+        {
+            float seg = Mathf.Floor(u * 64f);
+            float inSeg = Mathf.Repeat(u * 64f, 1f);
+            float dot = (inSeg > 0.15f && inSeg < 0.85f && v > 0.2f && v < 0.8f) ? 1f : 0.08f;
+            float block = Mathf.Floor(seg / 8f);
+            var col = (block % 3) switch { 0 => Palette.StageNeonA, 1 => Palette.StageNeonB, _ => Palette.StageNeonC };
+            float on = Hash(seg, 5f) > 0.25f ? 1f : 0.2f;
+            var c = col * dot * on;
+            c.a = dot * on;
+            return c;
+        }, false, TextureWrapMode.Repeat);
+
         static float Hash(float x, float y)
         {
             float h = Mathf.Sin(x * 127.1f + y * 311.7f) * 43758.5453f;

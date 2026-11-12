@@ -31,8 +31,8 @@ namespace MuscleBattle
 
             // ---- lighting ----
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = new Color(0.55f, 0.5f, 0.85f);
-            RenderSettings.ambientEquatorColor = new Color(0.35f, 0.3f, 0.6f);
+            RenderSettings.ambientSkyColor = new Color(0.46f, 0.43f, 0.72f);
+            RenderSettings.ambientEquatorColor = new Color(0.3f, 0.27f, 0.52f);
             RenderSettings.ambientGroundColor = new Color(0.12f, 0.1f, 0.22f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Exponential;
@@ -45,7 +45,13 @@ namespace MuscleBattle
             _key = keyGo.AddComponent<Light>();
             _key.type = LightType.Directional;
             _key.color = new Color(1f, 0.96f, 0.92f);
-            _key.intensity = 1.15f;
+            _key.intensity = 1.25f;
+
+            // fill + back rim light, evaluated in the character shader (no extra pixel-light passes on iPad)
+            Shader.SetGlobalVector("_MB_FillDir", new Vector4(-0.55f, 0.35f, -0.75f, 0));
+            Shader.SetGlobalColor("_MB_FillColor", new Color(0.22f, 0.27f, 0.42f));
+            Shader.SetGlobalVector("_MB_RimDir", new Vector4(0.15f, 0.45f, 1f, 0));
+            Shader.SetGlobalColor("_MB_RimLight", new Color(0.62f, 0.45f, 1f));
             _key.shadows = q.SoftShadows ? LightShadows.Soft : LightShadows.Hard;
             _key.shadowStrength = 0.7f;
 
@@ -56,12 +62,14 @@ namespace MuscleBattle
             floor.transform.SetParent(transform, false);
             floor.transform.localScale = new Vector3(2.8f, 1, 2.8f); // 28m
             _floorMat = new Material(MBAssets.Floor) { mainTexture = ProceduralTextures.Floor(tex) };
-            _floorMat.SetColor("_BaseColor", new Color(0.13f, 0.12f, 0.27f));
+            _floorMat.SetColor("_BaseColor", new Color(0.24f, 0.22f, 0.42f)); // brighter polished floor
             _floorMat.SetColor("_GlowColor", Palette.StageNeonA);
             _floorMat.SetColor("_GlowColor2", Palette.StageNeonB);
             _floorMat.SetFloat("_GlowBoost", 1.4f);
+            _floorMat.SetFloat("_Sheen", 1.1f);
             floor.GetComponent<Renderer>().sharedMaterial = _floorMat;
             floor.GetComponent<Renderer>().receiveShadows = true;
+            floor.AddComponent<PlanarReflection>().Strength = q.Tier == QualityTier.PcHigh ? 0.4f : 0.3f;
 
             // outer floor (darker) so the arena edge does not end abruptly
             var outer = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -82,7 +90,7 @@ namespace MuscleBattle
             var wallMat = MBAssets.ToonMaterial(Color.white, new Color(0, 0, 0, 0), 4, 0f, new Color(0.15f, 0.12f, 0.28f));
             wallMat.mainTexture = ProceduralTextures.Wall(tex);
             wallMat.mainTextureScale = new Vector2(3, 1);
-            wallMat.SetColor("_Color", new Color(1.4f, 1.4f, 1.6f));
+            wallMat.SetColor("_Color", new Color(1.05f, 1.05f, 1.2f)); // background never brighter than the fighters
             wall.GetComponent<Renderer>().sharedMaterial = wallMat;
             wall.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
@@ -160,6 +168,11 @@ namespace MuscleBattle
                 }
             }
 
+            // ---- depth layers: rehab equipment silhouettes, backlit crowd, LED ticker ----
+            BuildEquipment();
+            BuildCrowd(tex);
+            BuildTicker();
+
             // ---- ambient motes ----
             Motes(q.AmbientMotes);
         }
@@ -178,6 +191,151 @@ namespace MuscleBattle
             _holoGlitch = Mathf.Max(0, _holoGlitch - dt);
             foreach (var m in _holoMats) m.SetFloat("_Flicker", _holoGlitch > 0 ? 0.9f : 0.1f);
             foreach (var s in _spinners) s.Rotate(0, 20f * dt, 0, Space.World);
+            if (_tickerMat != null) _tickerMat.mainTextureOffset = new Vector2(Time.unscaledTime * 0.03f, 0);
+        }
+
+        // ------------------------------------------------------------------
+        // Background set dressing (dark silhouettes with neon rim so they read as depth, not clutter)
+        // ------------------------------------------------------------------
+        Material _tickerMat;
+
+        void BuildEquipment()
+        {
+            var body = MBAssets.ToonMaterial(new Color(0.1f, 0.09f, 0.18f), Palette.StageNeonB.WithAlpha(0.55f), 2.5f, 0.6f);
+            var accent = MBAssets.ToonMaterial(new Color(0.16f, 0.14f, 0.3f), Palette.StageNeonA.WithAlpha(0.7f), 2f, 0.7f, Palette.StageNeonA * 0.12f);
+            var ball = MBAssets.ToonMaterial(new Color(0.18f, 0.3f, 0.6f), Palette.StageNeonB.WithAlpha(0.6f), 2f, 0.8f);
+
+            // place sets around the back and sides of the ring (radius 11-13), facing the centre
+            Place(Treadmill(body, accent), 12.5f, 60f);
+            Place(Treadmill(body, accent), 12.5f, 78f);
+            Place(CableMachine(body, accent), 13f, 100f);
+            Place(TreatmentTable(body, accent), 12f, 120f);
+            Place(DumbbellRack(body, accent), 12.5f, 38f);
+            Place(Bench(body, accent), 11.5f, 140f);
+            Place(Ball(ball), 11.2f, 132f);
+            Place(Ball(ball), 11.4f, 48f);
+            Place(CableMachine(body, accent), 13f, 260f); // front side, mostly behind the camera
+        }
+
+        void Place(Transform t, float radius, float angleDeg)
+        {
+            float a = angleDeg * Mathf.Deg2Rad;
+            t.SetParent(transform, false);
+            t.position = new Vector3(Mathf.Cos(a) * radius, 0, Mathf.Sin(a) * radius);
+            t.rotation = Quaternion.LookRotation(-new Vector3(t.position.x, 0, t.position.z).normalized);
+        }
+
+        Transform Group(string n) => new GameObject(n).transform;
+
+        Transform Box(Transform parent, Vector3 pos, Vector3 size, Material m, PrimitiveType type = PrimitiveType.Cube)
+        {
+            var go = GameObject.CreatePrimitive(type);
+            Destroy(go.GetComponent<Collider>());
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = pos;
+            go.transform.localScale = size;
+            var r = go.GetComponent<Renderer>();
+            r.sharedMaterial = m;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            return go.transform;
+        }
+
+        Transform Treadmill(Material b, Material a)
+        {
+            var g = Group("Treadmill");
+            Box(g, new Vector3(0, 0.15f, 0), new Vector3(0.9f, 0.3f, 2f), b);
+            Box(g, new Vector3(0, 0.31f, -0.05f), new Vector3(0.7f, 0.03f, 1.7f), a);
+            Box(g, new Vector3(-0.4f, 0.75f, 0.85f), new Vector3(0.06f, 1.2f, 0.06f), b);
+            Box(g, new Vector3(0.4f, 0.75f, 0.85f), new Vector3(0.06f, 1.2f, 0.06f), b);
+            Box(g, new Vector3(0, 1.38f, 0.9f), new Vector3(0.9f, 0.3f, 0.12f), a).localRotation = Quaternion.Euler(-25, 0, 0);
+            return g;
+        }
+
+        Transform CableMachine(Material b, Material a)
+        {
+            var g = Group("CableMachine");
+            Box(g, new Vector3(-0.8f, 1.2f, 0), new Vector3(0.12f, 2.4f, 0.12f), b);
+            Box(g, new Vector3(0.8f, 1.2f, 0), new Vector3(0.12f, 2.4f, 0.12f), b);
+            Box(g, new Vector3(0, 2.4f, 0), new Vector3(1.75f, 0.12f, 0.2f), b);
+            Box(g, new Vector3(0, 0.6f, -0.1f), new Vector3(0.45f, 1.1f, 0.25f), a);
+            Box(g, new Vector3(-0.8f, 0.05f, 0), new Vector3(0.5f, 0.1f, 0.6f), b);
+            Box(g, new Vector3(0.8f, 0.05f, 0), new Vector3(0.5f, 0.1f, 0.6f), b);
+            return g;
+        }
+
+        Transform TreatmentTable(Material b, Material a)
+        {
+            var g = Group("TreatmentTable");
+            Box(g, new Vector3(0, 0.72f, 0), new Vector3(0.75f, 0.12f, 2f), a);
+            Box(g, new Vector3(0, 0.82f, -0.85f), new Vector3(0.6f, 0.08f, 0.3f), b);
+            foreach (var x in new[] { -0.3f, 0.3f })
+                foreach (var z in new[] { -0.85f, 0.85f })
+                    Box(g, new Vector3(x, 0.35f, z), new Vector3(0.06f, 0.7f, 0.06f), b);
+            return g;
+        }
+
+        Transform DumbbellRack(Material b, Material a)
+        {
+            var g = Group("DumbbellRack");
+            Box(g, new Vector3(0, 0.45f, 0), new Vector3(2.2f, 0.08f, 0.5f), b);
+            Box(g, new Vector3(0, 0.85f, -0.1f), new Vector3(2.2f, 0.08f, 0.4f), b);
+            Box(g, new Vector3(-1.05f, 0.45f, 0), new Vector3(0.08f, 0.9f, 0.5f), b);
+            Box(g, new Vector3(1.05f, 0.45f, 0), new Vector3(0.08f, 0.9f, 0.5f), b);
+            for (int i = 0; i < 6; i++)
+            {
+                float x = -0.85f + i * 0.34f;
+                for (int row = 0; row < 2; row++)
+                {
+                    float y = row == 0 ? 0.56f : 0.96f;
+                    Box(g, new Vector3(x, y, row == 0 ? 0 : -0.1f), new Vector3(0.05f, 0.12f, 0.05f), b, PrimitiveType.Cylinder).localRotation = Quaternion.Euler(90, 0, 0);
+                    Box(g, new Vector3(x, y, (row == 0 ? 0 : -0.1f) - 0.13f), Vector3.one * 0.13f, a, PrimitiveType.Sphere);
+                    Box(g, new Vector3(x, y, (row == 0 ? 0 : -0.1f) + 0.13f), Vector3.one * 0.13f, a, PrimitiveType.Sphere);
+                }
+            }
+            return g;
+        }
+
+        Transform Bench(Material b, Material a)
+        {
+            var g = Group("Bench");
+            Box(g, new Vector3(0, 0.45f, 0), new Vector3(0.35f, 0.1f, 1.3f), a);
+            Box(g, new Vector3(0, 0.22f, -0.5f), new Vector3(0.08f, 0.45f, 0.08f), b);
+            Box(g, new Vector3(0, 0.22f, 0.5f), new Vector3(0.08f, 0.45f, 0.08f), b);
+            return g;
+        }
+
+        Transform Ball(Material m)
+        {
+            var g = Group("ExerciseBall");
+            Box(g, new Vector3(0, 0.34f, 0), Vector3.one * 0.68f, m, PrimitiveType.Sphere);
+            return g;
+        }
+
+        void BuildCrowd(int tex)
+        {
+            // backlit crowd silhouettes between the equipment and the LED wall
+            var wall = BuildCylinderWall(19.5f, 3.2f, 64);
+            wall.name = "Crowd";
+            wall.transform.SetParent(transform, false);
+            wall.transform.position = new Vector3(0, 0.2f, 0);
+            var mat = MBAssets.ToonMaterial(Color.white, new Color(0, 0, 0, 0), 4, 0f, new Color(0.05f, 0.03f, 0.1f));
+            mat.mainTexture = ProceduralTextures.Crowd(tex);
+            mat.mainTextureScale = new Vector2(10, 1);
+            wall.GetComponent<Renderer>().sharedMaterial = mat;
+            wall.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
+        void BuildTicker()
+        {
+            var band = BuildCylinderWall(19.4f, 0.45f, 64);
+            band.name = "LedTicker";
+            band.transform.SetParent(transform, false);
+            band.transform.position = new Vector3(0, 3.55f, 0);
+            _tickerMat = MBAssets.AdditiveMaterial(ProceduralTextures.LedBand, Color.white, 1.2f);
+            _tickerMat.mainTextureScale = new Vector2(12, 1);
+            var r = band.GetComponent<Renderer>();
+            r.sharedMaterial = _tickerMat;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         // ------------------------------------------------------------------
