@@ -47,6 +47,13 @@ namespace MuscleBattle
         float _animTime;
         MoveData _move;
 
+        // character select animation (§4, §19, §20)
+        enum SelAction { None, ShoulderRoll, NeckStretch, Stretch, GloveAdjust, HandCrack, Guard, FistPound, Hop }
+        bool _selectMode, _selectLocked;
+        float _selLockPose;                 // > 0 while the lock-in pose is held
+        SelAction _selAction, _selLast;
+        float _selT, _selDur, _selNext;
+
         // ------------------------------------------------------------------
         // Build
         // ------------------------------------------------------------------
@@ -409,6 +416,267 @@ namespace MuscleBattle
             foreach (var m in _muscleMats) m.SetColor("_Color", color);
         }
 
+        // ------------------------------------------------------------------
+        // Character select (§4 hover / lock-in, §19 idle variations, §20 personality)
+        // ------------------------------------------------------------------
+        /// <summary>While true and the fighter is in the Intro state, the rig plays the character select idle set.</summary>
+        public bool SelectMode
+        {
+            get => _selectMode;
+            set
+            {
+                _selectMode = value;
+                _selectLocked = false;
+                _selLockPose = 0;
+                _selAction = SelAction.None;
+                _selNext = Random.Range(1.5f, 3f);
+            }
+        }
+
+        /// <summary>Cursor landed on this fighter: short signature move (Jin: bouncy guard, Ray: fist pound).</summary>
+        public void SelectHover()
+        {
+            StartSelAction(Def.Personality switch
+            {
+                SelectPersonality.Power => SelAction.FistPound,
+                SelectPersonality.Flexible => SelAction.Stretch,
+                SelectPersonality.Calm => SelAction.NeckStretch,
+                _ => SelAction.Hop,
+            });
+        }
+
+        /// <summary>Strong lock-in pose for <paramref name="seconds"/>, then a ready-to-fight guard idle.</summary>
+        public void SelectLockIn(float seconds)
+        {
+            _selectLocked = true;
+            _selLockPose = seconds;
+            _selAction = SelAction.None;
+            _selNext = seconds + Random.Range(1.5f, 3f);
+        }
+
+        public void SelectUnlock()
+        {
+            _selectLocked = false;
+            _selLockPose = 0;
+            _selAction = SelAction.None;
+            _selNext = Random.Range(1f, 2f);
+        }
+
+        void StartSelAction(SelAction a)
+        {
+            _selAction = a;
+            _selLast = a;
+            _selT = 0;
+            _selDur = a switch
+            {
+                SelAction.Hop => 0.9f,
+                SelAction.ShoulderRoll => 1.5f,
+                SelAction.NeckStretch => 1.9f,
+                SelAction.Stretch => 2.1f,
+                SelAction.GloveAdjust => 1.7f,
+                SelAction.HandCrack => 1.5f,
+                SelAction.FistPound => 1.5f,
+                SelAction.Guard => 1.8f,
+                _ => 1f,
+            };
+        }
+
+        void UpdateSelectTimers(float dt)
+        {
+            if (_selLockPose > 0) _selLockPose -= dt;
+            if (_selAction != SelAction.None)
+            {
+                _selT += dt;
+                if (_selT >= _selDur)
+                {
+                    _selAction = SelAction.None;
+                    _selNext = Random.Range(2.6f, 5.2f); // not too often (§19)
+                }
+                return;
+            }
+            if (_selLockPose > 0) return;
+            _selNext -= dt;
+            if (_selNext > 0) return;
+            // random variation, never the same one twice in a row
+            var set = _selectLocked
+                ? new[] { SelAction.Guard, SelAction.ShoulderRoll, SelAction.HandCrack }
+                : Def.Personality switch
+                {
+                    SelectPersonality.Power => new[] { SelAction.FistPound, SelAction.NeckStretch, SelAction.HandCrack, SelAction.ShoulderRoll },
+                    SelectPersonality.Calm => new[] { SelAction.NeckStretch, SelAction.ShoulderRoll },
+                    SelectPersonality.Flexible => new[] { SelAction.Stretch, SelAction.NeckStretch, SelAction.ShoulderRoll },
+                    _ => new[] { SelAction.ShoulderRoll, SelAction.NeckStretch, SelAction.GloveAdjust, SelAction.HandCrack, SelAction.Guard, SelAction.Stretch },
+                };
+            var pick = set[Random.Range(0, set.Length)];
+            if (pick == _selLast && set.Length > 1) pick = set[(System.Array.IndexOf(set, pick) + 1) % set.Length];
+            StartSelAction(pick);
+        }
+
+        /// <summary>Base personality idle, then the current variation blended on top.</summary>
+        void SelectPose(Quaternion[] p, out float hipY, out float sharpness)
+        {
+            float t = _animTime;
+            float breathe = Mathf.Sin(t * 2.4f);
+            sharpness = 9f;
+
+            if (_selLockPose > 0)
+            {
+                VictoryPose(p, breathe);
+                hipY = 0f;
+                sharpness = 11f;
+                return;
+            }
+
+            // ---- base idle ----
+            if (_selectLocked)
+            {
+                // locked in: tight guard, light bounce - ready to fight
+                GuardBase(p, breathe);
+                hipY = -0.11f + Mathf.Abs(Mathf.Sin(t * 4.2f)) * 0.025f;
+            }
+            else switch (Def.Personality)
+            {
+                case SelectPersonality.Power:
+                    ArmsCrossed(p, breathe);
+                    hipY = -0.01f + breathe * 0.006f;
+                    break;
+                case SelectPersonality.Calm:
+                    Stance(p, breathe * 0.5f, false);
+                    Set(p, J.ShoulderL, -32, 12, -8);
+                    Set(p, J.ElbowL, -82, 0, 0);
+                    Set(p, J.ShoulderR, -26, -12, 8);
+                    Set(p, J.ElbowR, -78, 0, 0);
+                    Set(p, J.Head, -2, -4, 0);
+                    hipY = -0.04f + breathe * 0.004f;
+                    break;
+                case SelectPersonality.Flexible:
+                    Stance(p, breathe, false);
+                    p[(int)J.Spine] = p[(int)J.Spine] * Quaternion.Euler(0, 0, Mathf.Sin(t * 1.3f) * 4f);
+                    hipY = -0.06f + breathe * 0.008f;
+                    break;
+                default:
+                    // confident: on the balls of the feet, light bounce + shoulder sway
+                    Stance(p, breathe, Def.Bulk > 1.2f);
+                    p[(int)J.Chest] = p[(int)J.Chest] * Quaternion.Euler(0, Mathf.Sin(t * 2.3f) * 5f, Mathf.Sin(t * 4.6f) * 2f);
+                    p[(int)J.Head] = p[(int)J.Head] * Quaternion.Euler(Mathf.Sin(t * 4.6f) * 2f, 0, 0);
+                    hipY = -0.08f + Mathf.Abs(Mathf.Sin(t * 4.6f)) * 0.03f;
+                    break;
+            }
+
+            if (_selAction == SelAction.None) return;
+
+            // ---- variation, blended in/out ----
+            float k = Mathf.Clamp01(_selT / _selDur);
+            float w = Mathf.SmoothStep(0, 1, Mathf.Clamp01(_selT / 0.22f)) * Mathf.SmoothStep(0, 1, Mathf.Clamp01((_selDur - _selT) / 0.3f));
+            var a = PoseB;
+            for (int i = 0; i < JointCount; i++) a[i] = p[i];
+            float actHip = hipY;
+            switch (_selAction)
+            {
+                case SelAction.Hop:
+                    GuardBase(a, breathe);
+                    actHip = -0.1f + Mathf.Abs(Mathf.Sin(_selT * 10f)) * 0.07f;
+                    break;
+                case SelAction.Guard:
+                    GuardBase(a, breathe);
+                    a[(int)J.Chest] = a[(int)J.Chest] * Quaternion.Euler(0, Mathf.Sin(_selT * 6f) * 8f, 0);
+                    actHip = -0.12f + Mathf.Abs(Mathf.Sin(_selT * 6f)) * 0.03f;
+                    break;
+                case SelAction.ShoulderRoll:
+                {
+                    float ph = _selT * Mathf.PI * 2f * 1.3f;
+                    a[(int)J.ShoulderL] = a[(int)J.ShoulderL] * Quaternion.Euler(Mathf.Sin(ph) * 22f, 0, Mathf.Cos(ph) * 10f);
+                    a[(int)J.ShoulderR] = a[(int)J.ShoulderR] * Quaternion.Euler(Mathf.Sin(ph + Mathf.PI) * 22f, 0, -Mathf.Cos(ph + Mathf.PI) * 10f);
+                    a[(int)J.Chest] = a[(int)J.Chest] * Quaternion.Euler(Mathf.Sin(ph * 2f) * 3f, 0, 0);
+                    break;
+                }
+                case SelAction.NeckStretch:
+                {
+                    float tilt = Mathf.Sin(k * Mathf.PI * 2f) * 28f;
+                    a[(int)J.Neck] = a[(int)J.Neck] * Quaternion.Euler(0, 0, tilt * 0.5f);
+                    a[(int)J.Head] = a[(int)J.Head] * Quaternion.Euler(4, 0, tilt);
+                    break;
+                }
+                case SelAction.Stretch:
+                {
+                    float lean = Mathf.Sin(k * Mathf.PI * 2f) * 12f;
+                    Set(a, J.ShoulderL, -172, 0, -10);
+                    Set(a, J.ElbowL, -28, 0, 0);
+                    Set(a, J.ShoulderR, -172, 0, 10);
+                    Set(a, J.ElbowR, -28, 0, 0);
+                    Set(a, J.Spine, -4, 0, lean);
+                    Set(a, J.Chest, -8, 0, lean * 0.5f);
+                    Set(a, J.Head, -10, 0, 0);
+                    Set(a, J.ThighL, 0, 0, -8);
+                    Set(a, J.ThighR, 0, 0, 8);
+                    Set(a, J.KneeL, 0, 0, 0);
+                    Set(a, J.KneeR, 0, 0, 0);
+                    Set(a, J.Hips, 0, 0, 0);
+                    actHip = 0.01f;
+                    break;
+                }
+                case SelAction.GloveAdjust:
+                    Set(a, J.ShoulderL, -62, 32, -4);
+                    Set(a, J.ElbowL, -118, 0, 0);
+                    Set(a, J.ShoulderR, -52, -40, 6);
+                    Set(a, J.ElbowR, -100 + Mathf.Sin(_selT * 18f) * 9f, 0, 0);
+                    Set(a, J.Head, 18, 4, 0);
+                    a[(int)J.Chest] = a[(int)J.Chest] * Quaternion.Euler(6, 0, 0);
+                    break;
+                case SelAction.HandCrack:
+                {
+                    float pulse = Mathf.Max(0, Mathf.Sin(_selT * 12f)) * 4f;
+                    Set(a, J.ShoulderL, -72, 40, 0);
+                    Set(a, J.ElbowL, -92, 0, 0);
+                    Set(a, J.ShoulderR, -72, -40, 0);
+                    Set(a, J.ElbowR, -92, 0, 0);
+                    Set(a, J.Head, 12, 0, 0);
+                    a[(int)J.Chest] = a[(int)J.Chest] * Quaternion.Euler(pulse, 0, 0);
+                    break;
+                }
+                case SelAction.FistPound:
+                {
+                    float hit = Mathf.Abs(Mathf.Sin(_selT * 7f));
+                    Set(a, J.ShoulderL, -60, 38, 0);
+                    Set(a, J.ElbowL, -92, 0, 0);
+                    Set(a, J.ShoulderR, -48 - 18 * hit, -32, 5);
+                    Set(a, J.ElbowR, -112 + 26 * hit, 0, 0);
+                    Set(a, J.Chest, 4 + hit * 3f, 0, 0);
+                    Set(a, J.Head, 6, 0, 0);
+                    actHip = -0.04f;
+                    break;
+                }
+            }
+            Lerp(p, a, w, p);
+            hipY = Mathf.Lerp(hipY, actHip, w);
+            sharpness = Mathf.Max(sharpness, _selAction == SelAction.Hop || _selAction == SelAction.FistPound ? 16f : 10f);
+        }
+
+        void GuardBase(Quaternion[] p, float breathe)
+        {
+            Stance(p, breathe, Def.Bulk > 1.2f);
+            Set(p, J.Chest, 14 + breathe, -8, 0);
+            Set(p, J.Head, 6, -4, 0);
+            Set(p, J.ShoulderL, -75, 18, -4);
+            Set(p, J.ElbowL, -136, 0, 0);
+            Set(p, J.ShoulderR, -70, -18, 6);
+            Set(p, J.ElbowR, -136, 0, 0);
+        }
+
+        static void ArmsCrossed(Quaternion[] p, float breathe)
+        {
+            Clear(p);
+            Set(p, J.Chest, -5 + breathe, 0, 0);
+            Set(p, J.Head, -5, -6, 0);
+            // forearms cross in front of the chest (checked with an FK preview for Bulk 1.35, no chest clipping)
+            Set(p, J.ShoulderL, -32, 74, -24);
+            Set(p, J.ElbowL, -74, 0, 0);
+            Set(p, J.ShoulderR, -26, -72, 24);
+            Set(p, J.ElbowR, -70, 0, 0);
+            Set(p, J.ThighL, 0, 0, -9);
+            Set(p, J.ThighR, 0, 0, 9);
+        }
+
         /// <summary>Snap to a pose immediately (no LateUpdate needed) for portrait rendering.</summary>
         public void PoseForPortrait(bool closeUp)
         {
@@ -461,6 +729,7 @@ namespace MuscleBattle
             if (Fighter == null) return;
             float dt = Time.deltaTime;
             _animTime += dt;
+            if (_selectMode && Fighter.State == FighterState.Intro) UpdateSelectTimers(dt);
 
             var pose = TargetPose(out float hipY, out float sharp);
             float k = 1f - Mathf.Exp(-sharp * dt);
@@ -601,6 +870,9 @@ namespace MuscleBattle
 
             switch (f.State)
             {
+                case FighterState.Intro when _selectMode:
+                    SelectPose(Pose, out hipY, out sharpness);
+                    break;
                 case FighterState.Intro:
                     IntroPose(Pose);
                     hipY = 0;

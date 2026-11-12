@@ -15,6 +15,7 @@ Everything is original and generated from code - no third party music/SFX.
 Requirements: python3 + numpy, espeak-ng, sox, oggenc (vorbis-tools).
 
     python3 tools/generate_audio.py
+    python3 tools/generate_audio.py --select-ui   # character select assets only
 """
 import os
 import subprocess
@@ -594,6 +595,69 @@ def bgm_select():
     return master(tr.buf, 1.3)
 
 
+def bgm_select_lock_layer():
+    # CHARACTER SELECT: added when one fighter is locked in (same tempo/length as the select loop)
+    bpm, bars = 132, 16
+    tr = Track(bpm, bars)
+    clap = cached(("clap",), lambda: drum_snare(int(SR * 0.22)) * 0.8)
+    for bar in range(bars):
+        root, chord = PROG[bar % 4]
+        for q in range(4):
+            tr.add(bar * 4 + q + 0.5, synth_bass(root, 0.4, tr.spb, 1400, 2.4), 0.35)  # offbeat octave pulse
+        tr.add(bar * 4 + 1, clap, 0.55)
+        tr.add(bar * 4 + 3, clap, 0.55)
+        for i, nt in enumerate([chord[2] + 12, chord[1] + 12, chord[0] + 12, chord[1] + 12]):
+            tr.add(bar * 4 + i + 0.75, synth_lead(nt, 0.2, tr.spb, 5200), 0.12)
+    return master(tr.buf, 1.2)
+
+
+def bgm_select_tension_layer():
+    # CHARACTER SELECT: both fighters locked - snare build + riser every 4 bars, driving 16th hats
+    bpm, bars = 132, 16
+    tr = Track(bpm, bars)
+    ns = cached(("s",), lambda: drum_snare(int(SR * 0.3)))
+    nh = cached(("h",), lambda: drum_hat(int(SR * 0.08)))
+    seg = int(SR * tr.spb * 16)
+    t = np.arange(seg) / SR
+    f = 110 * 2 ** (t / t[-1] * 1.5)
+    riser = np.sin(2 * np.pi * np.cumsum(f) / SR) * (t / t[-1]) ** 2 * 0.35
+    riser += highpass(noise(seg), 3500) * (t / t[-1]) ** 3 * 0.25
+    for block in range(bars // 4):
+        b0 = block * 16
+        for i in range(16):
+            tr.add(b0 + 8 + i * 0.5, ns, 0.25 + i / 40)
+        tr.add(b0, riser, 1.0)
+        for s16 in range(64):
+            tr.add(b0 + s16 * 0.25, nh, 0.3 if s16 % 2 else 0.18)
+    return master(tr.buf, 1.3)
+
+
+def theme_sting(fighter):
+    # short per-character "theme" played when the cursor lands on a fighter
+    spb = 60.0 / 132
+    if fighter == "jin":
+        # bright, quick, rising (nerve / cyan energy)
+        tr = Track(132, 1)
+        for i, nt in enumerate([69, 73, 76, 81, 85]):
+            tr.add(i * 0.25, synth_lead(nt, 0.35, spb, 6000), 0.35)
+        tr.add(1.0, synth_pad([69, 76, 81], 2.2, spb), 0.25)
+        x = tr.buf
+        x = np.concatenate([x, np.zeros(int(SR * 0.6))])
+        x[: len(x)] += np.pad(ui_tone([1760, 2637], 0.5, 6, 0.15), (0, max(0, len(x) - int(SR * 0.5))))[: len(x)]
+    else:
+        # heavy, low power chord + sub boom (strength)
+        n = int(SR * 1.3)
+        x = np.zeros(n)
+        chord = guitar_chug(40, 2.2, spb)[:n]
+        x[: len(chord)] += chord * 1.4
+        boom = sine_sweep(1.0, 90, 38, 10) * env_exp(1.0, 4)
+        x[: len(boom)] += boom * 0.9
+        x[: int(SR * 0.35)] += drum_kick(int(SR * 0.35)) * 0.8
+    fade = int(SR * 0.25)
+    x[-fade:] *= np.linspace(1, 0, fade)
+    return normalize(simple_reverb(x, 0.25), 0.8)
+
+
 def bgm_vs():
     # 4 bar rising tension, plays once (~7s)
     bpm, bars = 140, 4
@@ -695,7 +759,42 @@ def build_announcer():
             print("   Announcer/" + key + ".ogg")
 
 
+# --------------------------------------------------------------------------
+# Character select assets (theme stings, BGM layers, short fighter voice lines)
+# --------------------------------------------------------------------------
+VOICES = {
+    # key: (text, espeak voice, speed, pitch, sox pitch cents)
+    "jin_lock": ("Ready. Let's move!", "en-us+m1", "150", "52", "-120"),
+    "ray_lock": ("Time to lift.", "en-us+m7", "118", "18", "-330"),
+}
+
+
+def build_select_ui():
+    print("Character select")
+    write_ogg("select_lock_layer", stereo(bgm_select_lock_layer(), 0.8), "BGM", 4)
+    write_ogg("select_tension_layer", stereo(bgm_select_tension_layer(), 0.5), "BGM", 4)
+    write_ogg("theme_jin", stereo(theme_sting("jin"), 0.7), "SFX", 4)
+    write_ogg("theme_ray", stereo(theme_sting("ray"), 0.5), "SFX", 4)
+    out_dir = os.path.join(ROOT, "Voice")
+    os.makedirs(out_dir, exist_ok=True)
+    with tempfile.TemporaryDirectory() as td:
+        for key, (text, voice, speed, pitch, cents) in VOICES.items():
+            raw = os.path.join(td, key + ".wav")
+            proc = os.path.join(td, key + "_p.wav")
+            subprocess.run(["espeak-ng", "-v", voice, "-s", speed, "-p", pitch, "-a", "170", "-w", raw, text], check=True)
+            subprocess.run(["sox", "-q", raw, "-r", str(SR), "-c", "2", proc, "gain", "-8", "pitch", cents,
+                            "bass", "+4", "treble", "+2",
+                            "compand", "0.01,0.15", "-60,-60,-30,-12,-10,-4,0,-1", "-6",
+                            "reverb", "18", "40", "40", "gain", "-n", "-1"], check=True)
+            subprocess.run(["oggenc", "-Q", "-q", "5", "-o", os.path.join(out_dir, key + ".ogg"), proc], check=True)
+            print("   Voice/" + key + ".ogg")
+
+
 if __name__ == "__main__":
+    import sys
+    if "--select-ui" in sys.argv:  # only the character select additions (keeps every other asset untouched)
+        build_select_ui()
+        raise SystemExit(0)
     build_announcer()
     build_sfx()
     build_bgm()

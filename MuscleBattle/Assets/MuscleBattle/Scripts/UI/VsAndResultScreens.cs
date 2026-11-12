@@ -12,6 +12,8 @@ namespace MuscleBattle
         RectTransform _left, _right, _vs;
         RawImage _leftPortrait, _rightPortrait;
         Text _leftName, _rightName, _leftQuote, _rightQuote, _stage;
+        Text _leftSkill, _rightSkill;
+        Image _flash;
         float _t;
         bool _done;
         System.Action _onDone;
@@ -41,8 +43,28 @@ namespace MuscleBattle
             vs.rectTransform.Stretch();
 
             _stage = UIKit.Label(Root, "", 34, Palette.Bone);
-            _stage.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 60), new Vector2(1200, 50));
+            _stage.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 40), new Vector2(1200, 50));
+            _leftSkill = SkillLine(_left, true);
+            _rightSkill = SkillLine(_right, false);
+            var skip = UIKit.Label(Root, "TAP / ENTER  ·  SKIP", 20, Palette.TextDim, TextAnchor.UpperRight, false);
+            skip.rectTransform.Place(new Vector2(1, 1), new Vector2(1, 1), new Vector2(-40, -110), new Vector2(400, 28));
+
+            // energy transition in from character select: white-hot flash that fades as the halves slam in
+            _flash = UIKit.Img(Root, "Flash", UIKit.White, new Color(1, 1, 1, 0));
+            _flash.rectTransform.Stretch();
         }
+
+        Text SkillLine(RectTransform half, bool left)
+        {
+            var t = UIKit.Label(half, "", 30, Palette.Gold, left ? TextAnchor.MiddleLeft : TextAnchor.MiddleRight, true);
+            t.rectTransform.Place(new Vector2(left ? 0 : 1, 0), new Vector2(left ? 0 : 1, 0), new Vector2(left ? 64 : -64, 104), new Vector2(900, 44));
+            return t;
+        }
+
+        static string Signature(FighterDefinition d) =>
+            d.SignatureSkills != null && d.SignatureSkills.Length > 0
+                ? "SIGNATURE  ·  " + d.SignatureSkills[0].Label + (string.IsNullOrEmpty(d.SignatureSkills[0].Sub) ? "" : "  (" + d.SignatureSkills[0].Sub + ")")
+                : "SIGNATURE  ·  " + d.SpecialNameEn;
 
         RectTransform Half(bool left, out RawImage portrait, out Text name, out Text quote)
         {
@@ -79,13 +101,19 @@ namespace MuscleBattle
             _onDone = onDone;
             _done = false;
             _t = 0;
-            _leftPortrait.texture = PortraitStudio.Get(a);
-            _rightPortrait.texture = PortraitStudio.Get(b);
+            _leftPortrait.texture = PortraitStudio.Get(a, true, 512);   // face close-ups at full-screen size
+            _rightPortrait.texture = PortraitStudio.Get(b, true, 512);
+            _leftSkill.text = Signature(a);
+            _rightSkill.text = Signature(b);
+            _leftSkill.color = Color.Lerp(a.Energy, Color.white, 0.25f);
+            _rightSkill.color = Color.Lerp(b.Energy, Color.white, 0.25f);
+            _flash.color = new Color(1, 1, 1, 0.9f);
             _leftName.text = a.NameKo + "  <size=40>" + a.NameEn + "</size>";
             _rightName.text = "<size=40>" + b.NameEn + "</size>  " + b.NameKo;
             _leftQuote.text = a.IntroLine;
             _rightQuote.text = b.IntroLine;
             _right.Find("Tag").GetComponentInChildren<Text>().text = p2IsCpu ? "CPU" : "2P";
+            _right.Find("Tag").GetComponent<Image>().color = p2IsCpu ? new Color(0.55f, 0.57f, 0.66f) : Palette.P2;
             _stage.text = "STAGE  ·  " + StageManager.StageNameKo + "  ·  " + StageManager.StageNameEn;
             AudioManager.Instance?.PlayBgm("vs", false, 0.2f);
             AudioManager.Instance?.PlaySfx("ui_lock");
@@ -107,7 +135,10 @@ namespace MuscleBattle
                 AudioManager.Instance?.PlaySfx("heavy", 1f);
                 CameraManager.Instance?.Shake(0.4f);
             }
-            if (_t > 3.6f || (_t > 1f && (MenuInput.Confirm(-1) || Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began)))
+            _flash.SetAlpha(Mathf.Clamp01(0.9f - _t * 3f));
+            // 1-2 s, then the battle loads; skippable almost immediately (§23)
+            bool skip = MenuInput.Confirm(-1) || Input.GetMouseButtonDown(0) || (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began);
+            if (_t > 2.1f || (_t > 0.35f && skip))
             {
                 _done = true;
                 _onDone?.Invoke();

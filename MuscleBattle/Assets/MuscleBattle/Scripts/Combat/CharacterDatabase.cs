@@ -26,6 +26,60 @@ namespace MuscleBattle
             ("애슬레틱 트레이너", "Athletic Trainer", FightStyle.Balance),
         };
 
+        /// <summary>Unlock condition shown under each locked silhouette (same order as LockedRoster).</summary>
+        static readonly string[] UnlockConditions =
+        {
+            "Arcade Stage 3 Clear",
+            "Muscle Mastery Lv.5",
+            "Perfect Counter ×30",
+            "Muscle Link ×50",
+            "Arcade All Clear",
+            "VS 대전 10승",
+        };
+
+        static List<FighterDefinition> _locked;
+
+        /// <summary>
+        /// Locked roster as all-black silhouette fighters (same procedural rig, near-black materials, grey rim),
+        /// so the select screen can show a mysterious 3D silhouette + portrait instead of a "?" card (§10).
+        /// Never playable: <see cref="FighterDefinition.Locked"/> is true and they have no moves.
+        /// </summary>
+        public static IReadOnlyList<FighterDefinition> Locked => _locked ??= BuildLocked();
+
+        static List<FighterDefinition> BuildLocked()
+        {
+            var list = new List<FighterDefinition>();
+            // silhouette body types: (female, hair, height, bulk)
+            var looks = new (bool female, HairStyle hair, float height, float bulk)[]
+            {
+                (true, HairStyle.Ponytail, 0.96f, 0.9f),
+                (false, HairStyle.Buzz, 1.02f, 0.95f),
+                (false, HairStyle.SlickBack, 1.0f, 1.15f),
+                (true, HairStyle.Braids, 0.97f, 0.85f),
+                (false, HairStyle.ShortSpiky, 1.03f, 0.9f),
+                (false, HairStyle.Buzz, 1.05f, 1.25f),
+            };
+            var black = new Color(0.035f, 0.035f, 0.05f);
+            var rim = new Color(0.42f, 0.42f, 0.5f);
+            for (int i = 0; i < LockedRoster.Length; i++)
+            {
+                var l = looks[i % looks.Length];
+                list.Add(new FighterDefinition
+                {
+                    Id = "locked_" + i, NameEn = "???", NameKo = "???", Locked = true,
+                    RoleKo = LockedRoster[i].ko, RoleEn = LockedRoster[i].en, ShortRole = "LOCKED",
+                    Style = LockedRoster[i].style, Personality = SelectPersonality.Calm,
+                    UnlockCondition = UnlockConditions[i % UnlockConditions.Length],
+                    Female = l.female, HairStyle = l.hair, Height = l.height, Bulk = l.bulk,
+                    Skin = black, Hair = black, Top = black, TopAccent = black, Pants = black, PantsAccent = black,
+                    Shoes = black, Gloves = black, Energy = rim, EnergyAlt = rim, ChestMark = "",
+                    ModelResourcePath = "Characters/__locked_silhouette__", // never resolves to a model
+                    Power = 0, Speed = 0, Technique = 0, Defense = 0, Knowledge = 0,
+                });
+            }
+            return list;
+        }
+
         public static FighterDefinition Get(string id)
         {
             foreach (var f in All) if (f.Id == id) return f;
@@ -46,7 +100,23 @@ namespace MuscleBattle
                 WinLine = "\"또 한 번 이겼다! 다음엔 더 강한 상대를!\"",
                 Style = FightStyle.Rehab,
                 Power = 8, Speed = 7, Technique = 8, Reach = 7, Durability = 9,
+                Defense = 7, Knowledge = 9,
                 Specialties = new[] { "근골격 재활", "기능 회복", "운동처방" },
+                ShortRole = "SPORTS PT",
+                Traits = new[]
+                {
+                    new IconLabel("Mobility", "arc"),
+                    new IconLabel("Counter", "shield"),
+                    new IconLabel("Muscle Link", "link"),
+                },
+                SignatureSkills = new[]
+                {
+                    new IconLabel("Shoulder Abduction", "arc", "삼각근 · 극상근"),
+                    new IconLabel("Serratus Punch", "burst", "전거근"),
+                    new IconLabel("Quadriceps Drive", "chevron", "대퇴사두근"),
+                },
+                Personality = SelectPersonality.Confident,
+                ThemeSfx = "theme_jin", LockVoice = "jin_lock",
                 MaxHp = 1000, WalkSpeed = 2.8f, BackSpeed = 2.2f, SidestepSpeed = 2.7f, DodgeDistance = 1.8f,
                 Height = 1.0f, Bulk = 1.0f,
                 Skin = new Color(0.96f, 0.80f, 0.68f), Hair = new Color(0.08f, 0.07f, 0.09f),
@@ -118,7 +188,23 @@ namespace MuscleBattle
                 WinLine = "\"근력은 정직하다. 다음 세트!\"",
                 Style = FightStyle.Power,
                 Power = 10, Speed = 5, Technique = 6, Reach = 8, Durability = 9,
+                Defense = 9, Knowledge = 7,
                 Specialties = new[] { "근력 강화", "파워 리프팅", "후방 사슬" },
+                ShortRole = "STRENGTH COACH",
+                Traits = new[]
+                {
+                    new IconLabel("Power", "bolt"),
+                    new IconLabel("Super Armor", "shield"),
+                    new IconLabel("Grab", "pull"),
+                },
+                SignatureSkills = new[]
+                {
+                    new IconLabel("Glute Max Smash", "burst", "대둔근"),
+                    new IconLabel("Latissimus Pull", "pull", "광배근"),
+                    new IconLabel("Hamstring Counter", "shield", "햄스트링"),
+                },
+                Personality = SelectPersonality.Power,
+                ThemeSfx = "theme_ray", LockVoice = "ray_lock",
                 MaxHp = 1100, WalkSpeed = 2.2f, BackSpeed = 1.8f, SidestepSpeed = 2.1f, DodgeDistance = 1.4f, BodyRadius = 0.5f,
                 Height = 1.06f, Bulk = 1.35f,
                 Skin = new Color(0.80f, 0.58f, 0.42f), Hair = new Color(0.95f, 0.82f, 0.45f),

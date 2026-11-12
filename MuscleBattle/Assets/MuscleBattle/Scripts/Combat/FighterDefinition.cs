@@ -6,6 +6,18 @@ namespace MuscleBattle
     public enum HairStyle { ShortSpiky, SlickBack, Ponytail, Braids, Buzz }
     public enum FightStyle { Rehab, Performance, Mobility, Balance, Power, Neuro }
 
+    /// <summary>How a fighter idles on the character select screen (§20): personality readable at a glance.</summary>
+    public enum SelectPersonality { Confident, Power, Calm, Flexible }
+
+    /// <summary>Short label + icon (character select chips / skill rows). Icon keys: see ProceduralTextures.Icon.</summary>
+    public struct IconLabel
+    {
+        public string Label;
+        public string Sub;
+        public string Icon;
+        public IconLabel(string label, string icon, string sub = null) { Label = label; Icon = icon; Sub = sub; }
+    }
+
     /// <summary>
     /// Everything that defines a fighter: identity, look, stats and move list.
     /// A future high quality Humanoid model plugs in via <see cref="ModelResourcePath"/>
@@ -27,7 +39,18 @@ namespace MuscleBattle
 
         // stats 1..10 (character select)
         public int Power, Speed, Technique, Reach, Durability;
+        public int Defense = 5, Knowledge = 5;  // character select stat bars: POWER / SPEED / TECHNIQUE / DEFENSE / KNOWLEDGE
         public string[] Specialties;
+
+        // character select presentation (§5-§8, §19-§21)
+        public string ShortRole;                 // "SPORTS PT"
+        public IconLabel[] Traits;               // 3 specialty icons
+        public IconLabel[] SignatureSkills;      // 3 representative skills
+        public SelectPersonality Personality;
+        public string ThemeSfx;                  // SFX played when the cursor lands on this fighter
+        public string LockVoice;                 // Voice/ line on lock-in
+        public string UnlockCondition;           // locked roster only
+        public bool Locked;                      // locked roster only (silhouette, cannot be picked)
 
         // gameplay
         public float MaxHp = 1000;

@@ -113,6 +113,23 @@ namespace MuscleBattle
             ScreenFlash(color, ultimate ? 0.45f : 0.25f);
         }
 
+        /// <summary>Character select: small energy puff when the cursor lands on a fighter (§4).</summary>
+        public void SelectHover(FighterController f, Color color)
+        {
+            Emit("fiber", f.ChestPosition, Vector3.up, color, Mathf.RoundToInt(10 * Q.ParticleScale) + 2, 0.75f);
+            Emit("flare", f.ChestPosition, Vector3.forward, Color.Lerp(color, Color.white, 0.4f).WithAlpha(0.6f), 0, 1.1f);
+        }
+
+        /// <summary>Character select LOCK IN: energy column in the fighter's colour, ring on the floor (§4).</summary>
+        public void SelectLock(FighterController f, Color color)
+        {
+            var chest = f.ChestPosition;
+            Emit("charge", chest, Vector3.up, color, Mathf.RoundToInt(45 * Q.ParticleScale) + 6, 1.15f);
+            Emit("fiber", chest, Vector3.up, color, Mathf.RoundToInt(24 * Q.ParticleScale) + 4, 1.3f);
+            Emit("ring", new Vector3(chest.x, 0.06f, chest.z), Vector3.up, color, 1, 1.5f);
+            Emit("flare", chest, Vector3.forward, Color.Lerp(color, Color.white, 0.5f), 0, 2.4f);
+        }
+
         public void CounterStance(FighterController f)
         {
             Emit("guard", f.ChestPosition + f.Facing * 0.4f, f.Facing, Palette.Gold, 1, 0.9f);

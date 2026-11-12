@@ -27,6 +27,7 @@ namespace MuscleBattle
         readonly Dictionary<string, int> _lastVariant = new Dictionary<string, int>();
         float _duck = 1f, _duckTarget = 1f, _duckTimer;
         bool _layerOn;
+        float _layerGain = 0.85f, _tensionGain = 0.9f;
         string _currentBgm;
 
         void Awake()
@@ -141,17 +142,24 @@ namespace MuscleBattle
             StopAllCoroutines();
             StartCoroutine(Crossfade(from, to, fade));
 
-            // final round layer is sample-locked to the battle loop
-            if (name == "battle")
+            // intensity layers are sample-locked to their base loop:
+            //   battle -> final round layer + low HP tension layer
+            //   select -> "one fighter locked" layer + "both locked" tension layer
+            string layerA = name == "battle" ? "battle_final_layer" : name == "select" ? "select_lock_layer" : null;
+            string layerB = name == "battle" ? "battle_tension_layer" : name == "select" ? "select_tension_layer" : null;
+            _layerGain = name == "select" ? 0.6f : 0.85f;
+            _tensionGain = name == "select" ? 0.55f : 0.9f;
+            if (name == "select") _layerOn = _tensionOn = false; // battle: CombatManager sets the final round flag BEFORE PlayBgm
+            if (layerA != null)
             {
-                _layer.clip = Load("BGM/battle_final_layer");
+                _layer.clip = Load("BGM/" + layerA);
                 _layer.volume = 0;
                 if (_layer.clip != null)
                 {
                     _layer.timeSamples = 0;
                     _layer.Play();
                 }
-                _tension.clip = Load("BGM/battle_tension_layer");
+                _tension.clip = Load("BGM/" + layerB);
                 _tension.volume = 0;
                 if (_tension.clip != null)
                 {
@@ -177,6 +185,26 @@ namespace MuscleBattle
         }
 
         public void SetFinalRoundLayer(bool on) => _layerOn = on;
+
+        /// <summary>Character select music: +layer when one fighter is locked, +tension when both are (§22).</summary>
+        public void SetSelectLayers(bool oneLocked, bool bothLocked)
+        {
+            _layerOn = oneLocked || bothLocked;
+            _tensionOn = bothLocked;
+        }
+
+        /// <summary>Short fighter voice line (Resources/Audio/Voice), ducks the music like the announcer.</summary>
+        public void PlayVoice(string key, float volume = 1f)
+        {
+            if (string.IsNullOrEmpty(key)) return;
+            var clip = Load("Voice/" + key);
+            if (clip == null) return;
+            _voice.Stop();
+            _voice.clip = clip;
+            _voice.volume = GameSettings.VoiceVolume * volume;
+            _voice.Play();
+            DuckMusic(0.6f, clip.length);
+        }
 
         /// <summary>Low-HP tension layer (heartbeat + drone), sample-locked to the battle loop (§21).</summary>
         public void SetTensionLayer(bool on) => _tensionOn = on;
@@ -230,13 +258,13 @@ namespace MuscleBattle
             {
                 if (a.isPlaying && a.clip != null && _layer.clip != null && Mathf.Abs(_layer.timeSamples - a.timeSamples) > 2048)
                     _layer.timeSamples = Mathf.Min(a.timeSamples, _layer.clip.samples - 1);
-                _layer.volume = Mathf.MoveTowards(_layer.volume, _layerOn ? MusicLevel * 0.85f : 0f, dt);
+                _layer.volume = Mathf.MoveTowards(_layer.volume, _layerOn ? MusicLevel * _layerGain : 0f, dt);
             }
             if (_tension.isPlaying)
             {
                 if (a.isPlaying && a.clip != null && _tension.clip != null && Mathf.Abs(_tension.timeSamples - a.timeSamples) > 2048)
                     _tension.timeSamples = Mathf.Min(a.timeSamples, _tension.clip.samples - 1);
-                _tension.volume = Mathf.MoveTowards(_tension.volume, _tensionOn ? MusicLevel * 0.9f : 0f, dt * 0.8f);
+                _tension.volume = Mathf.MoveTowards(_tension.volume, _tensionOn ? MusicLevel * _tensionGain : 0f, dt * 0.8f);
             }
             // slow motion also slows the music slightly - heavy, cinematic feel
             float pitch = Mathf.Lerp(0.85f, 1f, Mathf.InverseLerp(0.2f, 1f, Time.timeScale));

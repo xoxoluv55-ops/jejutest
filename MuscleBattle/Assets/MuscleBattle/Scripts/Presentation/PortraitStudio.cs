@@ -21,12 +21,14 @@ namespace MuscleBattle
 
         sealed class Runner : MonoBehaviour { }
 
-        public static Texture2D Get(FighterDefinition def, bool closeUp = true)
+        /// <param name="minSize">Optional minimum resolution (e.g. 512 for the full-screen VS close-ups).</param>
+        public static Texture2D Get(FighterDefinition def, bool closeUp = true, int minSize = 0)
         {
-            string key = def.Id + (closeUp ? "_face" : "_body");
+            int size = QualityProfile.Current != null && QualityProfile.Current.Tier == QualityTier.PcHigh ? 512 : 256;
+            size = Mathf.Max(size, minSize);
+            string key = def.Id + (closeUp ? "_face" : "_body") + "_" + size;
             if (Cache.TryGetValue(key, out var tex) && tex != null) return tex;
 
-            int size = QualityProfile.Current != null && QualityProfile.Current.Tier == QualityTier.PcHigh ? 512 : 256;
             int w = size, h = closeUp ? size : size * 2;
             tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { name = "Portrait_" + key, wrapMode = TextureWrapMode.Clamp };
             var fill = new Color32[w * h];

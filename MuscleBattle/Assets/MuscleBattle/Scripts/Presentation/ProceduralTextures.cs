@@ -369,6 +369,117 @@ namespace MuscleBattle
             return c;
         }, false, TextureWrapMode.Repeat);
 
+        // ---------------- UI icons (character select chips / skills / lock / settings) ----------------
+        /// <summary>
+        /// White anti-aliased vector-style icon (tint it with Image.color).
+        /// Keys: arc, shield, link, bolt, burst, chevron, pull, lock, gear, info.
+        /// </summary>
+        public static Texture2D Icon(string key) => Make("icon_" + key, 96, 96, (u, v) =>
+        {
+            float d = IconDist(key, new Vector2(u - 0.5f, v - 0.5f));
+            float a = 1f - Smooth(-0.011f, 0.011f, d);
+            return new Color(1, 1, 1, a);
+        });
+
+        static float IconDist(string key, Vector2 p)
+        {
+            float len = p.magnitude;
+            float ang = Mathf.Atan2(p.y, p.x) * Mathf.Rad2Deg;
+            switch (key)
+            {
+                case "arc":
+                {
+                    // circular arrow (mobility / range of motion)
+                    float ring = Mathf.Abs(len - 0.27f) - 0.05f;
+                    if (ang > 15f && ang < 80f) ring = Mathf.Max(ring, 0.06f);
+                    var head = TriDist(p, new Vector2(0.235f, 0.2f), new Vector2(0.375f, 0.1f), new Vector2(0.165f, 0.04f));
+                    return Mathf.Min(ring, head);
+                }
+                case "shield":
+                {
+                    float box = BoxDist(p - new Vector2(0, 0.15f), new Vector2(0.26f, 0.17f));
+                    float tri = TriDist(p, new Vector2(-0.26f, 0.0f), new Vector2(0.26f, 0.0f), new Vector2(0, -0.38f));
+                    float body = Mathf.Min(box, tri);
+                    // centre ridge cut so it reads as a shield, not a blob
+                    float ridge = SegDist(p, new Vector2(0, 0.26f), new Vector2(0, -0.24f)) - 0.025f;
+                    return Mathf.Max(body, -ridge);
+                }
+                case "link":
+                {
+                    float a = Mathf.Abs((p - new Vector2(-0.11f, -0.07f)).magnitude - 0.17f) - 0.048f;
+                    float b = Mathf.Abs((p - new Vector2(0.11f, 0.07f)).magnitude - 0.17f) - 0.048f;
+                    return Mathf.Min(a, b);
+                }
+                case "bolt":
+                {
+                    float t1 = TriDist(p, new Vector2(0.1f, 0.42f), new Vector2(-0.24f, -0.05f), new Vector2(0.05f, -0.05f));
+                    float t2 = TriDist(p, new Vector2(-0.05f, 0.05f), new Vector2(0.24f, 0.05f), new Vector2(-0.1f, -0.42f));
+                    return Mathf.Min(t1, t2);
+                }
+                case "burst":
+                {
+                    float c = Mathf.Cos(ang * Mathf.Deg2Rad * 4f);
+                    float r = 0.17f + 0.22f * Mathf.Pow(Mathf.Max(0, c), 3f);
+                    return (len - r) * 0.75f;
+                }
+                case "chevron":
+                {
+                    float a = Mathf.Min(SegDist(p, new Vector2(-0.3f, 0.26f), new Vector2(-0.06f, 0)), SegDist(p, new Vector2(-0.06f, 0), new Vector2(-0.3f, -0.26f)));
+                    float b = Mathf.Min(SegDist(p, new Vector2(-0.02f, 0.26f), new Vector2(0.22f, 0)), SegDist(p, new Vector2(0.22f, 0), new Vector2(-0.02f, -0.26f)));
+                    return Mathf.Min(a, b) - 0.06f;
+                }
+                case "pull":
+                {
+                    float shaft = SegDist(p, new Vector2(0.26f, 0), new Vector2(-0.12f, 0)) - 0.05f;
+                    float head = TriDist(p, new Vector2(-0.34f, 0), new Vector2(-0.08f, 0.2f), new Vector2(-0.08f, -0.2f));
+                    float bar = SegDist(p, new Vector2(0.33f, 0.26f), new Vector2(0.33f, -0.26f)) - 0.05f;
+                    return Mathf.Min(shaft, Mathf.Min(head, bar));
+                }
+                case "lock":
+                {
+                    float body = BoxDist(p - new Vector2(0, -0.12f), new Vector2(0.25f, 0.19f)) - 0.02f;
+                    float shackle = Mathf.Abs((p - new Vector2(0, 0.1f)).magnitude - 0.15f) - 0.05f;
+                    if (p.y < 0.1f) shackle = SegDist(new Vector2(Mathf.Abs(p.x), p.y), new Vector2(0.15f, 0.1f), new Vector2(0.15f, -0.02f)) - 0.05f;
+                    float d = Mathf.Min(body, shackle);
+                    float hole = Mathf.Min((p - new Vector2(0, -0.08f)).magnitude - 0.05f, SegDist(p, new Vector2(0, -0.08f), new Vector2(0, -0.2f)) - 0.025f);
+                    return Mathf.Max(d, -hole);
+                }
+                case "gear":
+                {
+                    float teeth = Mathf.Clamp(Mathf.Cos(ang * Mathf.Deg2Rad * 8f) * 3f, -1f, 1f);
+                    float d = len - (0.29f + 0.06f * teeth);
+                    return Mathf.Max(d, -(len - 0.11f));
+                }
+                case "info":
+                {
+                    float ring = Mathf.Abs(len - 0.36f) - 0.04f;
+                    float dot = (p - new Vector2(0, 0.17f)).magnitude - 0.055f;
+                    float stem = SegDist(p, new Vector2(0, 0.04f), new Vector2(0, -0.2f)) - 0.05f;
+                    return Mathf.Min(ring, Mathf.Min(dot, stem));
+                }
+                default:
+                    return len - 0.3f;
+            }
+        }
+
+        static float BoxDist(Vector2 p, Vector2 half)
+        {
+            var d = new Vector2(Mathf.Abs(p.x) - half.x, Mathf.Abs(p.y) - half.y);
+            var outside = new Vector2(Mathf.Max(d.x, 0), Mathf.Max(d.y, 0)).magnitude;
+            return outside + Mathf.Min(Mathf.Max(d.x, d.y), 0);
+        }
+
+        /// <summary>Signed distance to a triangle (negative inside).</summary>
+        static float TriDist(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
+        {
+            float d = Mathf.Min(SegDist(p, a, b), Mathf.Min(SegDist(p, b, c), SegDist(p, c, a)));
+            float s1 = Cross(b - a, p - a), s2 = Cross(c - b, p - b), s3 = Cross(a - c, p - c);
+            bool inside = (s1 >= 0 && s2 >= 0 && s3 >= 0) || (s1 <= 0 && s2 <= 0 && s3 <= 0);
+            return inside ? -d : d;
+        }
+
+        static float Cross(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
+
         static float Hash(float x, float y)
         {
             float h = Mathf.Sin(x * 127.1f + y * 311.7f) * 43758.5453f;
