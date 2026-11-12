@@ -25,6 +25,7 @@ namespace MuscleBattle
         Hamstrings = 1 << 10,
         Gastrocnemius = 1 << 11,
         SerratusAnterior = 1 << 12,
+        Infraspinatus = 1 << 13,   // + teres minor (posterior rotator cuff, external rotation)
     }
 
     /// <summary>Animation keys understood by FighterRig.</summary>
@@ -65,7 +66,7 @@ namespace MuscleBattle
         public int Hits = 1;               // multi-hit (specials)
         public int HitInterval = 4;
 
-        public float MeterOnHit = 8;
+        public float MeterOnHit = 11;   // tuned so the first Muscle Skill bar arrives within a normal round
         public float MeterOnBlock = 3;
         public float MeterCost;            // 100 = one bar
 

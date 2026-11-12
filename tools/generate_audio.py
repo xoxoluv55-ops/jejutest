@@ -16,6 +16,7 @@ Requirements: python3 + numpy, espeak-ng, sox, oggenc (vorbis-tools).
 
     python3 tools/generate_audio.py
     python3 tools/generate_audio.py --select-ui   # character select assets only
+    python3 tools/generate_audio.py --muscle-link # Muscle Link announcer lines only
 """
 import os
 import subprocess
@@ -738,15 +739,20 @@ ANNOUNCER = {
     "special": "Special!", "victory": "Victory!", "time_up": "Time!", "draw": "Draw game!",
     "adrenaline": "Adrenaline!", "anatomy_finish": "Anatomy finish!",
     "choose": "Choose your fighter!", "title": "Muscle Battle!",
+    # Muscle Link challenge results / prompt
+    "perfect_muscle_link": "Perfect muscle link!", "force_couple_combo": "Force couple combo!",
+    "neural_counter": "Neural counter!", "muscle_skill_ready": "Muscle skill ready!",
 }
 
 
-def build_announcer():
+def build_announcer(only=None):
     print("Announcer")
     out_dir = os.path.join(ROOT, "Announcer")
     os.makedirs(out_dir, exist_ok=True)
     with tempfile.TemporaryDirectory() as td:
         for key, text in ANNOUNCER.items():
+            if only and key not in only:
+                continue
             raw = os.path.join(td, key + ".wav")
             proc = os.path.join(td, key + "_p.wav")
             subprocess.run(["espeak-ng", "-v", "en-us+m3", "-s", "125", "-p", "28", "-a", "160",
@@ -792,6 +798,9 @@ def build_select_ui():
 
 if __name__ == "__main__":
     import sys
+    if "--muscle-link" in sys.argv:  # only the Muscle Link announcer lines
+        build_announcer({"perfect_muscle_link", "force_couple_combo", "neural_counter", "muscle_skill_ready"})
+        raise SystemExit(0)
     if "--select-ui" in sys.argv:  # only the character select additions (keeps every other asset untouched)
         build_select_ui()
         raise SystemExit(0)

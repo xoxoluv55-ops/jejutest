@@ -110,7 +110,7 @@ namespace MuscleBattle
         RawImage _stageFloor;
         Image _stageScan;
         RectTransform _settingsPanel, _detailsPanel;
-        MBButton _rounds, _time, _cpu, _closeSettings;
+        MBButton _rounds, _time, _cpu, _knowledge, _closeSettings;
         readonly MenuNavigator _settingsNav = new MenuNavigator();
         Text _detailsText, _detailsName;
         int _detailsSide = -1;
@@ -453,7 +453,7 @@ namespace MuscleBattle
             var dim = UIKit.Img(_settingsPanel, "Dim", UIKit.White, new Color(0.01f, 0.0f, 0.04f, 0.72f), true);
             dim.rectTransform.Stretch();
             var panel = UIKit.Panel(_settingsPanel, "Panel", Palette.Mastery, 0.95f);
-            panel.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760, 620));
+            panel.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(760, 710));
             var title = UIKit.Label(panel, "MATCH SETTINGS", 44, Color.white, TextAnchor.MiddleCenter, true, true, true);
             title.rectTransform.Place(new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -24), new Vector2(700, 56));
 
@@ -470,6 +470,8 @@ namespace MuscleBattle
             _time.OnClick = () => { GameSettings.RoundTime = GameSettings.RoundTime == 60 ? 99 : GameSettings.RoundTime == 99 ? 45 : 60; RefreshOptions(); };
             _cpu = MBButton.Create(panel, "", null, Palette.Mastery, new Vector2(0.5f, 1), new Vector2(0, -426), new Vector2(560, 72), 30);
             _cpu.OnClick = () => { GameSettings.Difficulty = (CpuDifficulty)(((int)GameSettings.Difficulty + 1) % 3); RefreshOptions(); };
+            _knowledge = MBButton.Create(panel, "", null, Palette.Gold, new Vector2(0.5f, 1), new Vector2(0, -514), new Vector2(560, 72), 30);
+            _knowledge.OnClick = () => { GameSettings.Knowledge = GameSettings.Knowledge == KnowledgeLevel.Rookie ? KnowledgeLevel.Normal : KnowledgeLevel.Rookie; RefreshOptions(); };
             _closeSettings = MBButton.Create(panel, "CLOSE", null, Palette.Muscle, new Vector2(0.5f, 0), new Vector2(0, 60), new Vector2(300, 76), 32);
             _closeSettings.OnClick = CloseSettings;
             _settingsPanel.gameObject.SetActive(false);
@@ -481,6 +483,7 @@ namespace MuscleBattle
             _time.Label.text = "TIME :  " + GameSettings.RoundTime + "s";
             _cpu.Label.text = "CPU :  " + GameSettings.Difficulty switch { CpuDifficulty.Easy => "EASY", CpuDifficulty.Normal => "NORMAL", _ => "HARD" };
             _cpu.gameObject.SetActive(!_twoPlayer);
+            _knowledge.Label.text = "KNOWLEDGE :  " + (GameSettings.Knowledge == KnowledgeLevel.Rookie ? "ROOKIE (그림+이름)" : "NORMAL (이름만)");
             GameSettings.Save();
         }
 
@@ -491,6 +494,7 @@ namespace MuscleBattle
             _settingsNav.Add(_rounds);
             _settingsNav.Add(_time);
             if (!_twoPlayer) _settingsNav.Add(_cpu);
+            _settingsNav.Add(_knowledge);
             _settingsNav.Add(_closeSettings);
             RefreshOptions();
             _settingsPanel.gameObject.SetActive(true);

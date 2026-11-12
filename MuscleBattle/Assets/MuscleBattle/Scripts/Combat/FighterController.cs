@@ -53,6 +53,7 @@ namespace MuscleBattle
         public bool MoveHeld { get; set; }            // frozen in start-up while choosing muscles / link visualisation
         public float LinkDamageMul { get; set; } = 1f;
         public int LinkExtraHits { get; set; }
+        public int RecoveryCut { get; set; }          // PERFECT MUSCLE LINK: recovery frames removed (faster follow-up)
         public LinkResult LastLink { get; set; }
         public int MuscleLinks { get; set; }
         public int PerfectLinks { get; set; }
@@ -321,6 +322,7 @@ namespace MuscleBattle
             MoveHeld = false;
             LinkDamageMul = 1f;
             LinkExtraHits = 0;
+            RecoveryCut = 0;
             LastLink = LinkResult.None;
             FaceOpponent(1f);
             _lockedFacing = true;
@@ -363,7 +365,7 @@ namespace MuscleBattle
 
             if (m.Kind == MoveKind.Counter && MoveFrame == m.Startup) Combat.OnCounterStance(this);
 
-            if (MoveFrame >= m.Total)
+            if (MoveFrame >= m.Total - Mathf.Clamp(RecoveryCut, 0, m.Recovery))
             {
                 SetState(input.IsHeld(Buttons.Guard) ? FighterState.Guard : FighterState.Idle);
             }

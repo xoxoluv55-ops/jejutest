@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace MuscleBattle
@@ -61,6 +62,7 @@ namespace MuscleBattle
         {
             RoundNumber = 0;
             foreach (var f in Fighters) f.ResetMatchStats();
+            MuscleSkillSystem.Instance?.ResetMatch();
             StopAllCoroutines();
             StartCoroutine(RoundIntroRoutine());
         }
@@ -264,6 +266,8 @@ namespace MuscleBattle
 
             float scale = combo.Hits <= 2 ? 1f : Mathf.Max(m.Kind == MoveKind.Ultimate ? 0.6f : 0.35f, 1f - 0.1f * (combo.Hits - 2));
             float damage = m.Damage * scale * d.Def.DamageTaken * (counterHit ? 1.25f : 1f) * a.LinkDamageMul;
+            // PERFECT MUSCLE LINK extension hits are a follow-up, not a second full special (40%)
+            if (a.LinkExtraHits > 0 && a.HitsDone > m.Hits) damage *= 0.4f;
             bool launch = m.Launch > 0 || (d.IsAirborne && d.JuggleCount < 99);
             int totalHits = m.Hits + a.LinkExtraHits;
             bool lastHitOfMulti = totalHits > 1 && a.HitsDone >= totalHits;
@@ -380,37 +384,51 @@ namespace MuscleBattle
 
         IEnumerator LinkSequence(FighterController f, MoveData m, MuscleQuestion q, LinkResult r)
         {
-            bool good = r == LinkResult.Perfect || r == LinkResult.Link;
-            if (good)
+            bool perfect = r == LinkResult.Perfect || r == LinkResult.Link;
+            var tagColor = perfect ? Palette.Gold : r == LinkResult.Partial ? Color.white : Palette.TextDim;
+
+            // anatomy overlay (§7): the CORRECT muscles light on the body with name tags - also after a miss, so the answer is learned
+            var groups = new List<(MuscleGroup g, string ko, string en)>();
+            foreach (var o in q.Options)
+            {
+                if (!o.Correct) continue;
+                var g = o.Group != MuscleGroup.None ? o.Group : q.ShowOnBody;
+                if (g == MuscleGroup.None) continue;
+                int idx = groups.FindIndex(x => x.g == g);
+                if (idx >= 0) groups[idx] = (g, groups[idx].ko + " · " + o.Ko, groups[idx].en + " · " + o.En);
+                else groups.Add((g, o.Ko, o.En));
+            }
+
+            if (perfect)
             {
                 f.MoveHeld = true;
-                TimeController.Instance?.SlowMotion(0.3f, 1.4f);
-                CameraManager.Instance?.Focus(f, 1.1f, 0.5f);
+                TimeController.Instance?.SlowMotion(0.3f, 1.6f);
+                CameraManager.Instance?.Focus(f, 1.3f, 0.5f);
                 var limb = f.Rig != null ? f.Rig.LimbTransform(m.Limb) : null;
-                // light the correct muscles one after another, then pull their energy into the striking arm
+                // light the correct muscles one after another, then pull their energy into the striking limb
                 var lit = MuscleGroup.None;
-                foreach (var o in q.Options)
+                for (int i = 0; i < groups.Count; i++)
                 {
-                    if (!o.Correct) continue;
-                    lit |= o.Group;
-                    f.Rig?.GlowMuscles(lit, 1.6f, r == LinkResult.Perfect ? Palette.MuscleHot : Palette.Muscle);
-                    AudioManager.Instance?.PlaySfx("ui_skill", 0.8f, 1.1f);
+                    lit |= groups[i].g;
+                    f.Rig?.GlowMuscles(lit, 2.2f, Palette.MuscleHot);
+                    Hud.Instance?.ShowAnatomy(f, groups[i].g, groups[i].ko, groups[i].en, tagColor, 2.4f, i);
+                    AudioManager.Instance?.PlaySfx("ui_skill", 0.85f, 1.05f + i * 0.1f);
                     if (f.Rig != null && limb != null)
-                        VFXManager.Instance?.EnergyFlow(f.Rig.MuscleAnchor(o.Group, limb.position), limb, Palette.MuscleHot, 0.5f);
-                    yield return new WaitForSecondsRealtime(0.22f);
+                        VFXManager.Instance?.EnergyFlow(f.Rig.MuscleAnchor(groups[i].g, limb.position), limb, Palette.MuscleHot, 0.55f);
+                    yield return new WaitForSecondsRealtime(0.26f);
                 }
-                Hud.Instance?.Callout(f.Side, r == LinkResult.Perfect ? "PERFECT MUSCLE LINK!" : "MUSCLE LINK!", r == LinkResult.Perfect ? Palette.Gold : Palette.Nerve, true);
-                AudioManager.Instance?.Announce(r == LinkResult.Perfect ? "perfect_link" : "muscle_link");
+                Hud.Instance?.Callout(f.Side, q.PerfectTitle, Palette.Gold, true);
+                AudioManager.Instance?.Announce(q.PerfectAnnouncer);
+                VFXManager.Instance?.SuperFlash(f, Palette.MuscleHot, true);
                 yield return new WaitForSecondsRealtime(0.35f);
                 f.MoveHeld = false;
             }
-            else if (r == LinkResult.Miss)
+            else
             {
-                Hud.Instance?.Callout(f.Side, "MUSCLE LINK FAILED", Palette.TextDim);
-            }
-            else if (r == LinkResult.Partial)
-            {
-                Hud.Instance?.Callout(f.Side, "PARTIAL LINK", Color.white);
+                f.Rig?.GlowMuscles(q.CorrectGroups, 1.6f, r == LinkResult.Partial ? f.Def.Energy : Palette.TextDim);
+                for (int i = 0; i < groups.Count; i++)
+                    Hud.Instance?.ShowAnatomy(f, groups[i].g, (r == LinkResult.Miss ? "정답 · " : "") + groups[i].ko, groups[i].en, tagColor, 1.8f, i);
+                Hud.Instance?.Callout(f.Side, r == LinkResult.Partial ? "PARTIAL LINK" : "MUSCLE LINK FAILED", r == LinkResult.Partial ? Color.white : Palette.TextDim, true);
             }
             PlaySkillPresentation(f, m, r);
         }
@@ -418,7 +436,7 @@ namespace MuscleBattle
         void PlaySkillPresentation(FighterController f, MoveData m, LinkResult r)
         {
             bool weak = r == LinkResult.Miss;
-            bool perfect = r == LinkResult.Perfect;
+            bool perfect = r == LinkResult.Perfect || r == LinkResult.Link;
             if (m.Kind == MoveKind.Special)
             {
                 _freeze = weak ? 6 : 18;

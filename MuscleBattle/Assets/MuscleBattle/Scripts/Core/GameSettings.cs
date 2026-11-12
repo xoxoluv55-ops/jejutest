@@ -15,6 +15,7 @@ namespace MuscleBattle
         public static int RoundTime = 60;
         public static CpuDifficulty Difficulty = CpuDifficulty.Normal;
         public static bool ForceTouchControls;
+        public static KnowledgeLevel Knowledge = KnowledgeLevel.Rookie; // muscle question difficulty (§9)
 
         public static void Load()
         {
@@ -26,6 +27,7 @@ namespace MuscleBattle
             RoundsToWin = PlayerPrefs.GetInt("mb.rounds", 2);
             Difficulty = (CpuDifficulty)PlayerPrefs.GetInt("mb.cpu", 1);
             ForceTouchControls = PlayerPrefs.GetInt("mb.touch", 0) == 1;
+            Knowledge = (KnowledgeLevel)Mathf.Clamp(PlayerPrefs.GetInt("mb.knowledge", 0), 0, 1); // Expert / Master not playable yet
         }
 
         public static void Save()
@@ -38,6 +40,7 @@ namespace MuscleBattle
             PlayerPrefs.SetInt("mb.rounds", RoundsToWin);
             PlayerPrefs.SetInt("mb.cpu", (int)Difficulty);
             PlayerPrefs.SetInt("mb.touch", ForceTouchControls ? 1 : 0);
+            PlayerPrefs.SetInt("mb.knowledge", (int)Knowledge);
             PlayerPrefs.Save();
         }
 

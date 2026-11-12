@@ -254,6 +254,8 @@ namespace MuscleBattle
             CameraManager.Instance.SnapToFighters();
             _hud.Configure(a, b, !IsTwoPlayer);
             _hud.SetPortraits(PortraitStudio.Get(P1Def), PortraitStudio.Get(P2Def));
+            MuscleSkillSystem.Prewarm(P1Def);   // Muscle Link cards ready before the first question
+            MuscleSkillSystem.Prewarm(P2Def);
             _hud.Show(true);
             bool touch = GameSettings.UseTouchControls;
             _touch.Show(touch);

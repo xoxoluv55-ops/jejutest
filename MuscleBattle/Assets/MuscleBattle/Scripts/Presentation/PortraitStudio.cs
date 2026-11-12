@@ -38,14 +38,117 @@ namespace MuscleBattle
             tex.Apply(false);
             Cache[key] = tex;
 
-            if (_runner == null)
-            {
-                var go = new GameObject("PortraitStudioRunner");
-                Object.DontDestroyOnLoad(go);
-                _runner = go.AddComponent<Runner>();
-            }
+            EnsureRunner();
             _runner.StartCoroutine(Render(def, closeUp, tex, _slot++));
             return tex;
+        }
+
+        // ------------------------------------------------------------------
+        // Anatomy cards: the fighter's own body with ONE muscle group lit as a hologram,
+        // framed on that muscle (front or back view picked automatically). Same overlays the
+        // fight uses, so the card teaches exactly where the glow will appear on the body.
+        // ------------------------------------------------------------------
+        static readonly Color AnatomyBg = new Color(0.05f, 0.035f, 0.12f);
+
+        public static Texture2D GetAnatomy(FighterDefinition def, MuscleGroup group, Color highlight)
+        {
+            int size = QualityProfile.Current != null && QualityProfile.Current.Tier == QualityTier.PcHigh ? 384 : 256;
+            string key = def.Id + "_mus_" + (int)group + "_" + size;
+            if (Cache.TryGetValue(key, out var tex) && tex != null) return tex;
+            tex = new Texture2D(size, size, TextureFormat.RGBA32, false) { name = "Anatomy_" + key, wrapMode = TextureWrapMode.Clamp };
+            var fill = new Color32[size * size];
+            var bg = (Color32)AnatomyBg;
+            for (int i = 0; i < fill.Length; i++) fill[i] = bg;
+            tex.SetPixels32(fill);
+            tex.Apply(false);
+            Cache[key] = tex;
+            EnsureRunner();
+            _runner.StartCoroutine(RenderAnatomy(def, group, highlight, tex, _slot++));
+            return tex;
+        }
+
+        static void EnsureRunner()
+        {
+            if (_runner != null) return;
+            var go = new GameObject("PortraitStudioRunner");
+            Object.DontDestroyOnLoad(go);
+            _runner = go.AddComponent<Runner>();
+        }
+
+        static bool IsLargeGroup(MuscleGroup g) =>
+            (g & (MuscleGroup.Hamstrings | MuscleGroup.Quadriceps | MuscleGroup.Latissimus | MuscleGroup.Gluteus | MuscleGroup.Core)) != 0;
+
+        static IEnumerator RenderAnatomy(FighterDefinition def, MuscleGroup group, Color highlight, Texture2D target, int slot)
+        {
+            yield return null;
+            var studio = new GameObject("AnatomyStudio");
+            studio.transform.position = new Vector3(slot * 12f, -200, 40);
+            var key = FindKeyLight();
+            var toLight = key != null ? -key.transform.forward : Vector3.back;
+            toLight.y = 0;
+            if (toLight.sqrMagnitude < 0.01f) toLight = Vector3.back;
+            toLight.Normalize();
+
+            var holder = new GameObject("Fighter").transform;
+            holder.SetParent(studio.transform, false);
+            var rig = FighterRig.Build(holder, def, null);
+            rig.PoseAnatomical();
+
+            // which side of the body is the muscle on? (local z < 0 = back)
+            var probe = holder.position + new Vector3(0.6f, 1.2f * def.Height, 0);
+            var local = holder.InverseTransformPoint(rig.MuscleAnchor(group, probe));
+            bool back = local.z < -0.015f;
+            holder.rotation = Quaternion.LookRotation(back ? -toLight : toLight, Vector3.up); // lit side faces the camera
+            var anchor = holder.TransformPoint(local);
+
+            var rt = new RenderTexture(target.width, target.height, 24, RenderTextureFormat.ARGB32) { name = "AnatomyRT" };
+            rt.Create();
+            var camGo = new GameObject("AnatomyCam");
+            camGo.transform.SetParent(studio.transform, false);
+            var cam = camGo.AddComponent<Camera>();
+            cam.enabled = false;
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = AnatomyBg;
+            cam.fieldOfView = 32f;
+            cam.nearClipPlane = 0.05f;
+            cam.farClipPlane = 20f;
+            cam.cullingMask = 1 << Layer;
+            cam.targetTexture = rt;
+            cam.allowHDR = false;
+            cam.allowMSAA = false;
+
+            float side = Mathf.Abs(local.x) > 0.05f ? Mathf.Sign(local.x) : 0f;
+            var outward = holder.TransformDirection(new Vector3(side * 0.5f, 0.05f, back ? -1f : 1f)).normalized;
+            float dist = IsLargeGroup(group) ? 1.35f : 1.0f;
+            camGo.transform.position = anchor + outward * dist;
+            camGo.transform.LookAt(anchor);
+
+            foreach (var t in studio.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = Layer;
+            rig.ShowMusclesStatic(group, highlight);
+            rig.DarkenBodyStatic(new Color(0.1f, 0.09f, 0.2f), 0.8f);
+            yield return null;
+            rig.PoseAnatomical();
+            rig.ShowMusclesStatic(group, highlight);
+            rig.DarkenBodyStatic(new Color(0.1f, 0.09f, 0.2f), 0.8f);
+            yield return new WaitForEndOfFrame();
+
+            bool fog = RenderSettings.fog;
+            RenderSettings.fog = false;
+            cam.Render();
+            RenderSettings.fog = fog;
+            var prev = RenderTexture.active;
+            RenderTexture.active = rt;
+            target.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0, false);
+            RenderTexture.active = prev;
+            var px = target.GetPixels32();
+            for (int i = 0; i < px.Length; i++) px[i].a = 255;
+            target.SetPixels32(px);
+            target.Apply(false);
+
+            cam.targetTexture = null;
+            rt.Release();
+            Object.Destroy(rt);
+            Object.Destroy(studio);
         }
 
         static Color Background(FighterDefinition def) => Color.Lerp(def.Energy, new Color(0.05f, 0.02f, 0.12f), 0.5f);

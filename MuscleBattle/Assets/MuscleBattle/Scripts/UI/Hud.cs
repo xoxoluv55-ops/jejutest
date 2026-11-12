@@ -43,6 +43,7 @@ namespace MuscleBattle
             public int LastLevel, LastRank;
             public Vector2 HpBarPos, PortraitPos;
             public Image[] MeterLead = new Image[3];
+            public Text SkillReady;
         }
 
         readonly Side[] _sides = { new Side(), new Side() };
@@ -255,6 +256,10 @@ namespace MuscleBattle
             mLabel.rectTransform.Place(new Vector2(left ? 0 : 1, 1), new Vector2(left ? 0 : 1, 1), Vector2.zero, new Vector2(300, 36));
             s.MeterLabel = UIKit.Label(mRoot, "Lv.0", 48, Palette.Gold, left ? TextAnchor.LowerRight : TextAnchor.LowerLeft, true, true, true);
             s.MeterLabel.rectTransform.Place(new Vector2(left ? 1 : 0, 0), new Vector2(left ? 1 : 0, 0), new Vector2(0, -6), new Vector2(200, 60));
+            // "MUSCLE SKILL READY" prompt above the gauge: tells the player WHEN and WHICH button
+            s.SkillReady = UIKit.Label(mRoot, "", 28, Palette.Gold, left ? TextAnchor.LowerLeft : TextAnchor.LowerRight, true, true, true);
+            s.SkillReady.rectTransform.Place(new Vector2(left ? 0 : 1, 1), new Vector2(left ? 0 : 1, 0), new Vector2(0, 4), new Vector2(620, 40));
+            s.SkillReady.gameObject.SetActive(false);
             for (int k = 0; k < 3; k++)
             {
                 float x = (k * 112 + 6) * dir;
@@ -320,6 +325,7 @@ namespace MuscleBattle
         {
             if (_combat == null || _combat.Fighters[0] == null) return;
             float dt = Time.unscaledDeltaTime;
+            UpdateAnatomyTags(dt);
 
             int t = Mathf.CeilToInt(_combat.TimeLeft);
             _timer.text = t.ToString();
@@ -394,6 +400,7 @@ namespace MuscleBattle
                     s.MeterLabel.color = Color.Lerp(Palette.Gold, Palette.HpDamage, Mathf.PingPong(s.MeterDenied * 10f, 1f));
                 }
                 else s.MeterLabel.color = Palette.Gold;
+                UpdateSkillReady(s, f, i);
 
                 if (s.ComboRoot.gameObject.activeSelf)
                 {
@@ -486,6 +493,123 @@ namespace MuscleBattle
         public void MeterLevelUp(int side, int level)
         {
             if (level >= 3) Callout(side, "MAX POWER!", Palette.Gold);
+            else if (level == 1 && _combat != null && HasMuscleSkill(_combat.Fighters[side]))
+            {
+                Callout(side, "MUSCLE SKILL READY!", Palette.Gold, true);
+                if (!(_combat.Fighters[side].InputSource is CpuInputSource)) AudioManager.Instance?.Announce("muscle_skill_ready");
+            }
+        }
+
+        static bool HasMuscleSkill(FighterController f) => f != null && MuscleSkillDatabase.Pool(f.Def.Id, false).Length > 0;
+
+        void UpdateSkillReady(Side s, FighterController f, int side)
+        {
+            bool human = !(f.InputSource is CpuInputSource);
+            bool ready = human && f.Meter >= 100 && HasMuscleSkill(f) && (MuscleSkillSystem.Instance == null || !MuscleSkillSystem.Instance.Active);
+            s.SkillReady.gameObject.SetActive(ready);
+            if (!ready) return;
+            bool twoP = GameModeManager.Instance != null && GameModeManager.Instance.IsTwoPlayer;
+            string keys = side == 1 && twoP ? "5 · ' · RB" : GameSettings.UseTouchControls ? "SPECIAL 버튼 · I · RB" : "I · RB";
+            s.SkillReady.text = "MUSCLE SKILL READY  ▶  " + keys;
+            s.SkillReady.color = Color.Lerp(Palette.Gold, Color.white, 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f));
+        }
+
+        // ------------------------------------------------------------------
+        // Anatomy labels (§7): after a Muscle Link the lit muscles get a name tag with a leader line
+        // pointing at the hologram on the fighter's body - "아, 저기 있는 근육이구나".
+        // ------------------------------------------------------------------
+        sealed class AnatomyTag
+        {
+            public RectTransform Root;
+            public Image Panel, Edge, Dot, Line;
+            public Text Ko, En;
+            public FighterController F;
+            public MuscleGroup Group;
+            public float Life, Max;
+            public int Index;
+        }
+
+        readonly List<AnatomyTag> _anatomyTags = new List<AnatomyTag>();
+
+        AnatomyTag NewTag()
+        {
+            foreach (var t in _anatomyTags) if (t.Life <= 0) return t;
+            var a = new AnatomyTag();
+            a.Line = UIKit.Img(_root, "AnatomyLine", UIKit.White, Color.white);
+            a.Line.rectTransform.anchorMin = a.Line.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            a.Line.rectTransform.pivot = new Vector2(0, 0.5f);
+            a.Dot = UIKit.Img(_root, "AnatomyDot", UIKit.Circle, Color.white);
+            a.Dot.rectTransform.Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(22, 22));
+            a.Root = UIKit.Node("AnatomyTag", _root).Place(new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(330, 86));
+            a.Panel = UIKit.Img(a.Root, "Panel", UIKit.Para, new Color(0.04f, 0.02f, 0.1f, 0.88f));
+            a.Panel.rectTransform.Stretch();
+            a.Edge = UIKit.Img(a.Root, "Edge", UIKit.ParaOutline, Palette.Gold);
+            a.Edge.rectTransform.Stretch(-2);
+            a.Ko = UIKit.Label(a.Root, "", 34, Color.white);
+            a.Ko.rectTransform.Stretch();
+            a.Ko.rectTransform.offsetMin = new Vector2(0, 26);
+            a.En = UIKit.Label(a.Root, "", 22, Palette.Bone, TextAnchor.MiddleCenter, false);
+            a.En.rectTransform.Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 8), new Vector2(320, 28));
+            _anatomyTags.Add(a);
+            return a;
+        }
+
+        /// <summary>Name tag pointing at a muscle hologram on the fighter (follows the body while it moves).</summary>
+        public void ShowAnatomy(FighterController f, MuscleGroup group, string ko, string en, Color color, float seconds, int index)
+        {
+            if (f == null || f.Rig == null || group == MuscleGroup.None) return;
+            var t = NewTag();
+            t.F = f;
+            t.Group = group;
+            t.Life = t.Max = seconds;
+            t.Index = index;
+            t.Ko.text = ko;
+            t.En.text = en;
+            t.Edge.color = color;
+            t.Dot.color = color;
+            t.Line.color = color.WithAlpha(0.9f);
+            t.Root.SetAsLastSibling();
+        }
+
+        void UpdateAnatomyTags(float dt)
+        {
+            var cam = Camera.main;
+            foreach (var t in _anatomyTags)
+            {
+                bool on = t.Life > 0 && t.F != null && t.F.Rig != null && cam != null;
+                t.Root.gameObject.SetActive(on);
+                t.Dot.gameObject.SetActive(on);
+                t.Line.gameObject.SetActive(on);
+                if (!on) continue;
+                t.Life -= dt;
+                var world = t.F.Rig.MuscleAnchor(t.Group, cam.transform.position);
+                var sp = cam.WorldToScreenPoint(world);
+                if (sp.z < 0 || !RectTransformUtility.ScreenPointToLocalPointInRectangle(_root, sp, null, out var local))
+                {
+                    t.Root.gameObject.SetActive(false);
+                    t.Dot.gameObject.SetActive(false);
+                    t.Line.gameObject.SetActive(false);
+                    continue;
+                }
+                float k = Mathf.Clamp01((t.Max - t.Life) / 0.18f) * Mathf.Clamp01(t.Life / 0.3f);
+                float sideSign = local.x < 0 ? -1f : 1f;
+                var labelPos = local + new Vector2(sideSign * (230f + t.Index * 30f), 150f + t.Index * 100f);
+                t.Root.anchoredPosition = labelPos;
+                t.Root.localScale = Vector3.one * Mathf.Lerp(0.6f, 1f, k);
+                t.Dot.rectTransform.anchoredPosition = local;
+                t.Dot.rectTransform.localScale = Vector3.one * (1f + 0.25f * Mathf.Sin(Time.unscaledTime * 10f));
+                var d = labelPos - local;
+                t.Line.rectTransform.anchoredPosition = local;
+                t.Line.rectTransform.sizeDelta = new Vector2(Mathf.Max(0, d.magnitude - 40f) * k, 4f);
+                t.Line.rectTransform.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
+                float a = Mathf.Clamp01(t.Life / 0.3f);
+                t.Panel.SetAlpha(0.88f * a);
+                t.Edge.SetAlpha(a);
+                t.Ko.SetAlpha(a);
+                t.En.SetAlpha(a);
+                t.Dot.SetAlpha(a);
+                t.Line.SetAlpha(0.9f * a);
+            }
         }
 
         public void ScreenFlash(Color c, float strength)

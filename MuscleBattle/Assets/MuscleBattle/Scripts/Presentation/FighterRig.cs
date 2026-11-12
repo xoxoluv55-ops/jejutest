@@ -303,6 +303,9 @@ namespace MuscleBattle
             Overlay(MuscleGroup.Deltoid, shR, new Vector3(0, -0.03f, 0), Vector3.one * 0.19f * b);
             Overlay(MuscleGroup.Supraspinatus, chest, new Vector3(-0.12f * b, 0.17f, -0.06f), new Vector3(0.14f, 0.05f, 0.06f));
             Overlay(MuscleGroup.Supraspinatus, chest, new Vector3(0.12f * b, 0.17f, -0.06f), new Vector3(0.14f, 0.05f, 0.06f));
+            // infraspinatus / teres minor: on the back of the scapula, below the spine of the scapula
+            Overlay(MuscleGroup.Infraspinatus, chest, new Vector3(-0.11f * b, 0.06f, -0.1f), new Vector3(0.13f, 0.11f, 0.06f));
+            Overlay(MuscleGroup.Infraspinatus, chest, new Vector3(0.11f * b, 0.06f, -0.1f), new Vector3(0.13f, 0.11f, 0.06f));
             Overlay(MuscleGroup.Pectoralis, chest, new Vector3(-0.09f * b, 0.06f, cz - 0.04f), new Vector3(0.17f * b, 0.13f, 0.08f));
             Overlay(MuscleGroup.Pectoralis, chest, new Vector3(0.09f * b, 0.06f, cz - 0.04f), new Vector3(0.17f * b, 0.13f, 0.08f));
             Overlay(MuscleGroup.Trapezius, chest, new Vector3(0, 0.2f, -0.05f), new Vector3(0.3f * b, 0.1f, 0.12f));
@@ -675,6 +678,52 @@ namespace MuscleBattle
             Set(p, J.ElbowR, -70, 0, 0);
             Set(p, J.ThighL, 0, 0, -9);
             Set(p, J.ThighR, 0, 0, 9);
+        }
+
+        /// <summary>Static muscle highlight for off-screen anatomy card renders (no LateUpdate / fighter needed).</summary>
+        public void ShowMusclesStatic(MuscleGroup mask, Color color)
+        {
+            foreach (var kv in _muscles)
+            {
+                bool on = (mask & kv.Key) != 0;
+                foreach (var r in kv.Value) r.enabled = on;
+            }
+            foreach (var m in _muscleMats)
+            {
+                m.SetColor("_Color", color);
+                m.SetFloat("_Alpha", 1.5f);
+            }
+        }
+
+        /// <summary>Anatomy-card look: the body turns into a dark x-ray silhouette so the lit hologram muscle stands out.</summary>
+        public void DarkenBodyStatic(Color c, float amount)
+        {
+            _mpb.SetFloat("_Flash", amount);
+            _mpb.SetColor("_FlashColor", c);
+            if (_humanoid != null) _humanoid.SetFlash(c, amount);
+            else foreach (var r in _bodyRenderers) r.SetPropertyBlock(_mpb);
+        }
+
+        /// <summary>True when this rig has a hologram overlay for the group (some answer options are nerves etc.).</summary>
+        public bool HasMuscle(MuscleGroup g) => g != MuscleGroup.None && _muscles.ContainsKey(g);
+
+        /// <summary>Neutral standing pose (arms slightly away from the body) so anatomy renders show every muscle.</summary>
+        public void PoseAnatomical()
+        {
+            Clear(Pose);
+            Set(Pose, J.ShoulderL, 0, 0, -18);
+            Set(Pose, J.ShoulderR, 0, 0, 18);
+            Set(Pose, J.ElbowL, -10, 0, 0);
+            Set(Pose, J.ElbowR, -10, 0, 0);
+            Set(Pose, J.ThighL, 0, 0, -5);
+            Set(Pose, J.ThighR, 0, 0, 5);
+            for (int i = 0; i < JointCount; i++)
+            {
+                _current[i] = Pose[i];
+                _bones[i].localRotation = Pose[i];
+            }
+            _bones[(int)J.Hips].localPosition = new Vector3(0, 0.98f, 0);
+            _humanoid?.Apply();
         }
 
         /// <summary>Snap to a pose immediately (no LateUpdate needed) for portrait rendering.</summary>
