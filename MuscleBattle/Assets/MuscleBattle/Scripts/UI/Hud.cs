@@ -460,7 +460,7 @@ namespace MuscleBattle
             int rank = hits >= 10 ? 3 : hits >= 6 ? 2 : hits >= 3 ? 1 : 0;
             s.ComboRank.text = rank switch { 3 => "AMAZING!!", 2 => "GREAT!", 1 => "GOOD", _ => "" };
             s.ComboRank.color = rank == 3 ? Palette.Gold : rank == 2 ? Palette.MuscleHot : Palette.Nerve;
-            if (rank > s.LastRank && rank > 0) AudioManager.Instance?.PlaySfx("ui_correct", 0.35f + rank * 0.1f, 0.9f + rank * 0.1f);
+            if (rank > s.LastRank && rank > 0) AudioManager.Instance?.PlaySfx("combo_rank_" + (rank - 1), 0.7f);
             s.LastRank = rank;
             if (hits == 5) Commentary(CommentaryCombo(side, hits));
             if (hits == 8) Commentary($"{Name(side)}! {hits}히트 콤보! 근육 연쇄가 멈추지 않습니다!");

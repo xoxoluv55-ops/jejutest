@@ -305,6 +305,62 @@ def ui_tone(freqs, dur, decay, gain=0.6, noise_amt=0.0, sweep=None):
     return normalize(x, gain)
 
 
+def sfx_knockdown(v):
+    # body hitting the floor: heavy low thud + cloth slap + small bounce
+    dur = 0.7
+    n = int(SR * dur)
+    thud = sine_sweep(dur, 95, 35, 10) * env_exp(dur, 7)
+    slap = lowpass_fast(noise(n), 1800) * env_exp(dur, 22)
+    x = thud * 1.4 + slap * 0.8
+    b = int(SR * 0.16)
+    bounce = sine_sweep(dur, 80, 40, 14)[: n - b] * env_exp(dur, 16)[: n - b] * 0.5
+    x[b:] += bounce
+    return normalize(soft_clip(x, 2.2), 0.92)
+
+
+def sfx_link_charge(v):
+    # muscle-skill start: rising fibre-energy shimmer
+    dur = 0.9
+    n = int(SR * dur)
+    t = t_axis(dur)
+    f = 180 + 900 * (t / dur) ** 1.6
+    tone = np.sin(2 * np.pi * np.cumsum(f) / SR) + 0.5 * np.sin(2 * np.pi * np.cumsum(f * 1.5) / SR)
+    shimmer = highpass(noise(n), 5000) * (t / dur) ** 2 * 0.5
+    x = (tone * 0.4 + shimmer) * np.sin(np.pi * np.clip(t / dur, 0, 1) * 0.5)
+    return normalize(simple_reverb(x, 0.3), 0.7)
+
+
+def sfx_link_success(v):
+    # MUSCLE LINK: bright major chord stab + sub boom + sparkle
+    dur = 1.1
+    t = t_axis(dur)
+    chord = sum(np.sin(2 * np.pi * f * t) for f in (523.25, 659.25, 783.99, 1046.5)) * np.exp(-t * 4) * 0.25
+    boom = sine_sweep(dur, 120, 45, 8) * env_exp(dur, 6)
+    sparkle = highpass(noise(len(t)), 6000) * np.exp(-t * 7) * 0.3
+    return normalize(simple_reverb(chord + boom + sparkle, 0.35), 0.9)
+
+
+def sfx_link_fail(v):
+    dur = 0.6
+    t = t_axis(dur)
+    x = (np.sin(2 * np.pi * 110 * t) + np.sin(2 * np.pi * 103.8 * t)) * np.exp(-t * 6) * 0.5
+    x += lowpass_fast(noise(len(t)), 600) * np.exp(-t * 10) * 0.4
+    return normalize(x, 0.7)
+
+
+def sfx_combo_rank(v):
+    # GOOD / GREAT / AMAZING sting, rising with the rank
+    base = (659.25, 783.99, 987.77)[v]
+    dur = 0.5
+    t = t_axis(dur)
+    x = np.zeros(len(t))
+    for i, k in enumerate((1, 1.25, 1.5, 2.0)[: 2 + v]):
+        s = int(SR * 0.05 * i)
+        seg = t[: len(t) - s]
+        x[s:] += np.sin(2 * np.pi * base * k * seg) * np.exp(-seg * 8)
+    return normalize(simple_reverb(x, 0.25), 0.6)
+
+
 def build_sfx():
     print("SFX")
     for name, fn, count in (("punch", sfx_punch, 4), ("kick", sfx_kick, 3), ("heavy", sfx_heavy, 3),
@@ -315,6 +371,11 @@ def build_sfx():
         for v in range(count):
             write_ogg(f"{name}_{v}", stereo(fn(v), 0.6), "SFX", 4)
 
+    for name, fn, count in (("knockdown", sfx_knockdown, 2), ("link_charge", sfx_link_charge, 1),
+                            ("link_success", sfx_link_success, 1), ("link_fail", sfx_link_fail, 1),
+                            ("combo_rank", sfx_combo_rank, 3)):
+        for v in range(count):
+            write_ogg(f"{name}_{v}", stereo(fn(v), 0.6), "SFX", 4)
     write_ogg("ui_hover", ui_tone([2400], 0.06, 60, 0.35), "SFX", 4)
     write_ogg("ui_confirm", ui_tone([880, 1320], 0.22, 18, 0.6, 0.2, sweep=0.3), "SFX", 4)
     write_ogg("ui_back", ui_tone([440, 330], 0.22, 16, 0.5, sweep=-0.4), "SFX", 4)
@@ -491,6 +552,18 @@ def bgm_battle_layer():
     return master(tr.buf, 1.2)
 
 
+def bgm_tension_layer():
+    bpm, bars = 150, 16
+    tr = Track(bpm, bars)
+    beat = sine_sweep(0.25, 70, 40, 18) * env_exp(0.25, 14)
+    for bar in range(bars):
+        for b in (0, 0.45, 2, 2.45):  # lub-dub heartbeat
+            tr.add(bar * 4 + b, beat, 1.0 if b in (0, 2) else 0.7)
+        root, _ = PROG[bar % 4]
+        tr.add(bar * 4, synth_pad([root - 24, root - 12], 4, tr.spb), 0.35)
+    return master(tr.buf, 1.3)
+
+
 def bgm_menu():
     bpm, bars = 118, 16
     tr = Track(bpm, bars)
@@ -583,6 +656,7 @@ def build_bgm():
     battle, _ = bgm_battle()
     write_ogg("battle", stereo(battle, 0.5), "BGM", 4)
     write_ogg("battle_final_layer", stereo(bgm_battle_layer(), 1.0), "BGM", 4)
+    write_ogg("battle_tension_layer", stereo(bgm_tension_layer(), 0.3), "BGM", 4)
     write_ogg("menu", stereo(bgm_menu(), 0.5), "BGM", 4)
     write_ogg("select", stereo(bgm_select(), 0.6), "BGM", 4)
     write_ogg("vs", stereo(bgm_vs(), 0.5), "BGM", 4)

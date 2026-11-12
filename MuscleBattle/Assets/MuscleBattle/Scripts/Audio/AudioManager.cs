@@ -19,7 +19,8 @@ namespace MuscleBattle
         const int SfxPoolSize = 16;
         readonly List<AudioSource> _sfx = new List<AudioSource>();
         int _sfxNext;
-        AudioSource _bgmA, _bgmB, _layer, _voice;
+        AudioSource _bgmA, _bgmB, _layer, _tension, _voice;
+        bool _tensionOn;
         bool _aIsActive = true;
         readonly Dictionary<string, AudioClip> _clips = new Dictionary<string, AudioClip>();
         readonly Dictionary<string, int> _variantCounts = new Dictionary<string, int>();
@@ -35,12 +36,14 @@ namespace MuscleBattle
             _bgmA = NewSource("bgmA");
             _bgmB = NewSource("bgmB");
             _layer = NewSource("bgmLayer");
+            _tension = NewSource("bgmTension");
+            _tension.loop = true;
             _voice = NewSource("announcer");
             _layer.loop = true;
             _voice.priority = 0;
 
             // count variations: punch_0..punch_3 etc
-            foreach (var key in new[] { "punch", "kick", "heavy", "block", "counter", "whoosh", "land", "ko_boom", "grab", "launch", "special", "meter_full" })
+            foreach (var key in new[] { "punch", "kick", "heavy", "block", "counter", "whoosh", "land", "ko_boom", "grab", "launch", "special", "meter_full", "knockdown", "link_charge", "link_success", "link_fail" })
             {
                 int n = 0;
                 while (Load("SFX/" + key + "_" + n) != null) n++;
@@ -148,11 +151,19 @@ namespace MuscleBattle
                     _layer.timeSamples = 0;
                     _layer.Play();
                 }
+                _tension.clip = Load("BGM/battle_tension_layer");
+                _tension.volume = 0;
+                if (_tension.clip != null)
+                {
+                    _tension.timeSamples = 0;
+                    _tension.Play();
+                }
             }
             else
             {
                 _layer.Stop();
-                _layerOn = false;
+                _tension.Stop();
+                _layerOn = _tensionOn = false;
             }
         }
 
@@ -162,9 +173,24 @@ namespace MuscleBattle
             StopAllCoroutines();
             StartCoroutine(Crossfade(Active, null, fade));
             _layer.Stop();
+            _tension.Stop();
         }
 
         public void SetFinalRoundLayer(bool on) => _layerOn = on;
+
+        /// <summary>Low-HP tension layer (heartbeat + drone), sample-locked to the battle loop (§21).</summary>
+        public void SetTensionLayer(bool on) => _tensionOn = on;
+
+        /// <summary>KO: hard music cut so the impact lands in silence (§21), victory sting follows.</summary>
+        public void CutMusic()
+        {
+            _currentBgm = null;
+            StopAllCoroutines();
+            _bgmA.Stop();
+            _bgmB.Stop();
+            _layer.Stop();
+            _tension.Stop();
+        }
 
         public void DuckMusic(float level, float seconds)
         {
@@ -206,10 +232,17 @@ namespace MuscleBattle
                     _layer.timeSamples = Mathf.Min(a.timeSamples, _layer.clip.samples - 1);
                 _layer.volume = Mathf.MoveTowards(_layer.volume, _layerOn ? MusicLevel * 0.85f : 0f, dt);
             }
+            if (_tension.isPlaying)
+            {
+                if (a.isPlaying && a.clip != null && _tension.clip != null && Mathf.Abs(_tension.timeSamples - a.timeSamples) > 2048)
+                    _tension.timeSamples = Mathf.Min(a.timeSamples, _tension.clip.samples - 1);
+                _tension.volume = Mathf.MoveTowards(_tension.volume, _tensionOn ? MusicLevel * 0.9f : 0f, dt * 0.8f);
+            }
             // slow motion also slows the music slightly - heavy, cinematic feel
             float pitch = Mathf.Lerp(0.85f, 1f, Mathf.InverseLerp(0.2f, 1f, Time.timeScale));
             a.pitch = pitch;
             _layer.pitch = pitch;
+            _tension.pitch = pitch;
         }
     }
 }

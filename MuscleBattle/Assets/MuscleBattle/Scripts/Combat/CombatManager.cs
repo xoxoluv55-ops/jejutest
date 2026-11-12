@@ -95,7 +95,8 @@ namespace MuscleBattle
             int need = GameSettings.RoundsToWin;
             IsFinalRound = Fighters[0].RoundWins == need - 1 && Fighters[1].RoundWins == need - 1;
             AudioManager.Instance?.SetFinalRoundLayer(IsFinalRound);
-            if (RoundNumber == 1) AudioManager.Instance?.PlayBgm("battle", true);
+            AudioManager.Instance?.PlayBgm("battle", true); // also restarts after the KO cut
+            AudioManager.Instance?.SetTensionLayer(false);
 
             yield return new WaitForSeconds(0.5f);
             string roundText = IsFinalRound ? "FINAL ROUND" : "ROUND " + RoundNumber;
@@ -159,6 +160,7 @@ namespace MuscleBattle
                 }
             }
 
+            AudioManager.Instance?.SetTensionLayer(Fighters[0].HpLow || Fighters[1].HpLow);
             if (!held) TimeLeft -= TickDt; // the clock does not run while choosing muscles
             if (TimeLeft <= 0 && Phase == MatchPhase.Fighting)
             {
@@ -455,7 +457,8 @@ namespace MuscleBattle
 
         public void OnLanded(FighterController f)
         {
-            AudioManager.Instance?.PlayVariant("land", f.Position);
+            AudioManager.Instance?.PlayVariant("knockdown", f.Position);
+            AudioManager.Instance?.PlayVariant("land", f.Position, 0.5f);
             VFXManager.Instance?.Dust(f.Position);
             CameraManager.Instance?.Shake(0.18f);
         }
@@ -522,8 +525,8 @@ namespace MuscleBattle
             _hitStop = 22;
             VFXManager.Instance?.ScreenFlash(Color.white, 0.5f);
             VFXManager.Instance?.KoBurst(loser.ChestPosition, winner.Def.Energy);
+            AudioManager.Instance?.CutMusic();
             AudioManager.Instance?.PlaySfx("ko_boom", 1f);
-            AudioManager.Instance?.DuckMusic(0.25f, 2.5f);
             CameraManager.Instance?.Focus(loser, 2.2f, 0.5f);
             CameraManager.Instance?.Shake(0.5f);
             TimeController.Instance?.SlowMotion(0.22f, 1.6f);

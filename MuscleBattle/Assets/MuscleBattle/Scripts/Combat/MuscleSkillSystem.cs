@@ -55,7 +55,7 @@ namespace MuscleBattle
 
             TimeController.Instance?.Clear();
             TimeController.Instance?.SlowMotion(0.25f, 30f);
-            AudioManager.Instance?.PlaySfx("ui_skill", 0.9f);
+            AudioManager.Instance?.PlaySfx("link_charge", 0.9f);
             AudioManager.Instance?.DuckMusic(0.5f, _limit);
             VFXManager.Instance?.SuperFlash(f, f.Def.Energy, false);
             CameraManager.Instance?.Focus(f, _limit, 0.75f);
@@ -177,7 +177,7 @@ namespace MuscleBattle
             }
 
             bool good = _result == LinkResult.Perfect || _result == LinkResult.Link;
-            AudioManager.Instance?.PlaySfx(good ? "ui_correct" : _result == LinkResult.Partial ? "ui_confirm" : "ui_wrong", 0.9f);
+            AudioManager.Instance?.PlaySfx(good ? "link_success" : _result == LinkResult.Partial ? "ui_confirm" : "link_fail", 0.9f);
             Hud.Instance?.MuscleSelect.ShowResult(_result, _q);
             Hud.Instance?.Commentary(_q.Explanation, 4.5f);
             _resultTimer = 0.75f;
