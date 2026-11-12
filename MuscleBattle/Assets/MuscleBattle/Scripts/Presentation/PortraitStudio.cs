@@ -5,36 +5,36 @@ using UnityEngine;
 namespace MuscleBattle
 {
     /// <summary>
-    /// Renders character portraits (HUD corners, select screen, VS, cut-ins) from the real 3D
-    /// fighter (prototype or Humanoid model) into RenderTextures.
+    /// Character portraits (HUD corners, select screen, VS, cut-ins) rendered from the real 3D fighter.
     ///
-    /// Get() returns the texture immediately (cleared to a dark tint) and renders it over the next
-    /// frames with a normal enabled camera on an isolated layer - the earlier one-shot Camera.Render()
-    /// at startup produced empty portraits on some setups (DX12).
+    /// Get() immediately returns a plain Texture2D filled with the character colour (UI always shows
+    /// a Texture2D), then a coroutine renders the fighter with an off-screen camera on an isolated layer,
+    /// reads the pixels back and writes them into that same texture. Every UI element already holding
+    /// the texture updates automatically.
     /// </summary>
     public static class PortraitStudio
     {
         public const int Layer = 31;
-        static readonly Dictionary<string, RenderTexture> Cache = new Dictionary<string, RenderTexture>();
+        static readonly Dictionary<string, Texture2D> Cache = new Dictionary<string, Texture2D>();
         static Runner _runner;
         static int _slot;
 
         sealed class Runner : MonoBehaviour { }
 
-        public static RenderTexture Get(FighterDefinition def, bool closeUp = true)
+        public static Texture2D Get(FighterDefinition def, bool closeUp = true)
         {
             string key = def.Id + (closeUp ? "_face" : "_body");
-            if (Cache.TryGetValue(key, out var rt) && rt != null) return rt;
+            if (Cache.TryGetValue(key, out var tex) && tex != null) return tex;
 
             int size = QualityProfile.Current != null && QualityProfile.Current.Tier == QualityTier.PcHigh ? 512 : 256;
-            rt = new RenderTexture(size, closeUp ? size : size * 2, 16, RenderTextureFormat.ARGB32) { name = "Portrait_" + key };
-            rt.Create();
-            var bg = Background(def);
-            var prev = RenderTexture.active;
-            RenderTexture.active = rt;
-            GL.Clear(true, true, bg);
-            RenderTexture.active = prev;
-            Cache[key] = rt;
+            int w = size, h = closeUp ? size : size * 2;
+            tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { name = "Portrait_" + key, wrapMode = TextureWrapMode.Clamp };
+            var fill = new Color32[w * h];
+            var bg = (Color32)Background(def);
+            for (int i = 0; i < fill.Length; i++) fill[i] = bg;
+            tex.SetPixels32(fill);
+            tex.Apply(false);
+            Cache[key] = tex;
 
             if (_runner == null)
             {
@@ -42,32 +42,48 @@ namespace MuscleBattle
                 Object.DontDestroyOnLoad(go);
                 _runner = go.AddComponent<Runner>();
             }
-            _runner.StartCoroutine(Render(def, closeUp, rt, _slot++));
-            return rt;
+            _runner.StartCoroutine(Render(def, closeUp, tex, _slot++));
+            return tex;
         }
 
         static Color Background(FighterDefinition def) => Color.Lerp(def.Energy, new Color(0.05f, 0.02f, 0.12f), 0.5f);
 
-        static IEnumerator Render(FighterDefinition def, bool closeUp, RenderTexture rt, int slot)
+        static Light FindKeyLight()
         {
+            Light best = null;
+            foreach (var l in Object.FindObjectsByType<Light>(FindObjectsSortMode.None))
+                if (l.type == LightType.Directional && l.isActiveAndEnabled && l.gameObject.layer != Layer && (best == null || l.intensity > best.intensity))
+                    best = l;
+            return best;
+        }
+
+        static IEnumerator Render(FighterDefinition def, bool closeUp, Texture2D target, int slot)
+        {
+            yield return null; // let the stage build its lights first
+
             var studio = new GameObject("PortraitStudio");
             studio.transform.position = new Vector3(slot * 12f, -200, 0);
-            var holder = new GameObject("Fighter").transform;
-            holder.SetParent(studio.transform, false);
+
             // face the stage key light: the character shader is lit by the main directional light only,
             // so a fighter turned away from it renders as a dark silhouette
-            var key = StageManager.Instance != null ? StageManager.Instance.KeyLight : null;
+            var key = FindKeyLight();
             var toLight = key != null ? -key.transform.forward : Vector3.back;
             toLight.y = 0;
             if (toLight.sqrMagnitude < 0.01f) toLight = Vector3.back;
             toLight.Normalize();
+
+            var holder = new GameObject("Fighter").transform;
+            holder.SetParent(studio.transform, false);
             holder.rotation = Quaternion.LookRotation(toLight, Vector3.up);
             var rig = FighterRig.Build(holder, def, null);
             rig.PoseForPortrait(closeUp);
 
+            var rt = new RenderTexture(target.width, target.height, 24, RenderTextureFormat.ARGB32) { name = "PortraitRT" };
+            rt.Create();
             var camGo = new GameObject("PortraitCam");
             camGo.transform.SetParent(studio.transform, false);
             var cam = camGo.AddComponent<Camera>();
+            cam.enabled = false;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = Background(def);
             cam.fieldOfView = closeUp ? 24f : 30f;
@@ -75,67 +91,48 @@ namespace MuscleBattle
             cam.farClipPlane = 20f;
             cam.cullingMask = 1 << Layer;
             cam.targetTexture = rt;
-            cam.depth = -50;
             cam.allowHDR = false;
+            cam.allowMSAA = false;
 
             var head = rig.HeadBone != null ? rig.HeadBone.position + Vector3.up * 0.06f * def.Height : studio.transform.position + Vector3.up * 1.62f * def.Height;
-            var target = closeUp ? head : studio.transform.position + new Vector3(0, 1.05f * def.Height, 0);
+            var lookAt = closeUp ? head : studio.transform.position + new Vector3(0, 1.05f * def.Height, 0);
             var side = Vector3.Cross(Vector3.up, toLight);
-            camGo.transform.position = target + toLight * (closeUp ? 1.3f : 4.4f) + side * (closeUp ? 0.32f : 0.6f) + Vector3.up * (closeUp ? 0.02f : 0.1f);
-            camGo.transform.LookAt(target);
-
-            var keyLight = new GameObject("Key").AddComponent<Light>();
-            keyLight.transform.SetParent(studio.transform, false);
-            keyLight.type = LightType.Directional;
-            keyLight.transform.rotation = Quaternion.Euler(20, 25, 0);
-            keyLight.intensity = 0.9f;
-            keyLight.cullingMask = 1 << Layer;
-            var rim = new GameObject("Rim").AddComponent<Light>();
-            rim.transform.SetParent(studio.transform, false);
-            rim.type = LightType.Directional;
-            rim.transform.rotation = Quaternion.Euler(10, 150, 0);
-            rim.color = def.Energy;
-            rim.intensity = 1.2f;
-            rim.cullingMask = 1 << Layer;
+            camGo.transform.position = lookAt + toLight * (closeUp ? 1.3f : 4.4f) + side * (closeUp ? 0.32f : 0.6f) + Vector3.up * (closeUp ? 0.02f : 0.1f);
+            camGo.transform.LookAt(lookAt);
 
             foreach (var t in studio.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = Layer;
 
-            // let the model's own scripts (spring bones) settle, render with the normal pipeline
             yield return null;
             rig.PoseForPortrait(closeUp);
-            yield return null;
             yield return new WaitForEndOfFrame();
-            cam.Render(); // explicit render as well (some setups skip offscreen cameras on the first frames)
 
-            // read back, force opaque alpha (UI would otherwise show nothing if the pipeline left alpha at 0),
-            // and log what we captured so a blank portrait can be diagnosed from the Console
+            bool fog = RenderSettings.fog;
+            RenderSettings.fog = false;
+            cam.Render();
+            RenderSettings.fog = fog;
+
             var prev = RenderTexture.active;
             RenderTexture.active = rt;
-            var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGBA32, false);
-            tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+            target.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0, false);
             RenderTexture.active = prev;
-            var px = tex.GetPixels32();
-            long sum = 0;
-            int differ = 0;
+
+            // force opaque + measure how much of the frame the fighter covers (diagnostics in the Console)
+            var px = target.GetPixels32();
             var bg = (Color32)Background(def);
+            int differ = 0;
             for (int i = 0; i < px.Length; i++)
             {
                 px[i].a = 255;
-                sum += px[i].r + px[i].g + px[i].b;
-                if (Mathf.Abs(px[i].r - bg.r) + Mathf.Abs(px[i].g - bg.g) + Mathf.Abs(px[i].b - bg.b) > 30) differ++;
+                if (Mathf.Abs(px[i].r - bg.r) + Mathf.Abs(px[i].g - bg.g) + Mathf.Abs(px[i].b - bg.b) > 40) differ++;
             }
-            tex.SetPixels32(px);
-            tex.Apply(false);
-            Graphics.Blit(tex, rt);
-            float avg = sum / (3f * px.Length);
+            target.SetPixels32(px);
+            target.Apply(false);
             float coverage = differ / (float)px.Length;
-            if (coverage < 0.02f)
-                Debug.LogWarning($"[MuscleBattle] Portrait '{def.Id}' looks empty (avg {avg:0}, figure {coverage:P0}). Camera at {camGo.transform.position}, head {head}.");
-            else
-                Debug.Log($"[MuscleBattle] Portrait '{def.Id}' rendered (figure covers {coverage:P0}).");
-            Object.Destroy(tex);
+            Debug.Log($"[MuscleBattle] Portrait v3 '{def.Id}' -> Texture2D, figure covers {coverage:P0}" + (coverage < 0.03f ? "  (EMPTY: check framing)" : ""));
 
-            cam.enabled = false;
+            cam.targetTexture = null;
+            rt.Release();
+            Object.Destroy(rt);
             Object.Destroy(studio);
         }
     }
