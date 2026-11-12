@@ -97,6 +97,36 @@ namespace MuscleBattle
             rig.PoseForPortrait(closeUp);
             yield return null;
             yield return new WaitForEndOfFrame();
+            cam.Render(); // explicit render as well (some setups skip offscreen cameras on the first frames)
+
+            // read back, force opaque alpha (UI would otherwise show nothing if the pipeline left alpha at 0),
+            // and log what we captured so a blank portrait can be diagnosed from the Console
+            var prev = RenderTexture.active;
+            RenderTexture.active = rt;
+            var tex = new Texture2D(rt.width, rt.height, TextureFormat.RGBA32, false);
+            tex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+            RenderTexture.active = prev;
+            var px = tex.GetPixels32();
+            long sum = 0;
+            int differ = 0;
+            var bg = (Color32)Background(def);
+            for (int i = 0; i < px.Length; i++)
+            {
+                px[i].a = 255;
+                sum += px[i].r + px[i].g + px[i].b;
+                if (Mathf.Abs(px[i].r - bg.r) + Mathf.Abs(px[i].g - bg.g) + Mathf.Abs(px[i].b - bg.b) > 30) differ++;
+            }
+            tex.SetPixels32(px);
+            tex.Apply(false);
+            Graphics.Blit(tex, rt);
+            float avg = sum / (3f * px.Length);
+            float coverage = differ / (float)px.Length;
+            if (coverage < 0.02f)
+                Debug.LogWarning($"[MuscleBattle] Portrait '{def.Id}' looks empty (avg {avg:0}, figure {coverage:P0}). Camera at {camGo.transform.position}, head {head}.");
+            else
+                Debug.Log($"[MuscleBattle] Portrait '{def.Id}' rendered (figure covers {coverage:P0}).");
+            Object.Destroy(tex);
+
             cam.enabled = false;
             Object.Destroy(studio);
         }
