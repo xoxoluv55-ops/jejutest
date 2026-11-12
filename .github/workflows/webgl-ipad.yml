@@ -1,0 +1,77 @@
+# MUSCLE BATTLE - build the Unity project for WebGL on every push and publish it to GitHub Pages,
+# so the latest version can be played on iPad Safari without a PC.
+#
+# One-time setup (see docs/IPAD_AUTOBUILD.md):
+#   Settings > Secrets and variables > Actions:  UNITY_LICENSE, UNITY_EMAIL, UNITY_PASSWORD
+#   Settings > Pages > Source: GitHub Actions
+#   Settings > Environments > github-pages > Deployment branches: allow this branch
+name: WebGL build (iPad)
+
+on:
+  push:
+    branches: [ main, "claude/muscle-battle-master-prompt-to54tp" ]
+    paths: [ "MuscleBattle/**", ".github/workflows/webgl-ipad.yml" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: webgl-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Free disk space (Unity images are large)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          df -h /
+
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: MuscleBattle/Library
+          key: Library-WebGL-${{ hashFiles('MuscleBattle/Assets/**', 'MuscleBattle/Packages/**', 'MuscleBattle/ProjectSettings/**') }}
+          restore-keys: |
+            Library-WebGL-
+
+      - name: Build WebGL
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: MuscleBattle
+          targetPlatform: WebGL
+          unityVersion: auto            # read from MuscleBattle/ProjectSettings/ProjectVersion.txt
+          buildMethod: MuscleBattle.EditorTools.MuscleBattleEditor.BuildWebGLBatch
+          allowDirtyBuild: true
+
+      - name: Check build output
+        run: |
+          ls -la MuscleBattle/Builds/WebGL
+          test -f MuscleBattle/Builds/WebGL/index.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: MuscleBattle/Builds/WebGL
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

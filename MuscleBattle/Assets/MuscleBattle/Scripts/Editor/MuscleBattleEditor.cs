@@ -94,10 +94,16 @@ namespace MuscleBattle.EditorTools
         public static void BuildWindows() => Build(BuildTarget.StandaloneWindows64, "Builds/Windows/MuscleBattle.exe");
 
         /// <summary>Command line: Unity -batchmode -quit -projectPath . -executeMethod MuscleBattle.EditorTools.MuscleBattleEditor.BuildWebGLBatch</summary>
-        public static void BuildWebGLBatch() { Setup(false); BuildWebGL(); }
-        public static void BuildWindowsBatch() { Setup(false); BuildWindows(); }
+        public static void BuildWebGLBatch() => ExitWith(Build(BuildTarget.WebGL, "Builds/WebGL"));
+        public static void BuildWindowsBatch() => ExitWith(Build(BuildTarget.StandaloneWindows64, "Builds/Windows/MuscleBattle.exe"));
 
-        static void Build(BuildTarget target, string path)
+        /// <summary>CI: a failed build must fail the job (non-zero exit code).</summary>
+        static void ExitWith(bool ok)
+        {
+            if (Application.isBatchMode) EditorApplication.Exit(ok ? 0 : 1);
+        }
+
+        static bool Build(BuildTarget target, string path)
         {
             Setup(false);
             var options = new BuildPlayerOptions
@@ -110,6 +116,7 @@ namespace MuscleBattle.EditorTools
             var report = BuildPipeline.BuildPlayer(options);
             Debug.Log($"[MuscleBattle] Build {target}: {report.summary.result}, {report.summary.totalSize / (1024f * 1024f):0.0} MB, " +
                       $"{report.summary.totalErrors} errors, {report.summary.totalWarnings} warnings -> {path}");
+            return report.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded;
         }
     }
 }
