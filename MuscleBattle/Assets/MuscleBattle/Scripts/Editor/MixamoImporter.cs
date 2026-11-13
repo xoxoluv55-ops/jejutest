@@ -90,6 +90,18 @@ namespace MuscleBattle.EditorTools
 
         void OnPreprocessTexture()
         {
+            if (assetPath.Replace('\\', '/').StartsWith("Assets/MuscleBattle/Resources/UI/Art/"))
+            {
+                // cut-out illustrations: keep the real aspect (no power-of-two rescale), clean alpha edges
+                var ui = (TextureImporter)assetImporter;
+                ui.textureType = TextureImporterType.Default;
+                ui.npotScale = TextureImporterNPOTScale.None;
+                ui.mipmapEnabled = false;
+                ui.alphaIsTransparency = true;
+                ui.wrapMode = TextureWrapMode.Clamp;
+                ui.maxTextureSize = 1024;
+                return;
+            }
             if (!IsCharacterAsset(assetPath)) return;
             var ti = (TextureImporter)assetImporter;
             ti.maxTextureSize = 2048;

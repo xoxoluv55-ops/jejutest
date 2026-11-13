@@ -337,14 +337,14 @@ namespace MuscleBattle
             {
                 // CPU vs CPU demo: lets an animation pass run without keyboard input
                 combat.Fighters[0].InputSource = new CpuInputSource(GameSettings.Difficulty, 7);
-                Hud.Instance?.Commentary("DEBUG · P1 CPU (CPU vs CPU)", 2.5f);
+                // silent: keeps screenshots clean
                 Debug.Log("[MuscleBattle] Debug: P1 switched to CPU");
             }
             for (int i = 0; i < 2; i++)
             {
                 if (!Input.GetKeyDown(i == 0 ? KeyCode.F8 : KeyCode.F9) || combat.Fighters[i] == null) continue;
                 combat.Fighters[i].Meter = 300;
-                Hud.Instance?.Callout(i, "DEBUG · GAUGE FULL", Palette.Gold);
+                // silent: keeps screenshots clean
                 Debug.Log($"[MuscleBattle] Debug: P{i + 1} gauge full");
             }
         }

@@ -76,6 +76,19 @@ namespace MuscleBattle
             return img;
         }
 
+        /// <summary>
+        /// Cut-out character illustration from Resources/UI/Art (art_jin_menu, art_ray_quiz ...), sized by height with
+        /// its own aspect ratio. Returns null when the file is missing.
+        /// </summary>
+        public static RawImage Art(Transform parent, string resName, Vector2 anchor, Vector2 pivot, Vector2 pos, float height)
+        {
+            var tex = Resources.Load<Texture2D>("UI/Art/" + resName);
+            if (tex == null) return null;
+            var img = Raw(parent, "Art_" + resName, tex);
+            img.rectTransform.Place(anchor, pivot, pos, new Vector2(height * tex.width / tex.height, height));
+            return img;
+        }
+
         public static RawImage Raw(Transform parent, string name, Texture tex)
         {
             var rt = Node(name, parent);

@@ -62,6 +62,10 @@ namespace MuscleBattle
             vignette.rectTransform.Stretch();
             vignette.rectTransform.localScale = new Vector3(1, -1, 1);
 
+            // key art: Jin (left) and Ray (right), cut out from the concept illustration
+            UIKit.Art(Root, "art_jin_menu", new Vector2(0, 0), new Vector2(0, 0), new Vector2(-40, 60), 860);
+            UIKit.Art(Root, "art_ray_menu", new Vector2(1, 0), new Vector2(1, 0), new Vector2(60, 60), 820);
+
             _logo = UIKit.Node("Logo", Root).Place(new Vector2(0.5f, 0.68f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1500, 360));
             var glow = UIKit.Img(_logo, "Glow", UIKit.Glow, Palette.Muscle.WithAlpha(0.55f));
             glow.rectTransform.Stretch(-120);

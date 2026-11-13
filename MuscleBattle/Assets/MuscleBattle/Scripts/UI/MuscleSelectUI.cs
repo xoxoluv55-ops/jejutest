@@ -74,6 +74,9 @@ namespace MuscleBattle
             _shade.rectTransform.localScale = new Vector3(1, -1, 1);
             _shade.rectTransform.anchoredPosition = new Vector2(0, 860);
 
+            // both fighters' illustrations frame the challenge (left Jin, right Ray)
+            UIKit.Art(_root, "art_jin_quiz", new Vector2(0, 0), new Vector2(0, 0), new Vector2(-30, 0), 900);
+            UIKit.Art(_root, "art_ray_quiz", new Vector2(1, 0), new Vector2(1, 0), new Vector2(30, 0), 900);
             _panel = UIKit.Node("Panel", _root).Place(new Vector2(0.5f, 0), new Vector2(0.5f, 0), Vector2.zero, new Vector2(1500, 820));
 
             // ---- header ----
