@@ -292,6 +292,20 @@ namespace MuscleBattle
         ///   F7 = P1 becomes CPU (CPU vs CPU animation pass).
         /// (F1 is avoided: in the Unity Editor it opens the help page and steals keyboard focus.)
         /// </summary>
+        int _shotsLeft;
+        float _shotTimer;
+
+        static System.Collections.IEnumerator CaptureFrame(string file)
+        {
+            yield return new WaitForEndOfFrame();
+            var tex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+            tex.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+            tex.Apply();
+            System.IO.File.WriteAllBytes(file, tex.EncodeToPNG());
+            Destroy(tex);
+            Debug.Log("[MuscleBattle] Capture " + file);
+        }
+
         void DebugKeys()
         {
             if (!Application.isEditor && !Debug.isDebugBuild) return;
@@ -301,6 +315,21 @@ namespace MuscleBattle
                 if (Active) _limit = _debugLongTimer ? 60f : _q.TimeLimit;
                 Hud.Instance?.Commentary(_debugLongTimer ? "DEBUG · 답변 시간 60초 (F10으로 해제)" : "DEBUG · 답변 시간 기본값", 2.5f);
                 Debug.Log("[MuscleBattle] Debug: long answer window " + (_debugLongTimer ? "ON" : "OFF"));
+            }
+            // F6 = burst capture: a clean game-view PNG every 0.7 s (12 shots) into <project>/Captures
+            if (Input.GetKeyDown(KeyCode.F6)) { _shotsLeft = 12; _shotTimer = 0f; }
+            if (_shotsLeft > 0)
+            {
+                _shotTimer -= Time.unscaledDeltaTime;
+                if (_shotTimer <= 0f)
+                {
+                    _shotTimer = 0.7f;
+                    _shotsLeft--;
+                    var dir = System.IO.Path.Combine(Application.dataPath, "..", "Captures");
+                    System.IO.Directory.CreateDirectory(dir);
+                    var file = System.IO.Path.Combine(dir, $"shot_{System.DateTime.Now:HHmmss_fff}.png");
+                    StartCoroutine(CaptureFrame(file));
+                }
             }
             var combat = CombatManager.Instance;
             if (combat == null || combat.Phase != MatchPhase.Fighting || combat.Fighters == null) return;
