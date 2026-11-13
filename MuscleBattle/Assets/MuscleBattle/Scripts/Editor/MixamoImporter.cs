@@ -107,15 +107,11 @@ namespace MuscleBattle.EditorTools
             ti.maxTextureSize = 2048;
             if (Path.GetFileName(assetPath).Contains("Normal")) ti.textureType = TextureImporterType.NormalMap;
             ti.mipmapEnabled = true;
-            var file = Path.GetFileNameWithoutExtension(assetPath);
-            bool cutout = file.EndsWith("_Hair") || file.EndsWith("_Brows") || file.EndsWith("_Lashes");
-            ti.alphaSource = cutout ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
-            ti.alphaIsTransparency = cutout;
             foreach (var platform in new[] { "WebGL", "iPhone" })
             {
                 var s = ti.GetPlatformTextureSettings(platform);
                 s.overridden = true;
-                s.maxTextureSize = file.EndsWith("_Body") ? 2048 : 1024; // skin carries the face: keep it sharp
+                s.maxTextureSize = 1024;
                 s.format = TextureImporterFormat.ASTC_6x6;
                 s.compressionQuality = 50;
                 ti.SetPlatformTextureSettings(s);
@@ -126,15 +122,13 @@ namespace MuscleBattle.EditorTools
         {
             if (!IsCharacterAsset(assetPath) || m.shader == null || m.shader.name != "Standard") return;
             AssignTextures(m);
-            string kind = m.name.Substring(m.name.LastIndexOf('_') + 1);
-            float gloss = kind switch { "Body" => 0.36f, "Eyes" => 0.85f, "Hair" => 0.42f, "Gloves" => 0.45f, "Belt" => 0.4f, "Bands" => 0.4f, _ => 0.18f };
-            m.SetFloat("_Glossiness", gloss);
+            m.SetFloat("_Glossiness", 0.32f);
             m.SetFloat("_Metallic", 0f);
-            if (kind == "Hair" || kind == "Brows" || kind == "Lashes")
+            if (m.name.Contains("Hair") && !m.name.Contains("Brows"))
             {
-                // MakeHuman hair / brow / lash cards: alpha cutout (geometry is exported double-sided)
+                // hair cards: alpha cutout instead of an opaque (or sorting-prone fade) surface
                 m.SetFloat("_Mode", 1f);
-                m.SetFloat("_Cutoff", kind == "Hair" ? 0.42f : 0.3f);
+                m.SetFloat("_Cutoff", 0.45f);
                 m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
                 m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
                 m.SetInt("_ZWrite", 1);
@@ -163,17 +157,30 @@ namespace MuscleBattle.EditorTools
         /// </summary>
         static void AssignTextures(Material m)
         {
-            // MUSCLE BATTLE 2.0 MPFB fighters: every material M_{Id}_{Part} has a baked map T_{Id}_{Part}.png
             var parts = m.name.Split('_');
             if (parts.Length < 3 || parts[0] != "M") return;
             string id = parts[1];
             string kind = parts[parts.Length - 1];
-            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "Textures/T_" + id + "_" + kind + ".png");
-            if (tex == null) return;
+            string albedo = null, normal = null;
+            bool female = id == "Ray"; // Ray uses the female base body (different UV layout / hair cards)
+            switch (kind)
+            {
+                case "Body": albedo = $"T_{id}_Body"; normal = female ? "T_Fighter_F_Normal" : "T_Fighter_Normal"; break;
+                case "Hair": albedo = $"T_{id}_Hair"; normal = m.name.Contains("Brows") ? null : (female ? "T_Hair_2_Normal" : "T_Hair_1_Normal"); break;
+                case "Eyes": albedo = "T_Eye_Brown"; break;
+                default: return; // outfit pieces (Top, Pants, Gloves, Bands) keep their exported colours
+            }
             m.color = Color.white;
-            m.SetTexture("_MainTex", tex);
-            m.SetTexture("_BumpMap", null);
-            m.DisableKeyword("_NORMALMAP");
+            var tex = albedo == null ? null : AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "Textures/" + albedo + ".png");
+            if (tex != null) m.SetTexture("_MainTex", tex);
+            var nrm = normal == null ? null : AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "Textures/" + normal + ".png");
+            if (nrm != null)
+            {
+                m.SetTexture("_BumpMap", nrm);
+                m.SetFloat("_BumpScale", 1f);
+                m.EnableKeyword("_NORMALMAP");
+            }
+            else m.SetTexture("_BumpMap", null);
         }
 
         void OnPostprocessModel(GameObject go)
@@ -181,7 +188,7 @@ namespace MuscleBattle.EditorTools
             if (!IsCharacterAsset(assetPath)) return;
             foreach (var r in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
-                r.quality = SkinQuality.Bone4;          // MPFB weights blend up to 4 bones (shoulders / hips deform badly with 2)
+                r.quality = SkinQuality.Bone2;          // iPad: 2 bone weights is plenty at fighting-game distance
                 r.updateWhenOffscreen = false;
                 r.skinnedMotionVectors = false;
             }
