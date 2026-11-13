@@ -49,19 +49,14 @@ namespace MuscleBattle.EditorTools
             mi.animationCompression = ModelImporterAnimationCompression.Optimal;
             mi.resampleCurves = true;
 
-            if (IsAnimFile(assetPath, out var id))
+            if (IsAnimFile(assetPath, out _))
             {
-                // clips only: reuse the character's avatar so every clip retargets onto the same skeleton
+                // clips only. Each clip file gets its own avatar: Humanoid clips are stored in muscle space and
+                // retarget onto any Humanoid character (copying the character avatar fails when the exporter
+                // names the clip root after the file instead of "Armature").
                 mi.importAnimation = true;
                 mi.materialImportMode = ModelImporterMaterialImportMode.None;
-                var charPath = Root + id + ".fbx";
-                var avatar = AssetDatabase.LoadAssetAtPath<Avatar>(charPath);
-                if (avatar != null)
-                {
-                    mi.avatarSetup = ModelImporterAvatarSetup.CopyFromOther;
-                    mi.sourceAvatar = avatar;
-                }
-                else mi.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                mi.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
             }
             else
             {
@@ -98,6 +93,7 @@ namespace MuscleBattle.EditorTools
             if (!IsCharacterAsset(assetPath)) return;
             var ti = (TextureImporter)assetImporter;
             ti.maxTextureSize = 2048;
+            if (Path.GetFileName(assetPath).Contains("Normal")) ti.textureType = TextureImporterType.NormalMap;
             ti.mipmapEnabled = true;
             foreach (var platform in new[] { "WebGL", "iPhone" })
             {
@@ -108,6 +104,69 @@ namespace MuscleBattle.EditorTools
                 s.compressionQuality = 50;
                 ti.SetPlatformTextureSettings(s);
             }
+        }
+
+        void OnPostprocessMaterial(Material m)
+        {
+            if (!IsCharacterAsset(assetPath) || m.shader == null || m.shader.name != "Standard") return;
+            AssignTextures(m);
+            m.SetFloat("_Glossiness", 0.32f);
+            m.SetFloat("_Metallic", 0f);
+            if (m.name.Contains("Hair") && !m.name.Contains("Brows"))
+            {
+                // hair cards: alpha cutout instead of an opaque (or sorting-prone fade) surface
+                m.SetFloat("_Mode", 1f);
+                m.SetFloat("_Cutoff", 0.45f);
+                m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                m.SetInt("_ZWrite", 1);
+                m.EnableKeyword("_ALPHATEST_ON");
+                m.DisableKeyword("_ALPHABLEND_ON");
+                m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.AlphaTest;
+            }
+            else
+            {
+                m.SetFloat("_Mode", 0f);
+                m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                m.SetInt("_ZWrite", 1);
+                m.DisableKeyword("_ALPHATEST_ON");
+                m.DisableKeyword("_ALPHABLEND_ON");
+                m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                m.renderQueue = -1;
+            }
+        }
+
+        /// <summary>
+        /// Character textures live in Characters/Textures and are bound by material name:
+        /// M_{Id}_Body → T_{Id}_Body + T_Fighter_Normal, M_{Id}_Hair / M_{Id}_Brows_Hair → T_{Id}_Hair (+ T_Hair_1_Normal),
+        /// M_{Id}_Eyes → T_Eye_Brown. Missing files are skipped (Reimport Character Assets imports textures first).
+        /// </summary>
+        static void AssignTextures(Material m)
+        {
+            var parts = m.name.Split('_');
+            if (parts.Length < 3 || parts[0] != "M") return;
+            string id = parts[1];
+            string kind = parts[parts.Length - 1];
+            string albedo = null, normal = null;
+            switch (kind)
+            {
+                case "Body": albedo = $"T_{id}_Body"; normal = "T_Fighter_Normal"; break;
+                case "Hair": albedo = $"T_{id}_Hair"; normal = m.name.Contains("Brows") ? null : "T_Hair_1_Normal"; break;
+                case "Eyes": albedo = "T_Eye_Brown"; break;
+            }
+            m.color = Color.white;
+            var tex = albedo == null ? null : AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "Textures/" + albedo + ".png");
+            if (tex != null) m.SetTexture("_MainTex", tex);
+            var nrm = normal == null ? null : AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "Textures/" + normal + ".png");
+            if (nrm != null)
+            {
+                m.SetTexture("_BumpMap", nrm);
+                m.SetFloat("_BumpScale", 1f);
+                m.EnableKeyword("_NORMALMAP");
+            }
+            else m.SetTexture("_BumpMap", null);
         }
 
         void OnPostprocessModel(GameObject go)
@@ -124,7 +183,9 @@ namespace MuscleBattle.EditorTools
         [MenuItem("MUSCLE BATTLE/Characters/Reimport Character Assets (Mixamo)", priority = 11)]
         static void ReimportAll()
         {
-            // character models first (avatars), then clips that copy those avatars
+            // textures first (materials bind them by name), then character models, then clips
+            foreach (var t in AssetDatabase.FindAssets("t:Texture2D", new[] { Root + "Textures" }))
+                AssetDatabase.ImportAsset(AssetDatabase.GUIDToAssetPath(t), ImportAssetOptions.ForceUpdate);
             var guids = AssetDatabase.FindAssets("t:Model", new[] { Root.TrimEnd('/') });
             foreach (var pass in new[] { false, true })
                 foreach (var g in guids)

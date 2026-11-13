@@ -68,3 +68,9 @@ FighterRoot
   - 진짜 애니메이션 클립(Mixamo 등 Humanoid 클립)을 받으면 Animator 경로를 추가합니다. 이때도 전투 코드는 바꾸지 않습니다.
 - **근육질 표현**: VRoid는 근육질 체형 표현이 약합니다. 레이처럼 큰 체형은 어깨 · 가슴 폭과 의상 볼륨으로 최대한 표현하세요.
 - **팔 비틀림**: 손목 · 손바닥 방향 같은 미세한 비틀림은 모델에 따라 조정이 필요할 수 있습니다.
+
+## 2.0 업데이트 — 현재 파이프라인 (Humanoid FBX + 클립 폴더)
+- 모델: `Resources/Characters/{id}.fbx` (Humanoid). 텍스처: `Resources/Characters/Textures/` (머티리얼 이름 M_{Id}_Body/Hair/Eyes로 자동 연결).
+- 클립: `Resources/Characters/{id}_anims/{키}.fbx` — 파일 이름이 키 (idle, walk_forward, guard, hit, knockdown, getup, victory, 기술 id 또는 자세 이름 등, `HumanoidVisual.cs` 참고).
+- `Editor/MixamoImporter.cs`가 Humanoid 설정, 반복 여부, 압축을 자동 처리. 메뉴: MUSCLE BATTLE ▸ Characters ▸ Reimport Character Assets.
+- Mixamo 파일도 같은 규칙으로 넣으면 됨 (FBX for Unity, In Place).

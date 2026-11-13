@@ -1,0 +1,7 @@
+MUSCLE BATTLE character assets (all CC0 1.0 Public Domain)
+
+- Body / hair / eye meshes and textures: Quaternius "Universal Base Characters" (Superhero_Male), CC0.
+  Recoloured trunks/hair and body proportions adjusted per fighter (jin: bulkier, ray: leaner).
+- Animations: Quaternius "Universal Animation Library" 1 & 2 (Standard), CC0.
+  Fight-stance idle/guard and guard-walks were composed from these clips; travel is stripped (in place).
+https://quaternius.com

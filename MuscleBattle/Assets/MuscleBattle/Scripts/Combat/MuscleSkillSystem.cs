@@ -288,7 +288,8 @@ namespace MuscleBattle
 
         /// <summary>
         /// Play-test helpers (Editor / development builds only):
-        ///   F8 = P1 gauge full, F9 = P2 gauge full, F10 = toggle a 60 s answer window (to inspect the challenge UI).
+        ///   F8 = P1 gauge full, F9 = P2 gauge full, F10 = toggle a 60 s answer window (to inspect the challenge UI),
+        ///   F7 = P1 becomes CPU (CPU vs CPU animation pass).
         /// (F1 is avoided: in the Unity Editor it opens the help page and steals keyboard focus.)
         /// </summary>
         void DebugKeys()
@@ -303,6 +304,13 @@ namespace MuscleBattle
             }
             var combat = CombatManager.Instance;
             if (combat == null || combat.Phase != MatchPhase.Fighting || combat.Fighters == null) return;
+            if (Input.GetKeyDown(KeyCode.F7) && combat.Fighters[0] != null)
+            {
+                // CPU vs CPU demo: lets an animation pass run without keyboard input
+                combat.Fighters[0].InputSource = new CpuInputSource(GameSettings.Difficulty, 7);
+                Hud.Instance?.Commentary("DEBUG · P1 CPU (CPU vs CPU)", 2.5f);
+                Debug.Log("[MuscleBattle] Debug: P1 switched to CPU");
+            }
             for (int i = 0; i < 2; i++)
             {
                 if (!Input.GetKeyDown(i == 0 ? KeyCode.F8 : KeyCode.F9) || combat.Fighters[i] == null) continue;
