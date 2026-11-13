@@ -34,9 +34,12 @@ namespace MuscleBattle.EditorTools
             if (!File.Exists(ScenePath))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(ScenePath));
-                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+                // an unsaved "Untitled" scene can't host an additive scene: replace it instead (it is empty here,
+                // Bootstrap builds the game at runtime)
+                bool untitled = string.IsNullOrEmpty(UnityEngine.SceneManagement.SceneManager.GetActiveScene().path);
+                var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, untitled ? NewSceneMode.Single : NewSceneMode.Additive);
                 EditorSceneManager.SaveScene(scene, ScenePath);
-                EditorSceneManager.CloseScene(scene, true);
+                if (!untitled) EditorSceneManager.CloseScene(scene, true);
                 AssetDatabase.Refresh();
             }
 
