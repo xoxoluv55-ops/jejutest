@@ -173,9 +173,27 @@ namespace MuscleBattle
             ApplyTPose();
             _humanoid.Calibrate();
 
-            // move muscle holograms + trails onto the model's bones, re-centred on the model's joints
+            // move muscle holograms + trails onto the model's bones, re-centred on the model's joints.
+            // Chest overlays are authored relative to the prototype's chest joint; the model's chest bone sits at a
+            // different height below the shoulders, so shift them by that difference (keeps back / rib muscles on the ribs).
+            var chestBone = _bones[(int)J.Chest];
+            var mChest = _humanoid.Bone((int)J.Chest);
+            var mShL = _humanoid.Bone((int)J.ShoulderL);
+            var mShR = _humanoid.Bone((int)J.ShoulderR);
+            _chestShift = Vector3.zero;
+            if (mChest != null && mShL != null && mShR != null)
+            {
+                float dGap = (_bones[(int)J.ShoulderL].position.y + _bones[(int)J.ShoulderR].position.y) * 0.5f - chestBone.position.y;
+                float mGap = (mShL.position.y + mShR.position.y) * 0.5f - mChest.position.y;
+                _chestShift = new Vector3(0, mGap - dGap, 0);
+            }
             foreach (var list in _muscles.Values)
-                foreach (var r in list) Rehome(r.transform);
+                foreach (var r in list)
+                {
+                    bool onChest = r.transform.parent == chestBone;
+                    Rehome(r.transform);
+                    if (onChest) r.transform.position += _chestShift;
+                }
             foreach (var t in _trails) Rehome(t.transform);
 
             foreach (var r in _visual.GetComponentsInChildren<Renderer>(true)) r.enabled = false; // hide PrototypeVisual
@@ -183,12 +201,29 @@ namespace MuscleBattle
             _bones[(int)J.Hips].localPosition = new Vector3(0, 0.98f, 0);
         }
 
+        Vector3 _chestShift;
+
         void Rehome(Transform t)
         {
             int idx = System.Array.IndexOf(_bones, t.parent);
             var target = _humanoid.Bone(idx);
             if (target == null) return;
-            t.position += target.position - t.parent.position;
+            // limb segments: keep the overlay at the same fraction along the model's bone (model femurs angle inward,
+            // so a straight-down offset would drift to the outside of the thigh)
+            int child = idx == (int)J.ThighL ? (int)J.KneeL : idx == (int)J.ThighR ? (int)J.KneeR :
+                        idx == (int)J.KneeL ? (int)J.FootL : idx == (int)J.KneeR ? (int)J.FootR : -1;
+            var mChild = child >= 0 ? _humanoid.Bone(child) : null;
+            if (mChild != null)
+            {
+                var dAxis = _bones[child].position - t.parent.position;
+                var mAxis = mChild.position - target.position;
+                var d = t.position - t.parent.position;
+                float along = Vector3.Dot(d, dAxis.normalized);
+                var perp = d - dAxis.normalized * along;
+                float k = dAxis.magnitude > 1e-4f ? mAxis.magnitude / dAxis.magnitude : 1f;
+                t.position = target.position + mAxis.normalized * (along * k) + perp;
+            }
+            else t.position += target.position - t.parent.position;
             t.SetParent(target, true);
         }
 
@@ -327,6 +362,26 @@ namespace MuscleBattle
             Overlay(MuscleGroup.Hamstrings, thR, new Vector3(0, -0.22f, -0.05f), new Vector3(0.14f, 0.34f, 0.11f));
             Overlay(MuscleGroup.Gastrocnemius, knL, new Vector3(0, -0.14f, -0.04f), new Vector3(0.12f, 0.2f, 0.1f));
             Overlay(MuscleGroup.Gastrocnemius, knR, new Vector3(0, -0.14f, -0.04f), new Vector3(0.12f, 0.2f, 0.1f));
+
+            // single muscles (anatomy cards, x-ray tags). Left side = -x.
+            for (int i = 0; i < 2; i++)
+            {
+                float s = i == 0 ? -1f : 1f;
+                var th = i == 0 ? thL : thR;
+                Overlay(MuscleGroup.PsoasMajor, spine, new Vector3(s * 0.05f, -0.03f, 0.075f), new Vector3(0.05f, 0.18f, 0.04f));
+                Overlay(MuscleGroup.PsoasMajor, hips, new Vector3(s * 0.075f, -0.07f, 0.1f), new Vector3(0.05f, 0.13f, 0.04f));
+                Overlay(MuscleGroup.GluteusMedius, hips, new Vector3(s * 0.14f, 0.05f, -0.04f), new Vector3(0.1f, 0.1f, 0.12f));
+                Overlay(MuscleGroup.TeresMajor, chest, new Vector3(s * 0.15f * b, -0.03f, -0.08f), new Vector3(0.09f, 0.05f, 0.05f));
+                Overlay(MuscleGroup.TeresMinor, chest, new Vector3(s * 0.15f * b, 0.03f, -0.09f), new Vector3(0.08f, 0.04f, 0.04f));
+                Overlay(MuscleGroup.Subscapularis, chest, new Vector3(s * 0.11f * b, 0.06f, -0.05f), new Vector3(0.12f, 0.12f, 0.03f));
+                Overlay(MuscleGroup.Rhomboid, chest, new Vector3(s * 0.06f, 0.1f, -0.14f), new Vector3(0.07f, 0.11f, 0.05f));
+                Overlay(MuscleGroup.RectusFemoris, th, new Vector3(0, -0.2f, 0.075f), new Vector3(0.07f, 0.36f, 0.06f));
+                Overlay(MuscleGroup.VastusLateralis, th, new Vector3(s * 0.055f, -0.22f, 0.02f), new Vector3(0.06f, 0.32f, 0.1f));
+                Overlay(MuscleGroup.BicepsFemoris, th, new Vector3(s * 0.04f, -0.22f, -0.06f), new Vector3(0.06f, 0.32f, 0.07f));
+                Overlay(MuscleGroup.MedialHamstrings, th, new Vector3(-s * 0.035f, -0.22f, -0.06f), new Vector3(0.06f, 0.32f, 0.07f));
+            }
+            Overlay(MuscleGroup.TrapeziusUpper, chest, new Vector3(0, 0.21f, -0.08f), new Vector3(0.3f * b, 0.09f, 0.1f));
+            Overlay(MuscleGroup.TrapeziusLower, chest, new Vector3(0, 0.02f, -0.12f), new Vector3(0.12f * b, 0.18f, 0.05f));
         }
 
         void Overlay(MuscleGroup group, Transform parent, Vector3 pos, Vector3 scale)
@@ -718,7 +773,7 @@ namespace MuscleBattle
         {
             _mpb.SetFloat("_Flash", amount);
             _mpb.SetColor("_FlashColor", c);
-            if (_humanoid != null) _humanoid.SetFlash(c, amount);
+            if (_humanoid != null) _humanoid.SetFlash(c, 0f, amount); // real model: x-ray darkening (emission alone can't darken)
             else foreach (var r in _bodyRenderers) r.SetPropertyBlock(_mpb);
         }
 

@@ -131,7 +131,7 @@ namespace MuscleBattle
                 ModelResourcePath = "Characters/jin", // Mixamo / VRoid Humanoid -> Resources/Characters/jin (docs/CHARACTER_PIPELINE.md)
                 SpecialName = "숄더 어브덕션 러시", SpecialNameEn = "Shoulder Abduction Rush",
                 UltimateName = "스캐퓰러 포스 커플", UltimateNameEn = "Scapular Force Couple",
-                SignatureMuscles = "삼각근 + 극상근 (Deltoid + Supraspinatus)",
+                SignatureMuscles = "어깨세모근 + 가시위근 (Deltoid + Supraspinatus)",
             };
 
             d.Add(new MoveData { Id = "l1", DisplayName = "헤비 잽", Kind = MoveKind.Light, Pose = AttackPose.Jab, Limb = Limb.LeftHand,
@@ -175,7 +175,7 @@ namespace MuscleBattle
                 Startup = 22, Active = 26, Recovery = 32, Damage = 66, HitStun = 40, BlockStun = 16, Knockback = 0.3f, Reach = 1.2f, Radius = 0.8f,
                 Lunge = 2.0f, Hits = 5, HitInterval = 6, MeterCost = 300, MeterOnHit = 0, ChainSpecial = null,
                 Muscles = MuscleGroup.Trapezius | MuscleGroup.SerratusAnterior | MuscleGroup.Deltoid,
-                MuscleCaption = "위·아래 등세모근 + 앞톱니근  ·  Trapezius + Serratus Anterior" });
+                MuscleCaption = "등세모근 위·아래부분 + 앞톱니근  ·  Trapezius + Serratus Anterior" });
             return d;
         }
 
@@ -205,8 +205,8 @@ namespace MuscleBattle
                 },
                 SignatureSkills = new[]
                 {
-                    new IconLabel("Hamstring Whip", "arc", "뒤넙다리근 · 큰볼기근"),
-                    new IconLabel("Quadriceps Drive", "chevron", "넙다리네갈래근"),
+                    new IconLabel("Hamstring Whip", "arc", "넙다리두갈래근 · 큰볼기근"),
+                    new IconLabel("Quadriceps Drive", "chevron", "넙다리곧은근 · 가쪽넓은근"),
                     new IconLabel("Glute Max Smash", "burst", "큰볼기근"),
                 },
                 Personality = SelectPersonality.Confident,
@@ -222,7 +222,7 @@ namespace MuscleBattle
                 ModelResourcePath = "Characters/ray",
                 SpecialName = "햄스트링 윕 콤보", SpecialNameEn = "Hamstring Whip Combo",
                 UltimateName = "쿼드 라이트닝", UltimateNameEn = "Quadriceps Lightning",
-                SignatureMuscles = "큰볼기근 + 뒤넙다리근 (Gluteus Maximus + Hamstrings)",
+                SignatureMuscles = "큰볼기근 + 넙다리두갈래근 (Gluteus Maximus + Biceps Femoris)",
             };
 
             d.Add(new MoveData { Id = "l1", DisplayName = "잽", Kind = MoveKind.Light, Pose = AttackPose.Jab, Limb = Limb.LeftHand,
@@ -260,13 +260,13 @@ namespace MuscleBattle
                 Impact = ImpactTier.Heavy, Sfx = SfxKind.Kick,
                 Startup = 12, Active = 20, Recovery = 22, Damage = 40, HitStun = 22, BlockStun = 10, Knockback = 0.3f, Reach = 1.25f, Radius = 0.65f,
                 Lunge = 3.0f, Hits = 5, HitInterval = 4, MeterCost = 100, MeterOnHit = 0, ChainSpecial = null,
-                Muscles = MuscleGroup.Gluteus | MuscleGroup.Hamstrings, MuscleCaption = "큰볼기근 + 뒤넙다리근  ·  Gluteus Maximus + Hamstrings" });
+                Muscles = MuscleGroup.Gluteus | MuscleGroup.Hamstrings, MuscleCaption = "큰볼기근 + 넙다리두갈래근·반막근  ·  Gluteus Maximus + Hamstrings" });
             d.Add(new MoveData { Id = "ultimate", DisplayName = d.UltimateName, Kind = MoveKind.Ultimate, Pose = AttackPose.UltimateBurst, Limb = Limb.RightFoot,
                 Impact = ImpactTier.Ultimate, Sfx = SfxKind.Kick,
                 Startup = 18, Active = 32, Recovery = 26, Damage = 44, HitStun = 40, BlockStun = 14, Knockback = 0.25f, Reach = 1.2f, Radius = 0.75f,
                 Lunge = 2.6f, Hits = 7, HitInterval = 4, MeterCost = 300, MeterOnHit = 0, ChainSpecial = null,
                 Muscles = MuscleGroup.Quadriceps | MuscleGroup.Gluteus | MuscleGroup.Hamstrings,
-                MuscleCaption = "넙다리네갈래근 + 큰볼기근 + 뒤넙다리근" });
+                MuscleCaption = "넙다리곧은근·넓은근 + 큰볼기근 + 넙다리두갈래근" });
             return d;
         }
     }

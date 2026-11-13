@@ -25,7 +25,20 @@ namespace MuscleBattle
         Hamstrings = 1 << 10,
         Gastrocnemius = 1 << 11,
         SerratusAnterior = 1 << 12,
-        Infraspinatus = 1 << 13,   // + teres minor (posterior rotator cuff, external rotation)
+        Infraspinatus = 1 << 13,
+        // single muscles for anatomy cards / x-ray tags (placed at their real location)
+        PsoasMajor = 1 << 14,       // lumbar spine → lesser trochanter (deep, front of hip)
+        GluteusMedius = 1 << 15,    // outer ilium, above / lateral to gluteus maximus
+        TeresMajor = 1 << 16,       // inferior angle of scapula → humerus
+        TeresMinor = 1 << 17,       // lateral border of scapula, below infraspinatus
+        Subscapularis = 1 << 18,    // costal (front) surface of the scapula
+        Rhomboid = 1 << 19,         // spine → medial border of scapula
+        RectusFemoris = 1 << 20,    // front-centre of the thigh
+        VastusLateralis = 1 << 21,  // lateral thigh
+        BicepsFemoris = 1 << 22,    // lateral hamstring
+        MedialHamstrings = 1 << 23, // semitendinosus + semimembranosus (medial hamstrings)
+        TrapeziusUpper = 1 << 24,
+        TrapeziusLower = 1 << 25,
     }
 
     /// <summary>Animation keys understood by FighterRig.</summary>

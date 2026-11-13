@@ -30,8 +30,10 @@ namespace MuscleBattle
 
     /// <summary>
     /// One muscle-knowledge prompt attached to a special / ultimate.
-    /// Content = standard textbook kinesiology (prime movers, force couples, innervation).
-    /// Korean names follow the current Korean anatomical terminology (가시위근, 어깨세모근 ...).
+    /// Content follows the user's anatomy textbook first (same source as MyoForge scripts/fullbody/textbook/tb.tsv):
+    /// textbook muscle names and action wording (위팔의 벌림, 종아리의 굽힘 ...), textbook innervation (no root levels).
+    /// Exception: scapular upward rotation of serratus anterior is standard kinesiology (textbook: 어깨뼈의 내림(벌림),
+    /// flagged for professor review in MyoForge ANATOMY_REVIEW_41 #8).
     /// </summary>
     public sealed class MuscleQuestion
     {
@@ -147,13 +149,13 @@ namespace MuscleBattle
                 Id = "shoulder_abduction", Kind = QuestionKind.Action,
                 MotionKo = "어깨관절 벌림", MotionEn = "SHOULDER ABDUCTION",
                 PromptKo = "이 동작의 주요 근육 2개를 선택하세요.",
-                TutorialKo = "어깨관절 벌림은 가시위근과 어깨세모근이 중요한 역할을 합니다.",
-                Explanation = "가시위근이 벌림을 시작하고(초기 약 15°) 어깨세모근 중간섬유가 이어받습니다. 큰원근·넓은등근은 모음·폄 근육!",
+                TutorialKo = "위팔의 벌림은 가시위근과 어깨세모근이 담당합니다.",
+                Explanation = "가시위근·어깨세모근 = 위팔의 벌림. 큰원근은 모음·안쪽돌림, 넓은등근은 폄·모음·안쪽돌림!",
                 Options = new[]
                 {
                     M("가시위근", "Supraspinatus", MuscleGroup.Supraspinatus, true),
                     M("어깨세모근", "Deltoid", MuscleGroup.Deltoid, true),
-                    M("큰원근", "Teres Major", MuscleGroup.Latissimus, false),
+                    M("큰원근", "Teres Major", MuscleGroup.TeresMajor, false),
                     M("넓은등근", "Latissimus Dorsi", MuscleGroup.Latissimus, false),
                 },
             };
@@ -162,13 +164,13 @@ namespace MuscleBattle
                 Id = "shoulder_external_rotation", Kind = QuestionKind.Action,
                 MotionKo = "어깨관절 가쪽돌림", MotionEn = "SHOULDER EXTERNAL ROTATION",
                 PromptKo = "이 동작의 주요 근육 2개를 선택하세요.",
-                TutorialKo = "어깨관절 가쪽돌림은 가시아래근과 작은원근이 담당합니다.",
-                Explanation = "가시아래근 + 작은원근 = 가쪽돌림(회전근띠 뒤쪽). 어깨밑근·큰가슴근은 안쪽돌림 근육!",
+                TutorialKo = "위팔의 가쪽돌림은 가시아래근과 작은원근이 담당합니다.",
+                Explanation = "가시아래근 + 작은원근 = 위팔의 가쪽돌림. 어깨밑근은 안쪽돌림, 큰가슴근은 굽힘·모음·안쪽돌림!",
                 Options = new[]
                 {
                     M("가시아래근", "Infraspinatus", MuscleGroup.Infraspinatus, true),
-                    M("작은원근", "Teres Minor", MuscleGroup.Infraspinatus, true),
-                    M("어깨밑근", "Subscapularis", MuscleGroup.SerratusAnterior, false),
+                    M("작은원근", "Teres Minor", MuscleGroup.TeresMinor, true),
+                    M("어깨밑근", "Subscapularis", MuscleGroup.Subscapularis, false),
                     M("큰가슴근", "Pectoralis Major", MuscleGroup.Pectoralis, false),
                 },
             };
@@ -177,8 +179,8 @@ namespace MuscleBattle
                 Id = "deltoid_innervation", Kind = QuestionKind.Innervation,
                 MotionKo = "어깨세모근의 지배신경", MotionEn = "DELTOID INNERVATION",
                 PromptKo = "어깨세모근을 지배하는 신경 1개를 선택하세요.",
-                TutorialKo = "어깨세모근은 겨드랑신경(C5–C6)이 지배합니다.",
-                Explanation = "어깨세모근 = 겨드랑신경(C5–C6). 어깨위신경은 가시위근·가시아래근, 근육피부신경은 위팔두갈래근!",
+                TutorialKo = "어깨세모근은 겨드랑신경이 지배합니다.",
+                Explanation = "어깨세모근 = 겨드랑신경(작은원근도 겨드랑신경). 어깨위신경은 가시위근·가시아래근, 근육피부신경은 위팔두갈래근!",
                 ShowOnBody = MuscleGroup.Deltoid,
                 TimeLimit = 4f,
                 Options = new[]
@@ -194,15 +196,15 @@ namespace MuscleBattle
                 Id = "scapular_upward_rotation", Kind = QuestionKind.ForceCouple,
                 MotionKo = "어깨뼈 위쪽돌림", MotionEn = "SCAPULAR UPWARD ROTATION",
                 PromptKo = "짝힘(Force Couple)을 이루는 근육 3개를 선택하세요.",
-                TutorialKo = "어깨뼈 위쪽돌림은 위등세모근·아래등세모근·앞톱니근의 짝힘입니다.",
-                Explanation = "위·아래 등세모근 + 앞톱니근 = 위쪽돌림 짝힘. 큰마름근은 아래쪽돌림!",
+                TutorialKo = "어깨뼈 위쪽돌림은 등세모근 위부분·아래부분과 앞톱니근의 짝힘입니다.",
+                Explanation = "등세모근 위·아래부분 + 앞톱니근 = 위쪽돌림 짝힘. 큰마름근은 어깨뼈 모음·올림!",
                 TimeLimit = 5.5f,
                 Options = new[]
                 {
-                    M("위등세모근", "Upper Trapezius", MuscleGroup.Trapezius, true),
-                    M("아래등세모근", "Lower Trapezius", MuscleGroup.Trapezius, true),
+                    M("등세모근 위부분", "Upper Trapezius", MuscleGroup.TrapeziusUpper, true),
+                    M("등세모근 아래부분", "Lower Trapezius", MuscleGroup.TrapeziusLower, true),
                     M("앞톱니근", "Serratus Anterior", MuscleGroup.SerratusAnterior, true),
-                    M("큰마름근", "Rhomboid Major", MuscleGroup.Trapezius, false),
+                    M("큰마름근", "Rhomboid Major", MuscleGroup.Rhomboid, false),
                 },
             };
 
@@ -212,14 +214,14 @@ namespace MuscleBattle
                 Id = "hip_extension", Kind = QuestionKind.Action,
                 MotionKo = "엉덩관절 폄", MotionEn = "HIP EXTENSION",
                 PromptKo = "이 동작의 주요 근육 2개를 선택하세요.",
-                TutorialKo = "엉덩관절 폄은 큰볼기근과 뒤넙다리근(햄스트링)이 만듭니다.",
-                Explanation = "큰볼기근 + 뒤넙다리근 = 엉덩관절 폄(데드리프트의 힘). 엉덩허리근·넙다리곧은근은 굽힘 근육!",
+                TutorialKo = "넙적다리의 폄은 큰볼기근과 반막근·반힘줄근·넙다리두갈래근이 만듭니다.",
+                Explanation = "큰볼기근 + 반막근 = 넙적다리의 폄(데드리프트의 힘). 큰허리근·넙다리곧은근은 넙적다리의 굽힘!",
                 Options = new[]
                 {
                     M("큰볼기근", "Gluteus Maximus", MuscleGroup.Gluteus, true),
-                    M("뒤넙다리근", "Hamstrings", MuscleGroup.Hamstrings, true),
-                    M("엉덩허리근", "Iliopsoas", MuscleGroup.Core, false),
-                    M("넙다리곧은근", "Rectus Femoris", MuscleGroup.Quadriceps, false),
+                    M("반막근", "Semimembranosus", MuscleGroup.MedialHamstrings, true),
+                    M("큰허리근", "Psoas Major", MuscleGroup.PsoasMajor, false),
+                    M("넙다리곧은근", "Rectus Femoris", MuscleGroup.RectusFemoris, false),
                 },
             };
             yield return new MuscleQuestion
@@ -227,13 +229,13 @@ namespace MuscleBattle
                 Id = "knee_extension", Kind = QuestionKind.Action,
                 MotionKo = "무릎관절 폄", MotionEn = "KNEE EXTENSION",
                 PromptKo = "이 동작의 주요 근육 2개를 선택하세요.",
-                TutorialKo = "무릎관절 폄은 넙다리네갈래근(넙다리곧은근·가쪽넓은근 등)이 담당합니다.",
-                Explanation = "넙다리곧은근 + 가쪽넓은근 = 넙다리네갈래근 → 무릎 폄. 넙다리두갈래근·장딴지근은 무릎 굽힘!",
+                TutorialKo = "종아리의 폄은 넙다리곧은근과 가쪽·안쪽·중간넓은근이 담당합니다.",
+                Explanation = "넙다리곧은근 + 가쪽넓은근 = 종아리의 폄(넙다리신경). 넙다리두갈래근·장딴지근은 종아리의 굽힘!",
                 Options = new[]
                 {
-                    M("넙다리곧은근", "Rectus Femoris", MuscleGroup.Quadriceps, true),
-                    M("가쪽넓은근", "Vastus Lateralis", MuscleGroup.Quadriceps, true),
-                    M("넙다리두갈래근", "Biceps Femoris", MuscleGroup.Hamstrings, false),
+                    M("넙다리곧은근", "Rectus Femoris", MuscleGroup.RectusFemoris, true),
+                    M("가쪽넓은근", "Vastus Lateralis", MuscleGroup.VastusLateralis, true),
+                    M("넙다리두갈래근", "Biceps Femoris", MuscleGroup.BicepsFemoris, false),
                     M("장딴지근", "Gastrocnemius", MuscleGroup.Gastrocnemius, false),
                 },
             };
@@ -242,14 +244,14 @@ namespace MuscleBattle
                 Id = "knee_flexion", Kind = QuestionKind.Action,
                 MotionKo = "무릎관절 굽힘", MotionEn = "KNEE FLEXION",
                 PromptKo = "이 동작의 주요 근육 2개를 선택하세요.",
-                TutorialKo = "무릎관절 굽힘은 뒤넙다리근(넙다리두갈래근·반힘줄근 등)이 담당합니다.",
-                Explanation = "넙다리두갈래근 + 반힘줄근 = 뒤넙다리근 → 무릎 굽힘. 넙다리곧은근은 폄, 중간볼기근은 벌림!",
+                TutorialKo = "종아리의 굽힘은 넙다리두갈래근·반힘줄근·반막근이 담당합니다.",
+                Explanation = "넙다리두갈래근 + 반힘줄근 = 종아리의 굽힘(궁둥신경). 넙다리곧은근은 종아리의 폄, 중간볼기근은 넙적다리의 벌림!",
                 Options = new[]
                 {
-                    M("넙다리두갈래근", "Biceps Femoris", MuscleGroup.Hamstrings, true),
-                    M("반힘줄근", "Semitendinosus", MuscleGroup.Hamstrings, true),
-                    M("넙다리곧은근", "Rectus Femoris", MuscleGroup.Quadriceps, false),
-                    M("중간볼기근", "Gluteus Medius", MuscleGroup.Gluteus, false),
+                    M("넙다리두갈래근", "Biceps Femoris", MuscleGroup.BicepsFemoris, true),
+                    M("반힘줄근", "Semitendinosus", MuscleGroup.MedialHamstrings, true),
+                    M("넙다리곧은근", "Rectus Femoris", MuscleGroup.RectusFemoris, false),
+                    M("중간볼기근", "Gluteus Medius", MuscleGroup.GluteusMedius, false),
                 },
             };
         }
