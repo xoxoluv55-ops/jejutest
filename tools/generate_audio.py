@@ -772,7 +772,7 @@ VOICES = {
     # key: (text, espeak voice, speed, pitch, sox pitch cents)
     # MUSCLE BATTLE 2.0: Jin = power (deep, heavy), Ray = speed (light, quick)
     "jin_lock": ("Full power.", "en-us+m7", "118", "18", "-330"),
-    "ray_lock": ("Too slow!", "en-us+m1", "165", "55", "-100"),
+    "ray_lock": ("Too slow!", "en-us+f3", "165", "65", "0"),
 }
 
 

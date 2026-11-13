@@ -162,11 +162,13 @@ namespace MuscleBattle.EditorTools
             string id = parts[1];
             string kind = parts[parts.Length - 1];
             string albedo = null, normal = null;
+            bool female = id == "Ray"; // Ray uses the female base body (different UV layout / hair cards)
             switch (kind)
             {
-                case "Body": albedo = $"T_{id}_Body"; normal = "T_Fighter_Normal"; break;
-                case "Hair": albedo = $"T_{id}_Hair"; normal = m.name.Contains("Brows") ? null : "T_Hair_1_Normal"; break;
+                case "Body": albedo = $"T_{id}_Body"; normal = female ? "T_Fighter_F_Normal" : "T_Fighter_Normal"; break;
+                case "Hair": albedo = $"T_{id}_Hair"; normal = m.name.Contains("Brows") ? null : (female ? "T_Hair_2_Normal" : "T_Hair_1_Normal"); break;
                 case "Eyes": albedo = "T_Eye_Brown"; break;
+                default: return; // outfit pieces (Top, Pants, Gloves, Bands) keep their exported colours
             }
             m.color = Color.white;
             var tex = albedo == null ? null : AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "Textures/" + albedo + ".png");
