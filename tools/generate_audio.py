@@ -770,8 +770,9 @@ def build_announcer(only=None):
 # --------------------------------------------------------------------------
 VOICES = {
     # key: (text, espeak voice, speed, pitch, sox pitch cents)
-    "jin_lock": ("Ready. Let's move!", "en-us+m1", "150", "52", "-120"),
-    "ray_lock": ("Time to lift.", "en-us+m7", "118", "18", "-330"),
+    # MUSCLE BATTLE 2.0: Jin = power (deep, heavy), Ray = speed (light, quick)
+    "jin_lock": ("Full power.", "en-us+m7", "118", "18", "-330"),
+    "ray_lock": ("Too slow!", "en-us+m1", "165", "55", "-100"),
 }
 
 
@@ -779,8 +780,9 @@ def build_select_ui():
     print("Character select")
     write_ogg("select_lock_layer", stereo(bgm_select_lock_layer(), 0.8), "BGM", 4)
     write_ogg("select_tension_layer", stereo(bgm_select_tension_layer(), 0.5), "BGM", 4)
-    write_ogg("theme_jin", stereo(theme_sting("jin"), 0.7), "SFX", 4)
-    write_ogg("theme_ray", stereo(theme_sting("ray"), 0.5), "SFX", 4)
+    # theme_sting("jin") = bright rising arpeggio (speed), theme_sting("ray") = heavy power chord (power)
+    write_ogg("theme_jin", stereo(theme_sting("ray"), 0.5), "SFX", 4)   # Jin: power
+    write_ogg("theme_ray", stereo(theme_sting("jin"), 0.7), "SFX", 4)   # Ray: speed
     out_dir = os.path.join(ROOT, "Voice")
     os.makedirs(out_dir, exist_ok=True)
     with tempfile.TemporaryDirectory() as td:

@@ -405,6 +405,7 @@ namespace MuscleBattle
                 TimeController.Instance?.SlowMotion(0.3f, 1.6f);
                 CameraManager.Instance?.Focus(f, 1.3f, 0.5f);
                 var limb = f.Rig != null ? f.Rig.LimbTransform(m.Limb) : null;
+                f.Rig?.XRay(0.26f * groups.Count + 0.9f); // muscle awakening: x-ray body, glowing muscles
                 // light the correct muscles one after another, then pull their energy into the striking limb
                 var lit = MuscleGroup.None;
                 for (int i = 0; i < groups.Count; i++)
@@ -426,6 +427,7 @@ namespace MuscleBattle
             else
             {
                 f.Rig?.GlowMuscles(q.CorrectGroups, 1.6f, r == LinkResult.Partial ? f.Def.Energy : Palette.TextDim);
+                if (r == LinkResult.Partial) f.Rig?.XRay(0.9f);
                 for (int i = 0; i < groups.Count; i++)
                     Hud.Instance?.ShowAnatomy(f, groups[i].g, (r == LinkResult.Miss ? "정답 · " : "") + groups[i].ko, groups[i].en, tagColor, 1.8f, i);
                 Hud.Instance?.Callout(f.Side, r == LinkResult.Partial ? "PARTIAL LINK" : "MUSCLE LINK FAILED", r == LinkResult.Partial ? Color.white : Palette.TextDim, true);

@@ -167,7 +167,7 @@ namespace MuscleBattle
         /// </summary>
         void AttachHumanoid()
         {
-            _humanoid = HumanoidVisual.TryCreate(_visualRoot, transform, Def, _bones);
+            _humanoid = HumanoidVisual.TryCreate(_visualRoot, transform, Def, _bones, Fighter != null);
             if (_humanoid == null) return;
 
             ApplyTPose();
@@ -405,6 +405,24 @@ namespace MuscleBattle
         }
 
         /// <summary>Light up muscle groups as anatomy holograms on the body.</summary>
+        float _xrayTime, _xrayDuration;
+        /// <summary>Muscle awakening X-RAY: the body fades to a dark scan silhouette so the lit muscles read anatomically.</summary>
+        public void XRay(float seconds)
+        {
+            _xrayDuration = Mathf.Max(0.01f, seconds);
+            _xrayTime = seconds;
+        }
+
+        public float XRayAmount
+        {
+            get
+            {
+                if (_xrayTime <= 0) return 0f;
+                float elapsed = _xrayDuration - _xrayTime;
+                return Mathf.Clamp01(Mathf.Min(elapsed / 0.12f, _xrayTime / 0.3f));
+            }
+        }
+
         public void GlowMuscles(MuscleGroup mask, float seconds, Color color)
         {
             _glowMask = mask;
@@ -789,7 +807,9 @@ namespace MuscleBattle
             }
             _hipY = Mathf.Lerp(_hipY, hipY, k);
             _bones[(int)J.Hips].localPosition = new Vector3(0, 0.98f + _hipY, 0);
-            _humanoid?.Apply();
+            // real clips (Mixamo) pose the model when one covers this state; otherwise the procedural retarget does
+            bool clipDriven = _humanoid != null && _humanoid.Drive(Fighter, dt, _selectMode);
+            if (!clipDriven) _humanoid?.Apply();
 
             UpdateTrails();
             UpdateFlashAndGlow(dt);
@@ -852,9 +872,13 @@ namespace MuscleBattle
                 _flash -= Time.unscaledDeltaTime;
                 flash = Mathf.Clamp01(_flash / 0.08f) * 0.85f;
             }
-            _mpb.SetFloat("_Flash", flash);
-            _mpb.SetColor("_FlashColor", _flashColor);
-            if (_humanoid != null) _humanoid.SetFlash(_flashColor, flash);
+            if (_xrayTime > 0) _xrayTime -= Time.unscaledDeltaTime;
+            float xray = XRayAmount;
+            var xrayTint = new Color(0.08f, 0.1f, 0.2f);
+            bool xrayWins = xray * 0.85f > flash;
+            _mpb.SetFloat("_Flash", xrayWins ? xray * 0.85f : flash);
+            _mpb.SetColor("_FlashColor", xrayWins ? xrayTint : _flashColor);
+            if (_humanoid != null) _humanoid.SetFlash(_flashColor, flash, xray);
             else foreach (var r in _bodyRenderers) r.SetPropertyBlock(_mpb);
 
             if (_glowTime > 0)
