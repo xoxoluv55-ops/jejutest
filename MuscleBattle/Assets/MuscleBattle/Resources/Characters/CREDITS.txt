@@ -1,7 +1,12 @@
-MUSCLE BATTLE character assets (all CC0 1.0 Public Domain)
+MUSCLE BATTLE 2.0 character assets
 
-- Body / hair / eye meshes and textures: Quaternius "Universal Base Characters" (Superhero_Male), CC0.
-  Recoloured trunks/hair and body proportions adjusted per fighter (jin: bulkier, ray: leaner).
-- Animations: Quaternius "Universal Animation Library" 1 & 2 (Standard), CC0.
-  Fight-stance idle/guard and guard-walks were composed from these clips; travel is stripped (in place).
+- Fighter bodies, faces, eyes, eyebrows, eyelashes, hair (short02 / ponytail01) and skin textures
+  (young_asian_male / young_asian_female): MakeHuman / MPFB2 system assets, CC0 1.0.
+  https://static.makehumancommunity.org  (makehuman_system_assets_cc0.zip)
+  Bodies shaped with MakeHuman targets in MPFB2 (Blender add-on, GPLv3 code; generated output is ours),
+  Mixamo-compatible "mixamo_unity" rig in T-pose.
+- Outfits (Jin: sleeveless vest, pants, belt, gloves / Ray: crop top, pants, gloves, arm bands) are modelled
+  from the body surface in Blender by tools/character_build/mpfb/build_mpfb.py and rigged with copied weights.
+  Textures baked by the same script. Original work for this project.
+- Animations: Quaternius "Universal Animation Library" 1 & 2 (Standard), CC0. Retargeted through Unity Humanoid.
 https://quaternius.com
