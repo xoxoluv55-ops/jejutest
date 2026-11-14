@@ -1,0 +1,13 @@
+# Unity
+NerveRunner/[Ll]ibrary/
+NerveRunner/[Tt]emp/
+NerveRunner/[Oo]bj/
+NerveRunner/[Bb]uild/
+NerveRunner/[Bb]uilds/
+NerveRunner/[Ll]ogs/
+NerveRunner/[Uu]ser[Ss]ettings/
+NerveRunner/*.csproj
+NerveRunner/*.sln
+# .NET tool output
+Tools/**/bin/
+Tools/**/obj/
