@@ -22,6 +22,7 @@ namespace NerveRunner
         GameObject bridge;
         TrackSegment cleft;
         Material ringHitMat;
+        readonly List<SaltatoryTunnelView> tunnels = new List<SaltatoryTunnelView>();
 
         static readonly Color Line = Pal.Hex(0x37D8FF);
 
@@ -92,7 +93,12 @@ namespace NerveRunner
             var under = Mats.Emissive(Pal.Hex(0x2A1F6E), Pal.Purple * 0.5f);
             MeshKit.MeshObject(root, "Fiber", MeshKit.Ribbon(seg, 0f, seg.length, -hw * 0.6f, hw * 0.6f, yOff - 0.8f, 10f, 4f), under);
 
-            if (seg.zone == ZoneKind.Myelin) BuildMyelin(seg, root);
+            if (seg.zone == ZoneKind.Myelin)
+            {
+                var tv = new SaltatoryTunnelView();   // 2.0 (1.0: BuildMyelin gold hoops, kept below for reference)
+                tv.Build(seg, root, dynRoot);
+                tunnels.Add(tv);
+            }
             if (seg.zone == ZoneKind.Damaged) BuildDamaged(seg, root);
 
             // zone name sign near the start of main segments
@@ -206,6 +212,8 @@ namespace NerveRunner
                     var o = MeshKit.MeshObject(dynRoot, "NodeOfRanvier", MeshKit.Torus(e.width, 0.14f, 36, 6), Mats.Emissive(Pal.Hex(0x1E6F7A), Pal.Cyan * 2.2f));
                     o.transform.position = seg.WorldPos(e.s, e.x, RunnerSim.HOVER);
                     o.transform.rotation = q;
+                    var discMat = NRMats.Additive(new Color(0.4f, 1f, 1f, 0.5f), NRMats.Ring);   // 2.0: target glow inside the ring
+                    if (discMat != null) MeshKit.Prim(PrimitiveType.Quad, o.transform, Vector3.zero, Vector3.one * (e.width * 2.6f), discMat, "RingGlow");
                     evtObj[e] = o;
                     break;
                 }
@@ -332,6 +340,7 @@ namespace NerveRunner
             if (!evtObj.TryGetValue(e, out o) || o == null) return;
             if (hit) { o.GetComponent<MeshRenderer>().sharedMaterial = ringHitMat; flash[o.transform] = 0.35f; }
             else o.SetActive(false);
+            foreach (var tv in tunnels) tv.OnNode(e, hit);
         }
 
         public void MarkGate(TrackEvent e, int lane, bool correct)
@@ -366,6 +375,7 @@ namespace NerveRunner
         void Update()
         {
             float dt = Time.deltaTime, t = Time.time;
+            for (int i = 0; i < tunnels.Count; i++) tunnels[i].Tick(dt);
             for (int i = 0; i < spinning.Count; i++)
                 if (spinning[i] != null && spinning[i].gameObject.activeSelf)
                     spinning[i].Rotate(0f, 120f * dt, 40f * dt, Space.Self);

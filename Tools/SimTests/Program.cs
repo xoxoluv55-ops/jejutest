@@ -135,6 +135,30 @@ static class Program
         Check(note.resolved && note.retryCount == 1, "re-answering correctly resolves the note and counts the retry");
         Check(save.codexUnlocked.Contains("ap") && save.codexUnlocked.Contains("hillock"), "codex unlocked from answered questions");
 
+        Console.WriteLine("[8] Visual 2.0: saltatory tunnel clearance + mesh budget (same constants as SaltatoryTunnelView)");
+        {
+            const float R = 8.2f, CY = 2.4f, AXON_R = 7.4f, GAP = 9f, TAPER = 0.82f;
+            var my = g.segments.First(sg => sg.zone == ZoneKind.Myelin);
+            var nodeS = my.events.Where(e => e.type == TrackEventType.NodeRing).Select(e => e.s).ToList();
+            // farthest gameplay point from the axon axis: road edge + rail top, star at max lateral/jump
+            float roadEdge = (float)Math.Sqrt(my.halfWidth * my.halfWidth + CY * CY);
+            float starTop = (float)Math.Sqrt(Math.Pow(my.halfWidth - RunnerSim.RADIUS, 2) + Math.Pow(RunnerSim.HOVER + 1.75f + 1.25f - CY, 2));
+            float ringFar = my.events.Where(e => e.type == TrackEventType.NodeRing)
+                                     .Max(e => (float)Math.Sqrt(e.x * e.x + Math.Pow(RunnerSim.HOVER - CY, 2)) + e.width);
+            Check(roadEdge < R * TAPER && starTop < R * TAPER, $"road edge ({roadEdge:F2} m) and STAR-01 ({starTop:F2} m) stay inside the tapered sheath ({R * TAPER:F2} m)");
+            Check(ringFar < AXON_R, $"node rings ({ringFar:F2} m) fit inside the exposed axon membrane ({AXON_R} m)");
+            int verts = 0, tris = 0, sheaths = 0; float a = 4f;
+            foreach (float n in nodeS.Concat(new[] { my.length + GAP * 0.5f - 4f }))
+            {
+                float b = n - GAP * 0.5f;
+                if (b - a > 6f) { int rings = (int)Math.Ceiling((b - a) / 2f) + 1; verts += 2 * rings * 37; tris += 2 * (rings - 1) * 36 * 2; sheaths++; }
+                a = n + GAP * 0.5f;
+            }
+            int nodeVerts = nodeS.Count * (2 * 2 * 37 + 44 * 24), nodeTris = nodeS.Count * (2 * 36 * 2 + 44 * 12);
+            Console.WriteLine($"     myelin segment {my.length:F0} m: {sheaths} sheaths = {verts} verts / {tris} tris (static-batched)");
+            Console.WriteLine($"     {nodeS.Count} nodes = {nodeVerts} verts / {nodeTris} tris, {nodeS.Count * 2} dynamic draw calls (frustum + fog culled)");
+        }
+
         ExportSvg(g, Path.Combine(Root(), "docs", "ch1_course_map.svg"));
 
         Console.WriteLine(failures == 0 ? "\nALL CHECKS PASSED" : $"\n{failures} CHECK(S) FAILED");

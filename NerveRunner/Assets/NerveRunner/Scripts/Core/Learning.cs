@@ -136,6 +136,8 @@ namespace NerveRunner.Core
         public bool musicOn = true;
         public float steerSensitivity = 1f;
         public bool showHints = true;
+        public int graphicsQuality = -1;     // -1 auto, 0 Low, 1 Medium, 2 High (2.0)
+        public float cameraShake = 1f;       // 0 off, 0.5 weak, 1 normal (2.0)
 
         public StageRecord Stage(string id)
         {

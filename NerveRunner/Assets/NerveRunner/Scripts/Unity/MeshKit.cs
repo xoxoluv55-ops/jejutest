@@ -13,6 +13,8 @@ namespace NerveRunner
         /// (track rebuilds on "retry" would otherwise leak meshes on the iPad).
         public static List<Mesh> Sink;
         static Mesh Own(Mesh m) { if (Sink != null) Sink.Add(m); return m; }
+        /// Registers a mesh built elsewhere with the current Sink (no-op if already registered).
+        public static Mesh Track(Mesh m) { if (Sink != null && m != null && !Sink.Contains(m)) Sink.Add(m); return m; }
 
         /// Fixes triangle winding so each triangle faces `desired` (front face = cross(b-a, c-a)).
         static void Tri(List<int> tris, List<Vector3> v, int a, int b, int c, Vector3 desired)

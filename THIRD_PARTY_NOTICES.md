@@ -35,3 +35,8 @@
 
 없음. 별 캐릭터, 트랙, 신경망 배경, 텍스처, UI 스프라이트, 효과음과 음악은 모두 실행 시 코드로 생성됩니다.
 한글 폰트는 기기에 설치된 OS 폰트(iPad: Apple SD Gothic Neo)를 `Font.CreateDynamicFontFromOSFont`로 사용하며 폰트 파일을 포함하지 않습니다.
+
+## 4. 비주얼 2.0 (PHASE 1)
+
+- 새 셰이더(`NR_ToonRim`, `NR_FX`), 이펙트 텍스처, 터널·얼굴 메시는 모두 이 프로젝트에서 직접 작성했습니다. 외부 에셋과 AI 생성물은 없습니다.
+- `Tools/VisualPreview/`의 디자인 미리보기는 [three.js](https://github.com/mrdoob/three.js) r160(MIT)을 CDN에서 불러옵니다. 저장소와 게임 빌드에는 포함되지 않습니다.

@@ -1,0 +1,8 @@
+<html><body style="margin:0;background:#120B33"><script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script><script src="common.js"></script><script>
+const W=1600,H=900,R=new THREE.WebGLRenderer({antialias:true});R.setSize(W,H);R.setPixelRatio(1);document.body.appendChild(R.domElement);
+const S=new THREE.Scene();S.background=new THREE.Color(0x120B33);
+S.add(new THREE.HemisphereLight(0x8877ff,0x110822,1.1));const d=new THREE.DirectionalLight(0xffffff,1.0);d.position.set(2,4,5);S.add(d);
+const v1=['Normal','Joy','Surprise','Hurt'];v1.forEach((e,i)=>{const s=starV1(e);s.position.set((i-1.5)*4.6,3.2,0);s.rotation.y=.15;S.add(s);});
+const v2=['Normal','Focus','Joy','Surprise','Hurt','Correct','Wrong','Victory'];v2.forEach((e,i)=>{const s=starV2(e);const c=i%4,r=Math.floor(i/4);s.position.set((c-1.5)*4.6,-1.6-r*4.4,0);s.rotation.y=.15;S.add(s);});
+const C=new THREE.PerspectiveCamera(32,W/H,0.1,200);C.position.set(0,-1.6,34);C.lookAt(0,-1.2,0);R.render(S,C);
+</script></body></html>

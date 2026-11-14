@@ -54,6 +54,7 @@ namespace NerveRunner
 
             LoadContent();
             LoadSave();
+            ApplyGraphicsSettings();
 
             // ---- camera / light / atmosphere ----
             cam = Camera.main;
@@ -103,7 +104,7 @@ namespace NerveRunner
             // ---- UI ----
             ui = new GameUI { save = save, bank = bank, codex = codex };
             ui.onStartStage = StartStage;
-            ui.onSaveChanged = () => { GameAudio.Apply(save.sfxOn, save.musicOn); WriteSave(); };
+            ui.onSaveChanged = () => { GameAudio.Apply(save.sfxOn, save.musicOn); ApplyGraphicsSettings(); WriteSave(); };
             ui.onQuit = ShowTitle;
             ui.onResume = () => { };
             ui.onRestart = StartStage;
@@ -118,6 +119,14 @@ namespace NerveRunner
             tv.transform.SetParent(transform, false);
             trackView = tv.AddComponent<TrackView>();
             trackView.Build(graph, bank);
+        }
+
+        /// Quality level + camera shake. Particle budgets are read when effects are built; a
+        /// changed level fully applies on the next app start (shader fallback is decided once).
+        void ApplyGraphicsSettings()
+        {
+            Gfx.Level = save.graphicsQuality < 0 ? Gfx.AutoLevel() : (GfxLevel)Mathf.Clamp(save.graphicsQuality, 0, 2);
+            Gfx.CameraShake = Mathf.Clamp01(save.cameraShake);
         }
 
         //================== CONTENT / SAVE ==================\\
@@ -156,6 +165,7 @@ namespace NerveRunner
             if (race != null) { Destroy(race); race = null; }
             inMenu = true;
             GameAudio.StopLoops();
+            star.ResetState();
             star.SetBase(Expression.Normal);
             star.SetExpression(Expression.Joy, 1.5f);
             chase.Showcase(1e6f);

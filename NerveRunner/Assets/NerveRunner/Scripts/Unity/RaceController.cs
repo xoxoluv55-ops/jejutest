@@ -49,9 +49,9 @@ namespace NerveRunner
             ui.Show(UIScreen.Hud);
             ui.SetTouchVisible(false);
             ui.SetSection(graph.start.name);
+            star.ResetState();
             star.SetExpression(Expression.Normal, 0f);
             star.SetBase(Expression.Focus);
-            star.ClearTrail();
             Pose(0f);
             chase.Showcase(999f);
             phase = Phase.Intro; phaseT = 0f;
@@ -134,9 +134,20 @@ namespace NerveRunner
 
         void Pose(float dt)
         {
-            star.Pose(sim.Position, sim.Forward, sim.vx, sim.vy, sim.Drifting, sim.DriftDir, sim.Boosting || sim.turboTimer > 0f,
-                      sim.Speed01, sim.grounded, dt);
-            chase.Follow(sim.Position, sim.Forward, sim.Speed01, sim.Boosting || sim.turboTimer > 0f, dt);
+            bool boosting = sim.Boosting || sim.turboTimer > 0f;
+            bool rush = sim.ringChain >= 3 && sim.seg.zone == ZoneKind.Myelin;
+            star.Pose(new StarPose
+            {
+                pos = sim.Position, ground = sim.seg.WorldPos(sim.s, sim.x, 0f), forward = sim.Forward, right = sim.Right,
+                lateralVel = sim.vx, vy = sim.vy, speed01 = sim.Speed01, drifting = sim.Drifting, driftDir = sim.DriftDir,
+                driftTier = sim.DriftTierNow, boosting = boosting, grounded = sim.grounded, rush = rush,
+            }, dt);
+            chase.Follow(new CamInput
+            {
+                pos = sim.Position, fwd = sim.Forward, speed01 = sim.Speed01, boosting = boosting || rush,
+                curvature = phase == Phase.Running ? sim.Curvature : 0f, airHeight = sim.y,
+                driftDir = sim.Drifting ? sim.DriftDir : 0,
+            }, dt);
         }
 
         //================== EVENTS ==================\\
@@ -181,6 +192,7 @@ namespace NerveRunner
                 }
                 case SimEventType.RingHit:
                     view.FlashRing(e.src, true);
+                    star.Fx.Burst(FxBurst.Node, sim.Position, sim.Forward);
                     GameAudio.Coin();
                     if (sim.ringChain >= 2) ui.Toast("도약전도 x" + sim.ringChain + "  +" + Mathf.RoundToInt(sim.ChainBonus * 100f) + "%", Pal.Gold, 0.9f);
                     break;
@@ -191,7 +203,7 @@ namespace NerveRunner
                 case SimEventType.ObstacleHit:
                     view.HitObstacle(e.src);
                     chase.Shake(0.9f);
-                    star.SetExpression(Expression.Hurt, 1.2f);
+                    star.HitReaction();
                     GameAudio.Thud();
                     ui.Toast("NULL 충돌! 전도 지연", Pal.Red, 1.2f);
                     break;
@@ -202,7 +214,7 @@ namespace NerveRunner
                 case SimEventType.RepairOrb:
                     view.Collect(e.src);
                     GameAudio.Chime();
-                    star.SetExpression(Expression.Heal, 1.2f);
+                    star.RepairReaction();
                     ui.Toast("수초 복구 " + sim.repairCount + "/3", Pal.Green, 1.4f);
                     break;
                 case SimEventType.WallHit:
@@ -211,7 +223,7 @@ namespace NerveRunner
                     star.SetExpression(Expression.Surprise, 0.6f);
                     break;
                 case SimEventType.DriftEnd:
-                    if (e.tier > 0) { GameAudio.Whoosh(); ui.Toast("미니 터보 Lv." + e.tier, Pal.Pink, 0.9f); star.SetExpression(Expression.Joy, 0.8f); }
+                    if (e.tier > 0) { GameAudio.Whoosh(); ui.Toast("미니 터보 Lv." + e.tier, StarFx.TierColor[Mathf.Clamp(e.tier, 1, 3)], 0.9f); star.SetExpression(Expression.Joy, 0.8f); star.TurboReaction(e.tier); }
                     break;
                 case SimEventType.BoostStart:
                     GameAudio.Whoosh();
@@ -236,8 +248,8 @@ namespace NerveRunner
 
         void Feedback(bool correct)
         {
-            if (correct) { GameAudio.Chime(); star.SetExpression(Expression.Joy, 1.5f); star.Twirl(600f); }
-            else { GameAudio.Thud(); star.SetExpression(Expression.Hurt, 1.5f); chase.Shake(0.5f); }
+            if (correct) { GameAudio.Chime(); star.AnswerReaction(true); }
+            else { GameAudio.Thud(); star.AnswerReaction(false); chase.Shake(0.5f); }
         }
 
         void Trigger(string tag)
@@ -330,8 +342,7 @@ namespace NerveRunner
             ui.Countdown("GOAL!");
             GameAudio.Chime();
             star.SetBase(Expression.Clear);
-            star.SetExpression(Expression.Clear, 10f);
-            star.Twirl(900f);
+            star.SetVictory(true);
             chase.Showcase(3.2f);
         }
 

@@ -1,17 +1,65 @@
 {
   "beats": [
-    { "id": "prologue", "lines": [
-      { "speaker": "SYSTEM", "text": "2089년. NEURAL NETWORK SYSTEM 가동 중... 경고! 오류 코드 NULL 침입." },
-      { "speaker": "SYSTEM", "text": "감각·운동 정보 전달 경로 손상. 마지막 정상 신경정보 STAR-01을 활성화합니다." },
-      { "speaker": "STAR-01", "text": "나는 신호야! 뉴런 고속도로를 달려서 첫 번째 경로를 복구할게!" } ] },
-    { "id": "ap", "lines": [
-      { "speaker": "STAR-01", "text": "여기는 축삭 시작분절! 게이트마다 활동전위의 '다음 단계' 차선으로 들어가자." } ] },
-    { "id": "saltatory", "lines": [
-      { "speaker": "SYSTEM", "text": "말이집 축삭 진입. 랑비에 결절 링을 연속 통과하면 활동전위가 결절마다 재생성되어 가속합니다." } ] },
-    { "id": "damage", "lines": [
-      { "speaker": "SYSTEM", "text": "경고: 수초 손상(탈수초) 구간! 전도 속도 저하. NULL 블록은 피하거나 점프하세요." },
-      { "speaker": "STAR-01", "text": "초록 복구 오브를 모으고, 마지막 게이트에서 수초를 되살리자!" } ] },
-    { "id": "final", "lines": [
-      { "speaker": "STAR-01", "text": "시냅스후 뉴런으로 신호 전달 성공! 결승선까지 전력 질주!" } ] }
+    {
+      "id": "prologue",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "2089년. NEURAL NETWORK SYSTEM 가동 중... 경고! 오류 코드 NULL 침입."
+        },
+        {
+          "speaker": "SYSTEM",
+          "text": "감각·운동 정보 전달 경로 손상. 마지막 정상 신경정보 STAR-01을 활성화합니다."
+        },
+        {
+          "speaker": "STAR-01",
+          "text": "나는 신호야! 뉴런 고속도로를 달려서 첫 번째 경로를 복구할게!"
+        }
+      ]
+    },
+    {
+      "id": "ap",
+      "lines": [
+        {
+          "speaker": "STAR-01",
+          "text": "여기는 축삭 시작분절! 게이트마다 활동전위의 '다음 단계' 차선으로 들어가자."
+        }
+      ]
+    },
+    {
+      "id": "saltatory",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "말이집 축삭 진입. 랑비에 결절 링을 연속 통과하면 활동전위가 결절마다 재생성되어 가속합니다."
+        },
+        {
+          "speaker": "SYSTEM",
+          "text": "금빛 관 = 축삭을 감싼 수초(절연), 청록 띠 = Na+ 통로가 모인 랑비에 결절. 실제 결절은 약 1μm로 아주 짧지만 게임에서는 크게 표현했어요."
+        }
+      ]
+    },
+    {
+      "id": "damage",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "경고: 수초 손상(탈수초) 구간! 전도 속도 저하. NULL 블록은 피하거나 점프하세요."
+        },
+        {
+          "speaker": "STAR-01",
+          "text": "초록 복구 오브를 모으고, 마지막 게이트에서 수초를 되살리자!"
+        }
+      ]
+    },
+    {
+      "id": "final",
+      "lines": [
+        {
+          "speaker": "STAR-01",
+          "text": "시냅스후 뉴런으로 신호 전달 성공! 결승선까지 전력 질주!"
+        }
+      ]
+    }
   ]
 }

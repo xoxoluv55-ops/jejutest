@@ -312,20 +312,30 @@ namespace NerveRunner
         }
 
         //================== SETTINGS ==================\\
-        Text sfxLbl, musicLbl, hintLbl, sensLbl, resetLbl;
+        Text sfxLbl, musicLbl, hintLbl, sensLbl, resetLbl, gfxLbl, shakeLbl;
         bool resetArmed;
         void BuildSettings()
         {
             var p = NewScreen(UIScreen.Settings).transform;
             Title(p, "설정");
             BackButton(p);
-            float y = -190f;
+            float y = -170f;
             sfxLbl = SettingRow(p, "효과음", ref y, () => { save.sfxOn = !save.sfxOn; Changed(); });
             musicLbl = SettingRow(p, "배경음악", ref y, () => { save.musicOn = !save.musicOn; Changed(); });
             hintLbl = SettingRow(p, "조작 힌트 표시", ref y, () => { save.showHints = !save.showHints; Changed(); });
             sensLbl = SettingRow(p, "조향 감도", ref y, () =>
             {
                 save.steerSensitivity = save.steerSensitivity >= 1.29f ? 0.7f : save.steerSensitivity + 0.15f;
+                Changed();
+            });
+            gfxLbl = SettingRow(p, "그래픽 품질", ref y, () =>
+            {
+                save.graphicsQuality = save.graphicsQuality >= 2 ? -1 : save.graphicsQuality + 1;
+                Changed();
+            });
+            shakeLbl = SettingRow(p, "카메라 흔들림", ref y, () =>
+            {
+                save.cameraShake = save.cameraShake >= 0.99f ? 0f : save.cameraShake + 0.5f;
                 Changed();
             });
             resetLbl = SettingRow(p, "학습 기록 초기화", ref y, () =>
@@ -336,19 +346,21 @@ namespace NerveRunner
                 keep.stages.Clear(); keep.wrongNotes.Clear(); keep.mastery.Clear(); keep.codexUnlocked.Clear(); keep.totalCoins = 0; keep.storySeen = false;
                 Changed();
             });
-            UIKit.Label(p, "NERVE RUNNER v0.1 (CHAPTER 1 프로토타입)\n레이싱 기반 코드: Neon Racer by Pinchas Vaknin (MIT License)", 22, Pal.Dim,
-                        TextAnchor.LowerLeft, new Vector2(0f, 0f), new Vector2(1200f, 80f), new Vector2(64f, 24f));
+            UIKit.Label(p, "그래픽 품질 '낮음'은 기본 머티리얼만 사용합니다(특수 셰이더 문제 시 사용). 변경 사항 일부는 앱을 다시 시작하면 적용됩니다.\nNERVE RUNNER v0.2 (CHAPTER 1 · 비주얼 2.0 PHASE 1)\n레이싱 기반 코드: Neon Racer by Pinchas Vaknin (MIT License)", 22, Pal.Dim,
+                        TextAnchor.LowerLeft, new Vector2(0f, 0f), new Vector2(1200f, 100f), new Vector2(64f, 20f));
         }
 
         Text SettingRow(Transform p, string name, ref float y, Action toggle)
         {
-            var row = UIKit.Panel(p, Pal.Panel, new Vector2(0f, 1f), new Vector2(900f, 90f), new Vector2(60f, y));
+            var row = UIKit.Panel(p, Pal.Panel, new Vector2(0f, 1f), new Vector2(900f, 80f), new Vector2(60f, y));
             UIKit.Label(row.transform, name, 32, Pal.Text, TextAnchor.MiddleLeft, new Vector2(0f, 0.5f), new Vector2(500f, 80f), new Vector2(30f, 0f)).rectTransform.pivot = new Vector2(0f, 0.5f);
             var b = UIKit.Button(row.transform, "", Pal.Card, Pal.Yellow, 30, toggle, new Vector2(1f, 0.5f), new Vector2(300f, 70f), new Vector2(-12f, 0f));
             ((RectTransform)b.transform).pivot = new Vector2(1f, 0.5f);
-            y -= 106f;
+            y -= 92f;
             return UIKit.ButtonText(b);
         }
+
+        static string GfxName(GfxLevel l) { return l == GfxLevel.Low ? "낮음" : l == GfxLevel.Medium ? "중간" : "높음"; }
 
         void Changed() { if (onSaveChanged != null) onSaveChanged(); RefreshSettings(); }
 
@@ -358,6 +370,8 @@ namespace NerveRunner
             musicLbl.text = save.musicOn ? "켜짐" : "꺼짐";
             hintLbl.text = save.showHints ? "켜짐" : "꺼짐";
             sensLbl.text = "x" + save.steerSensitivity.ToString("0.00");
+            gfxLbl.text = save.graphicsQuality < 0 ? "자동 (" + GfxName(Gfx.AutoLevel()) + ")" : GfxName((GfxLevel)save.graphicsQuality);
+            shakeLbl.text = save.cameraShake <= 0.01f ? "끔" : save.cameraShake < 0.99f ? "약하게" : "보통";
             resetLbl.text = resetArmed ? "한 번 더 눌러 확인" : "초기화";
         }
 
