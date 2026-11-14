@@ -46,7 +46,10 @@ namespace NerveRunner
 
         void Start()
         {
-            Application.targetFrameRate = 60;
+            // SMOOTHNESS FIX (2.2): on PC follow the monitor refresh with VSync (a forced 60 fps on a
+            // 144 Hz display paces frames unevenly). Mobile keeps a 60 fps cap to save battery.
+            if (Application.isMobilePlatform) Application.targetFrameRate = 60;
+            else { QualitySettings.vSyncCount = 1; Application.targetFrameRate = -1; }
             UnityEngine.Screen.sleepTimeout = SleepTimeout.NeverSleep;
             UnityEngine.Screen.autorotateToPortrait = false;
             UnityEngine.Screen.autorotateToPortraitUpsideDown = false;

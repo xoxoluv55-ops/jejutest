@@ -119,11 +119,15 @@ namespace NerveRunner
                     phaseT += dt;
                     if (phaseT > 0.8f && phaseT < 1f) ui.Countdown("");
                     RunnerInput inp = autopilot != null ? autopilot.Think(sim) : ui.input.Read(dt);
-                    acc += dt;
-                    while (acc >= STEP && phase == Phase.Running)
+                    // SMOOTHNESS FIX (2.2): the whole frame time is simulated every frame, split into
+                    // equal sub-steps of at most 1/120 s. The old fixed-step accumulator moved STAR-01
+                    // 0, 1 or 2 steps on alternate frames when the monitor rate (e.g. 144 Hz) did not
+                    // match 120 Hz -> visible judder ("드드득").
+                    int n = Mathf.Max(1, Mathf.CeilToInt(dt / STEP - 1e-4f));
+                    float h = dt / n;
+                    for (int i = 0; i < n && phase == Phase.Running; i++)
                     {
-                        acc -= STEP;
-                        sim.Step(inp, STEP);
+                        sim.Step(inp, h);
                         inp.jump = false;
                         HandleEvents();
                     }
