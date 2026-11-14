@@ -11,3 +11,4 @@ NerveRunner/*.sln
 # .NET tool output
 Tools/**/bin/
 Tools/**/obj/
+Tools/CompileCheck/refs/

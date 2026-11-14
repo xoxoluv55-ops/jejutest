@@ -107,6 +107,7 @@ static class Program
         Console.WriteLine("[5] No input at all (must not soft-lock)");
         var r3 = Run(g, bank, null, false);
         Check(r3.finished && r3.time < 600f, $"finished in {r3.time:F1} s, wall hits {r3.wallHits}");
+        Check(r1.time < g.parTime && r3.time > g.parTime, $"par {g.parTime:F0} s: clean run beats it, no-input run does not");
         Check(r3.time > r1.time + 30f, $"skilled driving is clearly faster than no input (+{r3.time - r1.time:F1} s)");
 
         Console.WriteLine("[6] Random input fuzz");
@@ -133,6 +134,8 @@ static class Program
         var note = save.Note("ch1_ap_1");
         Check(note.resolved && note.retryCount == 1, "re-answering correctly resolves the note and counts the retry");
         Check(save.codexUnlocked.Contains("ap") && save.codexUnlocked.Contains("hillock"), "codex unlocked from answered questions");
+
+        ExportSvg(g, Path.Combine(Root(), "docs", "ch1_course_map.svg"));
 
         Console.WriteLine(failures == 0 ? "\nALL CHECKS PASSED" : $"\n{failures} CHECK(S) FAILED");
         return failures == 0 ? 0 : 1;
@@ -228,5 +231,51 @@ static class Program
                 }
             }
         Check(worst > 22f, $"no overlapping roads (closest unrelated approach {worst:F0} m: {where})");
+    }
+
+    /// Top-down course map for the design report (docs/ch1_course_map.svg).
+    static void ExportSvg(TrackGraph g, string path)
+    {
+        float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
+        foreach (var s in g.segments) for (float d = 0; d <= s.length; d += 5f) { var p = s.PointAt(d); minX = Math.Min(minX, p.x); maxX = Math.Max(maxX, p.x); minZ = Math.Min(minZ, p.z); maxZ = Math.Max(maxZ, p.z); }
+        float pad = 60f, W = maxX - minX + 2 * pad, H = maxZ - minZ + 2 * pad;
+        float sc = 1100f / Math.Max(W, H);
+        Func<Vector3, string> P = v => $"{(v.x - minX + pad) * sc:F1},{(maxZ - v.z + pad) * sc:F1}";
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"<svg xmlns='http://www.w3.org/2000/svg' width='{W * sc:F0}' height='{H * sc + 60:F0}' font-family='sans-serif'>");
+        sb.Append($"<rect width='100%' height='100%' fill='#0B0A24'/>");
+        var col = new Dictionary<ZoneKind, string> { { ZoneKind.Normal, "#37D8FF" }, { ZoneKind.ForkApproach, "#FF5CC8" }, { ZoneKind.Shortcut, "#5CFF9D" },
+            { ZoneKind.Review, "#FF8A3D" }, { ZoneKind.Myelin, "#FFB627" }, { ZoneKind.Damaged, "#FF4D6D" }, { ZoneKind.Synapse, "#9B5CFF" } };
+        foreach (var s in g.segments)
+        {
+            var pts = new List<string>();
+            for (float d = 0; d <= s.length; d += 4f) pts.Add(P(s.PointAt(d)));
+            pts.Add(P(s.PointAt(s.length)));
+            sb.Append($"<polyline points='{string.Join(" ", pts)}' fill='none' stroke='{col[s.zone]}' stroke-width='{Math.Max(2f, s.halfWidth * 2 * sc):F1}' stroke-linecap='round' opacity='0.9'/>");
+        }
+        foreach (var s in g.segments)
+            foreach (var e in s.events)
+            {
+                var p = s.WorldPos(e.s, e.x, 0);
+                string c = e.type switch { TrackEventType.Gate => "#FFFFFF", TrackEventType.NodeRing => "#2EE6D6", TrackEventType.Obstacle => "#FF0040",
+                    TrackEventType.RepairOrb => "#5CFF9D", TrackEventType.Finish => "#FFD34D", TrackEventType.Checkpoint => "#C9A8FF", _ => null };
+                if (c == null) continue;
+                float r = e.type == TrackEventType.Gate || e.type == TrackEventType.Finish ? 6 : 3;
+                var xy = P(p).Split(',');
+                sb.Append($"<circle cx='{xy[0]}' cy='{xy[1]}' r='{r}' fill='{c}'/>");
+            }
+        foreach (var s in g.segments)
+        {
+            if (s.zone == ZoneKind.Review || s.zone == ZoneKind.Shortcut) continue;
+            var xy = P(s.PointAt(s.length * 0.5f)).Split(',');
+            sb.Append($"<text x='{xy[0]}' y='{xy[1]}' fill='#F3F0FF' font-size='15' stroke='#0B0A24' stroke-width='3' paint-order='stroke'>{System.Security.SecurityElement.Escape(s.name)}</text>");
+        }
+        var st = P(g.start.PointAt(0)).Split(',');
+        sb.Append($"<text x='{st[0]}' y='{st[1]}' fill='#FFD34D' font-size='18' font-weight='bold'>START</text>");
+        sb.Append($"<text x='16' y='{H * sc + 40:F0}' fill='#B8B2E6' font-size='15'>CH.1 뉴런 고속도로 - 최단 경로 {g.referenceLength:F0} m · 흰점=게이트 · 청록=랑비에 결절 · 빨강=NULL · 초록 선=정답 지름길 · 주황 선=오답 복습 구간</text>");
+        sb.Append("</svg>");
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        File.WriteAllText(path, sb.ToString());
+        Console.WriteLine("     course map written: " + path);
     }
 }

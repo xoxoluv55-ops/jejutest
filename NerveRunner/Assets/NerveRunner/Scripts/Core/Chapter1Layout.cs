@@ -64,13 +64,13 @@ namespace NerveRunner.Core
 
             //---------------- D. Action potential gates (initial segment) ----------------
             b.Trigger("story:ap", 0f).Trigger("codex:ap", 0f);
-            const float GATE_GAP = 230f;
+            const float GATE_GAP = 320f;   // ~4 s to read the question + ~3.5 s of explanation at speed
             for (int g = 0; g < Q_AP.Length; g++)
             {
                 var q = bank.Get(Q_AP[g]);
                 float s0 = 60f + g * GATE_GAP;
                 b.EventAt(TrackEventType.Trigger, s0, 0f, "gateq:" + q.id);
-                var gate = b.EventAt(TrackEventType.Gate, s0 + 150f, 0f, "ap");
+                var gate = b.EventAt(TrackEventType.Gate, s0 + 175f, 0f, "ap");
                 gate.questionId = q.id;
                 gate.laneX = LaneX(q.options.Length, 6f);
                 gate.correctLane = q.answer;
@@ -161,8 +161,9 @@ namespace NerveRunner.Core
 
             var g2 = b.graph;
             g2.referenceLength = ShortestLength(g2);
-            // par = shortest route at a realistic average + minigame allowance
-            g2.parTime = g2.referenceLength / 34f + 30f;
+            // 3rd-star time target (race clock stops during the synapse minigame). Tuned with the
+            // headless tests: a clean run beats it, a no-input run must not.
+            g2.parTime = g2.referenceLength / 38f + 15f;
             return g2;
         }
 

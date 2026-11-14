@@ -132,8 +132,8 @@ namespace NerveRunner.Core
         public List<string> codexUnlocked = new List<string>();
         public bool storySeen;
         // settings
-        public float sfxVolume = 1f;
-        public float musicVolume = 0.7f;
+        public bool sfxOn = true;
+        public bool musicOn = true;
         public float steerSensitivity = 1f;
         public bool showHints = true;
 

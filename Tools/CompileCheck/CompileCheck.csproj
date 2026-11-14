@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Compile-only check of every NERVE RUNNER runtime script. Run setup_refs.sh first.
+       dotnet build Tools/CompileCheck            (Input System path + editor-only code)
+       dotnet build Tools/CompileCheck -p:Legacy=true   (no Input System) -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>CS0618;CS0414;CS0649</NoWarn>
+    <DefineConstants Condition="'$(Legacy)' != 'true'">ENABLE_INPUT_SYSTEM;UNITY_EDITOR</DefineConstants>
+    <DefineConstants Condition="'$(Legacy)' == 'true'">UNITY_IOS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../NerveRunner/Assets/**/*.cs" />
+    <Compile Include="Stubs.cs" />
+    <Reference Include="refs/mods/lib/net45/*.dll" />
+    <Reference Include="refs/ugui/UnityEngine.UI.dll" />
+  </ItemGroup>
+</Project>
