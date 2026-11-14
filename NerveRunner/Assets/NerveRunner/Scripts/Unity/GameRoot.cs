@@ -39,6 +39,8 @@ namespace NerveRunner
         GameUI ui;
         RaceController race;
         bool inMenu = true;
+        StageInfo stage;                 // stage currently built in the world
+        Transform backdrop, titleBrain;
 
         string SavePath { get { return Path.Combine(Application.persistentDataPath, "nerverunner_save.json"); } }
 
@@ -96,10 +98,9 @@ namespace NerveRunner
             GameAudio.Apply(save.sfxOn, save.musicOn);
 
             // ---- world ----
-            graph = Chapter1Layout.Build(bank);
-            NeuralBackdrop.Build(transform, graph, 2089);
-            BuildTrackView();
+            BuildWorld(StageCatalog.Get(Chapter1Layout.StageId));
             star = StarVisual.Create(transform);
+            titleBrain = NeuralBackdrop.BuildBrain(transform);
 
             // ---- UI ----
             ui = new GameUI { save = save, bank = bank, codex = codex };
@@ -107,9 +108,23 @@ namespace NerveRunner
             ui.onSaveChanged = () => { GameAudio.Apply(save.sfxOn, save.musicOn); ApplyGraphicsSettings(); WriteSave(); };
             ui.onQuit = ShowTitle;
             ui.onResume = () => { };
-            ui.onRestart = StartStage;
+            ui.onRestart = () => StartStage(stage != null ? stage.id : Chapter1Layout.StageId);
             ui.Build(transform);
             ShowTitle();
+        }
+
+        /// Builds (or rebuilds) the course, track visuals and backdrop for a stage.
+        void BuildWorld(StageInfo s)
+        {
+            bool newStage = stage == null || stage.id != s.id;
+            stage = s;
+            if (newStage || graph == null)
+            {
+                graph = s.build(bank);
+                if (backdrop != null) Destroy(backdrop.gameObject);
+                backdrop = NeuralBackdrop.Build(transform, graph, 2089 + s.chapter);
+            }
+            BuildTrackView();
         }
 
         void BuildTrackView()
@@ -118,7 +133,7 @@ namespace NerveRunner
             var tv = new GameObject("TrackView");
             tv.transform.SetParent(transform, false);
             trackView = tv.AddComponent<TrackView>();
-            trackView.Build(graph, bank);
+            trackView.Build(graph, bank, stage);
         }
 
         /// Quality level + camera shake. Particle budgets are read when effects are built; a
@@ -132,17 +147,25 @@ namespace NerveRunner
         //================== CONTENT / SAVE ==================\\
         void LoadContent()
         {
-            var qa = Resources.Load<TextAsset>("NerveRunner/questions_ch1");
-            var ca = Resources.Load<TextAsset>("NerveRunner/codex_ch1");
-            var sa = Resources.Load<TextAsset>("NerveRunner/story_ch1");
-            var qf = qa != null ? JsonUtility.FromJson<QuestionFile>(qa.text) : null;
-            bank = new QuestionBank(qf != null && qf.questions != null ? qf.questions : new Question[0]);
+            // every stage's content is merged into one bank / codex / story table
+            var qs = new List<Question>(); var cs = new List<CodexEntry>();
+            foreach (var suf in StageCatalog.ContentSuffixes)
+            {
+                var qa = Resources.Load<TextAsset>("NerveRunner/questions_" + suf);
+                var ca = Resources.Load<TextAsset>("NerveRunner/codex_" + suf);
+                var sa = Resources.Load<TextAsset>("NerveRunner/story_" + suf);
+                var qf = qa != null ? JsonUtility.FromJson<QuestionFile>(qa.text) : null;
+                if (qf != null && qf.questions != null) qs.AddRange(qf.questions);
+                var cf = ca != null ? JsonUtility.FromJson<CodexFile>(ca.text) : null;
+                if (cf != null && cf.entries != null) cs.AddRange(cf.entries);
+                var sf = sa != null ? JsonUtility.FromJson<StoryFile>(sa.text) : null;
+                if (sf != null && sf.beats != null) foreach (var b in sf.beats) story[b.id] = b;
+                if (qa == null) Debug.LogError("[NerveRunner] missing content file questions_" + suf);
+            }
+            bank = new QuestionBank(qs);
             foreach (var err in bank.Validate()) Debug.LogError("[NerveRunner] question data: " + err);
-            var cf = ca != null ? JsonUtility.FromJson<CodexFile>(ca.text) : null;
-            codex = cf != null && cf.entries != null ? cf.entries : new CodexEntry[0];
+            codex = cs.ToArray();
             foreach (var e in codex) codexById[e.id] = e;
-            var sf = sa != null ? JsonUtility.FromJson<StoryFile>(sa.text) : null;
-            if (sf != null && sf.beats != null) foreach (var b in sf.beats) story[b.id] = b;
         }
 
         void LoadSave()
@@ -170,26 +193,37 @@ namespace NerveRunner
             star.SetExpression(Expression.Joy, 1.5f);
             chase.Showcase(1e6f);
             ui.Show(UIScreen.Title);
+            if (titleBrain != null)
+            {
+                // brain glows up and to the side behind STAR-01 (title key art composition)
+                Vector3 p0 = graph.start.WorldPos(12f, 0f, 0f), f0 = graph.start.TangentAt(12f), r0 = graph.start.RightAt(12f);
+                titleBrain.position = p0 - f0 * 120f - r0 * 34f + Vector3.up * 26f;
+                titleBrain.rotation = Quaternion.LookRotation(-r0, Vector3.up);
+                titleBrain.gameObject.SetActive(true);
+            }
         }
 
-        void StartStage()
+        void StartStage(string stageId)
         {
+            var s = StageCatalog.Get(stageId) ?? StageCatalog.Get(Chapter1Layout.StageId);
             if (race != null) { Destroy(race); race = null; }
-            if (bank.Get(Chapter1Layout.Q_HILLOCK) == null) { Debug.LogError("[NerveRunner] question data missing - cannot start CH.1"); return; }
-            BuildTrackView();
+            try { BuildWorld(s); }
+            catch (System.Exception e) { Debug.LogError("[NerveRunner] cannot build " + s.id + " (question data missing?): " + e.Message); return; }
             inMenu = false;
+            if (titleBrain != null) titleBrain.gameObject.SetActive(false);
             race = gameObject.AddComponent<RaceController>();
-            race.Setup(graph, trackView, star, chase, ui, bank, story, codexById, save);
+            race.Setup(graph, trackView, star, chase, ui, bank, story, codexById, save, s);
             race.onFinished = OnRaceFinished;
-            var rec = save.Stage(Chapter1Layout.StageId);
+            var rec = save.Stage(s.id);
             rec.plays++;
-            race.Begin(!save.storySeen || rec.clears == 0);
+            save.lastStage = s.id;
+            race.Begin(rec.clears == 0 || (s.chapter == 1 && !save.storySeen));
         }
 
         void OnRaceFinished(RaceController r)
         {
             var sim = r.sim; var learn = r.learn;
-            var rec = save.Stage(Chapter1Layout.StageId);
+            var rec = save.Stage(stage.id);
             int stars = 1 + (learn.Accuracy >= 0.8f ? 1 : 0) + (sim.raceTime <= graph.parTime ? 1 : 0);
             bool newBest = rec.bestTime < 0f || sim.raceTime < rec.bestTime;
             if (newBest) rec.bestTime = sim.raceTime;
@@ -217,7 +251,8 @@ namespace NerveRunner
             {
                 time = sim.raceTime, par = graph.parTime, accuracy = learn.Accuracy, stars = stars, coins = sim.coins,
                 correct = learn.Correct, total = learn.Total, ringsHit = sim.ringsHit, ringsTotal = sim.ringsTotal,
-                ringBest = sim.ringBest, wrongSaved = wrongSaved, newBest = newBest, learned = learned, toReview = review
+                ringBest = sim.ringBest, wrongSaved = wrongSaved, newBest = newBest, learned = learned, toReview = review,
+                stage = stage, bossHp = r.BossHp, bossMaxHp = r.BossMaxHp
             });
             GameAudio.StopLoops();
         }

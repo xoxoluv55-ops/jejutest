@@ -71,6 +71,37 @@ namespace NerveRunner
             return root;
         }
 
+        /// Title-screen brain silhouette (concept art 4): two glowing hemispheres covered in gyri
+        /// rings, cerebellum and brain stem. Decorative only; shown behind STAR-01 on the title.
+        public static Transform BuildBrain(Transform parent)
+        {
+            var root = new GameObject("TitleBrain").transform;
+            root.SetParent(parent, false);
+            var body = NRMats.Toon(Pal.Hex(0x3A2A8A), Pal.Hex(0x150E40), Pal.Hex(0xB98CFF), 1.8f, Pal.Hex(0x1A1050));
+            var gyri = Mats.Emissive(Pal.Hex(0x4A3AA8), Pal.Hex(0x8C7CFF) * 1.3f);
+            var rnd = new System.Random(4);
+            var ringMesh = MeshKit.Torus(1f, 0.08f, 24, 4);
+            foreach (float side in new[] { -1f, 1f })
+            {
+                Vector3 c = new Vector3(side * 9.5f, 0f, 0f);
+                Vector3 sc = new Vector3(18f, 26f, 44f);
+                MeshKit.Prim(PrimitiveType.Sphere, root, c, sc, body, "Hemisphere");
+                for (int i = 0; i < 46; i++)
+                {
+                    Vector3 n = new Vector3((float)rnd.NextDouble() * 2f - 1f, (float)rnd.NextDouble() * 1.6f - 0.4f, (float)rnd.NextDouble() * 2f - 1f).normalized;
+                    if (n.x * side < -0.2f) continue;                            // keep the gyri on the outer side
+                    Vector3 pos = c + Vector3.Scale(n, sc * 0.5f) * 1.01f;
+                    var g = MeshKit.MeshObject(root, "Gyrus", ringMesh, gyri);
+                    g.transform.localPosition = pos;
+                    g.transform.localRotation = Quaternion.LookRotation(n) * Quaternion.Euler(0f, 0f, (float)rnd.NextDouble() * 180f);
+                    g.transform.localScale = new Vector3(3f + (float)rnd.NextDouble() * 4f, 1.2f + (float)rnd.NextDouble() * 1.5f, 1f);
+                }
+            }
+            MeshKit.Prim(PrimitiveType.Sphere, root, new Vector3(0f, -10f, -18f), new Vector3(20f, 10f, 12f), body, "Cerebellum");
+            MeshKit.Prim(PrimitiveType.Cylinder, root, new Vector3(0f, -16f, -10f), new Vector3(5f, 9f, 5f), body, "BrainStem");
+            return root;
+        }
+
         static float DistanceToTrack(TrackGraph g, Vector3 p)
         {
             float best = float.MaxValue;

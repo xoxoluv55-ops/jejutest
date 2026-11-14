@@ -182,7 +182,7 @@ namespace NerveRunner
                     float spiral = Mathf.Repeat(u * 6f + v * 1f, 1f);           // wrapped membrane layers
                     float l = Mathf.Exp(-Mathf.Pow((spiral - 0.5f) / 0.05f, 2f));
                     float grain = Mathf.PerlinNoise(u * 24f, v * 12f) * 0.18f;
-                    Color c = baseC * (0.82f + grain) + line * (l * 0.6f);
+                    Color c = baseC * (0.86f + grain) + line * (l * 0.9f);   // 2.0b: crisper glowing wraps
                     c.a = 1f;
                     px[y * W + x] = c;
                 }

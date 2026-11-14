@@ -55,10 +55,12 @@ namespace NerveRunner
 
             // ---- myelin sheaths between the nodes ----
             var lam = NRMats.Lamellae(new Color(0.96f, 0.8f, 0.45f), new Color(1f, 0.97f, 0.75f));
-            var innerMat = Mats.Building(lam, Vector2.one, new Color(1f, 0.8f, 0.45f), 0.34f);
-            var outerMat = Mats.Building(lam, Vector2.one, new Color(1f, 0.75f, 0.35f), 0.6f);
+            var innerMat = Mats.Building(lam, Vector2.one, new Color(1f, 0.82f, 0.5f), 0.5f);    // 2.0b: brighter (concept art 2)
+            var outerMat = Mats.Building(lam, Vector2.one, new Color(1f, 0.78f, 0.4f), 0.8f);
             var paraMat = Mats.Emissive(Pal.Hex(0x7A5A10), Pal.Gold * 1.3f);
             var paraMesh = MeshKit.Track(MeshKit.Torus(R * 0.82f + WALL * 0.5f, 0.32f, 40, 6));
+            var bandMesh = MeshKit.Track(MeshKit.Torus(R - 0.15f, 0.14f, 56, 5));
+            var bandMat = Mats.Emissive(Pal.Hex(0x1E8C96), Pal.Cyan * 2.2f);
             float a = 4f;
             var cuts = new List<float>(nodeS);
             cuts.Add(seg.length + NODE_GAP * 0.5f - 4f);
@@ -71,6 +73,11 @@ namespace NerveRunner
                     tube.SetParent(staticRoot, false);
                     MeshKit.MeshObject(tube, "Inner", MeshKit.Track(Tube(a, b, R, true, true)), innerMat);
                     MeshKit.MeshObject(tube, "Outer", MeshKit.Track(Tube(a, b, R + WALL, false, true)), outerMat);
+                    // glowing cyan band on the sheath (concept art 2) - marks the insulated stretch
+                    float mid = (a + b) * 0.5f;
+                    var band = MeshKit.MeshObject(tube, "SheathBand", bandMesh, bandMat);
+                    band.transform.position = Axis(mid);
+                    band.transform.rotation = Quaternion.LookRotation(seg.TangentAt(mid), Up(mid));
                     foreach (float e in new[] { a, b })
                     {
                         var para = MeshKit.MeshObject(tube, "Paranode", paraMesh, paraMat);

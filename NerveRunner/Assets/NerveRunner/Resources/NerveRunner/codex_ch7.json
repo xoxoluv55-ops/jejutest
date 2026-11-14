@@ -1,0 +1,103 @@
+{
+  "entries": [
+    {
+      "id": "frontal",
+      "name": "이마엽",
+      "english": "Frontal lobe",
+      "category": "대뇌",
+      "chapter": 7,
+      "description": "중심고랑 앞쪽. 운동 계획·실행(일차운동겉질), 말의 산출(브로카 영역), 판단과 실행기능을 담당합니다.",
+      "gameLink": "대뇌 도시 - 주황 이마엽 지구"
+    },
+    {
+      "id": "parietal",
+      "name": "마루엽",
+      "english": "Parietal lobe",
+      "category": "대뇌",
+      "chapter": 7,
+      "description": "중심고랑 뒤쪽 위. 몸감각(일차몸감각겉질)과 공간 인식·주의를 담당합니다. 오른쪽 마루엽 손상은 반쪽무시를 일으킵니다.",
+      "gameLink": "대뇌 도시 - 청록 마루엽 지구"
+    },
+    {
+      "id": "temporal",
+      "name": "관자엽",
+      "english": "Temporal lobe",
+      "category": "대뇌",
+      "chapter": 7,
+      "description": "가쪽고랑 아래. 청각(일차청각겉질), 언어 이해(베르니케 영역), 안쪽의 해마를 통한 기억 형성을 담당합니다.",
+      "gameLink": "대뇌 도시 - 보라 관자엽 지구"
+    },
+    {
+      "id": "occipital",
+      "name": "뒤통수엽",
+      "english": "Occipital lobe",
+      "category": "대뇌",
+      "chapter": 7,
+      "description": "대뇌 뒤쪽. 새발톱고랑 주변의 일차시각겉질에서 시각 정보를 처리합니다.",
+      "gameLink": "대뇌 도시 - 파랑 뒤통수엽 지구"
+    },
+    {
+      "id": "m1",
+      "name": "일차운동겉질",
+      "english": "Primary motor cortex",
+      "category": "대뇌",
+      "chapter": 7,
+      "description": "이마엽 중심앞이랑. 겉질척수로의 출발점이며 반대쪽 몸의 수의운동을 일으킵니다.",
+      "gameLink": "이마엽 게이트"
+    },
+    {
+      "id": "s1",
+      "name": "일차몸감각겉질",
+      "english": "Primary somatosensory cortex",
+      "category": "대뇌",
+      "chapter": 7,
+      "description": "마루엽 중심뒤이랑. 시상(VPL/VPM)을 거친 반대쪽 몸의 감각이 도착합니다.",
+      "gameLink": "감각 정보 갈림길"
+    },
+    {
+      "id": "a1",
+      "name": "일차청각겉질",
+      "english": "Primary auditory cortex",
+      "category": "대뇌",
+      "chapter": 7,
+      "description": "관자엽 가로관자이랑(헤쉴이랑). 안쪽무릎체를 거친 청각 정보가 도착합니다.",
+      "gameLink": "청각 정보 갈림길"
+    },
+    {
+      "id": "v1",
+      "name": "일차시각겉질",
+      "english": "Primary visual cortex",
+      "category": "대뇌",
+      "chapter": 7,
+      "description": "뒤통수엽 새발톱고랑 주변. 가쪽무릎체에서 시각부챗살을 따라 시각 정보가 도착합니다.",
+      "gameLink": "시각 정보 갈림길"
+    },
+    {
+      "id": "broca",
+      "name": "브로카 영역",
+      "english": "Broca's area",
+      "category": "언어",
+      "chapter": 7,
+      "description": "대부분 왼쪽 아래이마이랑. 말의 산출을 담당하며, 손상되면 비유창한 표현실어증이 생깁니다.",
+      "gameLink": "이마엽 게이트"
+    },
+    {
+      "id": "wernicke",
+      "name": "베르니케 영역",
+      "english": "Wernicke's area",
+      "category": "언어",
+      "chapter": 7,
+      "description": "대부분 왼쪽 위관자이랑 뒤쪽. 언어 이해를 담당하며, 손상되면 유창하지만 이해가 어려운 수용실어증이 생깁니다.",
+      "gameLink": "관자엽 게이트"
+    },
+    {
+      "id": "hippocampus",
+      "name": "해마",
+      "english": "Hippocampus",
+      "category": "변연계",
+      "chapter": 7,
+      "description": "안쪽 관자엽. 새로운 서술기억 형성에 중요합니다.",
+      "gameLink": "관자엽 게이트"
+    }
+  ]
+}

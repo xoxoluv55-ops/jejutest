@@ -1,0 +1,155 @@
+{
+  "questions": [
+    {
+      "id": "ch9_boss_cst",
+      "chapter": 9,
+      "topic": "병변 위치 추론",
+      "difficulty": "Master",
+      "objective": "겉질척수로 교차를 이용해 병변 쪽을 추론한다.",
+      "question": "NULL 진단 1: 갑자기 오른쪽 팔·다리의 힘이 빠지고 오른쪽 얼굴 아래쪽이 마비되었다. 병변으로 가장 알맞은 곳은?",
+      "options": [
+        "왼쪽 대뇌 (내림 운동로)",
+        "오른쪽 대뇌",
+        "오른쪽 소뇌"
+      ],
+      "answer": 0,
+      "explanation": "겉질척수로는 숨뇌의 피라미드 교차에서 반대쪽으로 넘어갑니다. 그래서 교차보다 위(대뇌)의 병변은 반대쪽 몸을 마비시킵니다. 얼굴 아래쪽만 마비되는 것은 위운동신경세포(겉질숨뇌로) 손상의 특징입니다.",
+      "wrongExplanations": [
+        "",
+        "오른쪽 대뇌 병변은 왼쪽 몸의 마비를 일으킵니다.",
+        "소뇌 병변은 마비보다 같은 쪽의 협응 장애(운동실조)를 일으킵니다."
+      ],
+      "structures": [
+        "decussation",
+        "umn_lmn"
+      ],
+      "branch": "gate:boss_1",
+      "reference": "겉질척수로와 피라미드 교차"
+    },
+    {
+      "id": "ch9_boss_hemianopia",
+      "chapter": 9,
+      "topic": "병변 위치 추론",
+      "difficulty": "Master",
+      "objective": "동측반맹의 병변 위치를 추론한다.",
+      "question": "NULL 진단 2: 양쪽 눈 모두 왼쪽 시야 절반이 보이지 않는다(왼쪽 동측반맹). 병변은?",
+      "options": [
+        "오른쪽 뒤통수엽 (시각교차 뒤 오른쪽 경로)",
+        "왼쪽 뒤통수엽",
+        "시각교차 중앙"
+      ],
+      "answer": 0,
+      "explanation": "시각교차 뒤에서는 각 시각로가 반대쪽 시야를 담당합니다. 그래서 오른쪽 시각로·시각부챗살·뒤통수엽이 손상되면 양쪽 눈의 왼쪽 시야가 사라집니다(왼쪽 동측반맹).",
+      "wrongExplanations": [
+        "",
+        "왼쪽 뒤통수엽 손상은 오른쪽 동측반맹을 일으킵니다.",
+        "시각교차 중앙 손상은 양쪽 바깥쪽 시야가 사라지는 양귀쪽반맹(양이측반맹)을 일으킵니다."
+      ],
+      "structures": [
+        "hemianopia",
+        "occipital"
+      ],
+      "branch": "gate:boss_2",
+      "reference": "시각 경로 병변"
+    },
+    {
+      "id": "ch9_boss_cerebellum",
+      "chapter": 9,
+      "topic": "병변 위치 추론",
+      "difficulty": "Master",
+      "objective": "소뇌 병변이 같은 쪽 증상을 일으킴을 안다.",
+      "question": "NULL 진단 3: 걸음이 비틀거리고, 오른손 손가락-코 검사에서 목표를 지나친다(겨냥이상). 병변은?",
+      "options": [
+        "오른쪽 소뇌반구",
+        "왼쪽 소뇌반구",
+        "왼쪽 이마엽"
+      ],
+      "answer": 0,
+      "explanation": "소뇌의 출력은 두 번 교차하기 때문에 소뇌반구 병변은 같은 쪽 팔다리의 협응 장애를 일으킵니다. 그래서 오른손 겨냥이상은 오른쪽 소뇌반구 병변을 시사합니다.",
+      "wrongExplanations": [
+        "",
+        "왼쪽 소뇌반구 병변은 왼쪽 팔다리의 운동실조를 일으킵니다.",
+        "이마엽 병변은 협응 장애보다 반대쪽 근력 약화를 주로 일으킵니다."
+      ],
+      "structures": [
+        "cerebellum_sign"
+      ],
+      "branch": "gate:boss_3",
+      "reference": "소뇌 증상 - 같은 쪽 운동실조"
+    },
+    {
+      "id": "ch9_boss_lmn",
+      "chapter": 9,
+      "topic": "병변 위치 추론",
+      "difficulty": "Master",
+      "objective": "위·아래운동신경세포 병변을 구별한다.",
+      "question": "NULL 진단 4: 다리 근육이 위축되고 근육다발수축이 보이며, 무릎반사가 사라졌다. 어느 쪽 병변일까?",
+      "options": [
+        "아래운동신경세포 (척수 앞뿔·말초신경)",
+        "위운동신경세포 (대뇌 겉질척수로)",
+        "소뇌"
+      ],
+      "answer": 0,
+      "explanation": "근위축, 근육다발수축, 반사 감소·소실, 근긴장 저하는 아래운동신경세포 병변의 특징입니다. 위운동신경세포 병변은 반사 항진, 강직, 바빈스키 징후를 보입니다.",
+      "wrongExplanations": [
+        "",
+        "위운동신경세포 병변은 반사가 오히려 증가(항진)합니다.",
+        "소뇌 병변은 근위축 없이 협응 장애를 일으킵니다."
+      ],
+      "structures": [
+        "umn_lmn"
+      ],
+      "branch": "gate:boss_4",
+      "reference": "위운동신경세포 vs 아래운동신경세포"
+    },
+    {
+      "id": "ch9_boss_wernicke",
+      "chapter": 9,
+      "topic": "병변 위치 추론",
+      "difficulty": "Master",
+      "objective": "실어증 유형으로 병변을 추론한다.",
+      "question": "NULL 진단 5: 말은 유창하지만 엉뚱한 단어가 섞이고, 질문을 이해하지 못한다. 병변은?",
+      "options": [
+        "왼쪽 관자엽 (베르니케 영역)",
+        "왼쪽 이마엽 (브로카 영역)",
+        "오른쪽 뒤통수엽"
+      ],
+      "answer": 0,
+      "explanation": "유창하지만 이해가 안 되는 수용실어증은 언어 우세 반구(대부분 왼쪽) 위관자이랑 뒤쪽의 베르니케 영역 병변을 시사합니다.",
+      "wrongExplanations": [
+        "",
+        "브로카 영역 병변은 이해는 비교적 보존되고 말이 비유창합니다.",
+        "오른쪽 뒤통수엽 병변은 왼쪽 동측반맹을 일으킵니다."
+      ],
+      "structures": [
+        "wernicke"
+      ],
+      "branch": "gate:boss_5",
+      "reference": "실어증의 병변 위치"
+    },
+    {
+      "id": "ch9_final_brownsequard",
+      "chapter": 9,
+      "topic": "병변 위치 추론",
+      "difficulty": "Master",
+      "objective": "척수 반쪽 손상의 감각 해리를 설명한다.",
+      "question": "최종 진단: 손상 부위 아래로 같은 쪽 진동·위치감각과 운동이 사라지고, 반대쪽 통증·온도감각이 사라졌다. 진단은?",
+      "options": [
+        "척수 반쪽 손상 (브라운-세카르 증후군)",
+        "소뇌 경색"
+      ],
+      "answer": 0,
+      "explanation": "뒤기둥-안쪽섬유띠계(진동·위치감각)와 겉질척수로는 척수에서 아직 교차하지 않아 같은 쪽 증상이 생깁니다. 앞가쪽계(통증·온도)는 척수에 들어온 직후 교차하므로 반대쪽 증상이 생깁니다.",
+      "wrongExplanations": [
+        "",
+        "소뇌 경색은 협응 장애와 어지럼을 일으키며, 이런 감각 해리를 만들지 않습니다."
+      ],
+      "structures": [
+        "brown_sequard",
+        "decussation"
+      ],
+      "branch": "fork:boss_final",
+      "reference": "척수 반쪽 손상 (Brown-Séquard)"
+    }
+  ]
+}

@@ -214,6 +214,44 @@ namespace NerveRunner
 
         public static Text ButtonText(Button b) { return b.GetComponentInChildren<Text>(); }
 
+        /// 2.0 (concept art 5): glossy candy-coloured round button with a white pictogram and a
+        /// small caption. Same HoldButton behaviour as before (multi-touch, slide-off release).
+        public static HoldButton IconHold(Transform parent, Icon icon, Color color, string caption, Vector2 anchor, Vector2 size, Vector2 pos)
+        {
+            var rt = Rect(parent, "IconHold_" + icon);
+            Place(rt, anchor, size, pos);
+            var glow = Rect(rt, "Glow");
+            Fill(glow, -size.x * 0.12f);
+            var gi = glow.gameObject.AddComponent<Image>();
+            gi.sprite = Glow; gi.color = Pal.A(color, 0.45f); gi.raycastTarget = false;
+            var im = rt.gameObject.AddComponent<Image>();
+            im.sprite = UIIcons.GlossyCircle; im.color = color;
+            var hb = rt.gameObject.AddComponent<HoldButton>();
+            hb.image = im; hb.baseColor = color;
+            var ic = Rect(rt, "Icon");
+            Place(ic, new Vector2(0.5f, 0.5f), size * 0.5f, new Vector2(0f, caption != null ? size.y * 0.04f : 0f));
+            ic.pivot = new Vector2(0.5f, 0.5f);
+            var ii = ic.gameObject.AddComponent<Image>();
+            ii.sprite = UIIcons.Get(icon); ii.raycastTarget = false; ii.color = Color.white;
+            if (caption != null)
+            {
+                var l = Label(rt, caption, Mathf.RoundToInt(size.y * 0.12f), Color.white);
+                Place(l.rectTransform, new Vector2(0.5f, 0f), new Vector2(size.x, size.y * 0.2f), new Vector2(0f, size.y * 0.1f));
+                Neon(l, Pal.A(Color.black, 0.6f), 1.5f);
+                hb.label = l;
+            }
+            return hb;
+        }
+
+        public static Image IconImage(Transform parent, Icon icon, Color c, Vector2 anchor, Vector2 size, Vector2 pos)
+        {
+            var rt = Rect(parent, "Icon_" + icon);
+            Place(rt, anchor, size, pos);
+            var im = rt.gameObject.AddComponent<Image>();
+            im.sprite = UIIcons.Get(icon); im.color = c; im.raycastTarget = false;
+            return im;
+        }
+
         public static HoldButton Hold(Transform parent, string text, Color bg, int fontSize, Vector2 anchor, Vector2 size, Vector2 pos, bool round = true)
         {
             var rt = Rect(parent, "Hold_" + text);

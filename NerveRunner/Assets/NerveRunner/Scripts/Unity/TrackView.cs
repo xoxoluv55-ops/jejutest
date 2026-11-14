@@ -41,7 +41,7 @@ namespace NerveRunner
         }
 
         readonly List<Mesh> ownedMeshes = new List<Mesh>();
-        static readonly Dictionary<ZoneKind, Texture2D> roadTex = new Dictionary<ZoneKind, Texture2D>();
+        static readonly Dictionary<string, Texture2D> roadTex = new Dictionary<string, Texture2D>();
         static Texture2D checker;
 
         void OnDestroy()
@@ -50,9 +50,12 @@ namespace NerveRunner
             ownedMeshes.Clear();
         }
 
-        public void Build(TrackGraph g, QuestionBank qb)
+        BossArenaView boss;
+        StageInfo stage;
+
+        public void Build(TrackGraph g, QuestionBank qb, StageInfo stageInfo = null)
         {
-            graph = g; bank = qb;
+            graph = g; bank = qb; stage = stageInfo;
             MeshKit.Sink = ownedMeshes;
             staticRoot = new GameObject("TrackStatic").transform; staticRoot.SetParent(transform, false);
             dynRoot = new GameObject("TrackDynamic").transform; dynRoot.SetParent(transform, false);
@@ -61,6 +64,7 @@ namespace NerveRunner
             foreach (var seg in g.segments) BuildSegment(seg);
             foreach (var seg in g.segments) foreach (var e in seg.events) BuildEvent(seg, e);
             foreach (var seg in g.segments) if (seg.fork != null) BuildForkSigns(seg);
+            if (BossArenaView.IsArena(g)) { boss = new BossArenaView(); boss.Build(g, dynRoot); }
 
             // static batching: everything under staticRoot shares a handful of materials
             StaticBatchingUtility.Combine(staticRoot.gameObject);
@@ -70,6 +74,8 @@ namespace NerveRunner
         void BuildSegment(TrackSegment seg)
         {
             Color zc = ZoneColor(seg.zone);
+            if (CerebrumCityView.IsDistrict(seg.theme) && seg.zone == ZoneKind.Normal) zc = CerebrumCityView.DistrictColor(seg.theme);
+            if (seg.theme == "boss" && seg.zone == ZoneKind.Normal) zc = Pal.Hex(0xFF4DA6);
             var root = new GameObject("Seg_" + seg.id + "_" + seg.name).transform;
             root.SetParent(staticRoot, false);
             float hw = seg.halfWidth;
@@ -83,7 +89,8 @@ namespace NerveRunner
             }
 
             Texture2D rt;
-            if (!roadTex.TryGetValue(seg.zone, out rt) || rt == null) { rt = MeshKit.RoadTexture(zc, Pal.Hex(0x120E36)); roadTex[seg.zone] = rt; }
+            string texKey = seg.zone + "|" + (seg.zone == ZoneKind.Normal ? seg.theme : "");
+            if (!roadTex.TryGetValue(texKey, out rt) || rt == null) { rt = MeshKit.RoadTexture(zc, Pal.Hex(0x120E36)); roadTex[texKey] = rt; }
             var roadMat = Mats.Building(rt, Vector2.one, Color.white, seg.zone == ZoneKind.Damaged ? 0.55f : 0.85f);
             MeshKit.MeshObject(root, "Road", MeshKit.Ribbon(seg, 0f, seg.length, -hw, hw, yOff, 2f * hw), roadMat);
             var railMat = Mats.Emissive(zc * 0.6f, zc * 1.5f);
@@ -100,6 +107,7 @@ namespace NerveRunner
                 tunnels.Add(tv);
             }
             if (seg.zone == ZoneKind.Damaged) BuildDamaged(seg, root);
+            CerebrumCityView.Build(seg, root, seg.id * 17 + 3);   // CH.7 districts (no-op elsewhere)
 
             // zone name sign near the start of main segments
             if (seg.zone != ZoneKind.Review && seg.zone != ZoneKind.Shortcut && seg.length > 120f)
@@ -138,31 +146,86 @@ namespace NerveRunner
             }
         }
 
+        /// Synapse station (2.0, concept art 3): presynaptic terminal bulb with vesicle clusters and
+        /// Ca2+ channels on the LEFT, postsynaptic membrane with receptors on the RIGHT, and
+        /// neurotransmitter dots arcing across the cleft that the road crosses.
         void BuildCleft(TrackSegment seg, Transform root)
         {
-            var mem = Mats.Emissive(Pal.Hex(0x3B1B7A), Pal.Purple * 0.9f);
-            // pre- and post-synaptic membranes either side of the gap
-            foreach (float s in new[] { 0f, seg.length })
+            float L = seg.length;
+            Quaternion q0 = Quaternion.LookRotation(seg.TangentAt(0f), Vector3.up);
+            var bulbMat = NRMats.Toon(Pal.Hex(0x8A5CE0), Pal.Hex(0x3B1B7A), Pal.Hex(0xFF9AE6), 2.2f, Pal.Hex(0x2A0E50));
+            var vesMat = NRMats.Toon(Pal.Hex(0xFF8FD0), Pal.Hex(0xC23F8E), Color.white, 2f, Pal.Hex(0x601040));
+            var caMat = Mats.Emissive(Pal.Hex(0x2E9A50), Pal.Green * 1.6f);
+            var postMat = NRMats.Toon(Pal.Hex(0x6E4CC8), Pal.Hex(0x2A1A6A), Pal.Hex(0x9AD8FF), 2.4f, Pal.Hex(0x180A40));
+            var recMat = Mats.Emissive(Pal.Hex(0x1E8C96), Pal.Cyan * 1.6f);
+            var boundMat = Mats.Emissive(Pal.Hex(0xFF8FD0), Pal.Pink * 2f);
+            var ntMat = Mats.Emissive(Pal.Hex(0xFF9AE6), Pal.Pink * 1.8f);
+
+            // presynaptic terminal bulb (left)
+            var bulb = new GameObject("PresynapticTerminal").transform;
+            bulb.SetParent(root, false);
+            bulb.position = seg.WorldPos(2f, -16f, 4f);
+            bulb.rotation = q0;
+            MeshKit.Prim(PrimitiveType.Sphere, bulb, Vector3.zero, new Vector3(18f, 16f, 22f), bulbMat, "Bulb");
+            var rnd = new System.Random(11);
+            for (int c = 0; c < 6; c++)
             {
-                Quaternion q = Quaternion.LookRotation(seg.TangentAt(s), Vector3.up);
-                foreach (float side in new[] { -1f, 1f })
+                // vesicle clusters on the side facing the cleft (+x local)
+                Vector3 cc = new Vector3(8.2f, -4f + (c % 3) * 4f, -6f + (c / 3) * 8f);
+                for (int k = 0; k < 7; k++)
+                    MeshKit.Prim(PrimitiveType.Sphere, bulb, cc + new Vector3((float)rnd.NextDouble() * 0.6f, (float)rnd.NextDouble() * 2f - 1f, (float)rnd.NextDouble() * 2f - 1f) * 1.1f,
+                                 Vector3.one * 0.9f, vesMat, "Vesicle");
+            }
+            for (int c = 0; c < 2; c++)
+            {
+                // voltage-gated Ca2+ channel pairs on top + a chain of entering Ca2+ ions
+                Vector3 top = new Vector3(2f + c * 3f, 7.6f, -3f + c * 6f);
+                MeshKit.Prim(PrimitiveType.Cylinder, bulb, top + new Vector3(-0.5f, 0f, 0f), new Vector3(0.7f, 1.2f, 0.7f), caMat, "CaChannel");
+                MeshKit.Prim(PrimitiveType.Cylinder, bulb, top + new Vector3(0.5f, 0f, 0f), new Vector3(0.7f, 1.2f, 0.7f), caMat, "CaChannel");
+                for (int k = 1; k <= 6; k++)
+                    MeshKit.Prim(PrimitiveType.Sphere, bulb, top + new Vector3(Mathf.Sin(k) * 0.6f, k * 1.4f, -k * 0.6f), Vector3.one * 0.55f, caMat, "Ca2+");
+            }
+
+            // postsynaptic membrane (right) with receptors facing the cleft
+            var post = new GameObject("PostsynapticMembrane").transform;
+            post.SetParent(root, false);
+            post.position = seg.WorldPos(L * 0.5f, 16f, -3f);
+            post.rotation = Quaternion.LookRotation(seg.TangentAt(L * 0.5f), Vector3.up);
+            var ridge = MeshKit.Prim(PrimitiveType.Capsule, post, Vector3.zero, new Vector3(12f, (L + 40f) * 0.5f, 9f), postMat, "Membrane");
+            ridge.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            int nRec = 8;
+            for (int i = 0; i < nRec; i++)
+            {
+                float z = Mathf.Lerp(-L * 0.5f - 10f, L * 0.5f + 10f, i / (float)(nRec - 1));
+                var rec = new GameObject("Receptor").transform;
+                rec.SetParent(post, false);
+                rec.localPosition = new Vector3(-4.5f, 4.2f, z);
+                rec.localRotation = Quaternion.Euler(0f, 0f, 35f);   // leaning toward the cleft
+                var m = i % 3 == 1 ? boundMat : recMat;               // some receptors already bound (pink)
+                MeshKit.Prim(PrimitiveType.Cylinder, rec, new Vector3(0f, 0.8f, 0f), new Vector3(0.45f, 0.8f, 0.45f), recMat, "Stem");
+                var a1 = MeshKit.Prim(PrimitiveType.Cube, rec, new Vector3(-0.45f, 2.1f, 0f), new Vector3(0.45f, 1.4f, 0.45f), m, "Arm");
+                a1.transform.localRotation = Quaternion.Euler(0f, 0f, 28f);
+                var a2 = MeshKit.Prim(PrimitiveType.Cube, rec, new Vector3(0.45f, 2.1f, 0f), new Vector3(0.45f, 1.4f, 0.45f), m, "Arm");
+                a2.transform.localRotation = Quaternion.Euler(0f, 0f, -28f);
+            }
+
+            // neurotransmitter dots arcing from the bulb over the road to the receptors
+            for (int arc = 0; arc < 3; arc++)
+            {
+                float s0 = L * (0.15f + arc * 0.3f);
+                for (int k = 0; k <= 12; k++)
                 {
-                    var m = MeshKit.Prim(PrimitiveType.Sphere, root, Vector3.zero, new Vector3(14f, 16f, 2.5f), mem, "Membrane");
-                    m.transform.position = seg.WorldPos(s, side * 12f, 1f);
-                    m.transform.rotation = q;
+                    float u = k / 12f;
+                    float x = Mathf.Lerp(-8f, 11f, u);
+                    float y = 2.5f + Mathf.Sin(u * Mathf.PI) * (6f + arc);
+                    var d = MeshKit.Prim(PrimitiveType.Sphere, dynRoot, Vector3.zero, Vector3.one * (0.35f + 0.15f * Mathf.Sin(u * 9f)), ntMat, "Neurotransmitter");
+                    d.transform.position = seg.WorldPos(s0 + u * 4f, x, y);
+                    spinning.Add(d.transform);
                 }
             }
-            Sign(root, seg, 0f, 0f, 9f, 12f, 1.8f, "시냅스 틈새 (Synaptic cleft)", Pal.Purple, 80);
-            // drifting neurotransmitter vesicles
-            var ves = Mats.Emissive(Pal.Hex(0xFF9AE6), Pal.Pink * 1.4f);
-            var rnd = new System.Random(7);
-            for (int i = 0; i < 26; i++)
-            {
-                float s = (float)rnd.NextDouble() * seg.length;
-                var v = MeshKit.Prim(PrimitiveType.Sphere, dynRoot, Vector3.zero, Vector3.one * (0.4f + (float)rnd.NextDouble() * 0.5f), ves, "Vesicle");
-                v.transform.position = seg.WorldPos(s, (float)(rnd.NextDouble() * 16 - 8), (float)rnd.NextDouble() * 6f - 1.5f);
-                spinning.Add(v.transform);
-            }
+            Sign(root, seg, 0f, 0f, 9f, 13f, 1.9f, "시냅스 정거장 · 시냅스 틈새", Pal.Purple, 80);
+            Sign(root, seg, 0f, -9f, 13f, 9f, 1.6f, "← 시냅스전 말단 (소포 · Ca2+)", Pal.Pink, 50);
+            Sign(root, seg, L * 0.6f, 9f, 9.5f, 9f, 1.6f, "시냅스후막 · 수용체 →", Pal.Cyan, 50);
         }
 
         /// Called after the synapse minigame. success = solid bright bridge.
@@ -332,6 +395,9 @@ namespace NerveRunner
         }
 
         //================== RUNTIME FEEDBACK ==================\\
+        public void BossHit(int hp, int max) { if (boss != null) boss.Hit(hp, max); }
+        public void BossAttack() { if (boss != null) boss.Attack(); }
+
         public void Collect(TrackEvent e) { GameObject o; if (evtObj.TryGetValue(e, out o) && o != null) o.SetActive(false); }
 
         public void FlashRing(TrackEvent e, bool hit)
@@ -376,6 +442,7 @@ namespace NerveRunner
         {
             float dt = Time.deltaTime, t = Time.time;
             for (int i = 0; i < tunnels.Count; i++) tunnels[i].Tick(dt);
+            if (boss != null) boss.Tick(dt);
             for (int i = 0; i < spinning.Count; i++)
                 if (spinning[i] != null && spinning[i].gameObject.activeSelf)
                     spinning[i].Rotate(0f, 120f * dt, 40f * dt, Space.Self);

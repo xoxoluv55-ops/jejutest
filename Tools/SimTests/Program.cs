@@ -135,6 +135,63 @@ static class Program
         Check(note.resolved && note.retryCount == 1, "re-answering correctly resolves the note and counts the retry");
         Check(save.codexUnlocked.Contains("ap") && save.codexUnlocked.Contains("hillock"), "codex unlocked from answered questions");
 
+        Console.WriteLine("[9] Additional stages (StageCatalog)");
+        {
+            var allQ = new List<Question>(); var allC = new List<CodexEntry>(); var allS = new List<StoryBeat>();
+            foreach (var suf in StageCatalog.ContentSuffixes)
+            {
+                allQ.AddRange(Load<QuestionFile>("questions_" + suf + ".json").questions);
+                allC.AddRange(Load<CodexFile>("codex_" + suf + ".json").entries);
+                allS.AddRange(Load<StoryFile>("story_" + suf + ".json").beats);
+            }
+            var fullBank = new QuestionBank(allQ);
+            var vErr = fullBank.Validate();
+            foreach (var e in vErr) Console.WriteLine("     " + e);
+            Check(vErr.Count == 0, $"merged question bank valid ({fullBank.all.Count} questions)");
+            Check(allQ.Select(q => q.id).Distinct().Count() == allQ.Count, "question ids unique across stages");
+            Check(allC.Select(c => c.id).Distinct().Count() == allC.Count, "codex ids unique across stages");
+            var cIds = new HashSet<string>(allC.Select(c => c.id));
+            var sIds = new HashSet<string>(allS.Select(b => b.id));
+            Check(fullBank.all.SelectMany(q => q.structures ?? new string[0]).All(cIds.Contains), "all question structures exist in codex");
+            foreach (var st in StageCatalog.All)
+            {
+                if (st.id == Chapter1Layout.StageId) continue;   // covered above
+                Console.WriteLine($"   -- {st.id} {st.subtitle}");
+                var gs = st.build(fullBank);
+                Console.WriteLine($"     segments={gs.segments.Count} shortest={gs.referenceLength:F0} m par={gs.parTime:F0} s");
+                var trig = gs.AllEvents().Where(e => e.type == TrackEventType.Trigger).Select(e => e.tag).ToList();
+                Check(trig.Where(t => t.StartsWith("codex:")).All(t => cIds.Contains(t.Substring(6))), st.id + ": codex triggers valid");
+                Check(trig.Where(t => t.StartsWith("story:")).All(t => sIds.Contains(t.Substring(6))), st.id + ": story triggers valid");
+                Check(sIds.Contains(st.introStory), st.id + ": intro story exists");
+                float worst = 0f;
+                foreach (var sg in gs.segments)
+                    for (int i = 0; i < sg.next.Count; i++)
+                    {
+                        Vector3 end = sg.PointAt(sg.length);
+                        Vector3 exp = sg.fork != null ? end + sg.RightAt(sg.length) * sg.nextStartOffset[i] : end - sg.next[i].RightAt(0f) * sg.mergeOffset;
+                        worst = Math.Max(worst, (sg.next[i].PointAt(0f) - exp).magnitude);
+                    }
+                Check(worst < 0.75f, $"{st.id}: joins continuous (worst {worst:F2} m)");
+                foreach (var f in gs.segments.Where(x => x.fork != null))
+                {
+                    var lens = f.next.Select(n => n.length).ToList();
+                    Check(lens[f.fork.correctLane] < lens.Where((l, i) => i != f.fork.correctLane).Min(), $"{st.id}: {f.fork.questionId} correct branch is the shortcut ({string.Join("/", lens.Select(l => l.ToString("F0")))})");
+                }
+                OverlapCheck(gs);
+                int nQ = gs.AllEvents().Count(e => e.type == TrackEventType.Gate) + gs.segments.Count(x => x.fork != null);
+                var a = Run(gs, fullBank, (q, c, n) => c, true);
+                Check(a.finished && a.wrong == 0 && a.correct == nQ, $"{st.id}: autopilot correct finishes {a.time:F1} s, {a.correct}/{nQ} correct");
+                Check(a.time < gs.parTime, $"{st.id}: clean run beats par");
+                Check(a.obstacleHits <= 1, $"{st.id}: obstacles avoided (hits {a.obstacleHits})");
+                var w = Run(gs, fullBank, (q, c, n) => (c + 1) % n, true);
+                Check(w.finished && w.correct == 0 && w.time > a.time + 8f, $"{st.id}: all-wrong run finishes slower (+{w.time - a.time:F1} s)");
+                var z = Run(gs, fullBank, null, false);
+                Check(z.finished && z.time < 600f && z.time > gs.parTime, $"{st.id}: no-input run finishes ({z.time:F1} s) without beating par");
+                Check(a.time + 40f > 120f && a.time + 40f < 330f, $"{st.id}: play time ~2-5 min");
+                ExportSvg(gs, Path.Combine(Root(), "docs", st.id + "_course_map.svg"));
+            }
+        }
+
         Console.WriteLine("[8] Visual 2.0: saltatory tunnel clearance + mesh budget (same constants as SaltatoryTunnelView)");
         {
             const float R = 8.2f, CY = 2.4f, AXON_R = 7.4f, GAP = 9f, TAPER = 0.82f;
@@ -296,7 +353,7 @@ static class Program
         }
         var st = P(g.start.PointAt(0)).Split(',');
         sb.Append($"<text x='{st[0]}' y='{st[1]}' fill='#FFD34D' font-size='18' font-weight='bold'>START</text>");
-        sb.Append($"<text x='16' y='{H * sc + 40:F0}' fill='#B8B2E6' font-size='15'>CH.1 뉴런 고속도로 - 최단 경로 {g.referenceLength:F0} m · 흰점=게이트 · 청록=랑비에 결절 · 빨강=NULL · 초록 선=정답 지름길 · 주황 선=오답 복습 구간</text>");
+        sb.Append($"<text x='16' y='{H * sc + 40:F0}' fill='#B8B2E6' font-size='15'>최단 경로 {g.referenceLength:F0} m · 흰점=게이트 · 청록=랑비에 결절 · 빨강=NULL · 초록 선=정답 지름길 · 주황 선=오답 복습 구간</text>");
         sb.Append("</svg>");
         Directory.CreateDirectory(Path.GetDirectoryName(path));
         File.WriteAllText(path, sb.ToString());

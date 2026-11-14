@@ -131,6 +131,7 @@ namespace NerveRunner.Core
         public List<TopicMastery> mastery = new List<TopicMastery>();
         public List<string> codexUnlocked = new List<string>();
         public bool storySeen;
+        public string lastStage = "ch1";
         // settings
         public bool sfxOn = true;
         public bool musicOn = true;

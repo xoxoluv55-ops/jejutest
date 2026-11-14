@@ -1,0 +1,209 @@
+{
+  "questions": [
+    {
+      "id": "ch7_gate_m1",
+      "chapter": 7,
+      "topic": "대뇌엽 기능",
+      "difficulty": "Normal",
+      "objective": "일차운동겉질의 위치를 안다.",
+      "question": "수의운동 명령을 내보내는 일차운동겉질(중심앞이랑)은 어디에 있을까요?",
+      "options": [
+        "이마엽 중심앞이랑",
+        "마루엽 중심뒤이랑",
+        "뒤통수엽 새발톱고랑"
+      ],
+      "answer": 0,
+      "explanation": "중심고랑 바로 앞의 중심앞이랑(이마엽)이 일차운동겉질입니다. 여기서 시작한 겉질척수로가 숨뇌 피라미드에서 교차해 반대쪽 몸을 움직입니다.",
+      "wrongExplanations": [
+        "",
+        "중심뒤이랑은 중심고랑 뒤의 일차몸감각겉질(마루엽)입니다.",
+        "새발톱고랑 주변은 일차시각겉질(뒤통수엽)입니다."
+      ],
+      "structures": [
+        "frontal",
+        "m1"
+      ],
+      "branch": "gate:frontal_m1",
+      "reference": "대뇌겉질 기능 영역 - 중심앞이랑"
+    },
+    {
+      "id": "ch7_gate_broca",
+      "chapter": 7,
+      "topic": "언어 영역",
+      "difficulty": "Normal",
+      "objective": "브로카 영역과 표현실어증을 연결한다.",
+      "question": "왼쪽 대뇌 손상 후 말은 알아듣지만 말이 느리고 더듬거린다(표현실어증). 손상 부위는?",
+      "options": [
+        "브로카 영역 (왼쪽 아래이마이랑)",
+        "베르니케 영역 (왼쪽 위관자이랑)",
+        "일차시각겉질"
+      ],
+      "answer": 0,
+      "explanation": "브로카 영역은 대부분 왼쪽 이마엽 아래이마이랑에 있으며 말의 산출을 담당합니다. 손상되면 이해는 비교적 보존되지만 비유창한 표현실어증이 생깁니다.",
+      "wrongExplanations": [
+        "",
+        "베르니케 영역 손상은 말은 유창하지만 이해가 어려운 수용실어증을 일으킵니다.",
+        "일차시각겉질 손상은 시야 결손을 일으키며 실어증과 관련이 없습니다."
+      ],
+      "structures": [
+        "broca",
+        "frontal"
+      ],
+      "branch": "gate:frontal_broca",
+      "reference": "언어 영역 - 브로카 실어증"
+    },
+    {
+      "id": "ch7_fork_s1",
+      "chapter": 7,
+      "topic": "대뇌엽 기능",
+      "difficulty": "Normal",
+      "objective": "일차몸감각겉질의 위치를 안다.",
+      "question": "피부의 촉각·통증 정보가 시상을 거쳐 도착하는 일차몸감각겉질(중심뒤이랑)은?",
+      "options": [
+        "이마엽",
+        "마루엽",
+        "뒤통수엽"
+      ],
+      "answer": 1,
+      "explanation": "중심고랑 바로 뒤의 중심뒤이랑(마루엽)이 일차몸감각겉질입니다. 몸 감각 정보는 시상의 배쪽뒤핵(VPL/VPM)을 거쳐 이곳에 도착합니다.",
+      "wrongExplanations": [
+        "이마엽의 중심앞이랑은 운동겉질입니다. 감각이 아니라 운동 명령을 내보냅니다.",
+        "",
+        "뒤통수엽은 시각 정보를 처리합니다."
+      ],
+      "structures": [
+        "parietal",
+        "s1"
+      ],
+      "branch": "fork:to_parietal",
+      "reference": "대뇌겉질 기능 영역 - 중심뒤이랑"
+    },
+    {
+      "id": "ch7_gate_neglect",
+      "chapter": 7,
+      "topic": "대뇌엽 기능",
+      "difficulty": "Expert",
+      "objective": "마루엽과 공간 주의(반쪽무시)를 연결한다.",
+      "question": "환자가 접시의 왼쪽 음식만 남기고, 왼쪽 공간을 무시한다(반쪽무시). 가장 흔한 손상 부위는?",
+      "options": [
+        "오른쪽 마루엽",
+        "왼쪽 이마엽",
+        "왼쪽 뒤통수엽"
+      ],
+      "answer": 0,
+      "explanation": "공간 주의는 주로 오른쪽 마루엽이 담당합니다. 오른쪽 마루엽이 손상되면 반대쪽(왼쪽) 공간을 무시하는 반쪽무시가 흔히 나타납니다.",
+      "wrongExplanations": [
+        "",
+        "왼쪽 이마엽 손상은 오른쪽 운동 약화나 표현실어증과 관련됩니다.",
+        "뒤통수엽 손상은 시야 결손을 일으키지만, 무시와는 다릅니다."
+      ],
+      "structures": [
+        "parietal"
+      ],
+      "branch": "gate:parietal_neglect",
+      "reference": "마루엽 증후군 - 반쪽무시"
+    },
+    {
+      "id": "ch7_fork_a1",
+      "chapter": 7,
+      "topic": "대뇌엽 기능",
+      "difficulty": "Normal",
+      "objective": "일차청각겉질의 위치를 안다.",
+      "question": "소리 정보가 처음 도착하는 일차청각겉질은 어디에 있을까요?",
+      "options": [
+        "관자엽 가로관자이랑",
+        "뒤통수엽",
+        "마루엽"
+      ],
+      "answer": 0,
+      "explanation": "일차청각겉질은 관자엽 위쪽의 가로관자이랑(헤쉴이랑)에 있습니다. 청각 정보는 시상의 안쪽무릎체를 거쳐 이곳에 도착합니다.",
+      "wrongExplanations": [
+        "",
+        "뒤통수엽은 시각을 담당합니다.",
+        "마루엽은 몸감각과 공간 정보를 담당합니다."
+      ],
+      "structures": [
+        "temporal",
+        "a1"
+      ],
+      "branch": "fork:to_temporal",
+      "reference": "대뇌겉질 기능 영역 - 청각겉질"
+    },
+    {
+      "id": "ch7_gate_wernicke",
+      "chapter": 7,
+      "topic": "언어 영역",
+      "difficulty": "Normal",
+      "objective": "베르니케 영역과 수용실어증을 연결한다.",
+      "question": "말은 유창하지만 엉뚱한 단어가 섞이고, 남의 말을 이해하지 못한다(수용실어증). 손상 부위는?",
+      "options": [
+        "브로카 영역",
+        "베르니케 영역 (왼쪽 위관자이랑 뒤쪽)",
+        "일차운동겉질"
+      ],
+      "answer": 1,
+      "explanation": "베르니케 영역은 대부분 왼쪽 위관자이랑 뒤쪽에 있으며 언어 이해를 담당합니다. 손상되면 유창하지만 의미가 맞지 않는 말과 이해 장애가 나타납니다.",
+      "wrongExplanations": [
+        "브로카 영역 손상은 이해는 비교적 보존되고 말이 비유창해집니다.",
+        "",
+        "일차운동겉질 손상은 반대쪽 몸의 운동 약화를 일으킵니다."
+      ],
+      "structures": [
+        "wernicke",
+        "temporal"
+      ],
+      "branch": "gate:temporal_wernicke",
+      "reference": "언어 영역 - 베르니케 실어증"
+    },
+    {
+      "id": "ch7_gate_hippocampus",
+      "chapter": 7,
+      "topic": "대뇌엽 기능",
+      "difficulty": "Normal",
+      "objective": "해마와 기억 형성을 연결한다.",
+      "question": "새로운 사실과 사건을 기억으로 만드는(서술기억 형성) 데 중요한 해마는 어디에 있을까요?",
+      "options": [
+        "안쪽 관자엽",
+        "마루엽 위쪽",
+        "이마엽 앞쪽"
+      ],
+      "answer": 0,
+      "explanation": "해마는 안쪽 관자엽에 있으며 새로운 서술기억 형성에 중요합니다. 양쪽 해마가 손상되면 새로운 기억을 만들지 못하는 앞으로가는기억상실이 생길 수 있습니다.",
+      "wrongExplanations": [
+        "",
+        "마루엽 위쪽은 몸감각 통합과 공간 처리에 관여합니다.",
+        "이마엽 앞쪽은 계획, 판단 같은 실행기능을 담당합니다."
+      ],
+      "structures": [
+        "hippocampus",
+        "temporal"
+      ],
+      "branch": "gate:temporal_hippocampus",
+      "reference": "변연계 - 해마와 기억"
+    },
+    {
+      "id": "ch7_fork_v1",
+      "chapter": 7,
+      "topic": "대뇌엽 기능",
+      "difficulty": "Rookie",
+      "objective": "일차시각겉질의 위치를 안다.",
+      "question": "시각 정보가 도착하는 일차시각겉질은 어디의 새발톱고랑 주변에 있을까요?",
+      "options": [
+        "뒤통수엽",
+        "관자엽"
+      ],
+      "answer": 0,
+      "explanation": "일차시각겉질은 뒤통수엽 안쪽면의 새발톱고랑 주변에 있습니다. 시각 정보는 시상의 가쪽무릎체에서 시각부챗살을 따라 이곳에 도착합니다.",
+      "wrongExplanations": [
+        "",
+        "관자엽은 청각과 언어 이해, 기억에 관여합니다. 일차시각겉질은 뒤통수엽에 있습니다."
+      ],
+      "structures": [
+        "occipital",
+        "v1"
+      ],
+      "branch": "fork:to_occipital",
+      "reference": "대뇌겉질 기능 영역 - 시각겉질"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "beats": [
+    {
+      "id": "ch9_intro",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "경고: 오류 개체 NULL 발견. 신경망 중심부가 교란되고 있습니다."
+        },
+        {
+          "speaker": "SYSTEM",
+          "text": "증상을 보고 병변 위치가 맞는 차선으로 들어가면 NULL의 보호막에 타격을 줍니다."
+        },
+        {
+          "speaker": "STAR-01",
+          "text": "진단으로 NULL을 멈추자! 반격 파동은 점프로 피할게!"
+        }
+      ]
+    },
+    {
+      "id": "ch9_final",
+      "lines": [
+        {
+          "speaker": "STAR-01",
+          "text": "정확한 진단으로 탈출로가 열렸어! 신경망 복구까지 전력 질주!"
+        }
+      ]
+    }
+  ]
+}

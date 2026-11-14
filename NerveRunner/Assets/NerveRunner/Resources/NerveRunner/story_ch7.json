@@ -1,0 +1,44 @@
+{
+  "beats": [
+    {
+      "id": "ch7_intro",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "대뇌 도시 진입. NULL이 정보를 엉뚱한 엽으로 보내고 있습니다!"
+        },
+        {
+          "speaker": "STAR-01",
+          "text": "정보마다 올바른 대뇌엽으로 배달하자. 이마엽부터 출발!"
+        }
+      ]
+    },
+    {
+      "id": "ch7_parietal",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "마루엽 지구: 몸감각과 공간 인식의 도시입니다."
+        }
+      ]
+    },
+    {
+      "id": "ch7_temporal",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "관자엽 지구: 청각, 언어 이해, 기억의 도시입니다."
+        }
+      ]
+    },
+    {
+      "id": "ch7_occipital",
+      "lines": [
+        {
+          "speaker": "STAR-01",
+          "text": "뒤통수엽 지구 도착! 시각 정보 배달 완료, 결승선까지 질주!"
+        }
+      ]
+    }
+  ]
+}

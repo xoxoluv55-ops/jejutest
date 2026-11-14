@@ -64,6 +64,7 @@ namespace NerveRunner.Core
         public float length;
         public float halfWidth = 6f;
         public ZoneKind zone = ZoneKind.Normal;
+        public string theme;                // visual theme tag (e.g. cerebrum district "frontal"), view-only
 
         // graph
         public readonly List<TrackSegment> next = new List<TrackSegment>();

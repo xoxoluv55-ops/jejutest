@@ -20,7 +20,8 @@ namespace NerveRunner
         public SaveData save;
         public QuestionBank bank;
         public CodexEntry[] codex;
-        public Action onStartStage, onSaveChanged, onQuit, onResume, onRestart;
+        public Action onSaveChanged, onQuit, onResume, onRestart;
+        public Action<string> onStartStage;
 
         public static readonly string[] ChapterTitles =
         {
@@ -115,7 +116,7 @@ namespace NerveRunner
 
             string[] labels = { "▶  게임 시작", "스테이지 선택", "신경 도감", "학습 노트 (오답)", "설정" };
             Action[] acts = {
-                () => { if (onStartStage != null) onStartStage(); },
+                () => { if (onStartStage != null) onStartStage(string.IsNullOrEmpty(save.lastStage) ? Chapter1Layout.StageId : save.lastStage); },
                 () => Show(UIScreen.StageSelect), () => Show(UIScreen.Codex), () => Show(UIScreen.WrongNotes), () => Show(UIScreen.Settings) };
             for (int i = 0; i < labels.Length; i++)
             {
@@ -129,25 +130,43 @@ namespace NerveRunner
         }
 
         //================== STAGE SELECT ==================\\
-        Text ch1Info;
+        readonly Dictionary<string, Text> stageInfo = new Dictionary<string, Text>();
+
+        static Color StageColor(int chapter)
+        {
+            switch (chapter)
+            {
+                case 1: return Pal.Yellow;
+                case 7: return Pal.Hex(0xFF9A3D);
+                case 9: return Pal.Hex(0xFF4DA6);
+                default: return Pal.A(Pal.Purple, 0.5f);
+            }
+        }
+
         void BuildStageSelect()
         {
             var p = NewScreen(UIScreen.StageSelect).transform;
-            Title(p, "스테이지 선택", "STAR-01의 여정 - 손상된 신경 경로를 순서대로 복구하세요");
+            Title(p, "스테이지 선택", "STAR-01의 여정 - 손상된 신경 경로를 복구하세요");
             BackButton(p);
             for (int i = 0; i < 9; i++)
             {
+                var st = StageCatalog.ByChapter(i + 1);
+                bool open = st != null;
+                Color accent = StageColor(i + 1);
                 int col = i % 5, row = i / 5;
-                var card = UIKit.Panel(p, i == 0 ? Pal.Card : Pal.CardLocked, new Vector2(0f, 1f), new Vector2(250f, 300f),
+                var card = UIKit.Panel(p, open ? Pal.Card : Pal.CardLocked, new Vector2(0f, 1f), new Vector2(250f, 300f),
                                        new Vector2(60f + col * 262f, -170f - row * 330f));
-                UIKit.Neon(card, i == 0 ? Pal.Yellow : Pal.A(Pal.Purple, 0.5f), 3f);
-                UIKit.Label(card.transform, "CH." + (i + 1), 40, i == 0 ? Pal.Yellow : Pal.Dim, TextAnchor.UpperCenter, new Vector2(0.5f, 1f), new Vector2(230f, 56f), new Vector2(0f, -14f)).fontStyle = FontStyle.Bold;
-                var name = UIKit.FitLabel(card.transform, ChapterTitles[i], 30, 18, Pal.Text);
+                UIKit.Neon(card, open ? accent : Pal.A(Pal.Purple, 0.5f), 3f);
+                // accent glow strip at the top of playable cards
+                if (open) { var strip = UIKit.Panel(card.transform, Pal.A(accent, 0.35f), new Vector2(0.5f, 1f), new Vector2(236f, 66f), new Vector2(0f, -7f)); strip.raycastTarget = false; }
+                UIKit.Label(card.transform, "CH." + (i + 1), 40, open ? accent : Pal.Dim, TextAnchor.UpperCenter, new Vector2(0.5f, 1f), new Vector2(230f, 56f), new Vector2(0f, -14f)).fontStyle = FontStyle.Bold;
+                var name = UIKit.FitLabel(card.transform, open ? st.subtitle + "\n<size=20>" + ChapterTitles[i] + "</size>" : ChapterTitles[i], 30, 18, Pal.Text);
                 UIKit.Place(name.rectTransform, new Vector2(0.5f, 1f), new Vector2(226f, 90f), new Vector2(0f, -76f));
-                if (i == 0)
+                if (open)
                 {
-                    ch1Info = UIKit.Label(card.transform, "", 24, Pal.Dim, TextAnchor.MiddleCenter, new Vector2(0.5f, 0f), new Vector2(250f, 60f), new Vector2(0f, 96f));
-                    UIKit.Button(card.transform, "출발!", Pal.Yellow, Pal.Dark, 32, () => { if (onStartStage != null) onStartStage(); },
+                    string id = st.id;
+                    stageInfo[id] = UIKit.Label(card.transform, "", 22, Pal.Dim, TextAnchor.MiddleCenter, new Vector2(0.5f, 0f), new Vector2(250f, 60f), new Vector2(0f, 96f));
+                    UIKit.Button(card.transform, st.boss ? "보스전!" : "출발!", accent, Pal.Dark, 32, () => { if (onStartStage != null) onStartStage(id); },
                                  new Vector2(0.5f, 0f), new Vector2(200f, 70f), new Vector2(0f, 18f));
                 }
                 else
@@ -159,27 +178,42 @@ namespace NerveRunner
 
         void RefreshStageSelect()
         {
-            var r = save.Stage(Chapter1Layout.StageId);
-            string stars = new string('★', r.bestStars) + new string('☆', 3 - r.bestStars);
-            ch1Info.text = stars + "\n" + (r.bestTime > 0f ? "최고 " + FormatTime(r.bestTime) : "기록 없음");
+            foreach (var kv in stageInfo)
+            {
+                var r = save.Stage(kv.Key);
+                string stars = new string('★', r.bestStars) + new string('☆', 3 - r.bestStars);
+                kv.Value.text = stars + "\n" + (r.bestTime > 0f ? "최고 " + FormatTime(r.bestTime) : "기록 없음");
+            }
         }
 
         //================== CODEX ==================\\
         Text codexName, codexBody;
         Button[] codexBtns;
+        Button[] codexTabs;
+        int codexChapter = 1;
+        readonly List<int> codexVisible = new List<int>();   // indices into codex[] shown on the current tab
+        const int CODEX_SLOTS = 18;                            // 3 columns x 6 rows
+
         void BuildCodex()
         {
             var p = NewScreen(UIScreen.Codex).transform;
             Title(p, "신경 도감", "레이스에서 만난 구조가 등록됩니다");
             BackButton(p);
-            int n = codex != null ? codex.Length : 0;
-            codexBtns = new Button[n];
-            for (int i = 0; i < n; i++)
+            // chapter tabs (one per playable stage)
+            codexTabs = new Button[StageCatalog.All.Length];
+            for (int t = 0; t < StageCatalog.All.Length; t++)
             {
-                int idx = i;
+                int ch = StageCatalog.All[t].chapter;
+                codexTabs[t] = UIKit.Button(p, "CH." + ch, Pal.Card, Pal.Text, 26, () => { codexChapter = ch; RefreshCodex(); },
+                                            new Vector2(0f, 1f), new Vector2(150f, 52f), new Vector2(60f + t * 160f, -150f));
+            }
+            codexBtns = new Button[CODEX_SLOTS];
+            for (int i = 0; i < CODEX_SLOTS; i++)
+            {
+                int slot = i;
                 int col = i % 3, row = i / 3;
-                codexBtns[i] = UIKit.Button(p, "", Pal.Card, Pal.Text, 26, () => ShowCodexEntry(idx),
-                                            new Vector2(0f, 1f), new Vector2(220f, 66f), new Vector2(60f + col * 230f, -160f - row * 76f));
+                codexBtns[i] = UIKit.Button(p, "", Pal.Card, Pal.Text, 24, () => { if (slot < codexVisible.Count) ShowCodexEntry(codexVisible[slot]); },
+                                            new Vector2(0f, 1f), new Vector2(220f, 62f), new Vector2(60f + col * 230f, -214f - row * 70f));
             }
             var detail = UIKit.Panel(p, Pal.Panel, new Vector2(1f, 1f), new Vector2(600f, 720f), new Vector2(-40f, -160f));
             UIKit.Neon(detail, Pal.Cyan, 2f);
@@ -189,14 +223,29 @@ namespace NerveRunner
 
         void RefreshCodex()
         {
-            for (int i = 0; i < codexBtns.Length; i++)
+            codexVisible.Clear();
+            int unlocked = 0, total = 0;
+            for (int i = 0; i < codex.Length; i++)
             {
-                bool open = save.codexUnlocked.Contains(codex[i].id);
-                UIKit.ButtonText(codexBtns[i]).text = open ? codex[i].name : "???";
-                codexBtns[i].targetGraphic.color = open ? Pal.Card : Pal.CardLocked;
+                if (codex[i].chapter != codexChapter) continue;
+                total++;
+                if (save.codexUnlocked.Contains(codex[i].id)) unlocked++;
+                if (codexVisible.Count < CODEX_SLOTS) codexVisible.Add(i);
             }
-            codexName.text = "도감 " + save.codexUnlocked.Count + " / " + codexBtns.Length;
-            codexBody.text = "항목을 선택하세요.\n\n아직 만나지 않은 구조는 ??? 로 표시됩니다. CHAPTER 1을 달리며 모두 등록해 보세요!";
+            for (int s = 0; s < codexBtns.Length; s++)
+            {
+                bool used = s < codexVisible.Count;
+                codexBtns[s].gameObject.SetActive(used);
+                if (!used) continue;
+                var e = codex[codexVisible[s]];
+                bool open = save.codexUnlocked.Contains(e.id);
+                UIKit.ButtonText(codexBtns[s]).text = open ? e.name : "???";
+                codexBtns[s].targetGraphic.color = open ? Pal.Card : Pal.CardLocked;
+            }
+            for (int t = 0; t < codexTabs.Length; t++)
+                codexTabs[t].targetGraphic.color = StageCatalog.All[t].chapter == codexChapter ? Pal.Hex(0x6A4CC8) : Pal.Card;
+            codexName.text = "CH." + codexChapter + " 도감 " + unlocked + " / " + total;
+            codexBody.text = "항목을 선택하세요.\n\n아직 만나지 않은 구조는 ??? 로 표시됩니다. 해당 챕터를 달리며 모두 등록해 보세요!";
         }
 
         void ShowCodexEntry(int i)
@@ -399,19 +448,22 @@ namespace NerveRunner
         {
             public float time, par, accuracy; public int stars, coins, correct, total, ringsHit, ringsTotal, ringBest, wrongSaved;
             public bool newBest; public List<string> learned, toReview;
+            public StageInfo stage; public int bossHp, bossMaxHp;
         }
 
         public void ShowResult(ResultInfo r)
         {
             Show(UIScreen.Result);
-            resTitle.text = "CH.1 클리어!";
+            bool boss = r.stage != null && r.stage.boss;
+            resTitle.text = r.stage == null ? "클리어!" : boss ? (r.bossHp <= 0 ? "NULL 격파!" : "NULL 도주... 재도전!") : "CH." + r.stage.chapter + " 클리어!";
             resStars.text = new string('★', r.stars) + "<color=#4B4380>" + new string('★', 3 - r.stars) + "</color>";
             resStats.text =
                 "<color=#2EE6D6>레이스 기록</color>   " + FormatTime(r.time) + (r.newBest ? "  <color=#FFD34D>NEW!</color>" : "") +
                 "\n<size=24><color=#B8B2E6>목표 " + FormatTime(r.par) + "</color></size>" +
                 "\n\n<color=#2EE6D6>정답률</color>   " + Mathf.RoundToInt(r.accuracy * 100f) + "%  (" + r.correct + "/" + r.total + ")" +
                 "\n<color=#2EE6D6>획득 신호 에너지</color>   ★ +" + r.coins +
-                "\n<color=#2EE6D6>랑비에 결절 통과</color>   " + r.ringsHit + "/" + r.ringsTotal + " (최대 연속 " + r.ringBest + ")" +
+                (r.ringsTotal > 0 ? "\n<color=#2EE6D6>랑비에 결절 통과</color>   " + r.ringsHit + "/" + r.ringsTotal + " (최대 연속 " + r.ringBest + ")" : "") +
+                (boss ? "\n<color=#FF4DA6>NULL 보호막 파괴</color>   " + (r.bossMaxHp - r.bossHp) + "/" + r.bossMaxHp : "") +
                 "\n\n<size=24><color=#B8B2E6>★1 완주 · ★2 정답률 80% 이상 · ★3 목표 시간 이내</color></size>";
             var sb = new System.Text.StringBuilder();
             sb.Append("<color=#FFD34D>학습 완료!</color>\n");

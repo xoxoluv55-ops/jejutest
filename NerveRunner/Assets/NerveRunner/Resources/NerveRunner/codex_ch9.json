@@ -1,0 +1,49 @@
+{
+  "entries": [
+    {
+      "id": "decussation",
+      "name": "피라미드 교차",
+      "english": "Pyramidal decussation",
+      "category": "신경로",
+      "chapter": 9,
+      "description": "숨뇌 아래쪽에서 겉질척수로 섬유의 대부분(약 85~90%)이 반대쪽으로 교차해 가쪽겉질척수로가 됩니다. 그래서 대뇌 병변은 반대쪽 마비를 일으킵니다.",
+      "gameLink": "NULL 진단 게이트 1"
+    },
+    {
+      "id": "hemianopia",
+      "name": "동측반맹",
+      "english": "Homonymous hemianopia",
+      "category": "임상",
+      "chapter": 9,
+      "description": "시각교차 뒤 한쪽 시각 경로가 손상되면 양쪽 눈의 반대쪽 시야 절반이 사라집니다.",
+      "gameLink": "NULL 진단 게이트 2"
+    },
+    {
+      "id": "cerebellum_sign",
+      "name": "소뇌 징후",
+      "english": "Cerebellar signs",
+      "category": "임상",
+      "chapter": 9,
+      "description": "겨냥이상, 의도떨림, 운동실조 보행. 소뇌반구 병변은 같은 쪽에 증상이 나타납니다.",
+      "gameLink": "NULL 진단 게이트 3"
+    },
+    {
+      "id": "umn_lmn",
+      "name": "위·아래운동신경세포 병변",
+      "english": "UMN vs LMN lesion",
+      "category": "임상",
+      "chapter": 9,
+      "description": "위운동신경세포 병변은 반사 항진·강직·바빈스키 징후, 아래운동신경세포 병변은 근위축·근육다발수축·반사 소실을 보입니다.",
+      "gameLink": "NULL 진단 게이트 4"
+    },
+    {
+      "id": "brown_sequard",
+      "name": "브라운-세카르 증후군",
+      "english": "Brown-Séquard syndrome",
+      "category": "임상",
+      "chapter": 9,
+      "description": "척수 반쪽 손상. 손상 아래로 같은 쪽 운동·진동·위치감각이 소실되고, 반대쪽 통증·온도감각이 소실됩니다.",
+      "gameLink": "최종 진단 갈림길"
+    }
+  ]
+}

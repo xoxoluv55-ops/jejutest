@@ -28,7 +28,8 @@ namespace NerveRunner
 
             // ---- top-left: time + section ----
             var tl = UIKit.Panel(p, Pal.A(Pal.Panel, 0.75f), new Vector2(0f, 1f), new Vector2(360f, 100f), new Vector2(24f, -20f));
-            hudTime = UIKit.Label(tl.transform, "00:00.00", 44, Pal.Text, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(330f, 54f), new Vector2(20f, -4f));
+            UIKit.IconImage(tl.transform, Icon.Clock, Pal.Cyan, new Vector2(0f, 1f), new Vector2(44f, 44f), new Vector2(14f, -10f));
+            hudTime = UIKit.Label(tl.transform, "00:00.00", 44, Pal.Text, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(290f, 54f), new Vector2(64f, -4f));
             hudTime.fontStyle = FontStyle.Bold;
             hudSection = UIKit.FitLabel(tl.transform, "", 24, 16, Pal.Cyan, TextAnchor.MiddleLeft);
             UIKit.Place(hudSection.rectTransform, new Vector2(0f, 0f), new Vector2(330f, 40f), new Vector2(20f, 6f));
@@ -41,15 +42,30 @@ namespace NerveRunner
             UIKit.Label(p, "START", 18, Pal.Dim, TextAnchor.MiddleRight, new Vector2(0.5f, 1f), new Vector2(100f, 30f), new Vector2(-260f, -22f));
             UIKit.Label(p, "GOAL", 18, Pal.Yellow, TextAnchor.MiddleLeft, new Vector2(0.5f, 1f), new Vector2(100f, 30f), new Vector2(260f, -22f));
 
+            // ---- NULL shield bar (boss stage only) ----
+            var bb = UIKit.Panel(p, Pal.A(Pal.Hex(0x2A0E46), 0.9f), new Vector2(0.5f, 1f), new Vector2(420f, 40f), new Vector2(0f, -56f));
+            UIKit.Neon(bb, Pal.Hex(0xFF4DA6), 2f);
+            bossBar = bb.gameObject;
+            var bfill = UIKit.Panel(bb.transform, Pal.Hex(0xC04DFF));
+            bossFill = bfill.rectTransform;
+            bossFill.anchorMin = Vector2.zero; bossFill.anchorMax = Vector2.one; bossFill.pivot = new Vector2(0f, 0.5f);
+            bossFill.offsetMin = new Vector2(4f, 4f); bossFill.offsetMax = new Vector2(-4f, -4f);
+            bossLabel = UIKit.Label(bb.transform, "NULL 보호막", 20, Color.white, TextAnchor.MiddleCenter);
+            UIKit.Fill(bossLabel.rectTransform);
+            bossBar.SetActive(false);
+
             // ---- top-right: coins / accuracy / pause ----
             var tr = UIKit.Panel(p, Pal.A(Pal.Panel, 0.75f), new Vector2(1f, 1f), new Vector2(250f, 100f), new Vector2(-130f, -20f));
-            hudCoins = UIKit.Label(tr.transform, "★ 0", 36, Pal.Yellow, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(220f, 50f), new Vector2(20f, -4f));
+            UIKit.IconImage(tr.transform, Icon.Coin, Pal.Gold, new Vector2(0f, 1f), new Vector2(42f, 42f), new Vector2(14f, -8f));
+            hudCoins = UIKit.Label(tr.transform, "0", 36, Pal.Yellow, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(180f, 50f), new Vector2(62f, -4f));
             hudAcc = UIKit.Label(tr.transform, "정답 0/0", 24, Pal.Text, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(220f, 40f), new Vector2(20f, 6f));
-            UIKit.Button(p, "II", Pal.A(Pal.Panel, 0.85f), Pal.Text, 36, () => ShowPause(), new Vector2(1f, 1f), new Vector2(90f, 90f), new Vector2(-24f, -25f));
+            var pauseBtn = UIKit.Button(p, "", Pal.A(Pal.Hex(0x5A4AA8), 0.9f), Pal.Text, 36, () => ShowPause(), new Vector2(1f, 1f), new Vector2(90f, 90f), new Vector2(-24f, -25f));
+            ((Image)pauseBtn.targetGraphic).sprite = UIIcons.GlossyCircle;
+            UIKit.IconImage(pauseBtn.transform, Icon.Pause, Color.white, new Vector2(0.5f, 0.5f), new Vector2(50f, 50f), Vector2.zero).rectTransform.pivot = new Vector2(0.5f, 0.5f);
 
             // ---- question banner ----
-            var qb = UIKit.Panel(p, Pal.A(Pal.Hex(0x1B1050), 0.93f), new Vector2(0.5f, 1f), new Vector2(1060f, 196f), new Vector2(0f, -132f));
-            UIKit.Neon(qb, Pal.Pink, 3f);
+            var qb = UIKit.Panel(p, Pal.A(Pal.Hex(0x3A2C8C), 0.82f), new Vector2(0.5f, 1f), new Vector2(1060f, 196f), new Vector2(0f, -132f));
+            UIKit.Neon(qb, Pal.A(Color.white, 0.55f), 3f);
             qBanner = qb.gameObject;
             qTitle = UIKit.Label(qb.transform, "", 24, Pal.Pink, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(1020f, 34f), new Vector2(22f, -10f));
             qText = UIKit.FitLabel(qb.transform, "", 32, 22, Pal.Text, TextAnchor.UpperLeft);
@@ -101,11 +117,14 @@ namespace NerveRunner
             // ---- touch controls ----
             touchRoot = UIKit.Rect(p, "Touch").gameObject;
             UIKit.Fill((RectTransform)touchRoot.transform);
-            input.left = UIKit.Hold(touchRoot.transform, "◀", Pal.A(Pal.Blue, 0.55f), 70, new Vector2(0f, 0f), new Vector2(190f, 190f), new Vector2(36f, 36f));
-            input.right = UIKit.Hold(touchRoot.transform, "▶", Pal.A(Pal.Blue, 0.55f), 70, new Vector2(0f, 0f), new Vector2(190f, 190f), new Vector2(250f, 36f));
-            input.boost = UIKit.Hold(touchRoot.transform, "부스터", Pal.A(Pal.Gold, 0.7f), 34, new Vector2(1f, 0f), new Vector2(200f, 200f), new Vector2(-30f, 30f));
-            input.drift = UIKit.Hold(touchRoot.transform, "드리프트", Pal.A(Pal.Pink, 0.6f), 28, new Vector2(1f, 0f), new Vector2(160f, 160f), new Vector2(-250f, 30f));
-            input.jump = UIKit.Hold(touchRoot.transform, "점프", Pal.A(Pal.Cyan, 0.55f), 30, new Vector2(1f, 0f), new Vector2(150f, 150f), new Vector2(-70f, 250f));
+            // 2.0 (concept art 5): glossy round buttons - blue arrows, gold boost, purple drift, green jump
+            Color blue = Pal.A(Pal.Hex(0x3C8CE6), 0.92f), gold = Pal.A(Pal.Hex(0xF2B01E), 0.95f);
+            Color purple = Pal.A(Pal.Hex(0xA06CE8), 0.92f), green = Pal.A(Pal.Hex(0x3CC85A), 0.92f);
+            input.left = UIKit.IconHold(touchRoot.transform, Icon.Left, blue, null, new Vector2(0f, 0f), new Vector2(180f, 180f), new Vector2(40f, 40f));
+            input.right = UIKit.IconHold(touchRoot.transform, Icon.Right, blue, null, new Vector2(0f, 0f), new Vector2(180f, 180f), new Vector2(246f, 40f));
+            input.boost = UIKit.IconHold(touchRoot.transform, Icon.Bolt, gold, "부스터", new Vector2(1f, 0f), new Vector2(190f, 190f), new Vector2(-34f, 34f));
+            input.drift = UIKit.IconHold(touchRoot.transform, Icon.Drift, purple, "드리프트", new Vector2(1f, 0f), new Vector2(160f, 160f), new Vector2(-250f, 34f));
+            input.jump = UIKit.IconHold(touchRoot.transform, Icon.Jump, green, "점프", new Vector2(1f, 0f), new Vector2(150f, 150f), new Vector2(-70f, 250f));
 
             // ---- countdown ----
             hudCountdown = UIKit.Label(p, "", 200, Pal.Yellow, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(800f, 260f), new Vector2(0f, 60f));
@@ -154,7 +173,7 @@ namespace NerveRunner
         public void UpdateHud(RunnerSim sim, LearningSession learn, float progress01)
         {
             hudTime.text = FormatTime(sim.raceTime);
-            hudCoins.text = "★ " + sim.coins;
+            hudCoins.text = sim.coins.ToString();
             hudAcc.text = "정답 " + learn.Correct + "/" + learn.Total;
             hudSpeed.text = Mathf.RoundToInt(sim.speed * 3.6f) + " km/h";
             progressFill.anchorMax = new Vector2(Mathf.Clamp01(progress01), 1f);
@@ -166,6 +185,16 @@ namespace NerveRunner
         }
 
         public void SetSection(string name) { hudSection.text = name; }
+
+        GameObject bossBar; RectTransform bossFill; Text bossLabel;
+        public void SetBoss(int hp, int max)
+        {
+            bossBar.SetActive(max > 0);
+            if (max <= 0) return;
+            float k = Mathf.Clamp01(hp / (float)max);
+            bossFill.anchorMax = new Vector2(Mathf.Max(0.001f, k), 1f);
+            bossLabel.text = hp > 0 ? "NULL 보호막  " + hp + " / " + max : "NULL 보호막 붕괴!";
+        }
 
         public void Tick(float dt)
         {

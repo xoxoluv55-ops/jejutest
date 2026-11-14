@@ -116,6 +116,13 @@ namespace NerveRunner.Core
 
         //================== SEGMENTS ==================\\
         /// Finishes the current open polyline as a segment and links it to the previous one.
+        public TrackSegment Cut(string name, ZoneKind zone, float halfWidth, string theme)
+        {
+            var seg = Cut(name, zone, halfWidth);
+            seg.theme = theme;
+            return seg;
+        }
+
         public TrackSegment Cut(string name, ZoneKind zone, float halfWidth)
         {
             var seg = graph.Add(name, zone, halfWidth);

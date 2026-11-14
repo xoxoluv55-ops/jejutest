@@ -33,9 +33,21 @@ namespace NerveRunner
 
         const float STEP = 1f / 120f;
 
+        StageInfo stageInfo;
+        public int BossMaxHp { get; private set; }
+        public int BossHp { get; private set; }
+
         public void Setup(TrackGraph g, TrackView v, StarVisual s, ChaseCamera c, GameUI u, QuestionBank qb,
-                          Dictionary<string, StoryBeat> st, Dictionary<string, CodexEntry> cx, SaveData sd)
+                          Dictionary<string, StoryBeat> st, Dictionary<string, CodexEntry> cx, SaveData sd, StageInfo info)
         {
+            stageInfo = info;
+            if (info != null && info.boss)
+            {
+                int n = 0;
+                foreach (var e in g.AllEvents()) if (e.type == TrackEventType.Gate && e.tag == "boss") n++;
+                foreach (var seg in g.segments) if (seg.fork != null) n++;
+                BossMaxHp = BossHp = n;
+            }
             graph = g; view = v; star = s; chase = c; ui = u; bank = qb; story = st; codex = cx; save = sd;
             foreach (var seg in g.segments) if (seg.fork != null) forkSegByQ[seg.fork.questionId] = seg;
             sim = new RunnerSim(g);
@@ -49,6 +61,7 @@ namespace NerveRunner
             ui.Show(UIScreen.Hud);
             ui.SetTouchVisible(false);
             ui.SetSection(graph.start.name);
+            ui.SetBoss(BossHp, BossMaxHp);
             star.ResetState();
             star.SetExpression(Expression.Normal, 0f);
             star.SetBase(Expression.Focus);
@@ -56,7 +69,8 @@ namespace NerveRunner
             chase.Showcase(999f);
             phase = Phase.Intro; phaseT = 0f;
             StoryBeat pro;
-            if (showPrologue && story.TryGetValue("prologue", out pro)) ui.ShowDialog(pro.lines, StartCountdown);
+            string intro = stageInfo != null ? stageInfo.introStory : "prologue";
+            if (showPrologue && story.TryGetValue(intro, out pro)) ui.ShowDialog(pro.lines, StartCountdown);
             else StartCountdown();
         }
 
@@ -172,6 +186,7 @@ namespace NerveRunner
                     string extra = null;
                     if (e.src.tag == "glia" && e.correct) { extra = "희소돌기아교세포가 수초를 재생했습니다. 전도 속도 회복!"; ui.Toast("수초 복구 완료!", Pal.Green); }
                     else if (e.src.tag == "ap") extra = "활동전위 단계 " + (e.src.index + 1) + "/4";
+                    if (e.src.tag == "boss") BossAnswer(e.correct);
                     ui.ShowAnswer(q, e.lane, e.correct, extra, e.correct ? 4.5f : 7f);
                     pendingQuestion = null;
                     break;
@@ -182,6 +197,7 @@ namespace NerveRunner
                     learn.Answer(e.tag, e.lane, sim.raceTime);
                     TrackSegment fs;
                     if (forkSegByQ.TryGetValue(e.tag, out fs)) view.MarkFork(fs, e.lane, e.correct);
+                    if (stageInfo != null && stageInfo.boss) BossAnswer(e.correct);
                     Feedback(e.correct);
                     ui.ShowAnswer(q, e.lane, e.correct,
                                   e.correct ? "정답 경로: 지름길 + 신호 에너지 보너스!" : "복습 구간에 진입했습니다. 해설을 읽으며 천천히 이동하세요.",
@@ -246,6 +262,23 @@ namespace NerveRunner
             }
         }
 
+        void BossAnswer(bool correct)
+        {
+            if (BossMaxHp <= 0) return;
+            if (correct)
+            {
+                BossHp = Mathf.Max(0, BossHp - 1);
+                view.BossHit(BossHp, BossMaxHp);
+                ui.SetBoss(BossHp, BossMaxHp);
+                ui.Toast(BossHp == 0 ? "NULL 보호막 붕괴!" : "정확한 진단! NULL 보호막 " + BossHp + "/" + BossMaxHp, Pal.Cyan, 1.8f);
+            }
+            else
+            {
+                view.BossAttack();
+                ui.Toast("오진! NULL이 반격합니다", Pal.Red, 1.6f);
+            }
+        }
+
         void Feedback(bool correct)
         {
             if (correct) { GameAudio.Chime(); star.AnswerReaction(true); }
@@ -263,7 +296,8 @@ namespace NerveRunner
                 case "story":
                 {
                     StoryBeat b;
-                    if (arg != "prologue" && story.TryGetValue(arg, out b)) ui.QueueStory(b.lines);
+                    bool isIntro = stageInfo != null ? arg == stageInfo.introStory : arg == "prologue";
+                    if (!isIntro && story.TryGetValue(arg, out b)) ui.QueueStory(b.lines);
                     break;
                 }
                 case "hint":
@@ -289,8 +323,11 @@ namespace NerveRunner
                     break;
                 case "gateq":
                     pendingQuestion = arg;
-                    ui.ShowQuestion(bank.Get(arg), arg == Chapter1Layout.Q_GLIA ? "수초 복구 게이트" : "활동전위 게이트");
+                    ui.ShowQuestion(bank.Get(arg), arg == Chapter1Layout.Q_GLIA ? "수초 복구 게이트" : (stageInfo != null ? stageInfo.gateTitle : "학습 게이트"));
                     GameAudio.Beep();
+                    break;
+                case "boss":
+                    if (arg == "attack") { view.BossAttack(); ui.Toast("NULL 반격! 파동은 점프!", Pal.Red, 1.4f); chase.Shake(0.4f); }
                     break;
                 case "synapse":
                     if (arg == "minigame") OpenMinigame();
