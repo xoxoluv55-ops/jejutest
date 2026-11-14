@@ -16,6 +16,31 @@ namespace NeonRacer
         const float RENDER_SCALE_CAP = 0.8f;   // iPad: retina panel, 0.8 keeps it sharp but cheap
         const float MOBILE_URP_SHADOWS = 30f;
 
+        /// NERVE RUNNER 2.1 (PERF): level 0 Low = no AA, no post, render scale 0.75;
+        /// 1 Medium = FXAA, no post; 2 High = SMAA (desktop) + bloom.
+        public static void ApplyLevel(Camera cam, int level)
+        {
+            if (cam == null) return;
+            try
+            {
+                var data = cam.GetUniversalAdditionalCameraData();
+                if (data != null)
+                {
+                    data.antialiasing = level == 0 ? AntialiasingMode.None
+                                      : (level == 1 || Application.isMobilePlatform) ? AntialiasingMode.FastApproximateAntialiasing
+                                      : AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+                    data.antialiasingQuality = level >= 2 ? AntialiasingQuality.High : AntialiasingQuality.Medium;
+                    data.renderPostProcessing = level >= 2 && !Application.isMobilePlatform;
+                }
+                var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+                if (urp != null && level == 0 && Application.isMobilePlatform) urp.renderScale = Mathf.Min(urp.renderScale, 0.75f);
+            }
+            catch { }
+            if (level >= 2) SetupPostFx();
+            else if (postFx != null) postFx.gameObject.SetActive(false);
+            if (level >= 2 && postFx != null) postFx.gameObject.SetActive(true);
+        }
+
         public static void EnableAntiAliasing(Camera cam)
         {
             if (cam == null) return;

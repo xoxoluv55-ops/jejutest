@@ -1,0 +1,177 @@
+{
+  "questions": [
+    {
+      "id": "ch2_fork_horn",
+      "chapter": 2,
+      "topic": "척수 구조",
+      "difficulty": "Rookie",
+      "objective": "척수 회색질의 앞뿔·뒤뿔 기능을 구별한다.",
+      "question": "근육으로 명령을 보내는 운동신경세포의 세포체가 모여 있는 척수 회색질은?",
+      "options": [
+        "앞뿔",
+        "뒤뿔"
+      ],
+      "answer": 0,
+      "explanation": "척수 회색질의 앞뿔에는 아래운동신경세포(알파운동신경세포)의 세포체가 있습니다. 뒤뿔은 감각 정보를 받는 곳입니다.",
+      "wrongExplanations": [
+        "",
+        "뒤뿔은 뒤뿌리로 들어온 감각 정보를 받아 중계하는 곳입니다."
+      ],
+      "structures": [
+        "ventral_horn",
+        "dorsal_root_ganglion"
+      ],
+      "branch": "ch2_fork_horn",
+      "reference": "척수의 단면 구조"
+    },
+    {
+      "id": "ch2_gate_drg",
+      "chapter": 2,
+      "topic": "척수 구조",
+      "difficulty": "Normal",
+      "objective": "감각신경세포 세포체의 위치를 안다.",
+      "question": "몸의 감각을 전달하는 1차 감각신경세포의 세포체가 모여 있는 곳은?",
+      "options": [
+        "가쪽뿔",
+        "앞뿔",
+        "뒤뿌리신경절"
+      ],
+      "answer": 2,
+      "explanation": "1차 감각신경세포는 척수 밖 뒤뿌리신경절에 세포체가 있습니다. 한 가지는 말초로, 다른 가지는 뒤뿌리를 통해 척수로 들어갑니다.",
+      "wrongExplanations": [
+        "가쪽뿔(가슴·위허리 분절)은 교감신경의 신경절이전신경세포가 있는 곳입니다.",
+        "앞뿔은 운동신경세포의 세포체가 있는 곳입니다.",
+        ""
+      ],
+      "structures": [
+        "dorsal_root_ganglion"
+      ],
+      "branch": "ch2_gate_drg",
+      "reference": "척수신경과 뒤뿌리신경절"
+    },
+    {
+      "id": "ch2_gate_spindle",
+      "chapter": 2,
+      "topic": "척수반사",
+      "difficulty": "Normal",
+      "objective": "신장반사의 수용기를 안다.",
+      "question": "무릎힘줄을 두드려 넙다리네갈래근이 갑자기 늘어날 때, 늘어남을 감지하는 수용기는?",
+      "options": [
+        "골지힘줄기관",
+        "자유신경종말",
+        "근육방추"
+      ],
+      "answer": 2,
+      "explanation": "근육방추는 근육의 길이 변화(늘어남)를 감지하며, 신장반사(무릎반사)의 수용기입니다.",
+      "wrongExplanations": [
+        "골지힘줄기관은 힘줄에 걸리는 장력을 감지합니다.",
+        "자유신경종말은 주로 통증과 온도를 감지합니다.",
+        ""
+      ],
+      "structures": [
+        "stretch_reflex"
+      ],
+      "branch": "ch2_gate_spindle",
+      "reference": "신장반사 - 근육방추"
+    },
+    {
+      "id": "ch2_gate_monosyn",
+      "chapter": 2,
+      "topic": "척수반사",
+      "difficulty": "Normal",
+      "objective": "무릎반사가 단일시냅스 반사임을 안다.",
+      "question": "무릎반사(신장반사)는 척수에서 몇 개의 시냅스를 거칠까요?",
+      "options": [
+        "시냅스를 거치지 않는다",
+        "3개 이상 (다시냅스 반사)",
+        "1개 (단일시냅스 반사)"
+      ],
+      "answer": 2,
+      "explanation": "근육방추의 감각신경이 척수 앞뿔의 운동신경세포에 직접 시냅스하는 단일시냅스 반사입니다. 그래서 매우 빠릅니다.",
+      "wrongExplanations": [
+        "반사궁에는 반드시 감각신경과 운동신경 사이의 시냅스가 있습니다.",
+        "굽힘반사처럼 사이신경세포를 거치는 반사는 다시냅스 반사입니다. 무릎반사는 아닙니다.",
+        ""
+      ],
+      "structures": [
+        "stretch_reflex",
+        "reflex_arc"
+      ],
+      "branch": "ch2_gate_monosyn",
+      "reference": "단일시냅스 반사"
+    },
+    {
+      "id": "ch2_fork_arc",
+      "chapter": 2,
+      "topic": "척수반사",
+      "difficulty": "Rookie",
+      "objective": "반사궁의 순서를 안다.",
+      "question": "반사궁의 올바른 순서는?",
+      "options": [
+        "수용기 → 운동신경 → 척수 → 감각신경 → 효과기",
+        "수용기 → 감각신경 → 척수 → 운동신경 → 효과기"
+      ],
+      "answer": 1,
+      "explanation": "반사궁은 수용기 → 감각(들)신경 → 척수의 중추(사이신경세포) → 운동(날)신경 → 효과기(근육·샘) 순서입니다.",
+      "wrongExplanations": [
+        "감각신경과 운동신경의 순서가 바뀌었습니다. 정보는 감각신경을 따라 척수로 들어가고, 운동신경을 따라 나옵니다.",
+        ""
+      ],
+      "structures": [
+        "reflex_arc"
+      ],
+      "branch": "ch2_fork_arc",
+      "reference": "반사궁의 구성"
+    },
+    {
+      "id": "ch2_gate_reciprocal",
+      "chapter": 2,
+      "topic": "척수반사",
+      "difficulty": "Expert",
+      "objective": "상호억제를 이해한다.",
+      "question": "신장반사 때 수축하는 근육의 반대편 길항근이 이완되도록 하는 기전은?",
+      "options": [
+        "탈수초",
+        "상호억제 (억제성 사이신경세포)",
+        "시냅스 소포 고갈"
+      ],
+      "answer": 1,
+      "explanation": "근육방추 감각신경은 억제성 사이신경세포를 통해 길항근의 운동신경세포를 억제합니다. 이 상호억제 덕분에 동작이 부드러워집니다.",
+      "wrongExplanations": [
+        "탈수초는 전도 장애이지 정상 반사 기전이 아닙니다.",
+        "",
+        "소포 고갈은 반복 자극에 따른 피로 현상으로, 상호억제와 다릅니다."
+      ],
+      "structures": [
+        "reciprocal_inhibition"
+      ],
+      "branch": "ch2_gate_reciprocal",
+      "reference": "상호억제"
+    },
+    {
+      "id": "ch2_gate_flexor",
+      "chapter": 2,
+      "topic": "척수반사",
+      "difficulty": "Normal",
+      "objective": "굽힘반사와 교차폄반사를 안다.",
+      "question": "압정을 밟으면 그 다리는 굽히고 반대쪽 다리는 펴서 몸을 지탱한다. 이 반사는?",
+      "options": [
+        "굽힘반사 + 교차폄반사",
+        "신장반사",
+        "골지힘줄반사"
+      ],
+      "answer": 0,
+      "explanation": "통증 자극은 다시냅스 경로로 같은 쪽 굽힘근을 수축시키고(굽힘반사), 척수 반대편으로 건너가 반대쪽 폄근을 수축시킵니다(교차폄반사).",
+      "wrongExplanations": [
+        "",
+        "신장반사는 근육이 늘어날 때 같은 근육이 수축하는 반사입니다.",
+        "골지힘줄반사는 장력이 클 때 근육을 이완시키는 반사입니다."
+      ],
+      "structures": [
+        "flexor_reflex"
+      ],
+      "branch": "ch2_gate_flexor",
+      "reference": "굽힘반사와 교차폄반사"
+    }
+  ]
+}

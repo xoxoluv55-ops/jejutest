@@ -33,6 +33,9 @@ namespace NerveRunner
         public static void Build(TrackSegment seg, Transform root, int seed)
         {
             if (!IsDistrict(seg.theme)) return;
+            var props = new GameObject("CityProps").transform;
+            props.SetParent(root, false);
+            root = props;
             var rnd = new System.Random(seed);
             Color c = DistrictColor(seg.theme);
             var gyrusMat = NRMats.Toon(Pal.Hex(0x8A4FD0), Pal.Hex(0x3A1F78), Pal.Hex(0xF0B0FF), 2.2f, Pal.Hex(0x2A1050));
@@ -66,6 +69,7 @@ namespace NerveRunner
                     }
                 }
             }
+            NeuralBackdrop.SetLayer(props, Gfx.PropsLayer);   // PERF: distance-culled
         }
 
         // frontal: stacked planning towers with glowing window bands

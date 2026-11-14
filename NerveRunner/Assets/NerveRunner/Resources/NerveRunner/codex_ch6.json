@@ -1,0 +1,31 @@
+{
+  "entries": [
+    {
+      "id": "thalamus",
+      "name": "시상",
+      "english": "Thalamus",
+      "category": "사이뇌",
+      "chapter": 6,
+      "description": "후각을 제외한 감각의 중계소. VPL(몸감각), VPM(얼굴감각), 가쪽무릎체(시각), 안쪽무릎체(청각).",
+      "gameLink": "시상 갈림길"
+    },
+    {
+      "id": "hypothalamus",
+      "name": "시상하부",
+      "english": "Hypothalamus",
+      "category": "사이뇌",
+      "chapter": 6,
+      "description": "체온·섭식·수분·일주기 등 항상성, 자율신경과 뇌하수체 조절.",
+      "gameLink": "시상하부 갈림길"
+    },
+    {
+      "id": "pineal",
+      "name": "솔방울샘",
+      "english": "Pineal gland",
+      "category": "사이뇌",
+      "chapter": 6,
+      "description": "멜라토닌을 분비해 일주기 리듬에 관여합니다.",
+      "gameLink": "솔방울샘 게이트"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "entries": [
+    {
+      "id": "cn_overview",
+      "name": "12뇌신경",
+      "english": "12 cranial nerves",
+      "category": "뇌신경",
+      "chapter": 8,
+      "description": "I 후각 II 시각 III 눈돌림 IV 도르래 V 삼차 VI 갓돌림 VII 얼굴 VIII 속귀 IX 혀인두 X 미주 XI 더부 XII 혀밑. 감각(I·II·VIII), 운동(III·IV·VI·XI·XII), 혼합(V·VII·IX·X).",
+      "gameLink": "뇌신경 포털"
+    },
+    {
+      "id": "cn_eye",
+      "name": "눈 운동 신경",
+      "english": "III · IV · VI",
+      "category": "뇌신경",
+      "chapter": 8,
+      "description": "LR6 SO4 - 가쪽곧은근은 VI, 위빗근은 IV, 나머지는 III이 지배합니다.",
+      "gameLink": "눈 운동 게이트"
+    },
+    {
+      "id": "cn_face",
+      "name": "얼굴의 신경",
+      "english": "V · VII",
+      "category": "뇌신경",
+      "chapter": 8,
+      "description": "V 삼차신경: 얼굴 감각·씹기근육. VII 얼굴신경: 표정근·미각(혀 앞 2/3).",
+      "gameLink": "얼굴신경 갈림길"
+    },
+    {
+      "id": "cn_lower",
+      "name": "아래 뇌신경",
+      "english": "IX · X · XI · XII",
+      "category": "뇌신경",
+      "chapter": 8,
+      "description": "IX 혀인두, X 미주(내장 부교감), XI 더부(목빗근·등세모근), XII 혀밑(혀 운동).",
+      "gameLink": "아래 뇌신경 게이트"
+    }
+  ]
+}

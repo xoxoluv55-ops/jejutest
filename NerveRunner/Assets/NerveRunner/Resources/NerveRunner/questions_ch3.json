@@ -1,0 +1,176 @@
+{
+  "questions": [
+    {
+      "id": "ch3_fork_dcml",
+      "chapter": 3,
+      "topic": "감각 오름로",
+      "difficulty": "Rookie",
+      "objective": "뒤기둥-안쪽섬유띠계가 전달하는 감각을 안다.",
+      "question": "미세한 촉각·진동·위치감각(고유감각)을 대뇌로 전달하는 경로는?",
+      "options": [
+        "앞가쪽계 (척수시상로)",
+        "뒤기둥-안쪽섬유띠계"
+      ],
+      "answer": 1,
+      "explanation": "뒤기둥-안쪽섬유띠계는 미세촉각, 진동감각, 의식적 고유감각을 전달합니다.",
+      "wrongExplanations": [
+        "앞가쪽계는 통증, 온도, 거친 촉각을 전달합니다.",
+        ""
+      ],
+      "structures": [
+        "dcml",
+        "spinothalamic"
+      ],
+      "branch": "ch3_fork_dcml",
+      "reference": "감각 오름로"
+    },
+    {
+      "id": "ch3_gate_dcml_cross",
+      "chapter": 3,
+      "topic": "감각 오름로",
+      "difficulty": "Normal",
+      "objective": "뒤기둥-안쪽섬유띠계의 교차 위치를 안다.",
+      "question": "뒤기둥-안쪽섬유띠계의 2차 신경섬유가 반대쪽으로 교차하는 곳은?",
+      "options": [
+        "척수에 들어온 직후",
+        "중간뇌",
+        "숨뇌 (속활꼴섬유 → 안쪽섬유띠)"
+      ],
+      "answer": 2,
+      "explanation": "1차 신경은 같은 쪽 뒤기둥을 따라 올라가 숨뇌의 널판핵·쐐기핵에서 시냅스합니다. 2차 신경은 속활꼴섬유로 교차해 안쪽섬유띠를 이룹니다.",
+      "wrongExplanations": [
+        "척수에서 곧바로 교차하는 것은 앞가쪽계입니다.",
+        "중간뇌가 아니라 숨뇌에서 교차합니다.",
+        ""
+      ],
+      "structures": [
+        "dcml"
+      ],
+      "branch": "ch3_gate_dcml_cross",
+      "reference": "뒤기둥-안쪽섬유띠계의 교차"
+    },
+    {
+      "id": "ch3_gate_stt_cross",
+      "chapter": 3,
+      "topic": "감각 오름로",
+      "difficulty": "Normal",
+      "objective": "앞가쪽계의 교차 위치를 안다.",
+      "question": "통증·온도감각을 전달하는 앞가쪽계(척수시상로)가 교차하는 곳은?",
+      "options": [
+        "척수 (들어온 높이 근처, 앞흰질맞교차)",
+        "시상",
+        "숨뇌"
+      ],
+      "answer": 0,
+      "explanation": "통증·온도 신경은 뒤뿔에서 시냅스한 뒤 곧 앞흰질맞교차를 지나 반대쪽에서 올라갑니다. 그래서 척수 반쪽 손상 때 반대쪽 통증·온도감각이 사라집니다.",
+      "wrongExplanations": [
+        "",
+        "시상은 중계 장소이지 교차 위치가 아닙니다.",
+        "숨뇌에서 교차하는 것은 뒤기둥-안쪽섬유띠계입니다."
+      ],
+      "structures": [
+        "spinothalamic"
+      ],
+      "branch": "ch3_gate_stt_cross",
+      "reference": "앞가쪽계의 교차"
+    },
+    {
+      "id": "ch3_gate_scb",
+      "chapter": 3,
+      "topic": "감각 오름로",
+      "difficulty": "Normal",
+      "objective": "척수소뇌로의 기능을 안다.",
+      "question": "의식되지 않는 고유감각을 소뇌로 보내 자세와 움직임을 조절하게 하는 경로는?",
+      "options": [
+        "척수소뇌로",
+        "겉질척수로",
+        "그물척수로"
+      ],
+      "answer": 0,
+      "explanation": "척수소뇌로는 근육·관절의 고유감각 정보를 의식에 도달하지 않은 채 소뇌로 보냅니다.",
+      "wrongExplanations": [
+        "",
+        "겉질척수로는 내려가는 운동 경로입니다.",
+        "그물척수로는 자세·근긴장을 조절하는 내림로입니다."
+      ],
+      "structures": [
+        "spinocerebellar"
+      ],
+      "branch": "ch3_gate_scb",
+      "reference": "척수소뇌로"
+    },
+    {
+      "id": "ch3_fork_cst",
+      "chapter": 3,
+      "topic": "운동 내림로",
+      "difficulty": "Rookie",
+      "objective": "수의운동의 주된 내림로를 안다.",
+      "question": "손가락을 섬세하게 움직이는 수의운동 명령을 척수로 전달하는 주된 경로는?",
+      "options": [
+        "겉질척수로",
+        "앞가쪽계"
+      ],
+      "answer": 0,
+      "explanation": "겉질척수로는 일차운동겉질에서 시작해 척수 앞뿔의 운동신경세포로 수의운동 명령을 전달합니다.",
+      "wrongExplanations": [
+        "",
+        "앞가쪽계는 감각(통증·온도)을 올려 보내는 오름로입니다."
+      ],
+      "structures": [
+        "cst"
+      ],
+      "branch": "ch3_fork_cst",
+      "reference": "겉질척수로"
+    },
+    {
+      "id": "ch3_gate_cst_cross",
+      "chapter": 3,
+      "topic": "운동 내림로",
+      "difficulty": "Normal",
+      "objective": "가쪽겉질척수로의 교차 위치를 안다.",
+      "question": "가쪽겉질척수로 섬유가 대부분 반대쪽으로 교차하는 곳은?",
+      "options": [
+        "숨뇌 피라미드 교차",
+        "척수의 각 분절",
+        "시상"
+      ],
+      "answer": 0,
+      "explanation": "겉질척수로 섬유의 대부분(약 85~90%)이 숨뇌 아래쪽 피라미드 교차에서 반대쪽으로 넘어가 가쪽겉질척수로가 됩니다.",
+      "wrongExplanations": [
+        "",
+        "앞겉질척수로 일부만 척수 분절에서 교차합니다.",
+        "시상은 운동 내림로의 교차 위치가 아닙니다."
+      ],
+      "structures": [
+        "cst"
+      ],
+      "branch": "ch3_gate_cst_cross",
+      "reference": "피라미드 교차"
+    },
+    {
+      "id": "ch3_gate_vst",
+      "chapter": 3,
+      "topic": "운동 내림로",
+      "difficulty": "Expert",
+      "objective": "안뜰척수로의 기능을 안다.",
+      "question": "몸이 기울어질 때 안뜰신경핵에서 척수로 내려가 폄근을 조절해 균형을 잡게 하는 경로는?",
+      "options": [
+        "겉질숨뇌로",
+        "척수시상로",
+        "안뜰척수로"
+      ],
+      "answer": 2,
+      "explanation": "안뜰척수로는 안뜰신경핵에서 시작해 주로 폄근(항중력근)을 촉진하여 자세와 균형을 유지합니다.",
+      "wrongExplanations": [
+        "겉질숨뇌로는 뇌신경 운동핵으로 가는 경로입니다.",
+        "척수시상로는 감각 오름로입니다.",
+        ""
+      ],
+      "structures": [
+        "vestibulospinal"
+      ],
+      "branch": "ch3_gate_vst",
+      "reference": "안뜰척수로"
+    }
+  ]
+}

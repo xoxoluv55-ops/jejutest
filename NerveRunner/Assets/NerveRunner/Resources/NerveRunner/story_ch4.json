@@ -1,0 +1,26 @@
+{
+  "beats": [
+    {
+      "id": "ch4_intro",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "뇌줄기 터널 진입. 중간뇌·다리뇌·숨뇌가 생명과 신호를 지킵니다."
+        },
+        {
+          "speaker": "STAR-01",
+          "text": "생명 중추를 NULL로부터 지키자!"
+        }
+      ]
+    },
+    {
+      "id": "ch4_final",
+      "lines": [
+        {
+          "speaker": "STAR-01",
+          "text": "뇌줄기 회로 안정화! 결승으로!"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "entries": [
+    {
+      "id": "cerebellum",
+      "name": "소뇌",
+      "english": "Cerebellum",
+      "category": "소뇌",
+      "chapter": 5,
+      "description": "운동 협응, 균형, 운동학습을 담당합니다. 반구 병변은 같은 쪽 증상을 일으킵니다.",
+      "gameLink": "소뇌 게이트"
+    },
+    {
+      "id": "purkinje",
+      "name": "조롱박세포",
+      "english": "Purkinje cell",
+      "category": "소뇌",
+      "chapter": 5,
+      "description": "소뇌겉질의 유일한 출력세포(억제성, GABA).",
+      "gameLink": "조롱박세포 게이트"
+    },
+    {
+      "id": "cerebellar_peduncles",
+      "name": "소뇌다리",
+      "english": "Cerebellar peduncles",
+      "category": "소뇌",
+      "chapter": 5,
+      "description": "위(주로 출력)·중간(다리뇌 입력)·아래(척수·숨뇌 입력) 소뇌다리.",
+      "gameLink": "소뇌다리 갈림길"
+    }
+  ]
+}

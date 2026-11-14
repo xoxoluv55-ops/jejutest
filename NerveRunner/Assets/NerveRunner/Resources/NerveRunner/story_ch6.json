@@ -1,0 +1,26 @@
+{
+  "beats": [
+    {
+      "id": "ch6_intro",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "사이뇌 중계 기지 진입. 감각 신호를 올바른 중계소로 보내세요."
+        },
+        {
+          "speaker": "STAR-01",
+          "text": "시상은 관문, 시상하부는 항상성! 헷갈리지 말자."
+        }
+      ]
+    },
+    {
+      "id": "ch6_final",
+      "lines": [
+        {
+          "speaker": "STAR-01",
+          "text": "중계 기지 정상화! 결승으로!"
+        }
+      ]
+    }
+  ]
+}

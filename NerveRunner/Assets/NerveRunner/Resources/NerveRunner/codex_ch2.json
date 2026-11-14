@@ -1,0 +1,58 @@
+{
+  "entries": [
+    {
+      "id": "ventral_horn",
+      "name": "앞뿔",
+      "english": "Ventral horn",
+      "category": "척수",
+      "chapter": 2,
+      "description": "척수 회색질 앞쪽. 아래운동신경세포의 세포체가 있으며 앞뿌리로 운동 명령을 내보냅니다.",
+      "gameLink": "앞뿔/뒤뿔 갈림길"
+    },
+    {
+      "id": "dorsal_root_ganglion",
+      "name": "뒤뿌리신경절",
+      "english": "Dorsal root ganglion",
+      "category": "척수",
+      "chapter": 2,
+      "description": "1차 감각신경세포의 세포체가 모인 척수 밖의 신경절.",
+      "gameLink": "감각신경 게이트"
+    },
+    {
+      "id": "reflex_arc",
+      "name": "반사궁",
+      "english": "Reflex arc",
+      "category": "척수반사",
+      "chapter": 2,
+      "description": "수용기 → 감각신경 → 척수 → 운동신경 → 효과기로 이어지는 반사 경로.",
+      "gameLink": "반사궁 숏컷 갈림길"
+    },
+    {
+      "id": "stretch_reflex",
+      "name": "신장반사",
+      "english": "Stretch reflex",
+      "category": "척수반사",
+      "chapter": 2,
+      "description": "근육방추가 늘어남을 감지하면 같은 근육이 수축하는 단일시냅스 반사. 무릎반사가 대표적입니다.",
+      "gameLink": "근육방추 게이트"
+    },
+    {
+      "id": "reciprocal_inhibition",
+      "name": "상호억제",
+      "english": "Reciprocal inhibition",
+      "category": "척수반사",
+      "chapter": 2,
+      "description": "억제성 사이신경세포가 길항근을 억제해 동작을 부드럽게 만드는 기전.",
+      "gameLink": "상호억제 게이트"
+    },
+    {
+      "id": "flexor_reflex",
+      "name": "굽힘·교차폄반사",
+      "english": "Flexor / crossed extensor reflex",
+      "category": "척수반사",
+      "chapter": 2,
+      "description": "통증 자극에 같은 쪽은 굽히고 반대쪽은 펴는 다시냅스 반사.",
+      "gameLink": "압정 게이트"
+    }
+  ]
+}

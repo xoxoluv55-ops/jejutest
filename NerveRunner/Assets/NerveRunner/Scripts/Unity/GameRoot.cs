@@ -70,9 +70,9 @@ namespace NerveRunner
             chase = cam.gameObject.AddComponent<ChaseCamera>();
             chase.cam = cam;
             NeuralBackdrop.ApplyAtmosphere(cam);
-            RenderQuality.EnableAntiAliasing(cam);
-            RenderQuality.SetupPostFx();
+            RenderQuality.ApplyLevel(cam, (int)Gfx.Level);
             RenderQuality.ApplyMobileBudget(cam, 520f);
+            ApplyCulling();
             if (FindFirstObjectByType<Light>() == null)
             {
                 var lg = new GameObject("Key Light");
@@ -138,10 +138,22 @@ namespace NerveRunner
 
         /// Quality level + camera shake. Particle budgets are read when effects are built; a
         /// changed level fully applies on the next app start (shader fallback is decided once).
+        /// PERF: decorative props (layer 8) are culled by distance; fog hides the cut.
+        void ApplyCulling()
+        {
+            if (cam == null) return;
+            var d = new float[32];
+            d[Gfx.PropsLayer] = Gfx.PropCullDistance;
+            cam.layerCullDistances = d;
+            cam.layerCullSpherical = true;
+        }
+
         void ApplyGraphicsSettings()
         {
             Gfx.Level = save.graphicsQuality < 0 ? Gfx.AutoLevel() : (GfxLevel)Mathf.Clamp(save.graphicsQuality, 0, 2);
             Gfx.CameraShake = Mathf.Clamp01(save.cameraShake);
+            Gfx.ShowPerf = save.showPerf;
+            if (cam != null) { RenderQuality.ApplyLevel(cam, (int)Gfx.Level); ApplyCulling(); }
         }
 
         //================== CONTENT / SAVE ==================\\

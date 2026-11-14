@@ -1,0 +1,26 @@
+{
+  "beats": [
+    {
+      "id": "ch5_intro",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "소뇌 균형 서킷 진입. 급커브가 많습니다!"
+        },
+        {
+          "speaker": "STAR-01",
+          "text": "드리프트로 균형을 잡으면서 협응 회로를 복구하자!"
+        }
+      ]
+    },
+    {
+      "id": "ch5_final",
+      "lines": [
+        {
+          "speaker": "STAR-01",
+          "text": "균형 회로 복구! 마지막 질주!"
+        }
+      ]
+    }
+  ]
+}

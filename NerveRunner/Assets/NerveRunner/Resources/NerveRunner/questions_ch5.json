@@ -1,0 +1,152 @@
+{
+  "questions": [
+    {
+      "id": "ch5_gate_function",
+      "chapter": 5,
+      "topic": "소뇌 기능",
+      "difficulty": "Rookie",
+      "objective": "소뇌의 주된 기능을 안다.",
+      "question": "소뇌의 주된 기능은?",
+      "options": [
+        "시각 정보의 인식",
+        "수의운동 명령의 시작",
+        "운동 협응·균형·운동학습"
+      ],
+      "answer": 2,
+      "explanation": "소뇌는 움직임의 정확도와 타이밍을 조절하고, 균형과 자세를 유지하며, 운동학습에 관여합니다.",
+      "wrongExplanations": [
+        "시각 인식은 뒤통수엽 시각겉질의 기능입니다.",
+        "수의운동 명령은 주로 일차운동겉질에서 시작됩니다.",
+        ""
+      ],
+      "structures": [
+        "cerebellum"
+      ],
+      "branch": "ch5_gate_function",
+      "reference": "소뇌의 기능"
+    },
+    {
+      "id": "ch5_gate_purkinje",
+      "chapter": 5,
+      "topic": "소뇌 구조",
+      "difficulty": "Normal",
+      "objective": "조롱박세포의 역할을 안다.",
+      "question": "소뇌겉질의 유일한 출력 신경세포이며 억제성(GABA)인 세포는?",
+      "options": [
+        "조롱박세포 (푸르키녜세포)",
+        "과립세포",
+        "별세포"
+      ],
+      "answer": 0,
+      "explanation": "조롱박세포는 소뇌겉질의 유일한 출력세포로, GABA를 사용해 소뇌핵을 억제합니다.",
+      "wrongExplanations": [
+        "",
+        "과립세포는 흥분성이며 평행섬유를 통해 조롱박세포에 입력합니다.",
+        "별세포는 겉질 안의 억제성 사이신경세포입니다."
+      ],
+      "structures": [
+        "purkinje"
+      ],
+      "branch": "ch5_gate_purkinje",
+      "reference": "소뇌겉질의 세포"
+    },
+    {
+      "id": "ch5_fork_mcp",
+      "chapter": 5,
+      "topic": "소뇌 구조",
+      "difficulty": "Normal",
+      "objective": "중간소뇌다리를 안다.",
+      "question": "다리뇌에서 오는 입력이 지나는, 가장 굵은 소뇌다리는?",
+      "options": [
+        "중간소뇌다리",
+        "위소뇌다리"
+      ],
+      "answer": 0,
+      "explanation": "중간소뇌다리는 다리뇌핵에서 오는 섬유로 이루어진 가장 굵은 소뇌다리이며 입력 전용입니다.",
+      "wrongExplanations": [
+        "",
+        "위소뇌다리는 주로 소뇌의 출력이 나가는 통로입니다."
+      ],
+      "structures": [
+        "cerebellar_peduncles"
+      ],
+      "branch": "ch5_fork_mcp",
+      "reference": "소뇌다리"
+    },
+    {
+      "id": "ch5_gate_scp",
+      "chapter": 5,
+      "topic": "소뇌 구조",
+      "difficulty": "Normal",
+      "objective": "위소뇌다리를 안다.",
+      "question": "소뇌핵에서 나온 출력이 주로 지나 중간뇌·시상으로 가는 소뇌다리는?",
+      "options": [
+        "위소뇌다리",
+        "중간소뇌다리",
+        "아래소뇌다리"
+      ],
+      "answer": 0,
+      "explanation": "소뇌의 출력은 주로 위소뇌다리를 지나 적색핵과 시상으로 갑니다.",
+      "wrongExplanations": [
+        "",
+        "중간소뇌다리는 입력 전용입니다.",
+        "아래소뇌다리는 척수·숨뇌에서 오는 입력이 주로 지납니다."
+      ],
+      "structures": [
+        "cerebellar_peduncles"
+      ],
+      "branch": "ch5_gate_scp",
+      "reference": "소뇌다리"
+    },
+    {
+      "id": "ch5_gate_vermis",
+      "chapter": 5,
+      "topic": "소뇌 증상",
+      "difficulty": "Expert",
+      "objective": "소뇌 벌레 손상 증상을 안다.",
+      "question": "소뇌 벌레(충부)가 손상되면 주로 나타나는 증상은?",
+      "options": [
+        "몸통 운동실조 (다리를 넓게 벌린 보행)",
+        "반대쪽 편마비",
+        "실어증"
+      ],
+      "answer": 0,
+      "explanation": "소뇌 벌레는 몸통의 균형과 자세를 조절합니다. 손상되면 다리를 넓게 벌리고 비틀거리는 몸통 운동실조가 나타납니다.",
+      "wrongExplanations": [
+        "",
+        "편마비는 겉질척수로 손상의 증상입니다.",
+        "실어증은 대뇌 언어 영역의 손상으로 생깁니다."
+      ],
+      "structures": [
+        "cerebellum"
+      ],
+      "branch": "ch5_gate_vermis",
+      "reference": "소뇌 증후군"
+    },
+    {
+      "id": "ch5_gate_tremor",
+      "chapter": 5,
+      "topic": "소뇌 증상",
+      "difficulty": "Normal",
+      "objective": "의도떨림을 안다.",
+      "question": "손을 목표로 뻗을 때 목표에 가까워질수록 떨림이 심해지는 소뇌 징후는?",
+      "options": [
+        "안정떨림",
+        "의도떨림",
+        "무도증"
+      ],
+      "answer": 1,
+      "explanation": "의도떨림은 움직이는 동안, 특히 목표에 가까워질 때 심해지는 떨림으로 소뇌 병변의 특징입니다.",
+      "wrongExplanations": [
+        "안정떨림은 쉬고 있을 때 나타나며 파킨슨병의 특징입니다.",
+        "",
+        "무도증은 불규칙한 춤추는 듯한 움직임으로 바닥핵 질환(헌팅턴병 등)과 관련됩니다."
+      ],
+      "structures": [
+        "cerebellum"
+      ],
+      "branch": "ch5_gate_tremor",
+      "reference": "소뇌 징후"
+    }
+  ]
+}

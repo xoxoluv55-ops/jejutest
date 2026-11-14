@@ -1,0 +1,176 @@
+{
+  "questions": [
+    {
+      "id": "ch4_gate_sn",
+      "chapter": 4,
+      "topic": "중간뇌",
+      "difficulty": "Normal",
+      "objective": "흑색질과 파킨슨병을 연결한다.",
+      "question": "도파민 신경세포가 많아 손상되면 파킨슨병과 관련되는 중간뇌 구조는?",
+      "options": [
+        "올리브",
+        "흑색질",
+        "위둔덕"
+      ],
+      "answer": 1,
+      "explanation": "중간뇌의 흑색질(치밀부)에는 도파민 신경세포가 있으며, 바닥핵으로 투사합니다. 이 세포가 소실되면 파킨슨병이 생깁니다.",
+      "wrongExplanations": [
+        "올리브는 숨뇌에 있으며 소뇌와 연결됩니다.",
+        "",
+        "위둔덕은 시각 반사에 관여합니다."
+      ],
+      "structures": [
+        "substantia_nigra",
+        "midbrain"
+      ],
+      "branch": "ch4_gate_sn",
+      "reference": "중간뇌 - 흑색질"
+    },
+    {
+      "id": "ch4_gate_sc",
+      "chapter": 4,
+      "topic": "중간뇌",
+      "difficulty": "Normal",
+      "objective": "위둔덕의 기능을 안다.",
+      "question": "갑자기 나타난 물체 쪽으로 눈과 머리를 돌리는 시각 반사에 관여하는 중간뇌 구조는?",
+      "options": [
+        "적색핵",
+        "아래둔덕",
+        "위둔덕"
+      ],
+      "answer": 2,
+      "explanation": "중간뇌 덮개의 위둔덕은 시각 정보를 받아 눈·머리의 반사적 방향 전환에 관여합니다.",
+      "wrongExplanations": [
+        "적색핵은 운동 협응과 관련된 핵입니다.",
+        "아래둔덕은 청각 경로의 중계 장소입니다.",
+        ""
+      ],
+      "structures": [
+        "midbrain"
+      ],
+      "branch": "ch4_gate_sc",
+      "reference": "중간뇌 덮개 - 위둔덕"
+    },
+    {
+      "id": "ch4_fork_ic",
+      "chapter": 4,
+      "topic": "중간뇌",
+      "difficulty": "Rookie",
+      "objective": "아래둔덕의 기능을 안다.",
+      "question": "청각 정보가 시상(안쪽무릎체)으로 가기 전에 중계되는 중간뇌 구조는?",
+      "options": [
+        "아래둔덕",
+        "위둔덕"
+      ],
+      "answer": 0,
+      "explanation": "아래둔덕은 청각 경로의 중요한 중계 장소로, 이후 안쪽무릎체를 거쳐 청각겉질로 갑니다.",
+      "wrongExplanations": [
+        "",
+        "위둔덕은 시각 반사에 관여합니다."
+      ],
+      "structures": [
+        "midbrain"
+      ],
+      "branch": "ch4_fork_ic",
+      "reference": "중간뇌 덮개 - 아래둔덕"
+    },
+    {
+      "id": "ch4_gate_aqueduct",
+      "chapter": 4,
+      "topic": "중간뇌",
+      "difficulty": "Normal",
+      "objective": "중뇌수도관의 위치를 안다.",
+      "question": "셋째뇌실과 넷째뇌실을 잇는 중간뇌의 좁은 통로는?",
+      "options": [
+        "척수 중심관",
+        "중뇌수도관",
+        "뇌실사이구멍"
+      ],
+      "answer": 1,
+      "explanation": "중뇌수도관(대뇌수도관)은 중간뇌를 지나 셋째뇌실과 넷째뇌실을 연결합니다. 막히면 폐쇄성 수두증이 생길 수 있습니다.",
+      "wrongExplanations": [
+        "중심관은 척수 안의 통로입니다.",
+        "",
+        "뇌실사이구멍은 가쪽뇌실과 셋째뇌실을 연결합니다."
+      ],
+      "structures": [
+        "midbrain"
+      ],
+      "branch": "ch4_gate_aqueduct",
+      "reference": "뇌실계통"
+    },
+    {
+      "id": "ch4_gate_cn_midbrain",
+      "chapter": 4,
+      "topic": "중간뇌",
+      "difficulty": "Normal",
+      "objective": "중간뇌에 있는 뇌신경핵을 안다.",
+      "question": "중간뇌에 운동핵이 있는 뇌신경은?",
+      "options": [
+        "III 눈돌림신경과 IV 도르래신경",
+        "VII 얼굴신경과 VIII 속귀신경",
+        "IX 혀인두신경과 X 미주신경"
+      ],
+      "answer": 0,
+      "explanation": "중간뇌에는 눈돌림신경(III)과 도르래신경(IV)의 핵이 있습니다. V~VIII은 주로 다리뇌, IX~XII는 주로 숨뇌와 관련됩니다.",
+      "wrongExplanations": [
+        "",
+        "VII·VIII 신경핵은 주로 다리뇌(다리뇌-숨뇌 경계)에 있습니다.",
+        "IX·X 신경핵은 숨뇌에 있습니다."
+      ],
+      "structures": [
+        "midbrain"
+      ],
+      "branch": "ch4_gate_cn_midbrain",
+      "reference": "뇌줄기와 뇌신경핵"
+    },
+    {
+      "id": "ch4_fork_pons",
+      "chapter": 4,
+      "topic": "다리뇌",
+      "difficulty": "Rookie",
+      "objective": "다리뇌와 소뇌의 연결을 안다.",
+      "question": "가장 굵은 소뇌다리(중간소뇌다리)로 소뇌와 연결되는 뇌줄기 부분은?",
+      "options": [
+        "숨뇌",
+        "다리뇌"
+      ],
+      "answer": 1,
+      "explanation": "다리뇌의 다리뇌핵에서 나온 섬유가 중간소뇌다리를 이루어 반대쪽 소뇌로 갑니다. 대뇌겉질의 정보를 소뇌로 전달하는 중요한 통로입니다.",
+      "wrongExplanations": [
+        "숨뇌는 주로 아래소뇌다리로 소뇌와 연결됩니다.",
+        ""
+      ],
+      "structures": [
+        "pons"
+      ],
+      "branch": "ch4_fork_pons",
+      "reference": "다리뇌와 중간소뇌다리"
+    },
+    {
+      "id": "ch4_gate_medulla",
+      "chapter": 4,
+      "topic": "숨뇌",
+      "difficulty": "Rookie",
+      "objective": "숨뇌의 생명 중추를 안다.",
+      "question": "호흡과 심장 박동·혈압을 조절하는 생명 중추가 있는 곳은?",
+      "options": [
+        "숨뇌",
+        "중간뇌 덮개",
+        "소뇌 벌레"
+      ],
+      "answer": 0,
+      "explanation": "숨뇌에는 호흡 중추와 심혈관 중추가 있어 생명 유지에 필수적입니다.",
+      "wrongExplanations": [
+        "",
+        "중간뇌 덮개는 시각·청각 반사에 관여합니다.",
+        "소뇌 벌레는 몸통의 균형에 관여합니다."
+      ],
+      "structures": [
+        "medulla"
+      ],
+      "branch": "ch4_gate_medulla",
+      "reference": "숨뇌의 기능"
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "questions": [
+    {
+      "id": "ch6_fork_thalamus",
+      "chapter": 6,
+      "topic": "사이뇌",
+      "difficulty": "Rookie",
+      "objective": "시상의 감각 중계 기능을 안다.",
+      "question": "후각을 제외한 대부분의 감각 정보를 대뇌겉질로 중계하는 곳은?",
+      "options": [
+        "시상",
+        "시상하부"
+      ],
+      "answer": 0,
+      "explanation": "시상은 후각을 제외한 감각 정보와 운동 회로 정보를 대뇌겉질로 중계하는 관문입니다.",
+      "wrongExplanations": [
+        "",
+        "시상하부는 항상성과 내분비·자율신경을 조절합니다."
+      ],
+      "structures": [
+        "thalamus"
+      ],
+      "branch": "ch6_fork_thalamus",
+      "reference": "시상의 기능"
+    },
+    {
+      "id": "ch6_gate_vpl",
+      "chapter": 6,
+      "topic": "사이뇌",
+      "difficulty": "Normal",
+      "objective": "몸감각을 중계하는 시상핵을 안다.",
+      "question": "몸(목 아래)의 촉각·통증 정보가 중계되는 시상핵은?",
+      "options": [
+        "가쪽무릎체",
+        "배쪽뒤가쪽핵 (VPL)",
+        "안쪽무릎체"
+      ],
+      "answer": 1,
+      "explanation": "몸의 감각은 시상의 배쪽뒤가쪽핵(VPL)에서, 얼굴의 감각은 배쪽뒤안쪽핵(VPM)에서 중계되어 일차몸감각겉질로 갑니다.",
+      "wrongExplanations": [
+        "가쪽무릎체는 시각 정보를 중계합니다.",
+        "",
+        "안쪽무릎체는 청각 정보를 중계합니다."
+      ],
+      "structures": [
+        "thalamus"
+      ],
+      "branch": "ch6_gate_vpl",
+      "reference": "시상핵"
+    },
+    {
+      "id": "ch6_gate_lgn",
+      "chapter": 6,
+      "topic": "사이뇌",
+      "difficulty": "Normal",
+      "objective": "시각을 중계하는 시상핵을 안다.",
+      "question": "시각로의 정보가 시각겉질로 가기 전에 중계되는 시상핵은?",
+      "options": [
+        "가쪽무릎체",
+        "배쪽앞핵",
+        "안쪽무릎체"
+      ],
+      "answer": 0,
+      "explanation": "시각 정보는 시상의 가쪽무릎체에서 중계되어 시각부챗살을 따라 일차시각겉질로 갑니다.",
+      "wrongExplanations": [
+        "",
+        "배쪽앞핵은 바닥핵·운동 회로와 관련됩니다.",
+        "안쪽무릎체는 청각을 중계합니다."
+      ],
+      "structures": [
+        "thalamus"
+      ],
+      "branch": "ch6_gate_lgn",
+      "reference": "시상핵"
+    },
+    {
+      "id": "ch6_fork_hypothal",
+      "chapter": 6,
+      "topic": "사이뇌",
+      "difficulty": "Rookie",
+      "objective": "시상하부의 항상성 기능을 안다.",
+      "question": "체온, 배고픔, 갈증 등 항상성을 조절하는 곳은?",
+      "options": [
+        "시상하부",
+        "시상"
+      ],
+      "answer": 0,
+      "explanation": "시상하부는 체온, 섭식, 수분 균형, 일주기 리듬 등 항상성을 조절하고 자율신경계와 내분비계를 통제합니다.",
+      "wrongExplanations": [
+        "",
+        "시상은 감각 정보를 중계하는 관문입니다."
+      ],
+      "structures": [
+        "hypothalamus"
+      ],
+      "branch": "ch6_fork_hypothal",
+      "reference": "시상하부의 기능"
+    },
+    {
+      "id": "ch6_gate_pituitary",
+      "chapter": 6,
+      "topic": "사이뇌",
+      "difficulty": "Normal",
+      "objective": "시상하부-뇌하수체 연결을 안다.",
+      "question": "시상하부와 깔때기로 연결되어 호르몬 분비를 조절받는 내분비샘은?",
+      "options": [
+        "부신",
+        "뇌하수체",
+        "이자"
+      ],
+      "answer": 1,
+      "explanation": "시상하부는 깔때기(누두)로 연결된 뇌하수체를 통해 여러 내분비샘의 호르몬 분비를 조절합니다.",
+      "wrongExplanations": [
+        "부신은 뇌하수체 호르몬(ACTH) 등의 영향을 받지만 시상하부와 직접 연결되지 않습니다.",
+        "",
+        "이자는 혈당 등에 의해 주로 조절됩니다."
+      ],
+      "structures": [
+        "hypothalamus"
+      ],
+      "branch": "ch6_gate_pituitary",
+      "reference": "시상하부-뇌하수체 축"
+    },
+    {
+      "id": "ch6_gate_pineal",
+      "chapter": 6,
+      "topic": "사이뇌",
+      "difficulty": "Normal",
+      "objective": "솔방울샘의 기능을 안다.",
+      "question": "멜라토닌을 분비해 일주기 리듬에 관여하는 사이뇌 구조는?",
+      "options": [
+        "시각교차",
+        "솔방울샘",
+        "유두체"
+      ],
+      "answer": 1,
+      "explanation": "솔방울샘(송과체)은 어두울 때 멜라토닌을 분비하여 수면-각성 같은 일주기 리듬에 관여합니다.",
+      "wrongExplanations": [
+        "시각교차는 시신경 섬유가 교차하는 곳입니다.",
+        "",
+        "유두체는 기억 회로(파페츠 회로)와 관련됩니다."
+      ],
+      "structures": [
+        "pineal"
+      ],
+      "branch": "ch6_gate_pineal",
+      "reference": "시상상부 - 솔방울샘"
+    }
+  ]
+}

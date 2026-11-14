@@ -34,6 +34,7 @@
 | `docs/` | STEP 1 조사 보고서 · STEP 2 설계 · STEP 3 작업 보고 · 코스 지도 |
 
 ## 문서
+- **2.1: 전체 9개 코스 오픈 + 렉 개선**: [보고서](docs/VISUAL2_전체코스_성능_보고.md)
 - **신규 스테이지 CH.7 대뇌 도시 · CH.9 NULL 보스전 + 콘셉트 반영**: [보고서](docs/VISUAL2_신규스테이지_보고.md)
 - **비주얼 2.0** (브랜치 `claude/nerve-runner-visual-upgrade`): [PHASE 0 분석](docs/VISUAL2_PHASE0_분석.md) · [PHASE 1 보고 (STAR-01·도약전도 터널)](docs/VISUAL2_PHASE1_보고.md) · [외부 AI 도구 계획](docs/VISUAL2_AI도구_프롬프트.md)
 - [STEP 1. 오픈소스 후보 조사·선정](docs/STEP1_오픈소스_조사보고서.md) — Neon Racer 선정 (가중 점수 8.05)

@@ -302,6 +302,7 @@ namespace NerveRunner
                 }
                 case "hint":
                     if (arg == "corner") ui.Hint("코너 진입! 안쪽으로 조향해 벽에 부딪히지 않게 하세요.", 4f);
+                    else if (arg == "jump") ui.Hint("NULL 교란 구간! 큰 파동은 [점프], 작은 블록은 피하세요.", 4f);
                     else if (arg == "drift") ui.Hint("급커브! [드리프트]를 누른 채 커브 방향으로 조향 → 놓으면 미니 터보!", 6f);
                     break;
                 case "banner":

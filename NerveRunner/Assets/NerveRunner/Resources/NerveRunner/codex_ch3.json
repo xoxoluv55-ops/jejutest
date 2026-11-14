@@ -1,0 +1,49 @@
+{
+  "entries": [
+    {
+      "id": "dcml",
+      "name": "뒤기둥-안쪽섬유띠계",
+      "english": "Dorsal column–medial lemniscus",
+      "category": "감각 오름로",
+      "chapter": 3,
+      "description": "미세촉각·진동·의식적 고유감각. 숨뇌에서 교차해 시상 VPL을 거쳐 일차몸감각겉질로 갑니다.",
+      "gameLink": "뒤기둥 갈림길"
+    },
+    {
+      "id": "spinothalamic",
+      "name": "앞가쪽계 (척수시상로)",
+      "english": "Anterolateral system",
+      "category": "감각 오름로",
+      "chapter": 3,
+      "description": "통증·온도·거친 촉각. 척수에서 바로 교차해 시상으로 올라갑니다.",
+      "gameLink": "앞가쪽계 게이트"
+    },
+    {
+      "id": "spinocerebellar",
+      "name": "척수소뇌로",
+      "english": "Spinocerebellar tract",
+      "category": "감각 오름로",
+      "chapter": 3,
+      "description": "의식되지 않는 고유감각을 소뇌로 전달합니다.",
+      "gameLink": "척수소뇌로 게이트"
+    },
+    {
+      "id": "cst",
+      "name": "겉질척수로",
+      "english": "Corticospinal tract",
+      "category": "운동 내림로",
+      "chapter": 3,
+      "description": "일차운동겉질 → 속섬유막 → 대뇌다리 → 피라미드 교차 → 척수 앞뿔. 수의운동의 주된 경로입니다.",
+      "gameLink": "겉질척수로 갈림길"
+    },
+    {
+      "id": "vestibulospinal",
+      "name": "안뜰척수로",
+      "english": "Vestibulospinal tract",
+      "category": "운동 내림로",
+      "chapter": 3,
+      "description": "안뜰신경핵에서 시작해 폄근을 촉진하여 균형과 자세를 유지합니다.",
+      "gameLink": "안뜰척수로 게이트"
+    }
+  ]
+}

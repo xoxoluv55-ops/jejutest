@@ -1,0 +1,40 @@
+{
+  "entries": [
+    {
+      "id": "midbrain",
+      "name": "중간뇌",
+      "english": "Midbrain",
+      "category": "뇌줄기",
+      "chapter": 4,
+      "description": "위·아래둔덕, 흑색질, 적색핵, 대뇌다리, 중뇌수도관, III·IV 뇌신경핵이 있습니다.",
+      "gameLink": "중간뇌 게이트"
+    },
+    {
+      "id": "substantia_nigra",
+      "name": "흑색질",
+      "english": "Substantia nigra",
+      "category": "뇌줄기",
+      "chapter": 4,
+      "description": "도파민 신경세포가 있으며 바닥핵 회로에 관여합니다. 소실되면 파킨슨병이 생깁니다.",
+      "gameLink": "흑색질 게이트"
+    },
+    {
+      "id": "pons",
+      "name": "다리뇌",
+      "english": "Pons",
+      "category": "뇌줄기",
+      "chapter": 4,
+      "description": "중간소뇌다리로 소뇌와 연결되며 V~VII 뇌신경핵 등이 있습니다.",
+      "gameLink": "다리뇌 갈림길"
+    },
+    {
+      "id": "medulla",
+      "name": "숨뇌",
+      "english": "Medulla oblongata",
+      "category": "뇌줄기",
+      "chapter": 4,
+      "description": "호흡·심혈관 중추, 피라미드 교차, 올리브, IX~XII 뇌신경핵이 있습니다.",
+      "gameLink": "숨뇌 게이트"
+    }
+  ]
+}

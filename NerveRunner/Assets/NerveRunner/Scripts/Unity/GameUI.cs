@@ -55,7 +55,29 @@ namespace NerveRunner
             BuildHud();
             BuildResult();
             BuildMinigame();
+            // FPS overlay (settings > 성능 표시): own canvas so its updates never rebuild other UI
+            perfText = UIKit.Label(safe, "", 22, Pal.Green, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(360f, 30f), new Vector2(26f, -124f));
+            perfText.gameObject.AddComponent<Canvas>();
             Show(UIScreen.Title);
+        }
+
+        Text perfText;
+        float perfAcc; int perfFrames; float perfWorst;
+        void TickPerf()
+        {
+            if (perfText == null) return;
+            bool on = Gfx.ShowPerf;
+            if (perfText.gameObject.activeSelf != on) perfText.gameObject.SetActive(on);
+            if (!on) return;
+            float dt = Time.unscaledDeltaTime;
+            perfAcc += dt; perfFrames++; perfWorst = Mathf.Max(perfWorst, dt);
+            if (perfAcc >= 0.5f)
+            {
+                float fps = perfFrames / perfAcc;
+                perfText.text = Mathf.RoundToInt(fps) + " FPS  ·  최대 " + Mathf.RoundToInt(perfWorst * 1000f) + " ms  ·  " + Gfx.Level;
+                perfText.color = fps >= 55f ? Pal.Green : fps >= 30f ? Pal.Yellow : Pal.Red;
+                perfAcc = 0f; perfFrames = 0; perfWorst = 0f;
+            }
         }
 
         Rect lastSafe;
@@ -139,6 +161,12 @@ namespace NerveRunner
                 case 1: return Pal.Yellow;
                 case 7: return Pal.Hex(0xFF9A3D);
                 case 9: return Pal.Hex(0xFF4DA6);
+                case 2: return Pal.Hex(0x6CFF8A);
+                case 3: return Pal.Hex(0xFF5CC8);
+                case 4: return Pal.Hex(0xFF7A3D);
+                case 5: return Pal.Hex(0xFF8FD0);
+                case 6: return Pal.Hex(0x7C9CFF);
+                case 8: return Pal.Hex(0xFFD34D);
                 default: return Pal.A(Pal.Purple, 0.5f);
             }
         }
@@ -204,8 +232,8 @@ namespace NerveRunner
             for (int t = 0; t < StageCatalog.All.Length; t++)
             {
                 int ch = StageCatalog.All[t].chapter;
-                codexTabs[t] = UIKit.Button(p, "CH." + ch, Pal.Card, Pal.Text, 26, () => { codexChapter = ch; RefreshCodex(); },
-                                            new Vector2(0f, 1f), new Vector2(150f, 52f), new Vector2(60f + t * 160f, -150f));
+                codexTabs[t] = UIKit.Button(p, "CH." + ch, Pal.Card, Pal.Text, 24, () => { codexChapter = ch; RefreshCodex(); },
+                                            new Vector2(0f, 1f), new Vector2(76f, 52f), new Vector2(60f + t * 80f, -150f));
             }
             codexBtns = new Button[CODEX_SLOTS];
             for (int i = 0; i < CODEX_SLOTS; i++)
@@ -361,7 +389,7 @@ namespace NerveRunner
         }
 
         //================== SETTINGS ==================\\
-        Text sfxLbl, musicLbl, hintLbl, sensLbl, resetLbl, gfxLbl, shakeLbl;
+        Text sfxLbl, musicLbl, hintLbl, sensLbl, resetLbl, gfxLbl, shakeLbl, perfLbl;
         bool resetArmed;
         void BuildSettings()
         {
@@ -382,6 +410,7 @@ namespace NerveRunner
                 save.graphicsQuality = save.graphicsQuality >= 2 ? -1 : save.graphicsQuality + 1;
                 Changed();
             });
+            perfLbl = SettingRow(p, "성능 표시 (FPS)", ref y, () => { save.showPerf = !save.showPerf; Changed(); });
             shakeLbl = SettingRow(p, "카메라 흔들림", ref y, () =>
             {
                 save.cameraShake = save.cameraShake >= 0.99f ? 0f : save.cameraShake + 0.5f;
@@ -395,17 +424,17 @@ namespace NerveRunner
                 keep.stages.Clear(); keep.wrongNotes.Clear(); keep.mastery.Clear(); keep.codexUnlocked.Clear(); keep.totalCoins = 0; keep.storySeen = false;
                 Changed();
             });
-            UIKit.Label(p, "그래픽 품질 '낮음'은 기본 머티리얼만 사용합니다(특수 셰이더 문제 시 사용). 변경 사항 일부는 앱을 다시 시작하면 적용됩니다.\nNERVE RUNNER v0.2 (CHAPTER 1 · 비주얼 2.0 PHASE 1)\n레이싱 기반 코드: Neon Racer by Pinchas Vaknin (MIT License)", 22, Pal.Dim,
+            UIKit.Label(p, "그래픽 품질 '낮음'은 기본 머티리얼만 사용합니다(특수 셰이더 문제 시 사용). 렉이 걸리면 '중간' 또는 '낮음'을 선택하세요. 일부는 앱을 다시 시작하면 적용됩니다.\nNERVE RUNNER v0.2 (CHAPTER 1 · 비주얼 2.0 PHASE 1)\n레이싱 기반 코드: Neon Racer by Pinchas Vaknin (MIT License)", 22, Pal.Dim,
                         TextAnchor.LowerLeft, new Vector2(0f, 0f), new Vector2(1200f, 100f), new Vector2(64f, 20f));
         }
 
         Text SettingRow(Transform p, string name, ref float y, Action toggle)
         {
-            var row = UIKit.Panel(p, Pal.Panel, new Vector2(0f, 1f), new Vector2(900f, 80f), new Vector2(60f, y));
+            var row = UIKit.Panel(p, Pal.Panel, new Vector2(0f, 1f), new Vector2(900f, 74f), new Vector2(60f, y));
             UIKit.Label(row.transform, name, 32, Pal.Text, TextAnchor.MiddleLeft, new Vector2(0f, 0.5f), new Vector2(500f, 80f), new Vector2(30f, 0f)).rectTransform.pivot = new Vector2(0f, 0.5f);
             var b = UIKit.Button(row.transform, "", Pal.Card, Pal.Yellow, 30, toggle, new Vector2(1f, 0.5f), new Vector2(300f, 70f), new Vector2(-12f, 0f));
             ((RectTransform)b.transform).pivot = new Vector2(1f, 0.5f);
-            y -= 92f;
+            y -= 84f;
             return UIKit.ButtonText(b);
         }
 
@@ -420,6 +449,7 @@ namespace NerveRunner
             hintLbl.text = save.showHints ? "켜짐" : "꺼짐";
             sensLbl.text = "x" + save.steerSensitivity.ToString("0.00");
             gfxLbl.text = save.graphicsQuality < 0 ? "자동 (" + GfxName(Gfx.AutoLevel()) + ")" : GfxName((GfxLevel)save.graphicsQuality);
+            perfLbl.text = save.showPerf ? "켜짐" : "꺼짐";
             shakeLbl.text = save.cameraShake <= 0.01f ? "끔" : save.cameraShake < 0.99f ? "약하게" : "보통";
             resetLbl.text = resetArmed ? "한 번 더 눌러 확인" : "초기화";
         }

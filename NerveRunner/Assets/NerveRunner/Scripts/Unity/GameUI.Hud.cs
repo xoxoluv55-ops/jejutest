@@ -18,6 +18,7 @@ namespace NerveRunner
         GameObject qBanner, answerPanel, storyBox, hintBox, pausePanel, dialogPanel, touchRoot;
         Text qTitle, qText, qOptions, answerTitle, answerText, storySpeaker, storyText, hintText, toastText, dialogSpeaker, dialogText;
         float answerTimer, toastTimer, storyTimer, hintTimer;
+        CanvasGroup toastGroup;
         readonly Queue<StoryLine> storyQueue = new Queue<StoryLine>();
         Action dialogDone;
         StoryLine[] dialogLines; int dialogIdx;
@@ -87,6 +88,8 @@ namespace NerveRunner
             toastText = UIKit.Label(p, "", 54, Pal.Yellow, TextAnchor.MiddleCenter, new Vector2(0.5f, 0.5f), new Vector2(1200f, 90f), new Vector2(0f, 140f));
             toastText.fontStyle = FontStyle.Bold;
             UIKit.Neon(toastText, Pal.A(Color.black, 0.8f), 3f);
+            toastGroup = toastText.gameObject.AddComponent<CanvasGroup>();
+            toastText.gameObject.AddComponent<Canvas>();          // own canvas: fading never rebuilds the HUD
 
             // ---- story box (non-blocking) ----
             var sb = UIKit.Panel(p, Pal.A(Pal.Hex(0x120B33), 0.9f), new Vector2(0.5f, 0f), new Vector2(600f, 120f), new Vector2(0f, 240f));
@@ -113,6 +116,11 @@ namespace NerveRunner
             energyFill = energyFillImg.rectTransform;
             energyFill.anchorMin = Vector2.zero; energyFill.anchorMax = new Vector2(0f, 1f); energyFill.pivot = new Vector2(0f, 0.5f);
             energyFill.offsetMin = Vector2.zero; energyFill.offsetMax = Vector2.zero;
+
+            // PERF: frequently changing panels get their own (nested) canvases, so a changing number
+            // re-batches only that panel instead of the whole HUD.
+            foreach (var g in new GameObject[] { tl.gameObject, tr.gameObject, en.gameObject, bar.gameObject, bb.gameObject })
+                if (g.GetComponent<Canvas>() == null) g.AddComponent<Canvas>();
 
             // ---- touch controls ----
             touchRoot = UIKit.Rect(p, "Touch").gameObject;
@@ -166,22 +174,40 @@ namespace NerveRunner
             qBanner.SetActive(false); answerPanel.SetActive(false); storyBox.SetActive(false); hintBox.SetActive(false);
             dialogPanel.SetActive(false); toastText.text = ""; hudCountdown.text = "";
             storyQueue.Clear(); answerTimer = toastTimer = storyTimer = hintTimer = 0f;
+            lastTimeTenths = lastCoins = lastCorrect = lastTotal = lastSpeed = lastDriftKey = lastEnergyState = -1;
+            lastProgress = lastEnergy = -1f;
             input.Reset();
         }
 
         //================== LIVE VALUES ==================\\
+        // PERF (2.1): HUD values are only written when they change (and the clock at 10 Hz).
+        // Writing Text every frame rebuilt the whole HUD canvas and allocated strings each frame.
+        int lastTimeTenths = -1, lastCoins = -1, lastCorrect = -1, lastTotal = -1, lastSpeed = -1, lastDriftKey = -1;
+        float lastProgress = -1f, lastEnergy = -1f; int lastEnergyState = -1;
+
         public void UpdateHud(RunnerSim sim, LearningSession learn, float progress01)
         {
-            hudTime.text = FormatTime(sim.raceTime);
-            hudCoins.text = sim.coins.ToString();
-            hudAcc.text = "정답 " + learn.Correct + "/" + learn.Total;
-            hudSpeed.text = Mathf.RoundToInt(sim.speed * 3.6f) + " km/h";
-            progressFill.anchorMax = new Vector2(Mathf.Clamp01(progress01), 1f);
-            energyFill.anchorMax = new Vector2(Mathf.Clamp01(sim.boostEnergy), 1f);
-            energyFillImg.color = sim.Boosting ? Color.white : (sim.boostEnergy >= 0.2f ? Pal.Gold : Pal.A(Pal.Gold, 0.45f));
+            int tenths = Mathf.FloorToInt(sim.raceTime * 10f);
+            if (tenths != lastTimeTenths) { lastTimeTenths = tenths; hudTime.text = FormatTime(tenths / 10f); }
+            if (sim.coins != lastCoins) { lastCoins = sim.coins; hudCoins.text = sim.coins.ToString(); }
+            int c = learn.Correct, n = learn.Total;
+            if (c != lastCorrect || n != lastTotal) { lastCorrect = c; lastTotal = n; hudAcc.text = "정답 " + c + "/" + n; }
+            int spd = Mathf.RoundToInt(sim.speed * 3.6f / 2f) * 2;
+            if (spd != lastSpeed) { lastSpeed = spd; hudSpeed.text = spd + " km/h"; }
+            float pr = Mathf.Clamp01(progress01);
+            if (Mathf.Abs(pr - lastProgress) > 0.003f) { lastProgress = pr; progressFill.anchorMax = new Vector2(pr, 1f); }
+            float en = Mathf.Clamp01(sim.boostEnergy);
+            if (Mathf.Abs(en - lastEnergy) > 0.004f) { lastEnergy = en; energyFill.anchorMax = new Vector2(en, 1f); }
+            int es = sim.Boosting ? 2 : (en >= 0.2f ? 1 : 0);
+            if (es != lastEnergyState) { lastEnergyState = es; energyFillImg.color = es == 2 ? Color.white : es == 1 ? Pal.Gold : Pal.A(Pal.Gold, 0.45f); }
             int tier = sim.Drifting ? sim.DriftTierNow : 0;
-            hudDrift.text = sim.Drifting ? (tier == 0 ? "드리프트" : "터보 Lv." + tier) : (sim.ringChain > 1 ? "도약 x" + sim.ringChain : "");
-            hudDrift.color = sim.Drifting ? Pal.Pink : Pal.Gold;
+            int key = sim.Drifting ? 100 + tier : (sim.ringChain > 1 ? sim.ringChain : 0);
+            if (key != lastDriftKey)
+            {
+                lastDriftKey = key;
+                hudDrift.text = sim.Drifting ? (tier == 0 ? "드리프트" : "터보 Lv." + tier) : (sim.ringChain > 1 ? "도약 x" + sim.ringChain : "");
+                hudDrift.color = sim.Drifting ? Pal.Pink : Pal.Gold;
+            }
         }
 
         public void SetSection(string name) { hudSection.text = name; }
@@ -199,11 +225,12 @@ namespace NerveRunner
         public void Tick(float dt)
         {
             ApplySafeArea();
+            TickPerf();
             if (answerTimer > 0f) { answerTimer -= dt; if (answerTimer <= 0f) answerPanel.SetActive(false); }
             if (toastTimer > 0f)
             {
                 toastTimer -= dt;
-                var c = toastText.color; c.a = Mathf.Clamp01(toastTimer / 0.4f); toastText.color = c;
+                toastGroup.alpha = Mathf.Clamp01(toastTimer / 0.4f);
                 if (toastTimer <= 0f) toastText.text = "";
             }
             if (hintTimer > 0f) { hintTimer -= dt; if (hintTimer <= 0f) hintBox.SetActive(false); }
@@ -253,7 +280,7 @@ namespace NerveRunner
 
         public void Toast(string text, Color c, float seconds = 1.6f)
         {
-            toastText.text = text; c.a = 1f; toastText.color = c; toastTimer = seconds;
+            toastText.text = text; c.a = 1f; toastText.color = c; toastTimer = seconds; toastGroup.alpha = 1f;
         }
 
         public void Hint(string text, float seconds = 5f)

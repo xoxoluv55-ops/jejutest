@@ -50,7 +50,7 @@ namespace NerveRunner
 
             Color[] palette = { Pal.Hex(0x9B5CFF), Pal.Hex(0x4D8DFF), Pal.Hex(0xFF5CC8), Pal.Hex(0x2EE6D6) };
             int placed = 0;
-            for (int tries = 0; tries < 900 && placed < 60; tries++)
+            for (int tries = 0; tries < 900 && placed < Gfx.BackdropNeurons; tries++)
             {
                 var pos = new Vector3(Mathf.Lerp(min.x, max.x, (float)rnd.NextDouble()),
                                       (float)rnd.NextDouble() * 90f - 45f,
@@ -67,6 +67,7 @@ namespace NerveRunner
                 var p = new Vector3(Mathf.Lerp(min.x, max.x, (float)rnd.NextDouble()), -60f - (float)rnd.NextDouble() * 40f, Mathf.Lerp(min.z, max.z, (float)rnd.NextDouble()));
                 MeshKit.Prim(PrimitiveType.Cube, root, p, Vector3.one * (0.6f + (float)rnd.NextDouble() * 1.4f), sparkMat, "Spark");
             }
+            SetLayer(root, Gfx.PropsLayer);
             StaticBatchingUtility.Combine(root.gameObject);
             return root;
         }
@@ -100,6 +101,12 @@ namespace NerveRunner
             MeshKit.Prim(PrimitiveType.Sphere, root, new Vector3(0f, -10f, -18f), new Vector3(20f, 10f, 12f), body, "Cerebellum");
             MeshKit.Prim(PrimitiveType.Cylinder, root, new Vector3(0f, -16f, -10f), new Vector3(5f, 9f, 5f), body, "BrainStem");
             return root;
+        }
+
+        public static void SetLayer(Transform t, int layer)
+        {
+            t.gameObject.layer = layer;
+            for (int i = 0; i < t.childCount; i++) SetLayer(t.GetChild(i), layer);
         }
 
         static float DistanceToTrack(TrackGraph g, Vector3 p)

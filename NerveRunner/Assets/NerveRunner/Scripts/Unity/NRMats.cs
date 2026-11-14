@@ -20,7 +20,17 @@ namespace NerveRunner
         public static bool Fancy { get { return Level != GfxLevel.Low; } }
         public static float CameraShake = 1f;
 
-        public static GfxLevel AutoLevel() { return Application.isMobilePlatform ? GfxLevel.Medium : GfxLevel.High; }
+        /// PERF (2.1): High only on desktop GPUs with >= 4 GB VRAM; everything else starts on Medium.
+        public static GfxLevel AutoLevel()
+        {
+            if (Application.isMobilePlatform) return GfxLevel.Medium;
+            return SystemInfo.graphicsMemorySize >= 4000 ? GfxLevel.High : GfxLevel.Medium;
+        }
+        /// Decorative props (backdrop neurons, city buildings) disappear beyond this distance.
+        public static float PropCullDistance { get { return Level == GfxLevel.Low ? 180f : Level == GfxLevel.Medium ? 280f : 420f; } }
+        public static int BackdropNeurons { get { return Level == GfxLevel.Low ? 18 : Level == GfxLevel.Medium ? 36 : 60; } }
+        public const int PropsLayer = 8;   // unnamed user layer used only for distance culling
+        public static bool ShowPerf;
     }
 
     public static class NRMats

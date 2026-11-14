@@ -1,0 +1,26 @@
+{
+  "beats": [
+    {
+      "id": "ch3_intro",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "신경로 고속도로 진입. 감각은 위로, 운동 명령은 아래로!"
+        },
+        {
+          "speaker": "STAR-01",
+          "text": "교차 위치를 정확히 알아야 길을 잃지 않아!"
+        }
+      ]
+    },
+    {
+      "id": "ch3_final",
+      "lines": [
+        {
+          "speaker": "STAR-01",
+          "text": "오름로·내림로 정비 완료!"
+        }
+      ]
+    }
+  ]
+}

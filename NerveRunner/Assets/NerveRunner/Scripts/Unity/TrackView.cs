@@ -19,12 +19,28 @@ namespace NerveRunner
         readonly List<Transform> spinning = new List<Transform>();
         readonly List<Transform> glitch = new List<Transform>();
         readonly Dictionary<Transform, float> flash = new Dictionary<Transform, float>();
+        readonly List<Transform> flashKeys = new List<Transform>();
         GameObject bridge;
         TrackSegment cleft;
         Material ringHitMat;
         readonly List<SaltatoryTunnelView> tunnels = new List<SaltatoryTunnelView>();
 
         static readonly Color Line = Pal.Hex(0x37D8FF);
+
+        /// Road/rail colour per chapter theme (CH.2-6, CH.8).
+        public static bool ThemeColor(string theme, out Color c)
+        {
+            switch (theme)
+            {
+                case "spinal": c = Pal.Hex(0x6CFF8A); return true;
+                case "tract": c = Pal.Hex(0xFF5CC8); return true;
+                case "brainstem": c = Pal.Hex(0xFF7A3D); return true;
+                case "cerebellum": c = Pal.Hex(0xFF8FD0); return true;
+                case "diencephalon": c = Pal.Hex(0x7C9CFF); return true;
+                case "cranial": c = Pal.Hex(0xFFD34D); return true;
+            }
+            c = Color.white; return false;
+        }
 
         public static Color ZoneColor(ZoneKind z)
         {
@@ -76,6 +92,8 @@ namespace NerveRunner
             Color zc = ZoneColor(seg.zone);
             if (CerebrumCityView.IsDistrict(seg.theme) && seg.zone == ZoneKind.Normal) zc = CerebrumCityView.DistrictColor(seg.theme);
             if (seg.theme == "boss" && seg.zone == ZoneKind.Normal) zc = Pal.Hex(0xFF4DA6);
+            Color themed;
+            if (seg.zone == ZoneKind.Normal && ThemeColor(seg.theme, out themed)) zc = themed;
             var root = new GameObject("Seg_" + seg.id + "_" + seg.name).transform;
             root.SetParent(staticRoot, false);
             float hw = seg.halfWidth;
@@ -455,15 +473,16 @@ namespace NerveRunner
             }
             if (flash.Count > 0)
             {
-                var keys = new List<Transform>(flash.Keys);
-                foreach (var k in keys)
+                // PERF: reuse one list (was a new List + Transform.name string every frame)
+                flashKeys.Clear();
+                flashKeys.AddRange(flash.Keys);
+                for (int i = 0; i < flashKeys.Count; i++)
                 {
-                    float v = flash[k] - dt;
+                    var k = flashKeys[i];
                     if (k == null) { flash.Remove(k); continue; }
-                    float s = 1f + Mathf.Max(0f, v) * 1.2f;
-                    k.localScale = new Vector3(Mathf.Abs(k.localScale.x), Mathf.Abs(k.localScale.y), Mathf.Abs(k.localScale.z));
-                    if (k.name == "NodeOfRanvier") k.localScale = Vector3.one * s;
-                    if (v <= 0f) flash.Remove(k); else flash[k] = v;
+                    float v = flash[k] - dt;
+                    k.localScale = Vector3.one * (1f + Mathf.Max(0f, v) * 1.2f);   // only node rings flash
+                    if (v <= 0f) { flash.Remove(k); k.localScale = Vector3.one; } else flash[k] = v;
                 }
             }
         }

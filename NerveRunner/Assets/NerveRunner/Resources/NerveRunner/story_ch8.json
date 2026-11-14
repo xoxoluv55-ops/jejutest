@@ -1,0 +1,26 @@
+{
+  "beats": [
+    {
+      "id": "ch8_intro",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "12뇌신경 포털 진입. 번호와 기능이 맞는 포털로 들어가세요."
+        },
+        {
+          "speaker": "STAR-01",
+          "text": "I부터 XII까지, 정확한 포털로 신호를 보내자!"
+        }
+      ]
+    },
+    {
+      "id": "ch8_final",
+      "lines": [
+        {
+          "speaker": "STAR-01",
+          "text": "뇌신경 포털 전부 연결! 결승으로!"
+        }
+      ]
+    }
+  ]
+}

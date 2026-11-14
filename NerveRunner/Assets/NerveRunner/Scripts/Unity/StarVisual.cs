@@ -110,6 +110,7 @@ namespace NerveRunner
             glow = lg.AddComponent<Light>();
             glow.type = LightType.Point; glow.color = col; glow.range = 9f; glow.intensity = 2.2f;
             glow.shadows = LightShadows.None;
+            glow.enabled = Gfx.Level != GfxLevel.Low;   // PERF: per-object light off on Low
 
             // ---- effects (trail, halo, shadow, sparks...) ----
             var fxGo = new GameObject("StarFx");
@@ -234,28 +235,31 @@ namespace NerveRunner
             }
             else { SetActive(hiL, false); SetActive(hiR, false); SetActive(hi2L, false); SetActive(hi2R, false); }
 
-            happyL.SetActive(happy); happyR.SetActive(happy);
+            Set(happyL, happy); Set(happyR, happy);
             bool closedNow = closed || (open && blinking);
-            closedL.SetActive(closedNow); closedR.SetActive(closedNow);
-            crossL.SetActive(cross); crossR.SetActive(cross);
-            sparkL.SetActive(sparkle && !blinking); sparkR.SetActive(sparkle && !blinking);
-            tear.SetActive(wet);
+            Set(closedL, closedNow); Set(closedR, closedNow);
+            Set(crossL, cross); Set(crossR, cross);
+            Set(sparkL, sparkle && !blinking); Set(sparkR, sparkle && !blinking);
+            Set(tear, wet);
 
-            browL.SetActive(brow >= 0); browR.SetActive(brow >= 0);
+            Set(browL, brow >= 0); Set(browR, brow >= 0);
             if (brow >= 0)
             {
-                browLF.sharedMesh = brow == 1 ? browUpL : brow == 2 ? browAngryL : brow == 3 ? browSadL : browNeutralL;
-                browRF.sharedMesh = brow == 1 ? browUpR : brow == 2 ? browAngryR : brow == 3 ? browSadR : browNeutralR;
+                var bl = brow == 1 ? browUpL : brow == 2 ? browAngryL : brow == 3 ? browSadL : browNeutralL;
+                var br = brow == 1 ? browUpR : brow == 2 ? browAngryR : brow == 3 ? browSadR : browNeutralR;
+                if (browLF.sharedMesh != bl) browLF.sharedMesh = bl;
+                if (browRF.sharedMesh != br) browRF.sharedMesh = br;
             }
 
-            mouthSmile.SetActive(mouthKind == 0);
-            mouthOpen.SetActive(mouthKind == 1); mouthTongue.SetActive(mouthKind == 1);
-            mouthO.SetActive(mouthKind == 2);
-            mouthFlat.SetActive(mouthKind == 3);
-            mouthWave.SetActive(mouthKind == 4);
+            Set(mouthSmile, mouthKind == 0);
+            Set(mouthOpen, mouthKind == 1); Set(mouthTongue, mouthKind == 1);
+            Set(mouthO, mouthKind == 2);
+            Set(mouthFlat, mouthKind == 3);
+            Set(mouthWave, mouthKind == 4);
             cheekL.localScale = cheekR.localScale = new Vector3(0.2f, 0.11f, 0.05f) * cheek;
         }
 
+        static void Set(GameObject g, bool on) { if (g.activeSelf != on) g.SetActive(on); }
         static void SetActive(Transform t, bool on) { if (t.gameObject.activeSelf != on) t.gameObject.SetActive(on); }
 
         //================== REACTIONS ==================\\

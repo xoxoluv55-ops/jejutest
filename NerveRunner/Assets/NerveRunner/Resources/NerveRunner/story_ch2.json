@@ -1,0 +1,26 @@
+{
+  "beats": [
+    {
+      "id": "ch2_intro",
+      "lines": [
+        {
+          "speaker": "SYSTEM",
+          "text": "척수 구간 진입. NULL이 반사 회로를 끊어 놓았습니다."
+        },
+        {
+          "speaker": "STAR-01",
+          "text": "반사궁을 순서대로 이어서 빠른 회로를 복구하자!"
+        }
+      ]
+    },
+    {
+      "id": "ch2_final",
+      "lines": [
+        {
+          "speaker": "STAR-01",
+          "text": "반사 회로 복구 완료! 결승선까지!"
+        }
+      ]
+    }
+  ]
+}
