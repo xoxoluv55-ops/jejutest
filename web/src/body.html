@@ -22,7 +22,8 @@
 
   <!-- STAGE SELECT -->
   <section id="scr-stages" class="screen panel-screen">
-    <header><button class="back" data-act="title">◀</button><h2>스테이지 선택</h2></header>
+    <header><button class="back" data-act="title">◀</button><h2>스테이지 선택</h2><div id="mode-tabs" class="tabs mode-tabs"></div></header>
+    <div id="mode-desc" class="mode-desc"></div>
     <div id="stage-grid" class="stage-grid"></div>
   </section>
 
@@ -76,6 +77,7 @@
       <div class="hud-left">
         <div id="h-section" class="section">-</div>
         <div class="prog"><div id="h-prog"></div><span id="h-star">★</span></div>
+        <div id="h-rank" class="rank"></div>
       </div>
       <div id="h-boss" class="boss"><span>NULL 보호막</span><div class="bar"><div id="h-boss-fill"></div></div></div>
       <div class="hud-right">

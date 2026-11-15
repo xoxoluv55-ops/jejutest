@@ -193,7 +193,17 @@ const NR = (function () {
   }
 
   function laneXs(lanes, spacing) { const x = []; for (let i = 0; i < lanes; i++) x.push((i - (lanes - 1) * 0.5) * spacing); return x; }
+  function computeProgress(g) {
+    for (const s of g.segments) { s.prog0 = Infinity; s.progScale = 1; }
+    g.start.prog0 = 0;
+    for (const s of g.segments) {   // creation order: parents before children
+      if (!isFinite(s.prog0)) s.prog0 = 0;
+      if (s.next.length > 1) { const minL = Math.min(...s.next.map(n => n.length)); for (const n of s.next) { n.prog0 = Math.min(n.prog0, s.prog0 + s.length); n.progScale = minL / n.length; } }
+      else for (const n of s.next) n.prog0 = Math.min(n.prog0, s.prog0 + s.length * s.progScale);
+    }
+  }
   function shortestLength(g) {
+    computeProgress(g);
     const memo = new Map();
     const f = s => { if (memo.has(s)) return memo.get(s); let best = 0; if (s.next.length) { best = Infinity; for (const n of s.next) best = Math.min(best, f(n)); } const v = s.length + best; memo.set(s, v); return v; };
     return f(g.start);
@@ -480,6 +490,15 @@ const NR = (function () {
 
   // ---------------- Stage catalog (StageCatalog.cs) ----------------
   const Q = (ch, theme, title, subtitle, goals, steps) => ({ id: "ch" + ch, chapter: ch, title, subtitle, introStory: "ch" + ch + "_intro", gateTitle: title + " 게이트", goals, boss: false, build: bank => quizCourse(bank, theme, subtitle, steps) });
+  // 4.5 survival: a long run of random set pieces (difficulty ramps in the app via speedScale/energy drain)
+  function survivalCourse(bank) {
+    const pool = ["sprint", "scurve", "jumppads", "movers", "lasers", "narrow", "dzone", "rings", "split", "hairpin", "obstacles", "excite"];
+    const steps = ["warm"]; let last = "";
+    for (let i = 0; i < 26; i++) { let k; do { k = pool[(Math.random() * pool.length) | 0]; } while (k === last); steps.push(k); last = k; }
+    steps.push("finish");
+    const g = quizCourse(bank, null, "서바이벌", steps); g.parTime = g.referenceLength / 42; return g;
+  }
+  const SURVIVAL = { id: "survival", chapter: 0, title: "서바이벌", subtitle: "끝없는 신경 질주", introStory: "", gateTitle: "", goals: [], boss: false, build: survivalCourse };
   const STAGES = [
     { id: "ch1", chapter: 1, title: "뉴런과 신경신호", subtitle: "뉴런 고속도로", introStory: "prologue", gateTitle: "활동전위 게이트", goals: ["뉴런의 구조", "활동전위", "도약전도", "시냅스 전달"], boss: false, build: chapter1 },
     Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "sprint", "fork:ch2_fork_horn", "reflex", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "jumppads", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "split", "codex:reciprocal_inhibition", "inhibit", "gate:ch2_gate_reciprocal", "reflex", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
@@ -497,14 +516,17 @@ const NR = (function () {
   const TURBO_TIME = [0, 0.5, 0.9, 1.4], TURBO_ARCADE = [0, 0.9, 1.5, 2.3];
   const VM_REST = -70, VM_THRESH = -55;
   class Sim {
-    constructor(g) {
-      this.graph = g; this.baseTopSpeed = 40; this.accel = 16; this.boostAccel = 30; this.boostMultiplier = 1.4; this.turboMultiplier = 1.25;
+    constructor(g, opts = {}) {
+      this.own = opts.own ? new Set() : null; this.speedScale = 1; this.graph = g; this.baseTopSpeed = 40; this.accel = 16; this.boostAccel = 30; this.boostMultiplier = 1.4; this.turboMultiplier = 1.25;
       this.steerMax = 12; this.steerSensitivity = 1; this.grip = 0.3; this.driftGrip = 0.07; this.driftSteerMul = 1.4; this.jumpVelocity = 9.5; this.gravity = 26;
       if (TUNE.arcade) { this.steerMax = 14.5; this.driftSteerMul = 1.7; this.turboMultiplier = 1.32; this.jumpVelocity = 10.2; }
       this.events = []; this.reset();
     }
+    used(e) { return this.own ? this.own.has(e) : e.consumed; }
+    // 4.5: progress along the course (all fork branches advance at the same rate) - used for race positions
+    get progress() { const g = this.seg; return (g.prog0 || 0) + Math.min(this.s, g.length) * (g.progScale || 1); }
     reset() {
-      this.graph.resetRuntime(); this.seg = this.graph.start; this.s = 0; this.x = 0; this.y = 0; this.vx = 0; this.vy = 0; this.speed = 0;
+      if (this.own) this.own.clear(); else this.graph.resetRuntime(); this.seg = this.graph.start; this.s = 0; this.x = 0; this.y = 0; this.vx = 0; this.vy = 0; this.speed = 0;
       this.grounded = true; this.finished = false; this.raceTime = 0; this.distance = 0; this.boostEnergy = 0.35; this.boosting = false; this.canFire = true; this.wasBoosting = false;
       this.drifting = false; this.driftDir = 0; this.driftTime = 0; this.driftCharge = 0; this.turboTimer = 0; this.penaltyTimer = 0; this.wallCooldown = 0;
       this.ringChain = 0; this.ringBest = 0; this.ringsHit = 0; this.ringsTotal = 0; this.repairCount = 0; this.coins = 0; this.wallHits = 0; this.obstacleHits = 0; this.curvature = 0; this.events.length = 0;
@@ -528,7 +550,7 @@ const NR = (function () {
       this.raceTime += dt; this.curvature = this.seg.curvatureAt(this.s);
       const steer = clamp(inp.steer, -1, 1);
       this.stepDrift(steer, inp.drift, dt); this.stepBoost(inp.boost, dt);
-      let top = this.baseTopSpeed * this.zoneFactor * (1 + this.chainBonus);
+      let top = this.baseTopSpeed * this.speedScale * this.zoneFactor * (1 + this.chainBonus);
       if (this.boosting) top *= this.boostMultiplier; if (this.turboTimer > 0) top *= this.turboMultiplier; if (this.penaltyTimer > 0) top *= 0.65;
       if (this.speed < top) this.speed = Math.min(top, this.speed + ((this.boosting || this.turboTimer > 0) ? this.boostAccel : this.accel) * dt);
       else this.speed = Math.max(top, this.speed - 25 * dt);
@@ -616,8 +638,8 @@ const NR = (function () {
     }
     processEvents(from, to) {
       for (const e of this.seg.events) {
-        if (e.consumed || e.s <= from || e.s > to) continue;
-        e.consumed = true;
+        if ((this.own ? this.own.has(e) : e.consumed) || e.s <= from || e.s > to) continue;
+        if (this.own) this.own.add(e); else e.consumed = true;
         switch (e.type) {
           case EV.Trigger:
             if (e.tag === "dzone:on") this.driftZone = true; else if (e.tag === "dzone:off") this.driftZone = false;
@@ -679,7 +701,15 @@ const NR = (function () {
 
   // ---------------- AutoPilot (AutoPilot.cs) ----------------
   class AutoPilot {
-    constructor() { this.chooseLane = (qid, correct, lanes) => correct; this.driftHeld = false; }
+    // o: { accuracy (0-1, chance of choosing the right lane), noise (steering wobble), drift (uses drift), boostAt (energy level to boost), risky }
+    constructor(o = {}) {
+      this.o = o; this.driftHeld = false; this.memo = new Map(); this.risky = !!o.risky; this.t = Math.random() * 10;
+      this.chooseLane = (qid, correct, lanes) => {
+        if (o.accuracy == null) return correct;
+        if (!this.memo.has(qid)) this.memo.set(qid, Math.random() < o.accuracy ? correct : (correct + 1 + ((Math.random() * (lanes - 1)) | 0)) % lanes);
+        return this.memo.get(qid);
+      };
+    }
     think(sim) {
       const seg = sim.seg; let targetX = 0, have = false, jump = false; const look = Math.max(60, sim.speed * 2.2);
       if (seg.fork && seg.length - sim.s < 220) { targetX = seg.fork.free ? seg.fork.laneX[this.risky ? 1 : 0] : seg.fork.laneX[this.chooseLane(seg.fork.questionId, seg.fork.correctLane, seg.fork.laneX.length)]; have = true; }
@@ -687,7 +717,7 @@ const NR = (function () {
       if (sim.reflex) { const R = sim.reflex; if (R.kind === "stretch") boostReq = true; else if (R.kind === "crossed") { targetX = -R.side * 5; have = true; } else if (R.kind === "recip") holdStill = true; }
       if (sim.line && !have) { targetX = sim.lineX(sim.s + sim.speed * 0.25); have = true; }
       for (const e of seg.events) {
-        if (have) break; if (e.consumed || e.s < sim.s) continue; const d = e.s - sim.s; if (d > look) break;
+        if (have) break; if (sim.used(e) || e.s < sim.s) continue; const d = e.s - sim.s; if (d > look) break;
         if (e.type === EV.Gate) { targetX = e.laneX[this.chooseLane(e.questionId, e.correctLane, e.laneX.length)]; have = true; }
         else if (e.type === EV.NodeRing || e.type === EV.RepairOrb) { targetX = e.x; have = true; }
         else if (e.type === EV.Obstacle) { if (e.width >= seg.halfWidth) { if (d < sim.speed * 0.3 + 1) jump = true; } else { targetX = e.x + (e.x <= 0 ? 1 : -1) * (e.width * 0.5 + 2.2); have = true; } }
@@ -705,7 +735,10 @@ const NR = (function () {
       if (!this.driftHeld && Math.abs(k) > 0.014 && sim.speed > 18) this.driftHeld = true; else if (this.driftHeld && Math.abs(k) < 0.006) this.driftHeld = false;
       if (this.driftHeld && !sim.drifting && Math.abs(steer) < 0.2) steer = sign(k) * 0.3;
       if (holdStill) return { steer, jump: false, drift: false, boost: false };
-      return { steer, jump, drift: this.driftHeld, boost: boostReq || (sim.boostEnergy > 0.45 && Math.abs(k) < 0.004) };
+      const o = this.o; this.t += 1 / 60;
+      if (o.noise) steer = clamp(steer + Math.sin(this.t * 1.7) * Math.sin(this.t * 0.61 + 2) * o.noise, -1, 1);
+      const drift = o.drift === false ? false : this.driftHeld, boostAt = o.boostAt == null ? 0.45 : o.boostAt;
+      return { steer, jump, drift, boost: boostReq || (sim.boostEnergy > boostAt && Math.abs(k) < (o.boostAt != null && o.boostAt < 0.3 ? 0.008 : 0.004)) };
     }
   }
 
@@ -731,6 +764,6 @@ const NR = (function () {
     }
   }
 
-  return { TUNE, VM_REST, VM_THRESH, V, add, sub, mul, len, norm, clamp, clamp01, lerp, sign, ZONE, EV, SE, STAGES, Sim, AutoPilot, Bank, Session, wrongExp, laneXs, CH9_BOSS };
+  return { SURVIVAL, TUNE, VM_REST, VM_THRESH, V, add, sub, mul, len, norm, clamp, clamp01, lerp, sign, ZONE, EV, SE, STAGES, Sim, AutoPilot, Bank, Session, wrongExp, laneXs, CH9_BOSS };
 })();
 if (typeof module !== "undefined") module.exports = NR;

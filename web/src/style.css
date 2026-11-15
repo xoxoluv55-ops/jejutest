@@ -280,6 +280,17 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 .lore-go{font-family:var(--title);font-size:20px!important;color:var(--pink)!important;text-align:center}
 .lore .big{align-self:center}
 .story-btn{background:linear-gradient(180deg,#5C3FD0,#3A2C8C)}
+/* ---------- 4.5: modes, rivals, time attack, survival ---------- */
+.panel-screen header{flex-wrap:wrap}
+.mode-tabs{margin-left:auto}.mode-tabs button{font-size:16px;padding:8px 14px}
+.mode-desc{font-size:15px;color:var(--dim);margin:-4px 0 2px}
+.stage.survival{border-color:var(--gold);background:linear-gradient(160deg,#4a2a08,#241C57)}
+.rank{display:none;flex-direction:column;gap:2px;background:rgba(20,15,56,.55);border:2px solid var(--line);border-radius:12px;padding:4px 10px;font-size:13px;min-width:150px}
+.rank.on{display:flex}
+.rank b{font-family:var(--title);font-weight:400;font-size:24px;color:var(--yellow)}
+.rank .row{display:flex;justify-content:space-between;gap:8px}.rank .me{color:var(--yellow)}
+.rank .tag{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+@media (max-height:520px){.rank{font-size:11px;padding:2px 8px;min-width:120px}.rank b{font-size:17px}.mode-tabs button{font-size:13px;padding:5px 9px}}
 /* ---------- 4.1: slimmer, see-through top boxes (same text size) ---------- */
 .qpanel,.apanel{width:auto;max-width:min(760px,66vw);padding:4px 10px 6px;background:rgba(16,12,48,.5);border-width:1.5px;border-radius:12px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .apanel.bad{background:rgba(48,12,28,.5)}
@@ -308,3 +319,11 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 .q-title b,.q-text,.opt,.a-title,.a-text,.a-wrong{text-shadow:0 1px 2px #000,0 0 6px rgba(0,0,0,.9)}
 #mi-prompt,#mi-lanes div{background:rgba(10,24,40,.3);backdrop-filter:none;-webkit-backdrop-filter:none;text-shadow:0 1px 2px #000,0 0 6px rgba(0,0,0,.9)}
 #mission{transition:opacity .2s}
+
+/* 4.4: near the gate only the box fades - text stays fully visible */
+.qpanel{opacity:1!important;background:rgba(16,12,48,calc(.28 * var(--bf,1)));border-color:rgba(255,92,200,calc(.15 + .85 * var(--bf,1)))}
+.qpanel .opt{background:rgba(36,28,87,calc(.22 * var(--bf,1)))}
+.qpanel .opt.cur{background:rgba(58,45,122,calc(.2 + .25 * var(--bf,1)))}
+#mission{opacity:1!important}
+#mission #mi-prompt{background:rgba(10,24,40,calc(.3 * var(--bf,1)))}
+#mission #mi-lanes div{background:rgba(20,16,56,calc(.3 * var(--bf,1)))}
