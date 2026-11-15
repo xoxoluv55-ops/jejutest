@@ -34,6 +34,7 @@ window.NR_MAIN = function () {
       }
       if (this.ctx.state !== "running") this.ctx.resume();
       if (this.want) this.play(this.want);
+      if (!this.pre) { this.pre = true; setTimeout(() => { try { this.buf("race"); this.buf("menu"); } catch (e) { } }, 400); }   // render loops while on the menu, not at race start
     },
     render(name, seconds, fn) {
       const R = 22050, n = Math.max(1, (seconds * R) | 0), b = this.ctx.createBuffer(1, n, R), d = b.getChannelData(0);
@@ -202,7 +203,12 @@ window.NR_MAIN = function () {
 
   const { M, frameAt, LANE, HEXS } = NRW; const LETTER = i => String.fromCharCode(65 + i);
   let world = null;
-  function buildWorld(stage, graph) { if (world) world.dispose(scene); world = NRW.build(scene, stage, graph, race || stage ? qbank : bank, qEff()); return world; }
+  function buildWorld(stage, graph) {
+    if (world) world.dispose(scene); world = NRW.build(scene, stage, graph, qbank, qEff());
+    // 4.0: shorter view distance on phones/tablets -> fewer chunks drawn (fog hides the cut)
+    const far = qEff() === "high" ? 340 : qEff() === "mid" ? 250 : 190; scene.fog.far = far; NRW.U.fogFar.value = far; camera.far = Math.max(600, far * 3); camera.updateProjectionMatrix();
+    return world;
+  }
 
   // bloom post-processing (skipped on "가볍게")
   function setupPost() {
@@ -222,9 +228,11 @@ window.NR_MAIN = function () {
   function starWrong() { SV.headShake = 0.9; }
   function setExpr(e, sec) { SV.expr = e; SV.exprT = sec; }
   function setBase(e) { SV.base = e; }
+  const FR1 = { p: new THREE.Vector3(), q: new THREE.Quaternion(), f: new THREE.Vector3() }, FR2 = { p: new THREE.Vector3(), q: new THREE.Quaternion(), f: new THREE.Vector3() };
+  const FXS = { ground: null, groundQ: null, fwd: null, height: 0, falling: false, drifting: false, tier: 0, speed01: 0, boost: false, visible: true };
   function poseStar(sim, dt, showcase) {
     SV.t += dt; const t = SV.t;
-    const fr = frameAt(sim.seg, sim.s, sim.x, NR.Sim.HOVER + sim.y); star.root.position.copy(fr.p);
+    const fr = NRW.frameAtInto(sim.seg, sim.s, sim.x, NR.Sim.HOVER + sim.y, FR1); star.root.position.copy(fr.p);
     // star faces the camera (face on +z, root looks back along -forward)
     star.root.quaternion.copy(fr.q);
     // lean into steering (smoothed), drift yaw, pitch with vertical speed, forward lean with speed
@@ -260,32 +268,34 @@ window.NR_MAIN = function () {
     // trail
     if (SV.hist.length < 40) SV.hist.unshift(star.root.position.clone()); else { const v = SV.hist.pop(); v.copy(star.root.position); SV.hist.unshift(v); }
     trail.forEach((m, i) => { const h = SV.hist[Math.min(SV.hist.length - 1, i * 3 + 2)]; if (!h) return; m.position.copy(h); m.quaternion.copy(camera.quaternion); const k = 1 - i / trail.length; m.position.y -= 0.25; m.scale.setScalar((0.35 + 0.9 * sim.speed01) * k + 0.05); m.visible = sim.speed > 8 && !showcase; });
-    const gf = frameAt(sim.seg, sim.s, sim.x, 0.02);
-    fx.update(dt, { ground: gf.p, groundQ: gf.q, fwd: gf.f, height: sim.y, falling: sim.vy < 0, drifting: sim.drifting && !showcase, tier: sim.driftTier, speed01: showcase ? 0 : sim.speed01, boost: boosting && !showcase, visible: true });
+    const gf = NRW.frameAtInto(sim.seg, sim.s, sim.x, 0.02, FR2);
+    FXS.ground = gf.p; FXS.groundQ = gf.q; FXS.fwd = gf.f; FXS.height = sim.y; FXS.falling = sim.vy < 0; FXS.drifting = sim.drifting && !showcase; FXS.tier = sim.driftTier; FXS.speed01 = showcase ? 0 : sim.speed01; FXS.boost = boosting && !showcase;
+    fx.update(dt, FXS);
     Snd.setLoops(sim.drifting && !showcase, sim.driftTier, boosting && !showcase && race && race.phase === "run");
   }
 
   //================== CAMERA (ChaseCamera.cs port) ==================
   const CAM = { fwd: null, look: 0, roll: 0, kick: 0, showcase: 0, shake: 0, pos: new THREE.Vector3(), snap: true };
+  const CS = { f: new THREE.Vector3(), pos: new THREE.Vector3(), anchor: new THREE.Vector3(), side: new THREE.Vector3(), right: new THREE.Vector3(), target: new THREE.Vector3(), look: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0) };
   function follow(sim, dt, running) {
-    const U = sim.forward, f = M(U); f.y *= 0.5; f.normalize();
-    if (!CAM.fwd || CAM.snap) CAM.fwd = f.clone(); else CAM.fwd.lerp(f, 1 - Math.pow(0.02, dt)).normalize();
-    const side = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), CAM.fwd).normalize(); // three: up x fwd = left-of-travel; mirror => screen right
+    const U = sim.forward, f = CS.f.set(-U.x, U.y * 0.5, U.z).normalize();
+    if (!CAM.fwd) CAM.fwd = f.clone(); if (CAM.snap) CAM.fwd.copy(f); else CAM.fwd.lerp(f, 1 - Math.pow(0.02, dt)).normalize();
+    const side = CS.side.crossVectors(CS.up, CAM.fwd).normalize(); // three: up x fwd = left-of-travel; mirror => screen right
     const boosting = sim.boosting || sim.turboTimer > 0; CAM.kick += NR.clamp((boosting ? 1 : 0) - CAM.kick, -dt * 3, dt * 3);
     const want = running ? NR.clamp(sim.curvature * 110 * NR.lerp(0.4, 1, sim.speed01), -2.6, 2.6) : 0;
     CAM.look += (want - CAM.look) * (1 - Math.exp(-3 * dt)); CAM.roll += ((sim.drifting ? -sim.driftDir * 4 : 0) - CAM.roll) * (1 - Math.exp(-4 * dt));
-    const pos = M(sim.position), anchor = pos.clone(); anchor.y -= Math.max(0, sim.y) * 0.5;
+    const P = sim.position, pos = CS.pos.set(-P.x, P.y, P.z), anchor = CS.anchor.copy(pos); anchor.y -= Math.max(0, sim.y) * 0.5;
     let target, look; const bossScale = world && world.stage.boss ? 1.15 : 1;
     // corner look: Unity side vector is +right; in three the mirrored right = -side
-    const right = side.clone().negate();
+    const right = CS.right.copy(side).negate();
     if (CAM.showcase > 0) {
       CAM.showcase -= dt; const a = NR.clamp01(CAM.showcase / 2.5);
-      target = pos.clone().addScaledVector(CAM.fwd, 4.2 + 1.5 * a).addScaledVector(right, 1.6 * a); target.y += 0.9; look = pos.clone(); look.y += 0.2;
+      target = CS.target.copy(pos).addScaledVector(CAM.fwd, 4.2 + 1.5 * a).addScaledVector(right, 1.6 * a); target.y += 0.9; look = CS.look.copy(pos); look.y += 0.2;
       CAM.fwd.copy(f);
     } else {
       const dist = (6.4 + 1.8 * CAM.kick) * bossScale;
-      target = anchor.clone().addScaledVector(CAM.fwd, -dist).addScaledVector(right, -CAM.look * 0.35); target.y += 2.6 * bossScale;
-      look = anchor.clone().addScaledVector(CAM.fwd, 8.5).addScaledVector(right, CAM.look); look.y += 1.0;
+      target = CS.target.copy(anchor).addScaledVector(CAM.fwd, -dist).addScaledVector(right, -CAM.look * 0.35); target.y += 2.6 * bossScale;
+      look = CS.look.copy(anchor).addScaledVector(CAM.fwd, 8.5).addScaledVector(right, CAM.look); look.y += 1.0;
     }
     if (CAM.snap) { CAM.pos.copy(target); CAM.snap = false; } else CAM.pos.lerp(target, 1 - Math.pow(0.0006, dt));
     camera.position.copy(CAM.pos);
@@ -414,7 +424,20 @@ window.NR_MAIN = function () {
       return Object.assign({}, q, { options: perm.map(k => q.options[k]), answer: perm.indexOf(q.answer), wrongExplanations: perm.map(k => w[k] || ""), perm });
     }));
   }
+  // 4.0 P0: build the stage behind a "preparing" screen, then pre-compile every shader and upload every
+  // texture BEFORE the intro/countdown. (iOS otherwise compiles them the first time an object comes into
+  // view - that is the hitch when the camera swings behind STAR-01 during "3, 2, 1".)
   function startStage(id) {
+    const ld = $("#loading"); ld.textContent = "구간 준비 중…"; ld.classList.remove("off"); race = null;
+    setTimeout(() => { try { buildStage(id); } finally { ld.classList.add("off"); } }, 30);
+  }
+  function warmUp() {
+    try {
+      world.root.traverse(o => { const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms) if (m.map) renderer.initTexture(m.map); });
+      renderer.compile(scene, camera); if (composer) composer.render(); else renderer.render(scene, camera);
+    } catch (e) { }
+  }
+  function buildStage(id) {
     qbank = shuffledBank();
     const stage = NR.STAGES.find(s => s.id === id) || NR.STAGES[0]; save.lastStage = stage.id; persist();
     const graph = stage.build(qbank); buildWorld(stage, graph);
@@ -422,17 +445,18 @@ window.NR_MAIN = function () {
     for (const seg of graph.segments) if (seg.fork) forkSegByQ.set(seg.fork.questionId, seg);
     let bossMax = 0; if (stage.boss) { for (const e of graph.allEvents()) if (e.type === NR.EV.Gate && e.tag === "boss") bossMax++; for (const s of graph.segments) if (s.fork) bossMax++; }
     race = { stage, graph, sim, learn, forkSegByQ, phase: "intro", t: 0, cd: 4, timeScale: 1, pending: null, pendingLanes: null, bossMax, bossHp: bossMax, finishT: 0, auto: AUTO ? new NR.AutoPilot() : null, paused: false, lastSection: "", combo: 0, comboT: 0, maxCombo: 0, score: 0, lastOrb: -9 };
-    $("#h-combo").classList.remove("on"); fx.hide();
+    $("#h-combo").classList.remove("on"); fx.hide(); $("#mission").classList.remove("on"); $("#reflex").classList.remove("on"); miEvent = null; miResT = 0;
     screen(""); show("#hud", true); show("#touch", false); show("#qpanel", false); show("#apanel", false); show("#result", false); show("#pause", false);
     $("#h-boss").classList.toggle("on", stage.boss); updateBoss();
     setSection(graph.start.name); countdown(""); storyQ.length = 0; storyT = 0; $("#h-story").style.display = "none"; $("#h-hint").style.display = "none";
     SV.victory = false; SV.spin = 0; SV.hist.length = 0; setBase("Focus"); setExpr("Normal", 0); CAM.snap = true; CAM.showcase = 999;
+    poseStar(sim, 0.016, true); follow(sim, 0.016, false); warmUp();
     Snd.play("race");
     const intro = C.story[stage.introStory];
     if (intro && !(AUTO && WARP > 1)) showDialog(intro, startCountdown); else startCountdown();
   }
   function startCountdown() {
-    if (!race) return; race.phase = "count"; race.t = 0; race.cd = 4; CAM.showcase = 2.6; setExpr("Joy", 2); SV.spinVel = 720; show("#touch", !race.auto);
+    if (!race) return; race.phase = "count"; race.t = 0; race.cd = 4; race.cdStart = performance.now(); CAM.showcase = 2.6; setExpr("Joy", 2); SV.spinVel = 720; show("#touch", !race.auto);
   }
   function setSection(n) { if (race && race.lastSection === n) return; if (race) race.lastSection = n; $("#h-section").textContent = n; }
   function updateBoss() { if (!race || !race.bossMax) return; $("#h-boss-fill").style.width = (100 * race.bossHp / race.bossMax) + "%"; }
@@ -454,7 +478,7 @@ window.NR_MAIN = function () {
     tickUi(dt);
     if (r.paused) { Snd.setHum(0, false); return; }
     if (r.phase === "count") {
-      r.t += dt; const n = 3 - Math.floor(r.t - 0.6);
+      r.t = (performance.now() - r.cdStart) / 1000; const n = 3 - Math.floor(r.t - 0.6);   // 4.0: wall clock, a slow frame can't stretch it
       if (r.t >= 0.6 && n !== r.cd && n >= 1 && n <= 3) { r.cd = n; countdown(String(n)); Snd.beep(); }
       if (r.t >= 3.6) { countdown("GO!"); Snd.chime(); r.phase = "run"; r.t = 0; hint(r.auto ? "AUTO 데모 주행 중" : "◀ ▶ 버튼 또는 화면 왼쪽을 좌우로 끌어서 조향! 코너에서는 드리프트를 누른 채 꺾으면 터보 충전.", 5); }
     } else if (r.phase === "run") {
@@ -472,7 +496,7 @@ window.NR_MAIN = function () {
       let sdt = dt * r.timeScale * (r.auto ? WARP : 1);
       const n = Math.max(1, Math.ceil(sdt / (1 / 120) - 1e-4)), h = sdt / n;
       for (let i = 0; i < n && r.phase === "run"; i++) { sim.step(inp, h); inp.jump = false; handleEvents(); }
-      updateLane();
+      updateLane(); updateMission();
     } else if (r.phase === "finish") {
       r.finishT += dt; if (r.finishT > 3.2) { r.phase = "done"; showResult(); }
     }
@@ -531,6 +555,49 @@ window.NR_MAIN = function () {
     setText("#h-score2", r.score);
   }
 
+  // ---------- 4.0 mission UI ----------
+  let miEvent = null, miResT = 0;
+  function nextSort() {
+    const sim = race.sim; for (const e of sim.seg.events) { if (e.type !== NR.EV.Sort || e.consumed || e.s < sim.s) continue; return e.s - sim.s < 230 ? e : null; } return null;
+  }
+  function updateMission() {
+    const el = $("#mission"), sim = race.sim;
+    const low = $("#qpanel").classList.contains("on") || $("#apanel").classList.contains("on"); if (el.classList.contains("low") !== low) el.classList.toggle("low", low);
+    if (miResT > 0) { miResT -= 1 / 60; return; }
+    const e = nextSort();
+    if (e !== miEvent && miEvent !== "line") {
+      miEvent = e; el.classList.remove("res", "bad");
+      if (!e) { el.classList.remove("on"); }
+      else {
+        el.classList.add("on"); $("#mi-prompt").textContent = (e.tag === "cross" ? "🧭 " : "🎯 ") + e.prompt + (e.total ? `  (${e.index + 1}/${e.total})` : "");
+        $("#mi-lanes").innerHTML = e.labels.map((l, i) => `<div style="border-color:${HEXS(LANE[i % 4])}">${e.tag === "cross" ? (i ? "오른쪽 ▶" : "◀ 왼쪽") : esc(l)}</div>`).join("");
+      }
+    }
+    if (miEvent && miEvent !== "line" && sim.seg.events.includes(miEvent)) { const lane = NR.Sim.nearest(miEvent.laneX, sim.x); $$("#mi-lanes div").forEach((d, i) => d.classList.toggle("cur", i === lane)); }
+    if (sim.line) { el.classList.add("on"); el.classList.remove("res", "bad"); const L = sim.line, pct = L.total > 0 ? Math.round(L.inside / L.total * 100) : 100; setText("#mi-prompt", `⚖ 소뇌 균형 라인 — 선 위 ${pct}% (목표 60%)`); if (miEvent !== "line") $("#mi-lanes").innerHTML = ""; miEvent = "line"; domCache.delete("#mi-prompt"); }
+    else if (miEvent === "line") { miEvent = null; el.classList.remove("on"); }
+  }
+  function missionFlash(ok, text) { const el = $("#mission"); el.classList.add("on"); el.classList.toggle("res", ok); el.classList.toggle("bad", !ok); $("#mi-prompt").textContent = text; $("#mi-lanes").innerHTML = ""; miEvent = null; miResT = 1.6; }
+  const REFLEX = {
+    stretch: { icon: "🔨", name: "신장반사!", act: "⚡ 부스트!", btn: "boost", why: "근방추가 늘어나면 Ia 감각신경 → α운동신경세포 → 같은 근육 수축 (단일시냅스 반사)" },
+    flex: { icon: "📌", name: "굽힘(회피)반사!", act: "⤒ 점프!", btn: "jump", why: "통각 → 척수 사이신경세포 → 굽힘근 수축으로 다리를 들어 올리고 폄근은 억제" },
+    crossed: { icon: "📌", name: "교차폄반사!", act: "", btn: null, why: "자극받은 다리는 굽히고, 반대쪽 다리는 펴서 체중을 받쳐요 (척수에서 교차)" },
+    recip: { icon: "✋", name: "상호억제!", act: "아무것도 누르지 마!", btn: null, why: "작용근이 수축할 때 억제성 사이신경세포가 길항근을 이완시켜요" },
+  };
+  let rfTimer = 0;
+  function showReflex(kind, side) {
+    const R = REFLEX[kind]; if (!R) return; const el = $("#reflex");
+    $("#rf-icon").textContent = R.icon; $("#rf-name").textContent = R.name; $("#rf-act").textContent = kind === "crossed" ? (side > 0 ? "◀ 왼쪽으로 피해!" : "오른쪽으로 피해! ▶") : R.act;
+    el.classList.remove("cue"); el.classList.add("on"); Snd.tone("square", 1200, 1500, 0.12, 0.25);
+    clearTimeout(rfTimer); rfTimer = setTimeout(() => { el.classList.add("cue"); if (R.btn) { const b = document.querySelector(`.tb[data-k="${R.btn}"]`); if (b) b.classList.add("cue"); } }, 380);   // name first, action cue a moment later
+  }
+  function endReflex(kind, ok) {
+    const R = REFLEX[kind]; clearTimeout(rfTimer); $("#reflex").classList.remove("on", "cue"); $$(".tb.cue").forEach(b => b.classList.remove("cue"));
+    if (!R) return;
+    if (ok) { Snd.fire(); comboAdd(2, 250, "반사"); fx.burst(star.root.position, "correct"); missionFlash(true, "✔ " + R.name.replace("!", "") + " — " + R.why); }
+    else { Snd.thud(); comboBreak(); starWrong(); missionFlash(false, "✘ " + R.name.replace("!", "") + " — " + R.why); }
+  }
+
   function handleEvents() { const sim = race.sim; for (const e of sim.events) handle(e); sim.events.length = 0; }
   function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); starCorrect(); fx.burst(star.root.position, "correct"); } else { Snd.thud(); setExpr("Wrong", 2.2); starWrong(); CAM.shake = 0.15; } }
   function bossAnswer(ok) {
@@ -553,13 +620,17 @@ window.NR_MAIN = function () {
         showAnswer(q, e.lane, e.correct, extra, e.correct ? 7 : 11); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
       case S.ForkChosen: {
+        if (!e.tag) {   // 4.0 risk/reward split (no question)
+          if (e.lane === 1) { toast("위험 루트! 레이저·NULL 블록 · 오브 ×3", "#FF4D6D", 1.6); comboAdd(1, 100, "도전"); } else toast("안전 루트", "#5CFF9D", 1.2);
+          break;
+        }
         const q = qbank.get(e.tag); r.learn.answer(e.tag, e.lane, sim.raceTime);
         world.forkResult(e.tag, e.lane);
         if (r.stage.boss) bossAnswer(e.correct); feedback(e.correct); if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
         showAnswer(q, e.lane, e.correct, e.correct ? "정답 경로: 지름길 + 신호 에너지 보너스!" : "복습 구간에 진입했습니다. 해설을 읽으며 천천히 이동하세요.", e.correct ? 7 : 12);
         if (!e.correct) toast("복습 구간 - 속도 저하", "#FF8A3D", 2); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
-      case S.RingHit: { world.ringHit(e.src, true); Snd.coin(); comboAdd(1, 60); fx.burst(star.root.position, "land"); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
+      case S.RingHit: { world.ringHit(e.src, true); Snd.coin(); comboAdd(1, e.correct ? 120 : 60, e.correct ? "PERFECT" : ""); if (e.correct) toast("정중앙 PERFECT! 결절에서 활동전위 재생성", "#9CFFEA", 0.7); fx.burst(star.root.position, "land"); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
       case S.RingMiss: { world.ringHit(e.src, false); if (sim.ringsTotal > 1) toast("결절을 놓쳤어요 - 연속 끊김", "#B4AEDB", 0.9); break; }
       case S.ObstacleHit: CAM.shake = 0.35; starHit(); comboBreak(); fx.burst(star.root.position, "hit"); setExpr("Hurt", 1.2); Snd.thud(); toast("NULL 충돌! 전도 지연", "#FF4D6D", 1.2); break;
       case S.OrbCollected: case S.RepairOrb: {
@@ -578,6 +649,27 @@ window.NR_MAIN = function () {
       case S.Checkpoint: toast("체크포인트", "#9B5CFF", 1); break;
       case S.EnterSegment: setSection(sim.seg.zone === NR.ZONE.Review ? "복습 구간" : sim.seg.zone === NR.ZONE.Shortcut ? "지름길" : sim.seg.name); break;
       case S.Finish: finish(); break;
+      // ---------- 4.0 racing pieces & chapter missions ----------
+      case S.Pad: if (e.tag === "boost") { Snd.boostStart(); toast("부스트 패드!", "#FFD34D", 0.7); } else { Snd.tone("square", 300, 1400, 0.3, 0.2); toast("점프대!", "#2EE6D6", 0.7); SV.squashVel += 6; } comboAdd(1, 50); fx.burst(star.root.position, "land"); break;
+      case S.RingCombo: {
+        const t = e.tier, msg = t === 10 ? "결절 10연속 — SUPER COMBO!!" : t === 5 ? "결절 5연속 — 강력 부스트!" : "결절 3연속 — 부스트!";
+        toast(msg, t === 10 ? "#FF5CC8" : "#FFD34D", 1.5); Snd.fire(); fx.burst(star.root.position, t === 10 ? "fire" : "drift", t === 10 ? 3 : 2); NRW.U.uFire.value = t === 10 ? 1 : 0.5; comboAdd(t === 10 ? 5 : 2, t * 60, "도약전도");
+        if (t === 10) Voice.say("슈퍼 콤보! 결절마다 활동전위가 다시 만들어져서 신호가 껑충껑충 뛰고 있어!", { mode: "idle" });
+        break;
+      }
+      case S.SortResult: {
+        const ok = e.correct, src = e.src; world.sortResult(src, e.lane);
+        if (ok) { Snd.chime(); comboAdd(1, 200, src.tag === "cross" ? "교차" : "포털"); fx.burst(star.root.position, "correct"); } else { Snd.thud(); comboBreak(); starWrong(); }
+        missionFlash(ok, (ok ? "✔ " : "✘ ") + src.why); break;
+      }
+      case S.ReflexStart: showReflex(e.tag, e.src.side); break;
+      case S.ReflexResult: endReflex(e.tag, e.correct); break;
+      case S.LineResult: {
+        const pct = Math.round(parseFloat(e.tag) * 100);
+        if (e.correct) { toast("균형 유지 " + pct + "% — 소뇌 보정 성공! 가속", "#5CFF9D", 2); Snd.fire(); comboAdd(2, 300, "균형"); Voice.say("잘했어! 소뇌는 이렇게 동작 오차를 계속 고쳐 줘.", { mode: "idle" }); }
+        else { toast("균형 유지 " + pct + "% — 60% 이상이면 성공", "#FF8A3D", 2); comboBreak(); }
+        break;
+      }
       case S.Psp: {
         world.pspCollect(e.src); const ex = e.tag === "epsp"; if (e.correct && ((ex && sim.mission !== "inhibit") || (!ex && sim.mission === "inhibit"))) comboAdd(1, 30);
         if (!e.correct) { toast("불응기! 지금은 반응이 없어요", "#B4AEDB", 0.8); break; }
@@ -606,8 +698,23 @@ window.NR_MAIN = function () {
       case "hint":
         if (arg === "corner") hint("코너 진입! 안쪽으로 조향해 벽에 부딪히지 않게 하세요.", 4);
         else if (arg === "jump") hint("NULL 교란 구간! 큰 파동은 [점프], 작은 블록은 피하세요.", 4);
+        else if (arg === "scurve") hint("S자 커브! 리듬 타고 좌우로 — 오브 라인을 따라가요.", 3);
+        else if (arg === "jumppad") hint("점프대! 가운데로 올라타면 높이 날아 장애물을 넘어요.", 3);
+        else if (arg === "movers") hint("움직이는 NULL 블록! 좌우로 오가니 빈틈을 노려요.", 3);
+        else if (arg === "lasers") hint("레이저 장벽! 빨간 빛이 켜져 있을 땐 점프로 넘거나 꺼질 때 통과.", 4);
+        else if (arg === "narrow") hint("좁은 통로! 벽에 부딪히면 콤보가 끊겨요.", 3);
+        else if (arg === "dzone") hint("드리프트 충전 구간! 여기선 드리프트 충전이 1.8배 빨라요.", 4);
+        else if (arg === "rings") hint("말이집 구간! 결절(링)을 3·5·10연속 통과하면 부스트 — 정중앙이면 PERFECT!", 4);
+        else if (arg === "split") hint("갈래 길! 왼쪽은 안전, 오른쪽은 위험하지만 오브 3배.", 4);
         else if (arg === "drift") hint("급커브! [드리프트]를 누른 채 커브 방향으로 조향 → 놓으면 미니 터보!", 6);
         break;
+      case "mission":
+        if (arg.startsWith("sort:")) { const t = { nuclei: "뇌줄기 신경핵 탐험! 지금 층에 있는 신경핵 차선으로!", relay: "시상 중계 미션! 감각 신호를 맞는 중계핵으로 보내!", cortex: "대뇌 기능 포털! 명령에 맞는 겉질 영역으로!", cranial: "12뇌신경 포털! 동작에 맞는 뇌신경으로!" }[arg.slice(5)]; hint(t, 4); Voice.say(t, { mode: Voice.has("exp") ? "queue" : "replace" }); }
+        else if (arg.startsWith("cross:")) { const t = { dcml: "왼다리 진동 감각을 실어 나르자! 뒤기둥-안쪽섬유띠계는 어디서 교차할까?", stt: "왼손 통증 신호! 앞가쪽계는 언제 건너갈까?", cst: "왼손을 움직이는 명령! 겉질척수로는 어디서 교차할까?" }[arg.slice(6)]; hint(t + " 층마다 맞는 쪽 차선으로 드리프트!", 5); Voice.say(t, { mode: Voice.has("exp") ? "queue" : "replace" }); }
+        else if (arg === "reflex") { hint("척수반사 긴급 미션! 자극이 보이면 바로 반응 — 신장=부스트, 굽힘=점프, 교차폄=반대쪽으로, 상호억제=아무것도 누르지 않기. (실제 반사는 수십 ms로 훨씬 빨라요)", 6); Voice.say("척수반사 미션이야! 자극이 나오면 바로 반응해!", { mode: "replace" }); }
+        break;
+      case "line": if (arg === "on") { hint("소뇌 균형 라인! NULL이 몸을 흔들어요(운동실조 흉내). 빛나는 선 위에 머물러 오차를 보정하세요.", 5); Voice.say("빛나는 선을 따라가! 흔들려도 소뇌처럼 바로바로 고쳐 줘!", { mode: "idle" }); } break;
+      case "dzone": if (arg === "on") toast("드리프트 충전 ×1.8", "#FFB627", 1.2); break;
       case "integ":
         if (arg === "excite") hint("EPSP 가중 구간! 초록 ＋ 를 연달아 먹으면 막전위가 올라가 역치(-55 mV)에서 발화 → 가속! 파랑 − 는 피하기", 6);
         else if (arg === "inhibit") hint("IPSP 억제 구간! NULL이 막전위를 계속 올려요. 파랑 − 를 먹어서 역치 아래로 지키기! 초록 ＋ 는 피하기", 6);
@@ -729,6 +836,8 @@ window.NR_MAIN = function () {
       ["문제 생각 시간", "문제가 뜨면 레이스가 조금 느려져요 (기록 손해 없음)", "thinkSlow", [[0.5, "느리게"], [0.75, "조금"], [1, "끄기"]]],
       ["도움말 힌트", "", "showHints", [[true, "켜기"], [false, "끄기"]]],
       ["그래픽 품질", "버벅이면 '가볍게'", "quality", [["low", "가볍게"], ["auto", "자동"], ["high", "선명"]]],
+      ["프레임 제한", "끊기면 30 FPS로 고정 (조작은 그대로 빠르게)", "fpsCap", [[0, "제한 없음"], [30, "30 FPS 안정"]]],
+      ["성능 표시", "FPS·프레임 시간·드로우콜 표시", "showPerf", [[false, "끄기"], [true, "켜기"]]],
     ];
     el.innerHTML = (compact ? "" : voiceRow()) + rows.map(([t, d, k, opts]) => `<div class="set"><div>${t}${d ? `<small>${d}</small>` : ""}</div><div class="opts">${opts.map(([v, l]) => `<button data-k="${k}" data-v='${JSON.stringify(v)}' class="${save[k] === v ? "on" : ""}">${l}</button>`).join("")}</div></div>`).join("") + (compact ? "" : `<div class="set"><div>기록 초기화<small>최고 기록·도감·오답 노트를 지워요</small></div><div class="opts"><button data-reset="1">초기화</button></div></div>`);
     el.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => {
@@ -800,10 +909,25 @@ window.NR_MAIN = function () {
     const dt = Math.min(0.1, (now - last) / 1000); last = now; tAll += dt; NRW.U.uTime.value = tAll;
     watchFps(dt);
     NRW.U.uFire.value = Math.max(0, NRW.U.uFire.value - dt * 1.2); NRW.U.uSeize.value = Math.max(0, NRW.U.uSeize.value - dt * 1.5);
-    if (race) tickRace(dt); else tickMenu(dt);
+    if (race) tickRace(dt); else tickMenu(dt);        // input + simulation every display frame
+    // 4.0: optional 30 FPS render cap (steadier on weak devices); simulation/input are not capped
+    renderAcc += dt; if (save.fpsCap === 30 && renderAcc < 1 / 30 - 0.004) return;
+    const rdt = renderAcc; renderAcc = 0;
     NRW.U.uStar.value.copy(star.root.position);
-    if (world) world.update(dt, tAll, race ? race.sim : null);
+    if (world) world.update(rdt, tAll, race ? race.sim : null);
+    const t0 = performance.now();
     if (composer) composer.render(); else renderer.render(scene, camera);
+    perfSample(rdt, performance.now() - t0);
+  }
+  // performance overlay (설정 › 성능 표시): fps, frame time, draw calls, triangles, GPU objects, JS heap
+  let renderAcc = 0; const PF = { n: 0, acc: 0, max: 0, rms: 0, t: 0 };
+  function perfSample(dt, renderMs) {
+    if (!save.showPerf) { if (PF.on) { $("#perf").style.display = "none"; PF.on = false; } return; }
+    PF.on = true; PF.n++; PF.acc += dt; PF.max = Math.max(PF.max, dt); PF.rms += renderMs; PF.t += dt;
+    if (PF.t < 0.5) return;
+    const i = renderer.info, mem = performance.memory, el = $("#perf"); el.style.display = "block";
+    el.textContent = `${Math.round(PF.n / PF.acc)} fps · 평균 ${(PF.acc / PF.n * 1000).toFixed(1)} ms · 최대 ${(PF.max * 1000).toFixed(0)} ms · 렌더 ${(PF.rms / PF.n).toFixed(1)} ms\n드로우콜 ${i.render.calls} · 삼각형 ${(i.render.triangles / 1000).toFixed(0)}k · 지오메트리 ${i.memory.geometries} · 텍스처 ${i.memory.textures} · 셰이더 ${i.programs ? i.programs.length : "-"}${mem ? " · JS " + (mem.usedJSHeapSize / 1048576).toFixed(0) + " MB" : ""} · 화질 ${qEff()} · DPR ${renderer.getPixelRatio().toFixed(2)}`;
+    PF.n = PF.acc = PF.max = PF.rms = PF.t = 0;
   }
 
   // boot

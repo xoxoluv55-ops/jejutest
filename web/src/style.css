@@ -249,3 +249,23 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 .combo.pop b{animation:pop .25s ease-out}
 @keyframes pop{0%{transform:scale(1.5)}100%{transform:scale(1)}}
 @media (max-height:520px){.combo{top:52px}.combo b{font-size:30px}.combo span{font-size:10px}.combo i{font-size:13px}.dragzone span{bottom:96px}.dragzone .dragrail{bottom:110px}}
+
+/* ---------- 4.0: perf overlay, mission banner, reflex prompt ---------- */
+.perf{position:absolute;left:8px;bottom:8px;z-index:40;display:none;white-space:pre;font:11px/1.35 ui-monospace,Menlo,monospace;color:#9CFFEA;background:rgba(0,0,0,.65);padding:4px 8px;border-radius:6px;pointer-events:none}
+.mission{position:absolute;left:50%;transform:translateX(-50%);top:calc(max(8px,env(safe-area-inset-top)) + 64px);width:min(760px,70vw);display:none;flex-direction:column;align-items:center;gap:5px;pointer-events:none}
+.mission.on{display:flex}
+#mi-prompt{font-family:var(--title);font-size:21px;color:#fff;background:rgba(10,24,40,.82);border:2px solid var(--cyan);border-radius:14px;padding:4px 14px;text-align:center}
+#mi-lanes{display:flex;gap:6px;width:100%}
+#mi-lanes div{flex:1;text-align:center;font-size:14px;padding:3px 6px;border-radius:10px;background:rgba(20,16,56,.8);border:2px solid #444;color:#E8E6FF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mi-lanes div.cur{background:rgba(58,45,122,.95);box-shadow:0 0 12px rgba(255,211,77,.6)}
+.mission.res #mi-prompt{border-color:var(--green)}.mission.bad #mi-prompt{border-color:var(--red)}
+.reflex{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);display:none;flex-direction:column;align-items:center;gap:2px;pointer-events:none;text-shadow:0 3px 0 #2A1640,0 0 18px rgba(255,180,40,.8)}
+.reflex.on{display:flex;animation:rfin .25s ease-out}
+#rf-icon{font-size:64px;line-height:1}#rf-name{font-family:var(--title);font-size:30px;color:var(--yellow)}#rf-act{font-family:var(--title);font-size:24px;color:#fff;background:rgba(40,18,6,.8);border:2px solid var(--gold);border-radius:14px;padding:2px 14px;opacity:0;transition:opacity .15s}
+.reflex.cue #rf-act{opacity:1}
+@keyframes rfin{0%{transform:translate(-50%,-50%) scale(1.6);opacity:0}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+.tb.cue{animation:cue .35s infinite alternate;box-shadow:0 0 22px #FFD34D;border-color:#FFD34D}
+@keyframes cue{to{transform:scale(1.12)}}
+@media (max-height:520px){.mission{top:48px;width:64vw}#mi-prompt{font-size:15px;padding:3px 10px}#mi-lanes div{font-size:11px}#rf-icon{font-size:42px}#rf-name{font-size:20px}#rf-act{font-size:16px}}
+.mission.low{top:auto;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 64px)}
+@media (max-height:520px){.mission.low{bottom:40px}}

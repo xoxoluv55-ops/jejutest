@@ -13,12 +13,13 @@ function run(g, mode) {
       if (e.type === NR.SE.Trigger && e.tag === "synapse:minigame") sim.applySynapseResult(true);
       if (e.type === NR.SE.DriftEnd) { if (e.tier > 0) dOk++; else if (e.tag === "fail") dFail++; }
       if (e.type === NR.SE.ObstacleDodged) dodge++;
+      if (e.type === NR.SE.LineResult) mis.push("line" + e.tag);
       if (e.type === NR.SE.MissionEnd) mis.push(e.tag[0] + (e.correct ? "+" : "-"));
       if (isNaN(sim.x)) throw "NaN";
     }
     sim.events.length = 0;
   }
-  return `${sim.finished ? "fin" : "DNF"} ${sim.raceTime.toFixed(1)}s ${c}/${c + w} walls ${sim.wallHits} obs ${sim.obstacleHits} rings ${sim.ringsHit}/${sim.ringsTotal} AP ${sim.fires} zones ${mis.join(",")} drift ${dOk}/${dFail}fail dodge ${dodge}`;
+  return `${sim.finished ? "fin" : "DNF"} ${sim.raceTime.toFixed(1)}s ${c}/${c + w} walls ${sim.wallHits} obs ${sim.obstacleHits} rings ${sim.ringsHit}/${sim.ringsTotal} AP ${sim.fires} zones ${mis.join(",")} sort ${sim.sortsOk}/${sim.sorts} reflex ${sim.reflexOk}/${sim.reflexN} super ${sim.superCombos} drift ${dOk}/${dFail}fail dodge ${dodge}`;
 }
 for (const st of NR.STAGES) {
   const g = st.build(bank);

@@ -22,6 +22,12 @@ window.NRW_INIT = function () { window.NRW = (function () {
     const z = f.clone().negate(), xa = new THREE.Vector3().crossVectors(up, z).normalize(), ya = new THREE.Vector3().crossVectors(z, xa);
     return { p, q: new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, z)), f };
   }
+  // 4.0: same as frameAt but writes into reusable objects (no garbage per frame)
+  const _fa = { up: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(), x: new THREE.Vector3(), y: new THREE.Vector3(), m: new THREE.Matrix4() };
+  function frameAtInto(seg, s, x, y, out) {
+    const p = seg.worldPos(s, x, y), t = seg.tangentAt(s); out.p.set(-p.x, p.y, p.z); out.f.set(-t.x, t.y, t.z);
+    _fa.z.copy(out.f).negate(); _fa.x.crossVectors(_fa.up, _fa.z).normalize(); _fa.y.crossVectors(_fa.z, _fa.x); out.q.setFromRotationMatrix(_fa.m.makeBasis(_fa.x, _fa.y, _fa.z)); return out;
+  }
   const short = (s, n = 15) => s.length > n ? s.slice(0, n - 1) + "…" : s;
   function labelTex(lines, opts = {}) {
     const W = opts.w || 512, H = opts.h || 256, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
@@ -163,7 +169,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
   }
   const G = {
     ico: new THREE.IcosahedronGeometry(1, 2), ico1: new THREE.IcosahedronGeometry(1, 1), cyl: new THREE.CylinderGeometry(0.55, 1, 1, 6, 1, true), cylS: new THREE.CylinderGeometry(1, 1, 1, 6, 1, true),
-    cap: new THREE.CapsuleGeometry(1, 2.4, 4, 8), box: new THREE.BoxGeometry(1, 1, 1), tor: new THREE.TorusGeometry(1, 0.08, 6, 28),
+    cap: new THREE.CapsuleGeometry(1, 2.4, 4, 8), cone: new THREE.ConeGeometry(1, 1, 8), box: new THREE.BoxGeometry(1, 1, 1), tor: new THREE.TorusGeometry(1, 0.08, 6, 28),
   };
   const UPV = new THREE.Vector3(0, 1, 0);
   const mtx = (p, q, s) => new THREE.Matrix4().compose(p, q || new THREE.Quaternion(), s instanceof THREE.Vector3 ? s : new THREE.Vector3(s, s, s));
@@ -191,7 +197,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
 
   function build(scene, stage, graph, bank, quality) {
     const root = new THREE.Group(); scene.add(root);
-    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forks: new Map(), nodes: [], anim: [], flashes: [], particles: null, nt: null, boss: null, bounds: new THREE.Box3(), low: quality === "low", mid: quality === "mid", psp: [] };
+    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forks: new Map(), nodes: [], anim: [], flashes: [], particles: null, nt: null, boss: null, bounds: new THREE.Box3(), low: quality === "low", mid: quality === "mid", psp: [], movers: [], lasers: [], sorts: [], padsList: [] };
     const B = new Batch(), Z = NR.ZONE;
     for (const seg of graph.segments) {
       const col = segColor(seg), hw = seg.halfWidth, [Rw, H] = tubeRadius(hw);
@@ -209,7 +215,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
       if (seg.fork) buildForkPortals(W, B, seg, bank);
       for (const e of seg.events) buildEvent(W, B, seg, e, bank);
     }
-    buildOrbs(W); buildBackdrop(W, B, stage); buildThemeDecor(W, B, stage);
+    buildOrbs(W); buildPspClouds(W); buildBackdrop(W, B, stage); buildThemeDecor(W, B, stage);
     if (graph.segments.some(s => s.theme === "boss")) buildBoss(W);
     B.flush(root); buildParticles(W);
     return Object.assign(W, api(W));
@@ -363,14 +369,15 @@ window.NRW_INIT = function () { window.NRW = (function () {
     W.root.add(im);
   }
   function buildForkPortals(W, B, seg, bank) {
-    const q = bank.get(seg.fork.questionId), lx = seg.fork.laneX, signs = [];
+    const free = seg.fork.free, q = free ? { options: seg.fork.labels } : bank.get(seg.fork.questionId), lx = seg.fork.laneX, signs = [];
+    const laneCol = i => free ? (i ? 0xFF4D6D : 0x5CFF9D) : LANE[i % 4];
     laneStrips(W, B, seg, seg.length - 150, seg.length, lx);
     lx.forEach((x, i) => {   // identical portal for every branch: no hint which one is the shortcut
       const sp = Math.abs(lx[1] - lx[0]) / 2 - 0.3, pts = []; for (let k = 0; k <= 16; k++) { const t = Math.PI * k / 16; pts.push(M(seg.worldPos(seg.length - 2, x + Math.cos(t) * sp, Math.sin(t) * 6.5))); }
-      B.add(glow(LANE[i % 4], 0.95), new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.28, 6, false));
-      signs.push(hologram(W, seg, seg.length - 3, x, 8.4, labelTex([LETTER(i), short(q.options[i])], { big: true, border: HEXS(LANE[i % 4]), bigColor: HEXS(LANE[i % 4]) }), Math.min(5.6, sp * 2), 2.8));
+      B.add(glow(laneCol(i), 0.95), new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.28, 6, false));
+      signs.push(hologram(W, seg, seg.length - 3, x, 8.4, labelTex(free ? [i ? "위험" : "안전", q.options[i]] : [LETTER(i), short(q.options[i])], { big: true, border: HEXS(laneCol(i)), bigColor: HEXS(laneCol(i)) }), Math.min(5.6, sp * 2), 2.8));
     });
-    W.forks.set(seg.fork.questionId, { seg, signs });
+    if (!free) W.forks.set(seg.fork.questionId, { seg, signs });
   }
 
   function buildEvent(W, B, seg, e, bank) {
@@ -384,9 +391,46 @@ window.NRW_INIT = function () { window.NRW = (function () {
       const w = Math.min(5.6, Math.abs(e.laneX[1] - e.laneX[0]) * 0.92);
       const signs = e.laneX.map((lx, i) => hologram(W, seg, e.s - 0.5, lx, 4.6, labelTex([LETTER(i), short(q ? q.options[i] : "")], { big: true, border: HEXS(LANE[i % 4]), bigColor: HEXS(LANE[i % 4]) }), w, w * 0.5));
       W.gates.push({ e, signs });
-    } else if (e.type === E.Epsp || e.type === E.Ipsp) {
-      const ex = e.type === E.Epsp, sp = new THREE.Sprite(pspMat(ex)); sp.scale.set(1.7, 1.7, 1); sp.position.copy(M(seg.worldPos(e.s, e.x, NR.Sim.HOVER + 0.3)));
-      W.root.add(sp); W.psp.push({ e, sp, y: sp.position.y, ph: Math.random() * 6 });
+    } else if (e.type === E.JumpPad) {
+      const jump = e.tag !== "boost", w = Math.min(e.width, hw * 2 - 1), f = frameAt(seg, e.s, e.x, 0.05), grp = new THREE.Group(); grp.position.copy(f.p); grp.quaternion.copy(f.q);
+      const pad = new THREE.Mesh(new THREE.PlaneGeometry(w, jump ? 7 : 9), padMat(jump)); pad.rotation.x = -Math.PI / 2 + (jump ? 0.22 : 0); pad.position.y = jump ? 0.75 : 0.02; grp.add(pad);
+      if (jump) { const side = new THREE.Mesh(new THREE.BoxGeometry(w, 0.15, 7), solid(0x2EE6D6, 0.5)); side.rotation.x = 0.22; side.position.y = 0.68; grp.add(side); }
+      W.root.add(grp);
+    } else if (e.type === E.Mover) {
+      const grp = new THREE.Group(), blk = new THREE.Mesh(new THREE.BoxGeometry(e.width, e.height + 0.4, 1.6), new THREE.MeshLambertMaterial({ color: 0x14020a, emissive: 0x7a0028 }));
+      blk.add(new THREE.LineSegments(new THREE.EdgesGeometry(blk.geometry), new THREE.LineBasicMaterial({ color: 0xFF4D6D }))); blk.position.y = (e.height + 0.4) / 2; grp.add(blk);
+      const f = frameAt(seg, e.s, 0, 0); grp.quaternion.copy(f.q); W.root.add(grp);
+      W.movers.push({ e, grp, p0: f.p.clone(), r: M(seg.rightAt(e.s)) });
+      const rail = sweep(seg, e.s - 0.4, e.s + 0.4, 0.4, [[-e.amp - e.width / 2, 0.04], [e.amp + e.width / 2, 0.04]]); W.root.add(new THREE.Mesh(rail, glow(0xFF4D6D, 0.35)));
+    } else if (e.type === E.Laser) {
+      const f = frameAt(seg, e.s, 0, 0), grp = new THREE.Group(); grp.position.copy(f.p); grp.quaternion.copy(f.q);
+      for (const sx of [-1, 1]) { const post = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 3.2, 8), solid(0x5a1020, 0.6)); post.position.set(sx * (hw + 0.4), 1.6, 0); grp.add(post); }
+      const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, hw * 2 + 0.8, 8), glow(0xFF2244, 1)); beam.rotation.z = Math.PI / 2; beam.position.y = 0.8; grp.add(beam);
+      const beam2 = beam.clone(); beam2.position.y = 1.25; grp.add(beam2);
+      const warn = new THREE.Mesh(new THREE.PlaneGeometry(hw * 2, 3), glow(0xFF2244, 0.25)); warn.rotation.x = -Math.PI / 2; warn.position.set(0, 0.05, 4); grp.add(warn);
+      W.root.add(grp); W.lasers.push({ e, beams: [beam, beam2], warn });
+    } else if (e.type === E.Sort) {
+      const cross = e.tag === "cross", gc = cross ? 0x5C9CFF : 0x2EE6D6;
+      W.root.add(new THREE.Mesh(archTube(seg, e.s, Rw - 0.4, H - 0.4, 0.4), glow(gc, 0.95)));
+      laneStrips(W, B, seg, e.s - 90, e.s, e.laneX);
+      const w = Math.min(6.4, Math.abs(e.laneX[1] - e.laneX[0]) * 0.92);
+      const signs = e.laneX.map((lx, i) => hologram(W, seg, e.s - 0.5, lx, 4.4, labelTex(cross ? [i ? "▶ 오른쪽" : "왼쪽 ◀"] : [e.labels[i]], { w: 512, h: 160, border: HEXS(LANE[i % 4]), bg: "rgba(10,14,40,.9)" }), w, w * 0.31));
+      W.sorts.push({ e, signs });
+    } else if (e.type === E.Trigger && /^reflex:/.test(e.tag)) {
+      const k = e.tag.slice(7), txt = { stretch: ["🔨 무릎 반사망치", "신장반사"], flex: ["📌 압정을 밟았다!", "굽힘반사"], crossed: ["📌 한쪽 발에 압정!", "교차폄반사"], recip: ["✋ 길항근 억제", "상호억제"] }[k];
+      hologram(W, seg, Math.min(seg.length - 1, e.s + 45), 0, H - 2.4, labelTex(txt, { w: 640, h: 220, border: "#FFB627", bg: "rgba(40,18,6,.88)" }), 7, 2.4);
+    } else if (e.type === E.Trigger && e.tag === "line:on") {
+      const s0 = e.s, s1 = seg.length - 12, amp = e.lineAmp || 3, len = e.lineLen || 90, pos = [], idx = []; let n = 0;
+      for (let s = s0; s <= s1; s += 1.5, n++) { const x = amp * Math.sin((s - s0) / len * Math.PI * 2); for (const d of [-0.35, 0.35]) { const p = M(seg.worldPos(s, x + d, 0.05)); pos.push(p.x, p.y, p.z); } if (n) { const a = (n - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); } }
+      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); W.root.add(new THREE.Mesh(g, glow(0x9CFFEA, 0.9)));
+      const g2 = g.clone(); W.root.add(new THREE.Mesh(g2, glow(0x2EE6D6, 0.25))).children; 
+    } else if (e.type === E.Trigger && e.tag === "dzone:on") {
+      const off = seg.events.find(x => x.tag === "dzone:off"), s1 = off ? off.s : seg.length;
+      for (let s = e.s + 4; s < s1; s += 9) { const f = frameAt(seg, s, 0, 0.04); const m = new THREE.Mesh(G.box, glow(0xFFB627, 0.55)); m.position.copy(f.p); m.quaternion.copy(f.q); m.scale.set(hw * 1.6, 0.04, 1.2); W.root.add(m); }
+    } else if (e.type === E.Trigger && /^hint:(jumppad|movers|lasers|narrow|dzone|rings|split|scurve)$/.test(e.tag)) {
+      const t = { jumppad: ["점프대", "날아올라 장애물을 넘어라"], movers: ["움직이는 NULL", "빈틈을 노려 피하기"], lasers: ["레이저 장벽", "빨간 빛이 켜질 때 점프!"], narrow: ["좁은 통로", "벽 충돌 주의 · 오브 일렬"], dzone: ["드리프트 충전 구간", "충전 속도 ×1.8"], rings: ["결절 링 콤보", "3·5·10연속 → 부스트"], split: ["갈래 길", "안전 vs 위험(보상 ×3)"], scurve: ["S자 커브", "리듬 타고 좌우로"] }[e.tag.slice(5)];
+      hologram(W, seg, Math.min(seg.length - 1, e.s + 30), 0, H - 2.2, labelTex(t, { w: 640, h: 200, border: "#FFB627", bg: "rgba(30,14,6,.85)" }), 7, 2.2);
+      W.psp.push({ e, ex: e.type === E.Epsp, p: M(seg.worldPos(e.s, e.x, NR.Sim.HOVER + 0.3)) });
     } else if (e.type === E.Trigger && /^integ:(excite|inhibit)$/.test(e.tag)) {
       const ex = e.tag === "integ:excite";
       hologram(W, seg, Math.min(seg.length - 1, e.s + 28), 0, H - 2.2, labelTex(ex ? ["EPSP 가중 구간", "초록 ＋ 를 연달아 → 역치 → 발화!"] : ["IPSP 억제 구간", "파랑 − 로 과흥분을 막아!"], { w: 768, h: 220, border: ex ? "#5CFF9D" : "#5C9CFF", bg: "rgba(10,20,40,.85)" }), 9, 2.6);
@@ -395,7 +439,8 @@ window.NRW_INIT = function () { window.NRW = (function () {
       const m = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.17, 8, 32), glow(0x5CF6FF)); const f = frameAt(seg, e.s, e.x, NR.Sim.HOVER); m.position.copy(f.p); m.quaternion.copy(f.q); W.root.add(m); W.rings.push({ e, m, t: 0 });
     } else if (e.type === E.Obstacle) {
       const pulse = e.width >= hw, w = Math.min(e.width, hw * 2), grp = new THREE.Group(), f = frameAt(seg, e.s, e.x, 0); grp.position.copy(f.p); grp.quaternion.copy(f.q);
-      if (pulse) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, e.height * 0.8, 0.5), glow(0xFF3355, 0.8)); m.position.y = e.height * 0.4; grp.add(m); const r = new THREE.Mesh(archTube(seg, e.s, Rw - 0.3, H - 0.3, 0.25), glow(0xFF3355, 0.6)); W.root.add(r); }
+      if (e.tag === "tack") { const n = Math.max(3, Math.round(w / 1.1)); for (let i = 0; i < n; i++) { const c = new THREE.Mesh(G.cone, solid(0xD8DCEF, 0.25)); c.position.set(-w / 2 + (i + 0.5) * w / n, 0.55, 0); c.scale.set(0.45, 1.1, 0.45); grp.add(c); } const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.12, 1.2), glow(0xFF4D6D, 0.7)); b.position.y = 0.06; grp.add(b); }
+      else if (pulse) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, e.height * 0.8, 0.5), glow(0xFF3355, 0.8)); m.position.y = e.height * 0.4; grp.add(m); const r = new THREE.Mesh(archTube(seg, e.s, Rw - 0.3, H - 0.3, 0.25), glow(0xFF3355, 0.6)); W.root.add(r); }
       else {
         const m = new THREE.Mesh(new THREE.BoxGeometry(e.width, e.height + 0.4, 1.6), new THREE.MeshLambertMaterial({ color: 0x14020a, emissive: 0x6a0020 })); m.position.y = (e.height + 0.4) / 2; grp.add(m);
         m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: 0xFF4D6D })));
@@ -408,6 +453,14 @@ window.NRW_INIT = function () { window.NRW = (function () {
     }
   }
 
+  const padCache = {};
+  function padMat(jump) {
+    if (padCache[jump]) return padCache[jump];
+    const c = document.createElement("canvas"); c.width = 128; c.height = 256; const x = c.getContext("2d"), col = jump ? "#2EE6D6" : "#FFD34D";
+    x.fillStyle = jump ? "rgba(10,40,50,.9)" : "rgba(50,40,8,.9)"; x.fillRect(0, 0, 128, 256); x.strokeStyle = col; x.lineWidth = 14; x.lineJoin = "round";
+    for (const oy of [40, 110, 180]) { x.beginPath(); x.moveTo(24, oy + 40); x.lineTo(64, oy); x.lineTo(104, oy + 40); x.stroke(); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return (padCache[jump] = new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }));
+  }
   const pspCache = {};
   function pspMat(ex) {
     if (pspCache[ex]) return pspCache[ex];
@@ -417,6 +470,15 @@ window.NRW_INIT = function () { window.NRW = (function () {
     x.font = "bold 20px sans-serif"; x.fillStyle = "#ffffff"; x.fillText(ex ? "EPSP" : "IPSP", 64, 104);
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
     return (pspCache[ex] = new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false }));
+  }
+  function buildPspClouds(W) {
+    W.pspClouds = [true, false].map(ex => {
+      const list = W.psp.filter(p => p.ex === ex); if (!list.length) return null;
+      const pos = new Float32Array(list.length * 3); list.forEach((p, i) => { pos.set([p.p.x, p.p.y, p.p.z], i * 3); p.i = i; });
+      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 2.1, map: pspMat(ex).map, transparent: true, depthWrite: false, alphaTest: 0.05 }));
+      W.root.add(pts); list.forEach(p => { p.cloud = g; }); return { g, list };
+    });
   }
   function buildOrbs(W) {
     const list = []; for (const seg of W.graph.segments) for (const e of seg.events) if (e.type === NR.EV.Orb || e.type === NR.EV.RepairOrb) list.push({ seg, e });
@@ -497,10 +559,13 @@ window.NRW_INIT = function () { window.NRW = (function () {
     const tmp = new THREE.Matrix4(), q = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), zero = new THREE.Vector3();
     return {
       update(dt, t, sim) {
+        const rt = sim ? sim.raceTime : t;
+        for (const m of W.movers) { const e = m.e, x = e.amp * Math.sin(rt * e.w + e.ph) + e.x; m.grp.position.copy(m.p0).addScaledVector(m.r, x); }
+        for (const L of W.lasers) { const e = L.e, ph = (rt + e.ph) % e.period, on = ph < e.on, warn = !on && ph > e.period - 0.35; L.beams.forEach(b => { b.visible = on || warn; b.material = on ? glow(0xFF2244, 1) : glow(0xFF2244, 0.25); }); L.warn.material = on ? glow(0xFF2244, 0.35) : glow(0xFF2244, 0.12); }
         // 3.0: orbs are static (matrices written once); only a collected orb is changed (see collect)
         for (const o of W.obstacles) { if (o.pulse) o.grp.children[0].material.opacity = 0.5 + 0.35 * Math.sin(t * 8); else o.grp.children[0].scale.x = 1 + (Math.random() < 0.05 ? rnd(-0.15, 0.15) : 0); }
         for (const a of W.anim) { if (a.spin) a.o.rotation.y += dt * a.spin; if (a.flick) a.o.visible = Math.random() > 0.04; }
-        for (const p of W.psp) if (p.sp.visible) p.sp.position.y = p.y + Math.sin(t * 3 + p.ph) * 0.25;
+        // EPSP/IPSP clouds are static (no per-frame update)
         for (const f of W.flashes) { const k = 0.5 + 0.5 * Math.sin(t * 2.2 + f.ph); f.m.scale.setScalar(1.3 + k * 0.7); }
         for (const r of W.rings) { if (r.t > 0) { r.t -= dt; r.m.scale.setScalar(1 + (0.6 - r.t) * 2.5); if (r.t <= 0) r.m.visible = false; } else r.m.rotation.z += dt * 1.5; }
         for (const nd of W.nodes) if (nd.t > 0) { nd.t -= dt; nd.m.material.color.setHex(nd.t > 0 ? 0xFFFFFF : 0x2EE6D6); }
@@ -520,10 +585,11 @@ window.NRW_INIT = function () { window.NRW = (function () {
           P.g.attributes.position.needsUpdate = true;
         }
       },
-      pspCollect(e) { const p = W.psp.find(x => x.e === e); if (p) p.sp.visible = false; },
+      pspCollect(e) { const p = W.psp.find(x => x.e === e); if (p && p.cloud) { p.cloud.attributes.position.setY(p.i, -9999); p.cloud.attributes.position.needsUpdate = true; } },
       collect(e) { for (const g of W.orbs) { const it = g.items.find(x => x.e === e); if (it) { it.gone = true; tmp.compose(it.p, q, zero); g.im.setMatrixAt(it.i, tmp); g.im.instanceMatrix.needsUpdate = true; return; } } },
       ringHit(e, hit) { const r = W.rings.find(x => x.e === e); if (!r) return; if (hit) { r.m.material = glow(0xFFFFFF); r.t = 0.6; for (const nd of W.nodes) if (Math.abs(nd.s - e.s) < 0.5) nd.t = 0.25; } else r.m.material = glow(0x553355, 0.5); },
       markSigns(signs, lane, correctLane) { signs.forEach((p, i) => { p.material.color.setHex(i === correctLane ? 0xB8FFD0 : i === lane ? 0xFF8A9A : 0x555577); }); },
+      sortResult(e, lane) { const g = W.sorts.find(x => x.e === e); if (g) this.markSigns(g.signs, lane, e.correctLane); },
       gateResult(e, lane) { const g = W.gates.find(x => x.e === e); if (g) this.markSigns(g.signs, lane, e.correctLane); },
       forkResult(qid, lane) { const f = W.forks.get(qid); if (f) this.markSigns(f.signs, lane, f.seg.fork.correctLane); },
       bossHit(hp, max) { if (!W.boss) return; W.boss.flash = 0.25; W.boss.shield.material.opacity = 0.04 + 0.12 * hp / Math.max(1, max); },
@@ -535,5 +601,5 @@ window.NRW_INIT = function () { window.NRW = (function () {
     };
   }
 
-  return { M, frameAt, labelTex, U, LANE, build, tubeRadius, HEXS };
+  return { M, frameAt, frameAtInto, labelTex, U, LANE, build, tubeRadius, HEXS };
 })(); };

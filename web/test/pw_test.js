@@ -25,9 +25,9 @@ fs.mkdirSync(OUT, { recursive: true });
   } else {
     // autopilot full runs (time warp) for given stages
     for (const st of (process.argv[3] || "ch1").split(",")) {
-      await page.goto(url + `#auto&warp=6&stage=${st}`); await page.reload();
+      await page.goto(url + `#auto&warp=8&stage=${st}`); await page.reload();
       const t0 = Date.now(); let shot = false;
-      while (Date.now() - t0 < 240000) {
+      while (Date.now() - t0 < 420000) {
         const r = await page.evaluate(() => window.__nrResult || null); if (r && r.stage === st) { console.log(JSON.stringify(r)); break; }
         if (!shot && Date.now() - t0 > 9000) { await page.screenshot({ path: OUT + `/auto_${st}.png` }); shot = true; }
         await page.waitForTimeout(1000);
