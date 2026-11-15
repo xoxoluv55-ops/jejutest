@@ -27,6 +27,7 @@ namespace NerveRunner
 
         Phase phase;
         float phaseT, acc, finishT;
+        float timeScale = 1f;
         int countdownShown;
         string pendingQuestion;
         public Action<RaceController> onFinished;
@@ -57,6 +58,8 @@ namespace NerveRunner
 
         public void Begin(bool showPrologue)
         {
+            GameAudio.PlayRaceMusic();
+            timeScale = 1f;
             ui.ResetHud();
             ui.Show(UIScreen.Hud);
             ui.SetTouchVisible(false);
@@ -119,6 +122,12 @@ namespace NerveRunner
                     phaseT += dt;
                     if (phaseT > 0.8f && phaseT < 1f) ui.Countdown("");
                     RunnerInput inp = autopilot != null ? autopilot.Think(sim) : ui.input.Read(dt);
+                    // THINKING TIME (2.3): while a question is on screen the race runs in slow motion
+                    // until the gate/fork is passed (setting: 문제 생각 시간). The race clock is sim
+                    // time, so slow motion never costs the player time.
+                    float wantSlow = pendingQuestion != null && autopilot == null ? Mathf.Clamp(save.thinkSlow, 0.2f, 1f) : 1f;
+                    timeScale = Mathf.MoveTowards(timeScale, wantSlow, dt * 2.5f);
+                    dt *= timeScale;
                     // SMOOTHNESS FIX (2.2): the whole frame time is simulated every frame, split into
                     // equal sub-steps of at most 1/120 s. The old fixed-step accumulator moved STAR-01
                     // 0, 1 or 2 steps on alternate frames when the monitor rate (e.g. 144 Hz) did not
@@ -191,7 +200,7 @@ namespace NerveRunner
                     if (e.src.tag == "glia" && e.correct) { extra = "희소돌기아교세포가 수초를 재생했습니다. 전도 속도 회복!"; ui.Toast("수초 복구 완료!", Pal.Green); }
                     else if (e.src.tag == "ap") extra = "활동전위 단계 " + (e.src.index + 1) + "/4";
                     if (e.src.tag == "boss") BossAnswer(e.correct);
-                    ui.ShowAnswer(q, e.lane, e.correct, extra, e.correct ? 4.5f : 7f);
+                    ui.ShowAnswer(q, e.lane, e.correct, extra, e.correct ? 7f : 11f);
                     pendingQuestion = null;
                     break;
                 }
@@ -205,7 +214,7 @@ namespace NerveRunner
                     Feedback(e.correct);
                     ui.ShowAnswer(q, e.lane, e.correct,
                                   e.correct ? "정답 경로: 지름길 + 신호 에너지 보너스!" : "복습 구간에 진입했습니다. 해설을 읽으며 천천히 이동하세요.",
-                                  e.correct ? 5f : 9f);
+                                  e.correct ? 7f : 12f);
                     if (!e.correct) ui.Toast("복습 구간 - 속도 저하", Pal.Hex(0xFF8A3D), 2f);
                     pendingQuestion = null;
                     break;
@@ -323,12 +332,12 @@ namespace NerveRunner
                 }
                 case "forkq":
                     pendingQuestion = arg;
-                    ui.ShowQuestion(bank.Get(arg), "갈림길! 정답이라고 생각하는 경로로 들어가세요");
+                    ui.ShowQuestion(bank.Get(arg), "갈림길! 정답 경로로 들어가세요" + ThinkTag());
                     GameAudio.Beep();
                     break;
                 case "gateq":
                     pendingQuestion = arg;
-                    ui.ShowQuestion(bank.Get(arg), arg == Chapter1Layout.Q_GLIA ? "수초 복구 게이트" : (stageInfo != null ? stageInfo.gateTitle : "학습 게이트"));
+                    ui.ShowQuestion(bank.Get(arg), (arg == Chapter1Layout.Q_GLIA ? "수초 복구 게이트" : (stageInfo != null ? stageInfo.gateTitle : "학습 게이트")) + ThinkTag());
                     GameAudio.Beep();
                     break;
                 case "boss":
@@ -376,6 +385,8 @@ namespace NerveRunner
             phase = Phase.Running; acc = 0f;
         }
 
+        string ThinkTag() { return save.thinkSlow < 0.99f ? "   <color=#9FFFF6>· 생각 시간: 슬로모션</color>" : ""; }
+
         void Finish()
         {
             phase = Phase.Finishing; finishT = 0f;
@@ -388,6 +399,6 @@ namespace NerveRunner
             chase.Showcase(3.2f);
         }
 
-        void OnDisable() { GameAudio.Hum(0f, false); GameAudio.Screech(0f); }
+        void OnDisable() { GameAudio.Hum(0f, false); GameAudio.Screech(0f); StarVoice.Stop(); }
     }
 }

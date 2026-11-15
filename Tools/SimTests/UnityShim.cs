@@ -44,6 +44,8 @@ namespace UnityEngine
         public static int Clamp(int v, int a, int b) => v < a ? a : v > b ? b : v;
         public static float Clamp01(float v) => Clamp(v, 0f, 1f);
         public static float Lerp(float a, float b, float t) => a + (b - a) * Clamp01(t);
+        public static float Exp(float a) => (float)Math.Exp(a);
+        public static float SmoothStep(float a, float b, float t) { t = Clamp01(t); t = t * t * (3f - 2f * t); return a + (b - a) * t; }
         public static float Floor(float a) => (float)Math.Floor(a);
         public static int FloorToInt(float a) => (int)Math.Floor(a);
         public static int CeilToInt(float a) => (int)Math.Ceiling(a);

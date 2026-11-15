@@ -215,6 +215,8 @@ namespace NerveRunner
                 case Expression.Clear:    eye = new Vector2(0.23f, 0.31f); sparkle = true; mouthKind = 1; cheek = 1.45f; break;
             }
             if (victory) { open = false; happy = true; sparkle = false; mouthKind = 1; cheek = 1.45f; }
+            // 2.3: while STAR-01 is speaking, the mouth flaps open/closed
+            if (StarVoice.StarTalking && Mathf.Repeat(Time.unscaledTime * 7f, 1f) < 0.5f) mouthKind = mouthKind == 1 ? 2 : 1;
 
             float eh = Mathf.Max(0.02f, eye.y * blink);
             bool blinking = blink < 0.35f;

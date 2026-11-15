@@ -355,8 +355,8 @@ namespace NerveRunner
                     MeshKit.Prim(PrimitiveType.Cube, root, new Vector3(xd, 2.9f, 0f), new Vector3(0.18f, 5.8f, 0.18f), postMat);
                 }
                 string label = (char)('A' + i) + "  " + (qd != null ? qd.options[i] : "?");
-                var sign = Sign(root, null, 0f, 0f, 0f, laneW - 0.4f, 2.3f, label, Pal.Cyan, 46, false);
-                sign.transform.localPosition = new Vector3(e.laneX[i], 4.3f, -0.3f);
+                var sign = Sign(root, null, 0f, 0f, 0f, laneW - 0.3f, 3.2f, label, Pal.Cyan, 64, false);   // 2.3: bigger, readable
+                sign.transform.localPosition = new Vector3(e.laneX[i], 4.5f, -0.3f);
                 sign.transform.localRotation = Quaternion.identity;
                 imgs[i] = sign.GetComponentInChildren<Image>();
             }
@@ -374,7 +374,7 @@ namespace NerveRunner
             for (int i = 0; i < seg.fork.laneX.Length; i++)
             {
                 string label = (char)('A' + i) + "  " + (q != null ? q.options[i] : "?");
-                var sign = Sign(dynRoot, seg, s, seg.fork.laneX[i], 5.2f, laneW - 0.6f, 2.6f, label, Pal.Pink, 48);
+                var sign = Sign(dynRoot, seg, s, seg.fork.laneX[i], 5.6f, laneW - 0.4f, 3.4f, label, Pal.Pink, 66);
                 imgs[i] = sign.GetComponentInChildren<Image>();
                 MeshKit.Prim(PrimitiveType.Cube, dynRoot, seg.WorldPos(s, seg.fork.laneX[i], 2f), new Vector3(0.25f, 4f, 0.25f), postMat);
             }
@@ -404,10 +404,10 @@ namespace NerveRunner
                 rt.position = seg.WorldPos(s, x, y);
                 rt.rotation = Quaternion.LookRotation(seg.TangentAt(s), Vector3.up);
             }
-            var bg = UIKit.Panel(rt, Pal.A(Pal.Hex(0x0E0A2C), 0.88f));
+            var bg = UIKit.Panel(rt, Pal.A(Pal.Hex(0x0E0A2C), 0.96f));
             UIKit.Fill(bg.rectTransform);
             UIKit.Neon(bg, c, 4f);
-            var t = UIKit.FitLabel(rt, text, fontPx, 20, Pal.Text);
+            var t = UIKit.FitLabel(rt, text, fontPx, 26, Color.white);
             UIKit.Fill(t.rectTransform, 14f);
             return cv;
         }

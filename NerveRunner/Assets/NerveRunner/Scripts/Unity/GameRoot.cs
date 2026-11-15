@@ -156,6 +156,8 @@ namespace NerveRunner
             Gfx.Level = save.graphicsQuality < 0 ? Gfx.AutoLevel() : (GfxLevel)Mathf.Clamp(save.graphicsQuality, 0, 2);
             Gfx.CameraShake = Mathf.Clamp01(save.cameraShake);
             Gfx.ShowPerf = save.showPerf;
+            StarVoice.Enabled = save.voiceOn;
+            if (!save.voiceOn) StarVoice.Stop();
             if (cam != null) { RenderQuality.ApplyLevel(cam, (int)Gfx.Level); ApplyCulling(); }
         }
 
@@ -208,6 +210,7 @@ namespace NerveRunner
             star.SetExpression(Expression.Joy, 1.5f);
             chase.Showcase(1e6f);
             ui.Show(UIScreen.Title);
+            GameAudio.PlayMenuMusic();
             if (titleBrain != null)
             {
                 // brain glows up and to the side behind STAR-01 (title key art composition)
@@ -272,9 +275,12 @@ namespace NerveRunner
             GameAudio.StopLoops();
         }
 
+        void OnApplicationQuit() { StarVoice.Shutdown(); }
+
         void Update()
         {
             float dt = Mathf.Min(Time.deltaTime, 0.05f);
+            GameAudio.Tick(dt);
             if (inMenu && star != null)
             {
                 ui.Tick(dt);

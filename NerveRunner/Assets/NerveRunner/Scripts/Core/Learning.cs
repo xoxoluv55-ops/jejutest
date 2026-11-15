@@ -139,7 +139,9 @@ namespace NerveRunner.Core
         public bool showHints = true;
         public int graphicsQuality = -1;     // -1 auto, 0 Low, 1 Medium, 2 High (2.0)
         public float cameraShake = 1f;
-        public bool showPerf;                // FPS overlay (2.1)       // 0 off, 0.5 weak, 1 normal (2.0)
+        public bool showPerf;                // FPS overlay (2.1)
+        public bool voiceOn = true;          // STAR-01 reads text aloud (2.3)
+        public float thinkSlow = 0.4f;       // race speed while a question is shown: 1 = off (2.3)       // 0 off, 0.5 weak, 1 normal (2.0)
 
         public StageRecord Stage(string id)
         {

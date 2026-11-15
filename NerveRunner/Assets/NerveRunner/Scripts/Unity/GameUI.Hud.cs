@@ -65,23 +65,23 @@ namespace NerveRunner
             UIKit.IconImage(pauseBtn.transform, Icon.Pause, Color.white, new Vector2(0.5f, 0.5f), new Vector2(50f, 50f), Vector2.zero).rectTransform.pivot = new Vector2(0.5f, 0.5f);
 
             // ---- question banner ----
-            var qb = UIKit.Panel(p, Pal.A(Pal.Hex(0x3A2C8C), 0.82f), new Vector2(0.5f, 1f), new Vector2(1060f, 196f), new Vector2(0f, -132f));
+            var qb = UIKit.Panel(p, Pal.A(Pal.Hex(0x1A1250), 0.97f), new Vector2(0.5f, 1f), new Vector2(1180f, 270f), new Vector2(0f, -132f));
             UIKit.Neon(qb, Pal.A(Color.white, 0.55f), 3f);
             qBanner = qb.gameObject;
-            qTitle = UIKit.Label(qb.transform, "", 24, Pal.Pink, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(1020f, 34f), new Vector2(22f, -10f));
-            qText = UIKit.FitLabel(qb.transform, "", 32, 22, Pal.Text, TextAnchor.UpperLeft);
-            UIKit.Place(qText.rectTransform, new Vector2(0f, 1f), new Vector2(1020f, 84f), new Vector2(22f, -42f));
-            qOptions = UIKit.FitLabel(qb.transform, "", 28, 18, Pal.Yellow, TextAnchor.MiddleCenter);
-            UIKit.Place(qOptions.rectTransform, new Vector2(0.5f, 0f), new Vector2(1020f, 60f), new Vector2(0f, 6f));
+            qTitle = UIKit.Label(qb.transform, "", 28, Pal.Pink, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(1140f, 40f), new Vector2(22f, -10f));
+            qText = UIKit.FitLabel(qb.transform, "", 40, 28, Color.white, TextAnchor.UpperLeft);
+            UIKit.Place(qText.rectTransform, new Vector2(0f, 1f), new Vector2(1140f, 112f), new Vector2(22f, -52f));
+            qOptions = UIKit.FitLabel(qb.transform, "", 34, 22, Pal.Yellow, TextAnchor.MiddleCenter);
+            UIKit.Place(qOptions.rectTransform, new Vector2(0.5f, 0f), new Vector2(1140f, 100f), new Vector2(0f, 6f));
             qBanner.SetActive(false);
 
             // ---- answer / explanation panel ----
-            var ap = UIKit.Panel(p, Pal.A(Pal.Hex(0x0E0A2C), 0.94f), new Vector2(0.5f, 1f), new Vector2(1060f, 220f), new Vector2(0f, -132f));
+            var ap = UIKit.Panel(p, Pal.A(Pal.Hex(0x0E0A2C), 0.97f), new Vector2(0.5f, 1f), new Vector2(1180f, 290f), new Vector2(0f, -132f));
             answerPanel = ap.gameObject;
-            answerTitle = UIKit.Label(ap.transform, "", 40, Pal.Green, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(1020f, 54f), new Vector2(22f, -10f));
+            answerTitle = UIKit.Label(ap.transform, "", 46, Pal.Green, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(1140f, 60f), new Vector2(22f, -10f));
             answerTitle.fontStyle = FontStyle.Bold;
-            answerText = UIKit.FitLabel(ap.transform, "", 26, 18, Pal.Text, TextAnchor.UpperLeft);
-            UIKit.Place(answerText.rectTransform, new Vector2(0f, 1f), new Vector2(1020f, 150f), new Vector2(22f, -64f));
+            answerText = UIKit.FitLabel(ap.transform, "", 32, 22, Color.white, TextAnchor.UpperLeft);
+            UIKit.Place(answerText.rectTransform, new Vector2(0f, 1f), new Vector2(1140f, 206f), new Vector2(22f, -74f));
             answerPanel.SetActive(false);
 
             // ---- toast ----
@@ -92,18 +92,18 @@ namespace NerveRunner
             toastText.gameObject.AddComponent<Canvas>();          // own canvas: fading never rebuilds the HUD
 
             // ---- story box (non-blocking) ----
-            var sb = UIKit.Panel(p, Pal.A(Pal.Hex(0x120B33), 0.9f), new Vector2(0.5f, 0f), new Vector2(600f, 120f), new Vector2(0f, 240f));
+            var sb = UIKit.Panel(p, Pal.A(Pal.Hex(0x120B33), 0.96f), new Vector2(0.5f, 0f), new Vector2(760f, 150f), new Vector2(0f, 236f));
             UIKit.Neon(sb, Pal.Yellow, 2f);
             storyBox = sb.gameObject;
-            storySpeaker = UIKit.Label(sb.transform, "", 22, Pal.Yellow, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(560f, 30f), new Vector2(20f, -8f));
-            storyText = UIKit.FitLabel(sb.transform, "", 26, 18, Pal.Text, TextAnchor.UpperLeft);
-            UIKit.Place(storyText.rectTransform, new Vector2(0f, 1f), new Vector2(560f, 76f), new Vector2(20f, -38f));
+            storySpeaker = UIKit.Label(sb.transform, "", 26, Pal.Yellow, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(720f, 34f), new Vector2(20f, -8f));
+            storyText = UIKit.FitLabel(sb.transform, "", 30, 22, Color.white, TextAnchor.UpperLeft);
+            UIKit.Place(storyText.rectTransform, new Vector2(0f, 1f), new Vector2(720f, 100f), new Vector2(20f, -44f));
             storyBox.SetActive(false);
 
             // ---- hint ----
-            var hb = UIKit.Panel(p, Pal.A(Pal.Hex(0x0A2A33), 0.88f), new Vector2(0.5f, 0.5f), new Vector2(820f, 70f), new Vector2(0f, 40f));
+            var hb = UIKit.Panel(p, Pal.A(Pal.Hex(0x0A2A33), 0.95f), new Vector2(0.5f, 0.5f), new Vector2(920f, 86f), new Vector2(0f, 20f));
             hintBox = hb.gameObject;
-            hintText = UIKit.FitLabel(hb.transform, "", 26, 18, Pal.Cyan);
+            hintText = UIKit.FitLabel(hb.transform, "", 30, 22, Pal.Cyan);
             UIKit.Fill(hintText.rectTransform, 10f);
             hintBox.SetActive(false);
 
@@ -242,7 +242,9 @@ namespace NerveRunner
                     var l = storyQueue.Dequeue();
                     storySpeaker.text = l.speaker; storyText.text = l.text;
                     storyBox.SetActive(true);
-                    storyTimer = Mathf.Clamp(1.6f + l.text.Length * 0.06f, 3f, 6f);
+                    bool voice = StarVoice.Enabled && !qBanner.activeSelf;
+                    if (voice) StarVoice.Say(l.text, l.speaker == "STAR-01");
+                    storyTimer = Mathf.Clamp(1.6f + l.text.Length * (voice ? 0.1f : 0.07f), 3.5f, 9f);
                 }
                 else storyBox.SetActive(false);
             }
@@ -258,8 +260,12 @@ namespace NerveRunner
             var parts = new List<string>();
             for (int i = 0; i < q.options.Length; i++) parts.Add("<color=#2EE6D6>" + (char)('A' + i) + "</color> " + q.options[i]);
             string arrows = q.options.Length == 2 ? "◀ 왼쪽          오른쪽 ▶" : "◀ 왼쪽     가운데     오른쪽 ▶";
-            qOptions.text = string.Join("     ", parts.ToArray()) + "\n<size=20><color=#B8B2E6>" + arrows + " 차선으로 조향해 진입하세요</color></size>";
+            qOptions.text = string.Join("     ", parts.ToArray()) + "\n<size=24><color=#C8C2F0>" + arrows + " 차선으로 조향해 진입하세요</color></size>";
             qBanner.SetActive(true);
+            // STAR-01 reads the question and the options aloud
+            var say = new System.Text.StringBuilder(q.question);
+            for (int i = 0; i < q.options.Length; i++) say.Append(' ').Append((char)('A' + i)).Append(". ").Append(q.options[i]).Append('.');
+            StarVoice.Say(say.ToString(), true);
         }
 
         public void HideQuestion() { qBanner.SetActive(false); }
@@ -276,6 +282,7 @@ namespace NerveRunner
             ((Image)answerPanel.GetComponent<Image>()).color = correct ? Pal.A(Pal.Hex(0x0B2A2A), 0.94f) : Pal.A(Pal.Hex(0x2A0B16), 0.94f);
             answerPanel.SetActive(true);
             answerTimer = seconds;
+            StarVoice.Say((correct ? "정답이야! " : "아쉬워! 정답은 " + q.options[q.answer] + "이야. " + wrong + " ") + q.explanation, true);
         }
 
         public void Toast(string text, Color c, float seconds = 1.6f)
@@ -287,6 +294,7 @@ namespace NerveRunner
         {
             if (!save.showHints) return;
             hintText.text = text; hintBox.SetActive(true); hintTimer = seconds;
+            if (!qBanner.activeSelf && !answerPanel.activeSelf) StarVoice.Say(text, true);
         }
 
         public void QueueStory(StoryLine[] lines) { if (lines != null) foreach (var l in lines) storyQueue.Enqueue(l); }
@@ -305,6 +313,7 @@ namespace NerveRunner
             dialogIdx++;
             if (dialogLines == null || dialogIdx >= dialogLines.Length)
             {
+                StarVoice.Stop();
                 dialogPanel.SetActive(false);
                 var d = dialogDone; dialogDone = null;
                 if (d != null) d();
@@ -312,6 +321,7 @@ namespace NerveRunner
             }
             dialogSpeaker.text = dialogLines[dialogIdx].speaker;
             dialogText.text = dialogLines[dialogIdx].text;
+            StarVoice.Say(dialogLines[dialogIdx].text, dialogLines[dialogIdx].speaker == "STAR-01");
         }
     }
 }

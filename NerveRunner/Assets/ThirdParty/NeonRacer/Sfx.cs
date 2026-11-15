@@ -1,6 +1,7 @@
 // Reused from Neon Racer (https://github.com/pinchasVaknin/neon-racer, commit 090f15b), MIT License,
 // Copyright (c) 2026 Pinchas Vaknin. See LICENSE.txt in this folder.
-// Status: copied UNMODIFIED.
+// Status: copied, MODIFIED in one place - SetEngine() scales by the static EngineVolume
+// (NERVE RUNNER lowers the hum so the background music and voice are audible).
 
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace NeonRacer
         public static Sfx I;
         public static bool SfxMuted;    // engine, screech, one-shots (clicks/coins/thuds...)
         public static bool MusicMuted;  // background music only
+        public static float EngineVolume = 1f;   // NERVE RUNNER: hum level multiplier
         static readonly List<Sfx> All = new List<Sfx>();
 
         AudioSource engine, screech, music, sfx;
@@ -258,7 +260,7 @@ namespace NeonRacer
         {
             if (!ready) return;
             engine.pitch = 0.55f + 1.7f * Mathf.Clamp01(speed01) + (boosting ? 0.35f : 0f);
-            engine.volume = 0.16f + 0.34f * Mathf.Clamp01(speed01);
+            engine.volume = (0.16f + 0.34f * Mathf.Clamp01(speed01)) * EngineVolume;
         }
         public void SetScreech(float intensity)
         {

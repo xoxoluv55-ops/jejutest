@@ -56,7 +56,7 @@ namespace NerveRunner
             BuildResult();
             BuildMinigame();
             // FPS overlay (settings > 성능 표시): own canvas so its updates never rebuild other UI
-            perfText = UIKit.Label(safe, "", 22, Pal.Green, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(360f, 30f), new Vector2(26f, -124f));
+            perfText = UIKit.Label(safe, "", 22, Pal.Green, TextAnchor.UpperCenter, new Vector2(0.5f, 1f), new Vector2(480f, 30f), new Vector2(0f, -100f));
             perfText.gameObject.AddComponent<Canvas>();
             Show(UIScreen.Title);
         }
@@ -389,17 +389,26 @@ namespace NerveRunner
         }
 
         //================== SETTINGS ==================\\
-        Text sfxLbl, musicLbl, hintLbl, sensLbl, resetLbl, gfxLbl, shakeLbl, perfLbl;
+        Text sfxLbl, musicLbl, hintLbl, sensLbl, resetLbl, gfxLbl, shakeLbl, perfLbl, voiceLbl, thinkLbl;
         bool resetArmed;
         void BuildSettings()
         {
             var p = NewScreen(UIScreen.Settings).transform;
             Title(p, "설정");
             BackButton(p);
-            float y = -170f;
+            // two columns so every option fits on a 4:3 iPad
+            float y = -170f; settingX = 60f;
             sfxLbl = SettingRow(p, "효과음", ref y, () => { save.sfxOn = !save.sfxOn; Changed(); });
             musicLbl = SettingRow(p, "배경음악", ref y, () => { save.musicOn = !save.musicOn; Changed(); });
+            voiceLbl = SettingRow(p, "별 음성 안내", ref y, () => { save.voiceOn = !save.voiceOn; Changed(); if (save.voiceOn) StarVoice.Say("안녕! 내가 읽어 줄게!", true); });
+            thinkLbl = SettingRow(p, "문제 생각 시간", ref y, () =>
+            {
+                // 슬로모션 배율: 많이(0.3) -> 보통(0.4) -> 조금(0.6) -> 끔(1.0)
+                save.thinkSlow = save.thinkSlow <= 0.31f ? 0.4f : save.thinkSlow <= 0.41f ? 0.6f : save.thinkSlow <= 0.61f ? 1f : 0.3f;
+                Changed();
+            });
             hintLbl = SettingRow(p, "조작 힌트 표시", ref y, () => { save.showHints = !save.showHints; Changed(); });
+            y = -170f; settingX = 740f;
             sensLbl = SettingRow(p, "조향 감도", ref y, () =>
             {
                 save.steerSensitivity = save.steerSensitivity >= 1.29f ? 0.7f : save.steerSensitivity + 0.15f;
@@ -424,17 +433,18 @@ namespace NerveRunner
                 keep.stages.Clear(); keep.wrongNotes.Clear(); keep.mastery.Clear(); keep.codexUnlocked.Clear(); keep.totalCoins = 0; keep.storySeen = false;
                 Changed();
             });
-            UIKit.Label(p, "그래픽 품질 '낮음'은 기본 머티리얼만 사용합니다(특수 셰이더 문제 시 사용). 렉이 걸리면 '중간' 또는 '낮음'을 선택하세요. 일부는 앱을 다시 시작하면 적용됩니다.\nNERVE RUNNER v0.2 (CHAPTER 1 · 비주얼 2.0 PHASE 1)\n레이싱 기반 코드: Neon Racer by Pinchas Vaknin (MIT License)", 22, Pal.Dim,
-                        TextAnchor.LowerLeft, new Vector2(0f, 0f), new Vector2(1200f, 100f), new Vector2(64f, 20f));
+            UIKit.Label(p, "문제 생각 시간: 문제가 나오면 갈림길·게이트를 지날 때까지 슬로모션이 됩니다(기록에 불이익 없음).\n렉이 걸리면 그래픽 품질을 '중간' 또는 '낮음'으로. 별 음성은 기기의 한국어 음성을 사용합니다.\nNERVE RUNNER v0.3 · 레이싱 기반 코드: Neon Racer by Pinchas Vaknin (MIT License)", 22, Pal.Dim,
+                        TextAnchor.LowerLeft, new Vector2(0f, 0f), new Vector2(1340f, 100f), new Vector2(64f, 20f));
         }
 
+        float settingX = 60f;
         Text SettingRow(Transform p, string name, ref float y, Action toggle)
         {
-            var row = UIKit.Panel(p, Pal.Panel, new Vector2(0f, 1f), new Vector2(900f, 74f), new Vector2(60f, y));
-            UIKit.Label(row.transform, name, 32, Pal.Text, TextAnchor.MiddleLeft, new Vector2(0f, 0.5f), new Vector2(500f, 80f), new Vector2(30f, 0f)).rectTransform.pivot = new Vector2(0f, 0.5f);
-            var b = UIKit.Button(row.transform, "", Pal.Card, Pal.Yellow, 30, toggle, new Vector2(1f, 0.5f), new Vector2(300f, 70f), new Vector2(-12f, 0f));
+            var row = UIKit.Panel(p, Pal.Panel, new Vector2(0f, 1f), new Vector2(660f, 84f), new Vector2(settingX, y));
+            UIKit.Label(row.transform, name, 32, Pal.Text, TextAnchor.MiddleLeft, new Vector2(0f, 0.5f), new Vector2(380f, 80f), new Vector2(26f, 0f)).rectTransform.pivot = new Vector2(0f, 0.5f);
+            var b = UIKit.Button(row.transform, "", Pal.Card, Pal.Yellow, 28, toggle, new Vector2(1f, 0.5f), new Vector2(240f, 70f), new Vector2(-10f, 0f));
             ((RectTransform)b.transform).pivot = new Vector2(1f, 0.5f);
-            y -= 84f;
+            y -= 98f;
             return UIKit.ButtonText(b);
         }
 
@@ -450,6 +460,8 @@ namespace NerveRunner
             sensLbl.text = "x" + save.steerSensitivity.ToString("0.00");
             gfxLbl.text = save.graphicsQuality < 0 ? "자동 (" + GfxName(Gfx.AutoLevel()) + ")" : GfxName((GfxLevel)save.graphicsQuality);
             perfLbl.text = save.showPerf ? "켜짐" : "꺼짐";
+            voiceLbl.text = save.voiceOn ? "켜짐" : "꺼짐";
+            thinkLbl.text = save.thinkSlow >= 0.99f ? "끔" : save.thinkSlow <= 0.31f ? "많이" : save.thinkSlow <= 0.41f ? "보통" : "조금";
             shakeLbl.text = save.cameraShake <= 0.01f ? "끔" : save.cameraShake < 0.99f ? "약하게" : "보통";
             resetLbl.text = resetArmed ? "한 번 더 눌러 확인" : "초기화";
         }
