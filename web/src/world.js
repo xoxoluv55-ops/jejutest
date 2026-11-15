@@ -12,7 +12,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
   const M = v => new THREE.Vector3(-v.x, v.y, v.z);       // Unity (left-handed) -> three: mirror X
   const C = h => new THREE.Color(h);
   const rnd = (a, b) => a + Math.random() * (b - a);
-  const U = { uTime: { value: 0 }, uStar: { value: new THREE.Vector3(0, -999, 0) }, fogColor: { value: C(0x0A0724) }, fogNear: { value: 40 }, fogFar: { value: 340 } };
+  const U = { uTime: { value: 0 }, uStar: { value: new THREE.Vector3(0, -999, 0) }, fogColor: { value: C(0x0A0724) }, fogNear: { value: 40 }, fogFar: { value: 340 }, uFire: { value: 0 }, uSeize: { value: 0 } };
   const LANE = [0x2EE6D6, 0xFF5CC8, 0xFFD34D, 0x8CFF6B];
   const THEME = { spinal: 0x6CFF8A, tract: 0xFF6FD0, brainstem: 0xFF8A4D, cerebellum: 0xFF9AD8, diencephalon: 0x8CA8FF, cranial: 0xFFD34D, frontal: 0x5C9CFF, parietal: 0x5CFF9D, temporal: 0xFFB627, occipital: 0xFF6FD0, boss: 0xFF4DA6 };
   const MEMBRANE = 0x7FA8FF;
@@ -44,7 +44,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
   const shader = (uniforms, frag, o = {}) => new THREE.ShaderMaterial(Object.assign({ uniforms: Object.assign({}, U, uniforms), vertexShader: VS, fragmentShader: frag, transparent: !!o.transparent, depthWrite: !o.transparent, side: o.side || THREE.DoubleSide, blending: o.additive ? THREE.AdditiveBlending : THREE.NormalBlending }));
 
   // axon membrane (inside view): lipid bilayer shimmer, ion-channel dots, AP glow around STAR-01
-  const MEMB_F = `uniform vec3 uCol,uStar;uniform float uTime,uAlpha;varying vec2 vUv;varying vec3 vW;varying vec3 vN;${FOG_F}
+  const MEMB_F = `uniform vec3 uCol,uStar;uniform float uTime,uAlpha,uFire,uSeize;varying vec2 vUv;varying vec3 vW;varying vec3 vN;${FOG_F}
     float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
     void main(){vec3 V=normalize(cameraPosition-vW);float fr=pow(1.-abs(dot(normalize(vN),V)),2.2);
      float u=vUv.x,v=vUv.y;float lip=.5+.5*sin(v*1.7+sin(u*37.)*.8);
@@ -52,7 +52,8 @@ window.NRW_INIT = function () { window.NRW = (function () {
      float d=length(vW-uStar);float ap=exp(-d*.12);
      float wave=smoothstep(.965,1.,fract(v/55.-uTime*.7));
      vec3 c=uCol*(.10+.42*fr+.07*lip)+vec3(.35,1.,.95)*ch*(.25+1.8*ap)+vec3(1.,.82,.38)*ap*(.3+.4*fr)+uCol*wave*.35;
-     float a=clamp(uAlpha+.55*fr+.35*ap+ch*.35,0.,1.);float fg=smoothstep(fogNear,fogFar,vD);
+     float fw=uFire*smoothstep(.0,.2,fract(v/30.-uTime*2.5));c+=vec3(1.,.92,.55)*fw*(.5+fr)*1.2;c+=vec3(1.,.08,.2)*uSeize*(.3+fr);
+     float a=clamp(uAlpha+.55*fr+.35*ap+ch*.35+fw*.4+uSeize*.3,0.,1.);float fg=smoothstep(fogNear,fogFar,vD);
      gl_FragColor=vec4(mix(c,fogColor,fg),a*(1.-fg*.6));
      gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
 #include <colorspace_fragment>
@@ -130,6 +131,9 @@ window.NRW_INIT = function () { window.NRW = (function () {
     }
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g;
   }
+  // long sweeps are cut into ~110 m pieces so off-screen parts are culled
+  const parts = (s0, s1, L = 110) => { const a = []; for (let x = s0; x < s1 - 0.5; x += L) a.push([x, Math.min(s1, x + L + 0.01)]); return a; };
+  function sweepN(seg, s0, s1, step, ring, opts) { return parts(s0, s1).map(([a, b]) => sweep(seg, a, b, step, ring, opts)); }
   const archRing = (Rw, H, n = 20) => { const r = []; for (let i = 0; i <= n; i++) { const t = (-0.07 + 1.14 * i / n) * Math.PI; r.push([Math.cos(t) * Rw, Math.sin(t) * H]); } return r; };
   const circleRing = (r, n = 7) => { const a = []; for (let i = 0; i <= n; i++) { const t = i / n * Math.PI * 2; a.push([Math.cos(t) * r, Math.sin(t) * r]); } return a; };
   const tubeRadius = hw => [hw + 1.6, hw * 0.85 + 3.6];   // [half-width, height] of the membrane arch
@@ -149,8 +153,13 @@ window.NRW_INIT = function () { window.NRW = (function () {
   }
   class Batch {
     constructor() { this.m = new Map(); }
-    add(mat, geo, matrix) { let b = this.m.get(mat); if (!b) this.m.set(mat, b = []); const g = geo.clone(); if (matrix) g.applyMatrix4(matrix); b.push(g); }
-    flush(root) { for (const [mat, list] of this.m) { const mesh = new THREE.Mesh(merge(list), mat); mesh.frustumCulled = false; root.add(mesh); } this.m.clear(); }
+    // batched per material AND per 160 m map cell, so the camera only draws what it can see
+    add(mat, geo, matrix) {
+      const g = matrix ? geo.clone().applyMatrix4(matrix) : geo; if (!g.boundingSphere) g.computeBoundingSphere(); const c = g.boundingSphere.center;
+      const key = mat.uuid + ":" + Math.floor(c.x / 160) + ":" + Math.floor(c.z / 160) + ":" + Math.floor(c.y / 160);
+      let b = this.m.get(key); if (!b) this.m.set(key, b = { mat, list: [] }); b.list.push(g);
+    }
+    flush(root) { for (const { mat, list } of this.m.values()) { const geo = merge(list); geo.computeBoundingSphere(); root.add(new THREE.Mesh(geo, mat)); } this.m.clear(); }
   }
   const G = {
     ico: new THREE.IcosahedronGeometry(1, 2), ico1: new THREE.IcosahedronGeometry(1, 1), cyl: new THREE.CylinderGeometry(0.55, 1, 1, 6, 1, true), cylS: new THREE.CylinderGeometry(1, 1, 1, 6, 1, true),
@@ -182,17 +191,16 @@ window.NRW_INIT = function () { window.NRW = (function () {
 
   function build(scene, stage, graph, bank, quality) {
     const root = new THREE.Group(); scene.add(root);
-    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forks: new Map(), nodes: [], anim: [], flashes: [], particles: null, nt: null, boss: null, bounds: new THREE.Box3(), low: quality === "low" };
+    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forks: new Map(), nodes: [], anim: [], flashes: [], particles: null, nt: null, boss: null, bounds: new THREE.Box3(), low: quality === "low", mid: quality === "mid", psp: [] };
     const B = new Batch(), Z = NR.ZONE;
     for (const seg of graph.segments) {
       const col = segColor(seg), hw = seg.halfWidth, [Rw, H] = tubeRadius(hw);
-      const floor = sweep(seg, 0, seg.length, 2, [[-hw, 0.01], [hw, 0.01]], { u: [-1, 1] });
-      const fm = new THREE.Mesh(floor, floorMat(col)); root.add(fm); floor.computeBoundingBox(); W.bounds.union(floor.boundingBox);
+      for (const floor of sweepN(seg, 0, seg.length, 2, [[-hw, 0.01], [hw, 0.01]], { u: [-1, 1] })) { root.add(new THREE.Mesh(floor, floorMat(col))); floor.computeBoundingBox(); W.bounds.union(floor.boundingBox); }
       if (seg.zone === Z.Myelin || seg.zone === Z.Damaged) buildMyelin(W, B, seg, col);
       else if (seg.zone === Z.Synapse) buildCleft(W, B, seg);
-      else if (!isSoma(seg)) root.add(new THREE.Mesh(sweep(seg, 0, seg.length, 3, archRing(Rw, H)), membraneMat(col)));
+      else if (!isSoma(seg)) for (const g of sweepN(seg, 0, seg.length, 3, archRing(Rw, H, W.low ? 12 : 18))) root.add(new THREE.Mesh(g, membraneMat(col)));
       // edge light strips (the membrane meets the floor)
-      for (const side of [-1, 1]) B.add(glow(col, 0.75), sweep(seg, 0, seg.length, 4, [[side * (hw + 0.05), 0.02], [side * (hw + 0.05), 0.45]]));
+      for (const side of [-1, 1]) for (const g of sweepN(seg, 0, seg.length, 4, [[side * (hw + 0.05), 0.02], [side * (hw + 0.05), 0.45]])) B.add(glow(col, 0.75), g);
       if (isSoma(seg)) buildSoma(W, B, seg);
       if (isDendrite(seg)) buildDendrites(W, B, seg, Rw, H);
       if (isTerminal(seg)) buildVesicles(W, B, seg, Rw, H);
@@ -211,7 +219,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
     const nodesS = seg.events.filter(e => e.type === NR.EV.NodeRing).map(e => e.s);
     const cuts = nodesS.length ? nodesS : (() => { const a = []; for (let s = 45; s < seg.length - 20; s += 55) a.push(s); return a; })();
     // bare axon membrane everywhere (visible in the node gaps)
-    W.root.add(new THREE.Mesh(sweep(seg, 0, seg.length, 3, archRing(Rw - 0.3, H - 0.3)), membraneMat(dmg ? 0xFF6D8D : 0x5CE6FF)));
+    for (const g of sweepN(seg, 0, seg.length, 3, archRing(Rw - 0.3, H - 0.3, W.low ? 12 : 18))) W.root.add(new THREE.Mesh(g, membraneMat(dmg ? 0xFF6D8D : 0x5CE6FF)));
     let prev = 0, k = 0;
     for (const sN of cuts.concat([seg.length])) {
       const a = prev + 3.2, b = sN - 3.2; prev = sN; k++;
@@ -304,12 +312,13 @@ window.NRW_INIT = function () { window.NRW = (function () {
   function buildBundle(W, B, seg, Rw, H, stage) {
     if (seg.zone === NR.ZONE.Synapse || isSoma(seg)) return;
     const theme = THEME[seg.theme] || MEMBRANE, myel = /spinal|tract|cranial/.test(seg.theme || "") || seg.zone === NR.ZONE.Myelin;
-    const n = W.low ? 3 : (seg.zone === NR.ZONE.Review || seg.zone === NR.ZONE.Shortcut ? 3 : 7);
+    const n = W.low ? 2 : W.mid ? (seg.zone === NR.ZONE.Review || seg.zone === NR.ZONE.Shortcut ? 2 : 4) : (seg.zone === NR.ZONE.Review || seg.zone === NR.ZONE.Shortcut ? 3 : 6);
     for (let i = 0; i < n; i++) {
       const side = i % 2 ? 1 : -1, ox = side * (Rw + rnd(5, 26)), oy = rnd(-8, H + 18), r = rnd(0.8, 2.6);
       const col = seg.theme === "tract" ? (i % 2 ? 0x5C9CFF : 0xFF5C7A) : i % 3 === 0 ? 0xFFD34D : theme;
       const sp = seg.theme === "tract" ? (i % 2 ? 0.6 : -0.6) : rnd(0.3, 0.9);
-      B.add(fiberMat(col, myel && i % 2 === 0, +sp.toFixed(1)), sweep(seg, 0, seg.length, 6, circleRing(r), { ox, oy, vOff: rnd(0, 100) }));
+      const fm = fiberMat(col, myel && i % 2 === 0, +sp.toFixed(1)), vOff = rnd(0, 100);
+      for (const g of sweepN(seg, 0, seg.length, 8, circleRing(r, W.mid || W.low ? 5 : 7), { ox, oy, vOff })) B.add(fm, g);
     }
     if (!W.low && seg.length > 60) for (let s = rnd(20, 60); s < seg.length - 10; s += rnd(70, 140)) {
       const side = Math.random() < 0.5 ? -1 : 1, p = frameAt(seg, s, side * (Rw + rnd(8, 20)), rnd(2, H + 10)).p;
@@ -357,6 +366,13 @@ window.NRW_INIT = function () { window.NRW = (function () {
       const w = Math.min(5.6, Math.abs(e.laneX[1] - e.laneX[0]) * 0.92);
       const signs = e.laneX.map((lx, i) => hologram(W, seg, e.s - 0.5, lx, 4.6, labelTex([LETTER(i), short(q ? q.options[i] : "")], { big: true, border: HEXS(LANE[i % 4]), bigColor: HEXS(LANE[i % 4]) }), w, w * 0.5));
       W.gates.push({ e, signs });
+    } else if (e.type === E.Epsp || e.type === E.Ipsp) {
+      const ex = e.type === E.Epsp, sp = new THREE.Sprite(pspMat(ex)); sp.scale.set(1.7, 1.7, 1); sp.position.copy(M(seg.worldPos(e.s, e.x, NR.Sim.HOVER + 0.3)));
+      W.root.add(sp); W.psp.push({ e, sp, y: sp.position.y, ph: Math.random() * 6 });
+    } else if (e.type === E.Trigger && /^integ:(excite|inhibit)$/.test(e.tag)) {
+      const ex = e.tag === "integ:excite";
+      hologram(W, seg, Math.min(seg.length - 1, e.s + 28), 0, H - 2.2, labelTex(ex ? ["EPSP 가중 구간", "초록 ＋ 를 연달아 → 역치 → 발화!"] : ["IPSP 억제 구간", "파랑 − 로 과흥분을 막아!"], { w: 768, h: 220, border: ex ? "#5CFF9D" : "#5C9CFF", bg: "rgba(10,20,40,.85)" }), 9, 2.6);
+      W.root.add(new THREE.Mesh(archTube(seg, Math.min(seg.length - 1, e.s + 30), Rw - 0.5, H - 0.5, 0.35), glow(ex ? 0x5CFF9D : 0x5C9CFF)));
     } else if (e.type === E.NodeRing) {
       const m = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.17, 8, 32), glow(0x5CF6FF)); const f = frameAt(seg, e.s, e.x, NR.Sim.HOVER); m.position.copy(f.p); m.quaternion.copy(f.q); W.root.add(m); W.rings.push({ e, m, t: 0 });
     } else if (e.type === E.Obstacle) {
@@ -374,6 +390,16 @@ window.NRW_INIT = function () { window.NRW = (function () {
     }
   }
 
+  const pspCache = {};
+  function pspMat(ex) {
+    if (pspCache[ex]) return pspCache[ex];
+    const c = document.createElement("canvas"); c.width = c.height = 128; const x = c.getContext("2d"), col = ex ? "92,255,157" : "92,156,255";
+    const g = x.createRadialGradient(64, 64, 8, 64, 64, 62); g.addColorStop(0, `rgba(${col},1)`); g.addColorStop(0.55, `rgba(${col},.55)`); g.addColorStop(1, `rgba(${col},0)`);
+    x.fillStyle = g; x.fillRect(0, 0, 128, 128); x.fillStyle = "#0B1A2A"; x.font = "bold 86px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(ex ? "+" : "−", 64, 60);
+    x.font = "bold 20px sans-serif"; x.fillStyle = "#ffffff"; x.fillText(ex ? "EPSP" : "IPSP", 64, 104);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    return (pspCache[ex] = new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false }));
+  }
   function buildOrbs(W) {
     const list = []; for (const seg of W.graph.segments) for (const e of seg.events) if (e.type === NR.EV.Orb || e.type === NR.EV.RepairOrb) list.push({ seg, e });
     const mk = (filter, geo, mat, sc) => {
@@ -455,6 +481,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
         for (const g of W.orbs) { q.setFromEuler(new THREE.Euler(0, t * 2.5, 0.4)); for (const it of g.items) { tmp.compose(it.p, q, it.gone ? zero : one); g.im.setMatrixAt(it.i, tmp); } g.im.instanceMatrix.needsUpdate = true; }
         for (const o of W.obstacles) { if (o.pulse) o.grp.children[0].material.opacity = 0.5 + 0.35 * Math.sin(t * 8); else o.grp.children[0].scale.x = 1 + (Math.random() < 0.05 ? rnd(-0.15, 0.15) : 0); }
         for (const a of W.anim) { if (a.spin) a.o.rotation.y += dt * a.spin; if (a.flick) a.o.visible = Math.random() > 0.04; }
+        for (const p of W.psp) if (p.sp.visible) p.sp.position.y = p.y + Math.sin(t * 3 + p.ph) * 0.25;
         for (const f of W.flashes) { const k = 0.5 + 0.5 * Math.sin(t * 2.2 + f.ph); f.m.scale.setScalar(1.3 + k * 0.7); }
         for (const r of W.rings) { if (r.t > 0) { r.t -= dt; r.m.scale.setScalar(1 + (0.6 - r.t) * 2.5); if (r.t <= 0) r.m.visible = false; } else r.m.rotation.z += dt * 1.5; }
         for (const nd of W.nodes) if (nd.t > 0) { nd.t -= dt; nd.m.material.color.setHex(nd.t > 0 ? 0xFFFFFF : 0x2EE6D6); }
@@ -469,6 +496,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
           P.g.attributes.position.needsUpdate = true;
         }
       },
+      pspCollect(e) { const p = W.psp.find(x => x.e === e); if (p) p.sp.visible = false; },
       collect(e) { for (const g of W.orbs) { const it = g.items.find(x => x.e === e); if (it) { it.gone = true; return; } } },
       ringHit(e, hit) { const r = W.rings.find(x => x.e === e); if (!r) return; if (hit) { r.m.material = glow(0xFFFFFF); r.t = 0.6; for (const nd of W.nodes) if (Math.abs(nd.s - e.s) < 0.5) nd.t = 0.25; } else r.m.material = glow(0x553355, 0.5); },
       markSigns(signs, lane, correctLane) { signs.forEach((p, i) => { p.material.color.setHex(i === correctLane ? 0xB8FFD0 : i === lane ? 0xFF8A9A : 0x555577); }); },

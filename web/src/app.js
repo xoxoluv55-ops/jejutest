@@ -10,6 +10,7 @@ window.NR_MAIN = function () {
   //================== SAVE ==================
   const SAVE_KEY = "nerverunner_web_v1";
   const save = Object.assign({ voiceRate: 1.05, voicePitch: 1.12, voiceURI: "", voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
+  if (!(save.v >= 3)) { save.thinkSlow = 0.75; save.v = 3; }      // 2.5: slow motion was too slow
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } };
 
   //================== AUDIO (NRMusic.cs port + simple SFX) ==================
@@ -152,7 +153,11 @@ window.NR_MAIN = function () {
   window.addEventListener("keydown", firstTouch, { capture: true });
 
   //================== THREE SETUP ==================
-  const canvas = $("#gl"), dprCap = () => save.quality === "low" ? 1 : save.quality === "high" ? 2 : Math.min(devicePixelRatio || 1, 1.6);
+  // quality: "auto" = phones/tablets start without bloom; an FPS watchdog steps down if frames get slow
+  const TOUCH = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+  let autoLevel = TOUCH ? "mid" : "high";
+  const qEff = () => save.quality === "auto" ? autoLevel : save.quality;
+  const canvas = $("#gl"), dprCap = () => { const q = qEff(), d = devicePixelRatio || 1; return q === "low" ? 1 : q === "mid" ? Math.min(d, 1.3) : Math.min(d, 1.75); };
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(dprCap());
   const scene = new THREE.Scene(), BG = new THREE.Color(0x0A0724);
@@ -170,11 +175,11 @@ window.NR_MAIN = function () {
 
   const { M, frameAt, LANE, HEXS } = NRW; const LETTER = i => String.fromCharCode(65 + i);
   let world = null;
-  function buildWorld(stage, graph) { if (world) world.dispose(scene); world = NRW.build(scene, stage, graph, bank, save.quality); return world; }
+  function buildWorld(stage, graph) { if (world) world.dispose(scene); world = NRW.build(scene, stage, graph, bank, qEff()); return world; }
 
   // bloom post-processing (skipped on "가볍게")
   function setupPost() {
-    const PP = window.THREE_PP; composer = null; if (!PP || save.quality === "low") return;
+    const PP = window.THREE_PP; composer = null; if (!PP || qEff() !== "high") { resize(); return; }
     try { composer = new PP.EffectComposer(renderer); composer.addPass(new PP.RenderPass(scene, camera)); composer.addPass(new PP.UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.6, 0.4, 0.86)); composer.addPass(new PP.OutputPass()); } catch (e) { composer = null; }
     resize();
   }
@@ -298,11 +303,14 @@ window.NR_MAIN = function () {
     return pickOne(["자, 문제!", "문제 나간다!", "이번 문제야.", "잘 들어 봐!"]) + " " + q.question + " " +
       q.options.map((o, i) => w[i] + (hasBatchim(w[i]) ? "은 " : "는 ") + optSpeech(o)).join(", ") + ". " + pickOne(["어느 쪽일까?", "골라 봐!", "어디로 갈래?", "정답 쪽으로 가 보자!"]);
   }
+  // while racing STAR-01 says the key sentence only; the full explanation is one tap away (🔊 해설 듣기)
+  const firstSentence = t => { const m = String(t).match(/^[^.!?]+[.!?]/); return m ? m[0] : String(t); };
   function answerSpeech(q, chosen, correct) {
     const ans = optSpeech(q.options[q.answer]), wrong = correct ? "" : NR.wrongExp(q, chosen);
-    if (correct) return pickOne(["딩동댕! 맞았어!", "정답! 잘했어!", "맞아, 역시!", "좋아, 정답이야!"]) + " " + q.explanation;
-    return pickOne(["앗, 아깝다!", "아쉽다!", "음, 이건 틀렸어."]) + " 정답은 " + ans + (hasBatchim(ans) ? "이야. " : "야. ") + (wrong ? wrong + " " : "") + pickOne(["정리해 줄게.", "다시 보자.", "기억해 둬!"]) + " " + q.explanation;
+    if (correct) return pickOne(["딩동댕! 맞았어!", "정답! 잘했어!", "맞아, 역시!", "좋아, 정답이야!"]) + " " + firstSentence(q.explanation);
+    return pickOne(["앗, 아깝다!", "아쉽다!", "음, 이건 틀렸어."]) + " 정답은 " + ans + (hasBatchim(ans) ? "이야. " : "야. ") + firstSentence(wrong || q.explanation);
   }
+  let lastAnswer = null;
   function showQuestion(q, title) {
     if (!q) return; show("#apanel", false); answerT = 0;
     $("#q-title").textContent = title; $("#q-tag").textContent = "[" + q.topic + " · " + q.difficulty + "]"; $("#q-text").textContent = q.question;
@@ -316,10 +324,12 @@ window.NR_MAIN = function () {
     p.classList.toggle("bad", !correct); $("#a-title").textContent = (correct ? "정답!  " : "오답…  정답은 ") + LETTER(q.answer) + ". " + q.options[q.answer];
     const wrong = correct ? "" : NR.wrongExp(q, chosen); $("#a-wrong").textContent = wrong; $("#a-wrong").style.display = wrong ? "block" : "none";
     $("#a-text").textContent = q.explanation; $("#a-extra").textContent = extra || "";
-    show("#apanel", true); answerT = sec;
+    p.classList.remove("full"); $("#a-more").textContent = "자세히 ▾"; show("#apanel", true); answerT = Math.min(sec, 6); lastAnswer = { q, chosen, correct };
     Voice.say(answerSpeech(q, chosen, correct), { tag: "exp" });   // explanation is never cut off by the next question (it waits)
   }
   $("#a-close").addEventListener("pointerup", () => { show("#apanel", false); answerT = 0; Voice.stop(); });
+  $("#a-more").addEventListener("pointerup", () => { const p = $("#apanel"), f = !p.classList.contains("full"); p.classList.toggle("full", f); $("#a-more").textContent = f ? "접기 ▴" : "자세히 ▾"; answerT = Math.max(answerT, f ? 12 : 4); });
+  $("#a-listen").addEventListener("pointerup", () => { if (!lastAnswer) return; const { q, chosen, correct } = lastAnswer, w = correct ? "" : NR.wrongExp(q, chosen); Voice.say((w ? w + " " : "") + q.explanation, { tag: "exp" }); answerT = Math.max(answerT, 6); });
 
   let storyWait = 0;
   function tickUi(dt) {
@@ -387,19 +397,19 @@ window.NR_MAIN = function () {
     } else if (r.phase === "run") {
       r.t += dt; if (r.t > 0.8 && r.t < 1.2) countdown("");
       const inp = r.auto ? r.auto.think(sim) : readInput(dt);
-      if (r.queued && (!Voice.has("exp") || distToDecision() < 60)) { const qd = r.queued; r.queued = null; showQuestion(bank.get(qd.id), qd.title); Snd.beep(); }
+      if (r.queued && (!Voice.has("exp") || distToDecision() < 110)) { const qd = r.queued; r.queued = null; showQuestion(bank.get(qd.id), qd.title); Snd.beep(); }
       let wantSlow = 1;
       if (r.pending && !r.auto) {
         const base = NR.clamp(save.thinkSlow, 0.2, 1), D = distToDecision(), v = Math.max(12, sim.speed);
-        const need = r.queued ? Voice.remaining("exp") + 9 : save.voiceOn ? Voice.remaining("q") + 2.5 : 0;   // seconds of talking/reading still needed
-        wantSlow = need > 0 && D < 900 ? NR.clamp(D / (v * need), 0.12, base) : base;
+        const need = r.queued ? Voice.remaining("exp") + 6 : save.voiceOn ? Voice.remaining("q") + 1.5 : 0;   // seconds of talking/reading still needed
+        wantSlow = need > 0 && D < 900 ? NR.clamp(D / (v * need), Math.min(base, 0.5), base) : base;
       }
       r.timeScale += NR.clamp(wantSlow - r.timeScale, -dt * 2.5, dt * 2.5);
       $("#h-slow").style.display = r.timeScale < 0.97 && !$("#qpanel").classList.contains("on") ? "block" : "none"; $("#h-slow").textContent = r.queued ? "해설 듣는 중 · 슬로모션" : "생각 시간 · 슬로모션";
       let sdt = dt * r.timeScale * (r.auto ? WARP : 1);
       const n = Math.max(1, Math.ceil(sdt / (1 / 120) - 1e-4)), h = sdt / n;
       for (let i = 0; i < n && r.phase === "run"; i++) { sim.step(inp, h); inp.jump = false; handleEvents(); }
-      if (r.pending && r.pendingLanes) { const lane = NR.Sim.nearest(r.pendingLanes, sim.x); $$("#q-opts .opt").forEach((o, i) => o.classList.toggle("cur", i === lane)); }
+      updateLane();
     } else if (r.phase === "finish") {
       r.finishT += dt; if (r.finishT > 3.2) { r.phase = "done"; showResult(); }
     }
@@ -408,11 +418,38 @@ window.NR_MAIN = function () {
     follow(sim, dt, running);
     // HUD
     const prog = r.graph.referenceLength > 0 ? NR.clamp01(sim.distance / r.graph.referenceLength) : 0, pf = r.phase === "finish" || r.phase === "done" ? 1 : prog;
-    $("#h-prog").style.width = (pf * 100) + "%"; $("#h-star").style.left = (pf * 100) + "%";
-    $("#h-time").textContent = fmt(sim.raceTime); $("#h-score").textContent = r.learn.correct + "/" + r.learn.total; $("#h-coins").textContent = sim.coins;
-    $("#h-energy").style.width = (sim.boostEnergy * 100) + "%";
+    setStyle("#h-prog", "width", (pf * 100).toFixed(1) + "%"); setStyle("#h-star", "left", (pf * 100).toFixed(1) + "%");
+    setText("#h-time", fmt(sim.raceTime)); setText("#h-score", r.learn.correct + "/" + r.learn.total); setText("#h-coins", sim.coins);
+    setStyle("#h-energy", "width", (sim.boostEnergy * 100).toFixed(0) + "%");
+    updateVm(dt);
     Snd.setHum(running ? sim.speed01 : 0, running && sim.boosting);
   }
+
+  // DOM writes only when something changed (cheaper on phones)
+  const domCache = new Map();
+  function setText(sel, v) { v = String(v); if (domCache.get(sel) !== v) { domCache.set(sel, v); $(sel).textContent = v; } }
+  function setStyle(sel, k, v) { const key = sel + k; if (domCache.get(key) !== v) { domCache.set(key, v); $(sel).style[k] = v; } }
+  let laneShown = -2;
+  function updateLane() {
+    const r = race, pill = $("#h-lane");
+    if (!r.pending || !r.pendingLanes) { if (laneShown !== -2) { pill.style.display = "none"; laneShown = -2; $$("#q-opts .opt").forEach(o => o.classList.remove("cur")); } return; }
+    const lane = NR.Sim.nearest(r.pendingLanes, r.sim.x); if (lane === laneShown) return; laneShown = lane;
+    const q = bank.get(r.pending), c = HEXS(LANE[lane % 4]);
+    pill.style.display = "block"; pill.style.borderColor = c; pill.innerHTML = `지금 <span style="color:${c}">${LETTER(lane)}</span> ${q ? esc(q.options[lane].length > 14 ? q.options[lane].slice(0, 13) + "…" : q.options[lane]) : ""}`;
+    $$("#q-opts .opt").forEach((o, i) => o.classList.toggle("cur", i === lane));
+  }
+  // membrane-potential meter (shown in EPSP / IPSP zones)
+  let vmHold = 0;
+  function updateVm(dt) {
+    const sim = race.sim, el = $("#h-vm");
+    if (sim.mission) vmHold = 3; else vmHold -= dt;
+    const on = vmHold > 0; if (el.classList.contains("on") !== on) el.classList.toggle("on", on); if (!on) return;
+    const v = sim.vm, pct = NR.clamp01((v + 90) / 130) * 100;
+    setStyle("#h-vm-fill", "height", pct.toFixed(0) + "%"); setText("#h-vm-val", Math.round(v) + " mV");
+    setStyle("#h-vm-fill", "background", v >= -58 ? "linear-gradient(0deg,#FFB627,#FF4D6D)" : v > -70 ? "linear-gradient(0deg,#5C9CFF,#5CFF9D)" : "linear-gradient(0deg,#3A4DFF,#5C9CFF)");
+    setText("#h-vm-goal", sim.mission === "excite" ? "역치 -55까지 올려!" : sim.mission === "inhibit" ? "-55 아래로 지켜!" : "");
+  }
+  function pulseVm(cls) { const el = $("#h-vm"); el.classList.remove("fire", "seize"); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 900); }
 
   function handleEvents() { const sim = race.sim; for (const e of sim.events) handle(e); sim.events.length = 0; }
   function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); SV.spinVel = 540; } else { Snd.thud(); setExpr("Wrong", 2.2); CAM.shake = 0.5; } }
@@ -455,6 +492,24 @@ window.NR_MAIN = function () {
       case S.Checkpoint: toast("체크포인트", "#9B5CFF", 1); break;
       case S.EnterSegment: setSection(sim.seg.zone === NR.ZONE.Review ? "복습 구간" : sim.seg.zone === NR.ZONE.Shortcut ? "지름길" : sim.seg.name); break;
       case S.Finish: finish(); break;
+      case S.Psp: {
+        world.pspCollect(e.src); const ex = e.tag === "epsp";
+        if (!e.correct) { toast("불응기! 지금은 반응이 없어요", "#B4AEDB", 0.8); break; }
+        Snd.tone("triangle", ex ? 660 : 520, ex ? 990 : 300, 0.12, 0.2);
+        toast(ex ? "EPSP +7 mV" : "IPSP −7 mV", ex ? "#5CFF9D" : "#5C9CFF", 0.6); break;
+      }
+      case S.Fire:
+        Snd.chime(); Snd.whoosh(); CAM.shake = 0.5; SV.spinVel = 720; setExpr("Joy", 1.5); NRW.U.uFire.value = 1; pulseVm("fire");
+        toast("⚡ 역치 도달! 활동전위 발화!", "#FFD34D", 1.6); Voice.say(pickOne(["발화! 활동전위다!", "역치 넘었다! 슝!", "좋아, 발화 성공!"]), { mode: "idle" }); break;
+      case S.Seizure:
+        Snd.thud(); CAM.shake = 0.8; setExpr("Hurt", 1.2); NRW.U.uSeize.value = 1; pulseVm("seize");
+        toast("과흥분! 발작 위험 — IPSP로 진정시켜!", "#FF4D6D", 1.6); Voice.say("앗, 과흥분이야! 파란 IPSP를 모아 줘!", { mode: "idle" }); break;
+      case S.MissionEnd: {
+        const ex = e.tag === "excite";
+        if (e.correct) { toast(ex ? "EPSP 가중 성공! 발화 " + sim.missionFires + "회" : "과흥분 억제 성공! 보너스 가속", "#5CFF9D", 2); Voice.say(ex ? "시간적 가중 성공! EPSP가 모여서 발화했어!" : "잘했어! IPSP가 막전위를 낮춰서 과흥분을 막았어!", { mode: "idle" }); }
+        else { toast(ex ? "역치에 못 미쳤어요 — EPSP를 더 빨리 연달아!" : "억제 실패 — 과흥분이 일어났어요", "#FF8A3D", 2); Voice.say(ex ? "아깝다! EPSP를 더 빠르게 연달아 모아야 역치까지 가." : "과흥분이 일어났어. IPSP를 더 모아 보자!", { mode: "idle" }); }
+        break;
+      }
     }
   }
   function trigger(tag) {
@@ -466,6 +521,11 @@ window.NR_MAIN = function () {
         if (arg === "corner") hint("코너 진입! 안쪽으로 조향해 벽에 부딪히지 않게 하세요.", 4);
         else if (arg === "jump") hint("NULL 교란 구간! 큰 파동은 [점프], 작은 블록은 피하세요.", 4);
         else if (arg === "drift") hint("급커브! [드리프트]를 누른 채 커브 방향으로 조향 → 놓으면 미니 터보!", 6);
+        break;
+      case "integ":
+        if (arg === "excite") hint("EPSP 가중 구간! 초록 ＋ 를 연달아 먹으면 막전위가 올라가 역치(-55 mV)에서 발화 → 가속! 파랑 − 는 피하기", 6);
+        else if (arg === "inhibit") hint("IPSP 억제 구간! NULL이 막전위를 계속 올려요. 파랑 − 를 먹어서 역치 아래로 지키기! 초록 ＋ 는 피하기", 6);
+        if (arg === "excite" || arg === "inhibit") Voice.say(arg === "excite" ? "EPSP 구간이야! 초록 플러스를 연달아 모으면 역치까지 올라가서 발화해!" : "NULL 때문에 뉴런이 과흥분 중이야! 파란 마이너스를 모아서 진정시켜 줘!", { mode: Voice.has("exp") ? "queue" : "replace" });
         break;
       case "banner": toast(arg === "soma" ? "세포체 - 입력 신호의 가중(통합)" : "축삭종말 접근 - 시냅스 소포 준비", "#2EE6D6", 2.2); break;
       case "codex": r.learn.codexSeen.add(arg); { const ce = codexById.get(arg); if (ce && !save.codexUnlocked.includes(arg)) toast("신경 도감 등록: " + ce.name, "#2EE6D6", 1.8); } break;
@@ -578,7 +638,7 @@ window.NR_MAIN = function () {
       ["말 속도", "", "voiceRate", [[0.95, "천천히"], [1.05, "보통"], [1.18, "빠르게"]]],
       ["배경 음악", "", "musicOn", [[true, "켜기"], [false, "끄기"]]],
       ["효과음", "", "sfxOn", [[true, "켜기"], [false, "끄기"]]],
-      ["문제 생각 시간", "문제가 뜨면 레이스가 느려져요 (기록 손해 없음)", "thinkSlow", [[0.25, "아주 느리게"], [0.4, "느리게"], [0.6, "조금"], [1, "끄기"]]],
+      ["문제 생각 시간", "문제가 뜨면 레이스가 조금 느려져요 (기록 손해 없음)", "thinkSlow", [[0.5, "느리게"], [0.75, "조금"], [1, "끄기"]]],
       ["도움말 힌트", "", "showHints", [[true, "켜기"], [false, "끄기"]]],
       ["그래픽 품질", "버벅이면 '가볍게'", "quality", [["low", "가볍게"], ["auto", "자동"], ["high", "선명"]]],
     ];
@@ -586,7 +646,7 @@ window.NR_MAIN = function () {
     el.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => {
       const k = b.dataset.k, v = JSON.parse(b.dataset.v); save[k] = v; persist();
       if (k === "musicOn") Snd.setMusic(v); if (k === "sfxOn" && Snd.sfx) Snd.sfx.gain.value = v ? 0.5 : 0;
-      if (k === "quality") { renderer.setPixelRatio(dprCap()); setupPost(); resize(); if (!race) { if (world) world.dispose(scene); world = null; menuScene(); } }
+      if (k === "quality") { autoLevel = TOUCH ? "mid" : "high"; renderer.setPixelRatio(dprCap()); setupPost(); resize(); if (!race) { if (world) world.dispose(scene); world = null; menuScene(); } }
       if ((k === "voiceOn" && v) || k === "voicePitch" || k === "voiceRate") Voice.say("안녕! 나는 스타 제로원이야. 이렇게 읽어 줄게!"); if (k === "voiceOn" && !v) Voice.stop();
       renderSettings(el, compact);
     }));
@@ -634,11 +694,23 @@ window.NR_MAIN = function () {
     camera.lookAt(fr.p.clone().addScaledVector(right, -3.2)); if (camera.fov !== 50) { camera.fov = 50; camera.updateProjectionMatrix(); }
   }
 
+  // FPS watchdog: if the race runs below ~42 fps for 2 s, drop bloom, then resolution
+  let fpsAcc = 0, fpsN = 0, fpsCool = 3;
+  function watchFps(dt) {
+    if (!race || race.phase !== "run" || race.paused || save.quality !== "auto") { fpsAcc = fpsN = 0; return; }
+    if (fpsCool > 0) { fpsCool -= dt; return; }
+    fpsAcc += dt; fpsN++; if (fpsAcc < 2) return;
+    const avg = fpsAcc / fpsN; fpsAcc = fpsN = 0;
+    if (avg > 1 / 42 && autoLevel !== "low") { autoLevel = autoLevel === "high" ? "mid" : "low"; renderer.setPixelRatio(dprCap()); setupPost(); fpsCool = 3; toast("부드럽게 달리도록 화질을 자동으로 낮췄어요", "#B4AEDB", 1.6); }
+  }
+
   //================== LOOP ==================
   let last = performance.now(), tAll = 0;
   function frame(now) {
     requestAnimationFrame(frame);
     const dt = Math.min(0.1, (now - last) / 1000); last = now; tAll += dt; NRW.U.uTime.value = tAll;
+    watchFps(dt);
+    NRW.U.uFire.value = Math.max(0, NRW.U.uFire.value - dt * 1.2); NRW.U.uSeize.value = Math.max(0, NRW.U.uSeize.value - dt * 1.5);
     if (race) tickRace(dt); else tickMenu(dt);
     NRW.U.uStar.value.copy(star.root.position);
     if (world) world.update(dt, tAll, race ? race.sim : null);

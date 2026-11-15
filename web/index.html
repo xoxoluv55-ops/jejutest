@@ -188,6 +188,47 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 .set select{font-size:16px;padding:8px 10px;border-radius:12px;background:var(--card);color:var(--text);border:2px solid var(--line);max-width:260px;font-family:var(--body)}
 .voice-set{grid-column:1/-1}.voice-set small{max-width:560px}
 
+/* ---------- 2.5: compact question / answer strips (the road must stay visible) ---------- */
+.qpanel,.apanel{top:calc(max(8px,env(safe-area-inset-top)) + 64px);width:min(820px,72vw);padding:8px 14px 10px;background:rgba(16,12,48,.80);border-width:2px;border-radius:16px;box-shadow:none;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.q-title b{font-size:17px}.q-title small{font-size:13px}
+.q-text{font-size:19px;margin:3px 0 6px;line-height:1.35}
+.q-opts{gap:6px}
+.opt{padding:4px 8px;font-size:16px;line-height:1.25;border-width:2px;border-radius:12px;background:rgba(36,28,87,.85)}
+.opt .lane{display:inline;font-size:12px;margin-right:6px}.opt .k{font-size:18px}
+.a-title{font-size:20px}.a-wrong{font-size:15px;margin-top:2px}.a-text{font-size:16px;line-height:1.45;margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.apanel.full .a-text{-webkit-line-clamp:unset;display:block}.apanel:not(.full) .a-wrong{display:-webkit-box!important;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.a-extra{font-size:13px;margin-top:2px}.a-close{position:static}
+.a-btns{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}.a-btn{font-size:13px;padding:4px 10px;border-radius:10px;position:static}
+.lanepill{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(14px,env(safe-area-inset-bottom)) + 26px);font-family:var(--title);font-size:22px;padding:4px 16px;border-radius:999px;background:rgba(16,12,48,.85);border:3px solid #fff;display:none;white-space:nowrap}
+.vm{position:absolute;left:max(12px,env(safe-area-inset-left));top:38%;transform:translateY(-50%);width:70px;display:none;flex-direction:column;align-items:center;gap:3px;background:rgba(16,12,48,.82);border:2px solid var(--line);border-radius:14px;padding:6px 4px;text-align:center}
+.vm.on{display:flex}.vm-title{font-family:var(--title);font-size:14px;color:var(--dim)}
+.vm-bar{position:relative;width:20px;height:150px;border-radius:10px;background:rgba(255,255,255,.1);overflow:hidden;border:1px solid var(--line)}
+#h-vm-fill{position:absolute;left:0;right:0;bottom:0;height:40%;background:linear-gradient(0deg,#5C9CFF,#5CFF9D);transition:height .08s}
+.vm-bar i{position:absolute;left:-2px;right:-2px;height:2px}.vm-bar .th{background:#FF4D6D;bottom:26.9%}.vm-bar .rest{background:#ffffff80;bottom:15.4%}
+.vm b{font-family:var(--title);font-weight:400;font-size:16px}.vm small{font-size:11px;color:var(--dim);line-height:1.2}
+.vm.fire{border-color:var(--yellow);box-shadow:0 0 18px rgba(255,211,77,.8)}.vm.seize{border-color:var(--red);box-shadow:0 0 18px rgba(255,77,109,.8)}
+@media (max-height:520px){
+  .hud-top{top:max(6px,env(safe-area-inset-top))}
+  .section{font-size:15px;padding:3px 10px;border-radius:10px;max-width:30vw}
+  .prog{height:8px}.prog span{font-size:15px;top:-6px}
+  .stat{padding:2px 8px;min-width:54px;border-radius:10px}.stat small{font-size:10px}.stat b{font-size:16px}
+  .icon{width:42px;height:42px;font-size:18px}
+  #h-boss{font-size:12px}#h-boss .bar{height:10px}
+  .qpanel,.apanel{top:calc(max(6px,env(safe-area-inset-top)) + 44px);width:min(700px,64vw);padding:5px 10px 7px}
+  .q-title b{font-size:13px}.q-title small{display:none}.q-text{font-size:15px;margin:1px 0 4px}
+  .opt{font-size:13px;padding:3px 6px}.opt .lane{font-size:10px}.opt .k{font-size:14px}
+  .a-title{font-size:15px}.a-text{font-size:13px}.a-wrong{font-size:12px}.a-btn{font-size:11px;padding:3px 8px}
+  .tb{width:66px;height:66px;font-size:26px;border-radius:18px}.tb.act{width:56px;height:56px;font-size:10px}.tb.act i{font-size:20px}.tb.jump{width:68px;height:68px}
+  .pad{gap:8px;bottom:max(8px,env(safe-area-inset-bottom))}
+  .energy{height:10px;width:min(260px,30vw);bottom:max(6px,env(safe-area-inset-bottom))}.energy span{font-size:8px;line-height:8px}
+  .lanepill{font-size:15px;bottom:calc(max(6px,env(safe-area-inset-bottom)) + 16px);border-width:2px}
+  .hint,.story{font-size:13px;bottom:calc(max(6px,env(safe-area-inset-bottom)) + 18px);max-width:44vw;padding:5px 10px}
+  .toast{font-size:20px;top:30%}.countdown{font-size:90px}
+  .vm{width:54px;top:52%}.vm-bar{height:90px;width:14px}.vm b{font-size:12px}.vm-title{font-size:11px}.vm small{display:none}
+  .slow{top:56px;font-size:12px}
+  .d-text{font-size:17px}.d-box{padding:10px 16px}.d-who b{font-size:17px}
+}
+
 </style>
 </head>
 <body>
@@ -252,6 +293,8 @@ h2{font-family:var(--title);font-weight:400;margin:0}
     <div id="h-hint" class="hint"></div>
     <div id="h-story" class="story"><b></b><span></span></div>
     <div id="h-slow" class="slow">생각 시간 · 슬로모션</div>
+    <div id="h-lane" class="lanepill"></div>
+    <div id="h-vm" class="vm"><div class="vm-title">막전위</div><div class="vm-bar"><div id="h-vm-fill"></div><i class="th" title="역치"></i><i class="rest"></i></div><b id="h-vm-val">-70 mV</b><small id="h-vm-goal"></small></div>
   </section>
 
   <!-- QUESTION / ANSWER -->
@@ -259,14 +302,14 @@ h2{font-family:var(--title);font-weight:400;margin:0}
     <div class="q-title"><b id="q-title"></b><small id="q-tag"></small></div>
     <div id="q-text" class="q-text"></div>
     <div id="q-opts" class="q-opts"></div>
-    <div class="q-help">원하는 답의 차선으로 조향해서 들어가세요 · 지금 차선이 반짝여요</div>
+
   </section>
   <section id="apanel" class="apanel">
     <div id="a-title" class="a-title"></div>
     <div id="a-wrong" class="a-wrong"></div>
     <div id="a-text" class="a-text"></div>
     <div id="a-extra" class="a-extra"></div>
-    <button id="a-close" class="a-close">닫기 ✕</button>
+    <div class="a-btns"><button id="a-more" class="a-btn">자세히 ▾</button><button id="a-listen" class="a-btn">🔊 해설 듣기</button><button id="a-close" class="a-btn">닫기 ✕</button></div>
   </section>
 
   <!-- TOUCH CONTROLS -->
@@ -410,7 +453,9 @@ const NR = (function () {
 
   // ---------------- Track model ----------------
   const ZONE = { Normal: 0, ForkApproach: 1, Shortcut: 2, Review: 3, Myelin: 4, Damaged: 5, Synapse: 6 };
-  const EV = { Trigger: 0, Gate: 1, NodeRing: 2, Obstacle: 3, Orb: 4, RepairOrb: 5, Checkpoint: 6, Finish: 7 };
+  const EV = { Trigger: 0, Gate: 1, NodeRing: 2, Obstacle: 3, Orb: 4, RepairOrb: 5, Checkpoint: 6, Finish: 7, Epsp: 8, Ipsp: 9 };
+  // web 2.5 tuning (Unity/C# parity = { width: 1, arcade: false }): wider roads, arcade drift
+  const TUNE = { width: 1.45, arcade: true };
 
   class Segment {
     constructor(id, name, zone, hw) { this.id = id; this.name = name; this.zone = zone; this.halfWidth = hw; this.next = []; this.events = []; this.mergeOffset = 0; this.fork = null; this.theme = null; }
@@ -473,9 +518,12 @@ const NR = (function () {
     eventAt(type, sFromNow, x, tag = null) { const e = mkEvent(type, this.polyLen + sFromNow, x, tag); this.pending.push(e); return e; }
     straightWith(L, count, make, rise = 0) { for (let i = 0; i < count; i++) make(i, L * (i + 1) / (count + 1)); return this.straight(L, rise); }
     cut(name, zone, hw, theme = null) {
-      const seg = this.graph.add(name, zone, hw); seg.theme = theme; seg.build(this.pts.slice());
+      const W = TUNE.width, seg = this.graph.add(name, zone, hw * W); seg.theme = theme; seg.build(this.pts.slice());
       const scale = this.polyLen > 1e-3 ? seg.length / this.polyLen : 1;
-      for (const e of this.pending) { e.s = clamp(e.s * scale, 0, seg.length); seg.events.push(e); }
+      for (const e of this.pending) {
+        e.s = clamp(e.s * scale, 0, seg.length); seg.events.push(e);
+        if (W !== 1) { if (e.laneX) e.laneX = e.laneX.map(x => x * W); else e.x *= W; if (e.type === EV.Obstacle) e.width *= W; }
+      }
       seg.sortEvents(); this.pending = [];
       if (!this.graph.start) this.graph.start = seg;
       if (this.pendingMerge) {
@@ -485,7 +533,7 @@ const NR = (function () {
       this.prevSeg = seg; this.pts = [this.pos]; this.polyLen = 0; return seg;
     }
     fork(approach, q, length, bulge, spacing) {
-      const lanes = q.options.length, laneX = laneXs(lanes, spacing);
+      const lanes = q.options.length, laneX = laneXs(lanes, spacing * TUNE.width);
       approach.fork = { questionId: q.id, laneX, correctLane: q.answer }; approach.nextStartOffset = laneX;
       const F = this.pos, f = this.fwd, r = this.right, M = add(F, mul(f, length));
       const branches = [], mergeOffsets = [];
@@ -499,7 +547,7 @@ const NR = (function () {
           bp.push(add(add(add(F, mul(f, along)), mul(r, lat)), mul(UP, y)));
         }
         bp.push(add(sub(M, mul(f, 20)), mul(r, oEnd))); bp.push(add(M, mul(r, oEnd)));
-        const seg = this.graph.add((correct ? "Shortcut_" : "Review_") + q.id + "_" + i, correct ? ZONE.Shortcut : ZONE.Review, 5);
+        const seg = this.graph.add((correct ? "Shortcut_" : "Review_") + q.id + "_" + i, correct ? ZONE.Shortcut : ZONE.Review, 5 * TUNE.width);
         seg.build(bp);
         seg.events.push(mkEvent(EV.Trigger, 4, 0, (correct ? "forkok:" : "review:") + q.id));
         for (let k = 0; k < 5; k++) seg.events.push(mkEvent(EV.Orb, 30 + k * 32, 0));
@@ -517,12 +565,30 @@ const NR = (function () {
     return f(g.start);
   }
 
+  // EPSP / IPSP summation zone (web 2.5). excite: collect EPSPs fast enough to reach threshold
+  // (temporal summation) -> action potential + turbo. inhibit: NULL over-excites the neuron, collect
+  // IPSPs to keep the membrane below threshold until the end of the zone.
+  function psps(b, kind, from, to) {
+    const good = kind === "excite" ? EV.Epsp : EV.Ipsp, bad = kind === "excite" ? EV.Ipsp : EV.Epsp, lanes = [-3, 2.6, 0, -2.6, 3, -1.2];
+    let c = 0;
+    for (let s0 = from; s0 + 50 < to; s0 += 68, c++) {
+      const x = lanes[c % lanes.length], bx = x > 0 ? -3.4 : 3.4;
+      for (let k = 0; k < 4; k++) b.eventAt(good, s0 + k * 11, x + Math.sin(k * 1.7) * 0.5);
+      for (let k = 0; k < 2; k++) b.eventAt(bad, s0 + 8 + k * 16, bx);
+    }
+  }
+  function integrationZone(b, kind, name, theme, dir) {
+    b.trigger("integ:" + kind, 2); psps(b, kind, 30, 400); b.eventAt(EV.Trigger, 405, 0, "integ:end");
+    b.straight(190); b.turn(dir * 40, 160); b.straight(110);
+    return b.cut(name, ZONE.Normal, 6, theme);
+  }
+
   // ---------------- Course layouts (ported from Chapter1/7/9Layout.cs, QuizCourseLayout.cs) ----------------
   function chapter1(bank) {
     const b = new Builder(V(0, 0, 0), 0);
     b.trigger("story:prologue", 1).trigger("hint:steer", 30).trigger("codex:dendrite", 60);
-    b.straightWith(240, 6, (i, s) => b.eventAt(EV.Orb, s, i % 2 === 0 ? -2.5 : 2.5));
-    b.trigger("hint:corner", 0); b.turn(55, 140); b.straight(120); b.turn(-60, 110, 6);
+    b.trigger("integ:excite", 70); psps(b, "excite", 95, 300); b.eventAt(EV.Trigger, 300, 0, "integ:end");
+    b.straight(240); b.trigger("hint:corner", 0); b.turn(55, 140); b.straight(120); b.turn(-60, 110, 6);
     b.cut("가지돌기 (Dendrites)", ZONE.Normal, 6);
     b.trigger("codex:soma", 10).trigger("banner:soma", 10);
     b.straight(100); b.turn(70, 75); b.straightWith(60, 2, (i, s) => b.eventAt(EV.Orb, s, 0)); b.turn(-70, 75); b.straight(80);
@@ -572,7 +638,8 @@ const NR = (function () {
     const b = new Builder(V(0, 0, 0), 0);
     const gate = (id, at, tag, sp) => { const q = bank.get(id); b.eventAt(EV.Trigger, at, 0, "gateq:" + id); const g = b.eventAt(EV.Gate, at + 175, 0, tag); g.questionId = id; g.laneX = laneXs(q.options.length, sp); g.correctLane = q.answer; };
     b.trigger("story:ch7_intro", 1).trigger("codex:frontal", 20).trigger("hint:steer", 30);
-    b.straightWith(220, 6, (i, s) => b.eventAt(EV.Orb, s, i % 2 === 0 ? -2.5 : 2.5), 4); b.turn(45, 150); b.straight(120, 6); b.turn(-50, 120);
+    b.trigger("integ:excite", 40); psps(b, "excite", 60, 330); b.eventAt(EV.Trigger, 335, 0, "integ:end");
+    b.straight(220, 4); b.turn(45, 150); b.straight(120, 6); b.turn(-50, 120);
     b.cut("이마엽 지구 (Frontal)", ZONE.Normal, 6, "frontal");
     b.trigger("codex:m1", 10).trigger("codex:broca", 300); gate("ch7_gate_m1", 40, "lobe", 6); gate("ch7_gate_broca", 340, "lobe", 6); b.straight(600, -4);
     b.cut("이마엽 · 운동/언어 게이트", ZONE.Normal, 9, "frontal");
@@ -614,7 +681,7 @@ const NR = (function () {
     });
     b.trigger("forkq:ch9_final_brownsequard", 0).trigger("codex:brown_sequard", 0); arc(70, 2);
     const f = b.cut("최종 진단 갈림길", ZONE.ForkApproach, 9, "boss"); b.fork(f, bank.get("ch9_final_brownsequard"), 380, 140, 9);
-    b.trigger("story:ch9_final", 0); b.straightWith(260, 6, (i, s) => b.eventAt(EV.Orb, s, 2.5 * Math.sin(i * 1.2)));
+    b.trigger("story:ch9_final", 0).trigger("integ:inhibit", 8); psps(b, "inhibit", 20, 225); b.eventAt(EV.Trigger, 232, 0, "integ:end"); b.straight(260);
     b.event(EV.Finish, 0, "finish", -10); b.cut("신경망 복구 탈출로", ZONE.Normal, 6, "boss");
     const g = b.graph; g.referenceLength = shortestLength(g); g.parTime = g.referenceLength / 38 + 10; return g;
   }
@@ -638,35 +705,38 @@ const NR = (function () {
           xs.forEach((x, i) => { const full = i === 2, o = b.eventAt(EV.Obstacle, 60 + i * 55, x, full ? "pulse" : "glitch"); o.width = full ? 16 : 3.2; o.height = 1.3; b.eventAt(EV.Orb, 85 + i * 55, -x * 0.8); });
           b.straight(360); b.turn(dir * 40, 140); b.cut(obs++ === 0 ? "NULL 교란 구간" : "NULL 교란 구간 " + obs, ZONE.Normal, 6, theme); break;
         }
+        case "excite": case "inhibit": integrationZone(b, kind, kind === "excite" ? "EPSP 가중 구간" : "IPSP 억제 구간", theme, dir); break;
         case "orbs": b.straightWith(200, 6, (i, s) => b.eventAt(EV.Orb, s, 2.6 * Math.sin(i * 1.2))); b.turn(dir * 50, 130, 5); b.cut("신호 가속 구간", ZONE.Normal, 6, theme); break;
         case "finish": b.straightWith(260, 6, (i, s) => b.eventAt(EV.Orb, s, 2.4 * Math.sin(i * 1.4))); b.event(EV.Finish, 0, "finish", -10); b.cut(title + " 결승", ZONE.Normal, 6, theme); break;
       }
       if (kind !== "story" && kind !== "codex" && kind !== "hint") dir = -dir;
     }
-    const g = b.graph; g.referenceLength = shortestLength(g); g.parTime = g.referenceLength / 39.2; return g;
+    const g = b.graph; g.referenceLength = shortestLength(g); g.parTime = g.referenceLength / (TUNE.arcade ? 40.5 : 39.2); return g;
   }
 
   // ---------------- Stage catalog (StageCatalog.cs) ----------------
   const Q = (ch, theme, title, subtitle, goals, steps) => ({ id: "ch" + ch, chapter: ch, title, subtitle, introStory: "ch" + ch + "_intro", gateTitle: title + " 게이트", goals, boss: false, build: bank => quizCourse(bank, theme, subtitle, steps) });
   const STAGES = [
     { id: "ch1", chapter: 1, title: "뉴런과 신경신호", subtitle: "뉴런 고속도로", introStory: "prologue", gateTitle: "활동전위 게이트", goals: ["뉴런의 구조", "활동전위", "도약전도", "시냅스 전달"], boss: false, build: chapter1 },
-    Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "fork:ch2_fork_horn", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "obstacles", "codex:reciprocal_inhibition", "gate:ch2_gate_reciprocal", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
-    Q(3, "tract", "감각 오름로·운동 내림로", "신경로 고속도로", ["뒤기둥-안쪽섬유띠계", "앞가쪽계", "겉질척수로", "교차 위치"], ["story:ch3_intro", "codex:dcml", "warm", "fork:ch3_fork_dcml", "gate:ch3_gate_dcml_cross", "codex:spinothalamic", "gate:ch3_gate_stt_cross", "orbs", "codex:spinocerebellar", "gate:ch3_gate_scb", "hairpin", "codex:cst", "fork:ch3_fork_cst", "gate:ch3_gate_cst_cross", "obstacles", "codex:vestibulospinal", "gate:ch3_gate_vst", "story:ch3_final", "finish"]),
-    Q(4, "brainstem", "뇌줄기", "뇌줄기 터널", ["중간뇌 구조", "다리뇌와 소뇌 연결", "숨뇌 생명 중추", "뇌줄기 뇌신경핵"], ["story:ch4_intro", "codex:midbrain", "warm", "codex:substantia_nigra", "gate:ch4_gate_sn", "gate:ch4_gate_sc", "fork:ch4_fork_ic", "hairpin", "gate:ch4_gate_aqueduct", "gate:ch4_gate_cn_midbrain", "codex:pons", "fork:ch4_fork_pons", "obstacles", "codex:medulla", "gate:ch4_gate_medulla", "story:ch4_final", "finish"]),
-    Q(5, "cerebellum", "소뇌", "소뇌 균형 서킷", ["소뇌의 기능", "조롱박세포", "소뇌다리", "소뇌 증상"], ["story:ch5_intro", "codex:cerebellum", "warm", "gate:ch5_gate_function", "hairpin", "codex:purkinje", "gate:ch5_gate_purkinje", "codex:cerebellar_peduncles", "fork:ch5_fork_mcp", "gate:ch5_gate_scp", "hairpin", "obstacles", "gate:ch5_gate_vermis", "gate:ch5_gate_tremor", "story:ch5_final", "finish"]),
-    Q(6, "diencephalon", "사이뇌", "사이뇌 중계 기지", ["시상 중계핵", "시상하부 항상성", "뇌하수체 조절", "솔방울샘"], ["story:ch6_intro", "codex:thalamus", "warm", "fork:ch6_fork_thalamus", "gate:ch6_gate_vpl", "gate:ch6_gate_lgn", "orbs", "codex:hypothalamus", "fork:ch6_fork_hypothal", "hairpin", "gate:ch6_gate_pituitary", "obstacles", "codex:pineal", "gate:ch6_gate_pineal", "story:ch6_final", "finish"]),
+    Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "fork:ch2_fork_horn", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "obstacles", "codex:reciprocal_inhibition", "inhibit", "gate:ch2_gate_reciprocal", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
+    Q(3, "tract", "감각 오름로·운동 내림로", "신경로 고속도로", ["뒤기둥-안쪽섬유띠계", "앞가쪽계", "겉질척수로", "교차 위치"], ["story:ch3_intro", "codex:dcml", "warm", "fork:ch3_fork_dcml", "gate:ch3_gate_dcml_cross", "codex:spinothalamic", "gate:ch3_gate_stt_cross", "excite", "codex:spinocerebellar", "gate:ch3_gate_scb", "hairpin", "codex:cst", "fork:ch3_fork_cst", "gate:ch3_gate_cst_cross", "obstacles", "codex:vestibulospinal", "gate:ch3_gate_vst", "story:ch3_final", "finish"]),
+    Q(4, "brainstem", "뇌줄기", "뇌줄기 터널", ["중간뇌 구조", "다리뇌와 소뇌 연결", "숨뇌 생명 중추", "뇌줄기 뇌신경핵"], ["story:ch4_intro", "codex:midbrain", "warm", "excite", "codex:substantia_nigra", "gate:ch4_gate_sn", "gate:ch4_gate_sc", "fork:ch4_fork_ic", "hairpin", "gate:ch4_gate_aqueduct", "gate:ch4_gate_cn_midbrain", "codex:pons", "fork:ch4_fork_pons", "obstacles", "codex:medulla", "gate:ch4_gate_medulla", "story:ch4_final", "finish"]),
+    Q(5, "cerebellum", "소뇌", "소뇌 균형 서킷", ["소뇌의 기능", "조롱박세포", "소뇌다리", "소뇌 증상"], ["story:ch5_intro", "codex:cerebellum", "warm", "gate:ch5_gate_function", "hairpin", "codex:purkinje", "inhibit", "gate:ch5_gate_purkinje", "codex:cerebellar_peduncles", "fork:ch5_fork_mcp", "gate:ch5_gate_scp", "hairpin", "obstacles", "gate:ch5_gate_vermis", "gate:ch5_gate_tremor", "story:ch5_final", "finish"]),
+    Q(6, "diencephalon", "사이뇌", "사이뇌 중계 기지", ["시상 중계핵", "시상하부 항상성", "뇌하수체 조절", "솔방울샘"], ["story:ch6_intro", "codex:thalamus", "warm", "fork:ch6_fork_thalamus", "gate:ch6_gate_vpl", "gate:ch6_gate_lgn", "excite", "codex:hypothalamus", "fork:ch6_fork_hypothal", "hairpin", "gate:ch6_gate_pituitary", "obstacles", "codex:pineal", "gate:ch6_gate_pineal", "story:ch6_final", "finish"]),
     { id: "ch7", chapter: 7, title: "대뇌", subtitle: "대뇌 도시", introStory: "ch7_intro", gateTitle: "대뇌 기능 게이트", goals: ["대뇌엽의 위치", "일차운동·감각겉질", "청각·시각겉질", "언어 영역과 실어증"], boss: false, build: chapter7 },
-    Q(8, "cranial", "12뇌신경", "12뇌신경 포털", ["눈 운동 신경", "얼굴의 신경", "감각·운동·혼합 분류", "아래 뇌신경"], ["story:ch8_intro", "codex:cn_overview", "warm", "gate:ch8_gate_sensory", "codex:cn_eye", "gate:ch8_gate_abducens", "gate:ch8_gate_trochlear", "hairpin", "codex:cn_face", "fork:ch8_fork_facial", "gate:ch8_gate_trigeminal", "obstacles", "codex:cn_lower", "fork:ch8_fork_hypoglossal", "gate:ch8_gate_vagus", "gate:ch8_gate_accessory", "story:ch8_final", "finish"]),
+    Q(8, "cranial", "12뇌신경", "12뇌신경 포털", ["눈 운동 신경", "얼굴의 신경", "감각·운동·혼합 분류", "아래 뇌신경"], ["story:ch8_intro", "codex:cn_overview", "warm", "excite", "gate:ch8_gate_sensory", "codex:cn_eye", "gate:ch8_gate_abducens", "gate:ch8_gate_trochlear", "hairpin", "codex:cn_face", "fork:ch8_fork_facial", "gate:ch8_gate_trigeminal", "obstacles", "codex:cn_lower", "fork:ch8_fork_hypoglossal", "gate:ch8_gate_vagus", "gate:ch8_gate_accessory", "story:ch8_final", "finish"]),
     { id: "ch9", chapter: 9, title: "임상 챌린지 (NULL)", subtitle: "NULL 보스 아레나", introStory: "ch9_intro", gateTitle: "NULL 진단 게이트", goals: ["병변 위치 추론", "교차와 반대쪽 증상", "위·아래운동신경세포", "척수 반쪽 손상"], boss: true, build: chapter9 },
   ];
 
   // ---------------- RunnerSim (RunnerSim.cs) ----------------
-  const SE = { Trigger: 0, GateResult: 1, ForkChosen: 2, RingHit: 3, RingMiss: 4, ObstacleHit: 5, ObstacleDodged: 6, OrbCollected: 7, RepairOrb: 8, WallHit: 9, Checkpoint: 10, Finish: 11, DriftStart: 12, DriftEnd: 13, BoostStart: 14, Jump: 15, Land: 16, EnterSegment: 17 };
-  const TURBO_TIME = [0, 0.5, 0.9, 1.4];
+  const SE = { Trigger: 0, GateResult: 1, ForkChosen: 2, RingHit: 3, RingMiss: 4, ObstacleHit: 5, ObstacleDodged: 6, OrbCollected: 7, RepairOrb: 8, WallHit: 9, Checkpoint: 10, Finish: 11, DriftStart: 12, DriftEnd: 13, BoostStart: 14, Jump: 15, Land: 16, EnterSegment: 17, Fire: 18, Psp: 19, Seizure: 20, MissionEnd: 21 };
+  const TURBO_TIME = [0, 0.5, 0.9, 1.4], TURBO_ARCADE = [0, 0.9, 1.5, 2.3];
+  const VM_REST = -70, VM_THRESH = -55;
   class Sim {
     constructor(g) {
       this.graph = g; this.baseTopSpeed = 40; this.accel = 16; this.boostAccel = 30; this.boostMultiplier = 1.4; this.turboMultiplier = 1.25;
       this.steerMax = 12; this.steerSensitivity = 1; this.grip = 0.3; this.driftGrip = 0.07; this.driftSteerMul = 1.4; this.jumpVelocity = 9.5; this.gravity = 26;
+      if (TUNE.arcade) { this.steerMax = 14.5; this.driftSteerMul = 1.7; this.turboMultiplier = 1.32; }
       this.events = []; this.reset();
     }
     reset() {
@@ -674,12 +744,13 @@ const NR = (function () {
       this.grounded = true; this.finished = false; this.raceTime = 0; this.distance = 0; this.boostEnergy = 0.35; this.boosting = false; this.canFire = true; this.wasBoosting = false;
       this.drifting = false; this.driftDir = 0; this.driftTime = 0; this.driftCharge = 0; this.turboTimer = 0; this.penaltyTimer = 0; this.wallCooldown = 0;
       this.ringChain = 0; this.ringBest = 0; this.ringsHit = 0; this.ringsTotal = 0; this.repairCount = 0; this.coins = 0; this.wallHits = 0; this.obstacleHits = 0; this.curvature = 0; this.events.length = 0;
+      this.vm = VM_REST; this.mission = null; this.missionFires = 0; this.missionSeizure = false; this.refractory = 0; this.fires = 0; this.epsps = 0; this.ipsps = 0;
     }
     get position() { return this.seg.worldPos(this.s, this.x, Sim.HOVER + this.y); }
     get forward() { return this.seg.tangentAt(this.s); }
     get right() { return this.seg.rightAt(this.s); }
     get speed01() { return clamp01(this.speed / (this.baseTopSpeed * this.boostMultiplier)); }
-    get driftTier() { const t = this.driftTime; return t >= 2 ? 3 : t >= 1.1 ? 2 : t >= 0.45 ? 1 : 0; }
+    get driftTier() { const t = this.driftTime; return TUNE.arcade ? (t >= 1.4 ? 3 : t >= 0.8 ? 2 : t >= 0.35 ? 1 : 0) : (t >= 2 ? 3 : t >= 1.1 ? 2 : t >= 0.45 ? 1 : 0); }
     get zoneFactor() { const z = this.seg.zone; return z === ZONE.Review ? 0.7 : z === ZONE.Damaged ? Math.min(1, 0.7 + 0.1 * this.repairCount) : 1; }
     get chainBonus() { return Math.min(0.6, this.ringChain * 0.08); }
     emit(type, src = null, lane = -1, correct = false, tier = 0, tag = null) { this.events.push({ type, src, seg: this.seg, lane, correct, tier, tag: tag || (src ? src.tag : null) }); }
@@ -696,7 +767,8 @@ const NR = (function () {
       if (this.boosting) top *= this.boostMultiplier; if (this.turboTimer > 0) top *= this.turboMultiplier; if (this.penaltyTimer > 0) top *= 0.65;
       if (this.speed < top) this.speed = Math.min(top, this.speed + ((this.boosting || this.turboTimer > 0) ? this.boostAccel : this.accel) * dt);
       else this.speed = Math.max(top, this.speed - 25 * dt);
-      if (this.drifting) this.speed *= (1 - 0.06 * dt);
+      if (this.drifting && !TUNE.arcade) this.speed *= (1 - 0.06 * dt);
+      this.stepMembrane(dt);
       const g = this.drifting ? this.driftGrip : this.grip, push = -this.curvature * this.speed * this.speed * g;
       const sm = this.steerMax * this.steerSensitivity * (this.drifting ? this.driftSteerMul : 1) * (this.grounded ? 1 : 0.7);
       this.vx = moveTowards(this.vx, steer * sm + push, 60 * dt); this.x += this.vx * dt;
@@ -723,11 +795,23 @@ const NR = (function () {
       const can = this.speed > this.baseTopSpeed * 0.32;
       if (!this.drifting) { if (held && can && Math.abs(steer) > 0.15) { this.drifting = true; this.driftDir = steer > 0 ? 1 : -1; this.driftTime = 0; this.driftCharge = 0; this.emit(SE.DriftStart); } return; }
       if (!held || !can) {
-        const tier = this.driftTier; this.drifting = false; if (tier > 0) this.addTurbo(TURBO_TIME[tier]); this.addEnergy(this.driftCharge);
+        const tier = this.driftTier; this.drifting = false; if (tier > 0) this.addTurbo((TUNE.arcade ? TURBO_ARCADE : TURBO_TIME)[tier]); this.addEnergy(this.driftCharge);
         this.driftTime = 0; this.driftCharge = 0; this.emit(SE.DriftEnd, null, -1, tier > 0, tier); return;
       }
       const k = this.curvature, precision = sign(k) === this.driftDir ? clamp01(Math.abs(k) * 60) : 0;
-      this.driftTime += dt * (0.35 + 0.65 * precision); this.driftCharge = Math.min(0.5, this.driftCharge + dt * 0.12 * (0.25 + 0.75 * precision));
+      this.driftTime += dt * (TUNE.arcade ? 0.6 + 0.4 * precision : 0.35 + 0.65 * precision); this.driftCharge = Math.min(0.5, this.driftCharge + dt * 0.12 * (0.25 + 0.75 * precision));
+    }
+    // membrane potential: leak to rest (temporal summation window ~2 s); NULL drive in inhibit zones
+    stepMembrane(dt) {
+      if (this.refractory > 0) this.refractory -= dt;
+      if (this.mission === "inhibit") this.vm += 9 * dt;
+      this.vm += (VM_REST - this.vm) * (1 - Math.exp(-dt / 2.2));
+      if (this.vm >= VM_THRESH && this.refractory <= 0) {
+        this.fires++;
+        if (this.mission === "inhibit") { this.missionSeizure = true; this.addPenalty(1.6); this.emit(SE.Seizure); }
+        else { this.missionFires++; this.addTurbo(2.0); this.addEnergy(0.35); this.emit(SE.Fire); }
+        this.vm = -82; this.refractory = 0.9;
+      }
     }
     stepBoost(want, dt) {
       if (this.boostEnergy <= 0.001) this.canFire = false; else if (this.boostEnergy >= 0.2) this.canFire = true;
@@ -751,7 +835,21 @@ const NR = (function () {
         if (e.consumed || e.s <= from || e.s > to) continue;
         e.consumed = true;
         switch (e.type) {
-          case EV.Trigger: this.emit(SE.Trigger, e); break;
+          case EV.Trigger:
+            if (e.tag === "integ:excite" || e.tag === "integ:inhibit") { this.mission = e.tag.slice(6); this.missionFires = 0; this.missionSeizure = false; }
+            else if (e.tag === "integ:end" && this.mission) {
+              const ok = this.mission === "excite" ? this.missionFires > 0 : !this.missionSeizure;
+              if (ok && this.mission === "inhibit") { this.addTurbo(1.6); this.addEnergy(0.3); }
+              this.emit(SE.MissionEnd, e, -1, ok, 0, this.mission); this.mission = null;
+            }
+            this.emit(SE.Trigger, e); break;
+          case EV.Epsp: case EV.Ipsp:
+            if (Math.abs(this.x - e.x) < 2.0 && this.y < 2.6) {
+              const ex = e.type === EV.Epsp; if (ex) this.epsps++; else this.ipsps++;
+              if (this.refractory <= 0) this.vm += ex ? 7 : -7;   // refractory period: inputs have no effect
+              this.emit(SE.Psp, e, -1, this.refractory <= 0, 0, ex ? "epsp" : "ipsp");
+            }
+            break;
           case EV.Checkpoint: this.emit(SE.Checkpoint, e); break;
           case EV.Finish: this.finished = true; this.emit(SE.Finish, e); return;
           case EV.Gate: { const lane = Sim.nearest(e.laneX, this.x), ok = lane === e.correctLane; if (ok) { this.addTurbo(0.8); this.addEnergy(0.15); if (e.tag === "glia") this.repairCount = Math.max(this.repairCount, 3); } else this.addPenalty(1.8); this.emit(SE.GateResult, e, lane, ok); break; }
@@ -777,6 +875,7 @@ const NR = (function () {
         else if (e.type === EV.NodeRing || e.type === EV.RepairOrb) { targetX = e.x; have = true; }
         else if (e.type === EV.Obstacle) { if (e.width >= seg.halfWidth) { if (d < sim.speed * 0.3 + 1) jump = true; } else { targetX = e.x + (e.x <= 0 ? 1 : -1) * (e.width * 0.5 + 2.2); have = true; } }
         else if (e.type === EV.Orb && d < 40) { targetX = e.x; have = true; }
+        else if (d < 50 && ((e.type === EV.Epsp && sim.mission !== "inhibit") || (e.type === EV.Ipsp && sim.mission === "inhibit"))) { targetX = e.x; have = true; }
       }
       const k = sim.curvature, push = -k * sim.speed * sim.speed * (sim.drifting ? sim.driftGrip : sim.grip);
       const sm = sim.steerMax * sim.steerSensitivity * (sim.drifting ? sim.driftSteerMul : 1);
@@ -809,7 +908,7 @@ const NR = (function () {
     }
   }
 
-  return { V, add, sub, mul, len, norm, clamp, clamp01, lerp, sign, ZONE, EV, SE, STAGES, Sim, AutoPilot, Bank, Session, wrongExp, laneXs, CH9_BOSS };
+  return { TUNE, VM_REST, VM_THRESH, V, add, sub, mul, len, norm, clamp, clamp01, lerp, sign, ZONE, EV, SE, STAGES, Sim, AutoPilot, Bank, Session, wrongExp, laneXs, CH9_BOSS };
 })();
 if (typeof module !== "undefined") module.exports = NR;
 
@@ -903,7 +1002,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
   const M = v => new THREE.Vector3(-v.x, v.y, v.z);       // Unity (left-handed) -> three: mirror X
   const C = h => new THREE.Color(h);
   const rnd = (a, b) => a + Math.random() * (b - a);
-  const U = { uTime: { value: 0 }, uStar: { value: new THREE.Vector3(0, -999, 0) }, fogColor: { value: C(0x0A0724) }, fogNear: { value: 40 }, fogFar: { value: 340 } };
+  const U = { uTime: { value: 0 }, uStar: { value: new THREE.Vector3(0, -999, 0) }, fogColor: { value: C(0x0A0724) }, fogNear: { value: 40 }, fogFar: { value: 340 }, uFire: { value: 0 }, uSeize: { value: 0 } };
   const LANE = [0x2EE6D6, 0xFF5CC8, 0xFFD34D, 0x8CFF6B];
   const THEME = { spinal: 0x6CFF8A, tract: 0xFF6FD0, brainstem: 0xFF8A4D, cerebellum: 0xFF9AD8, diencephalon: 0x8CA8FF, cranial: 0xFFD34D, frontal: 0x5C9CFF, parietal: 0x5CFF9D, temporal: 0xFFB627, occipital: 0xFF6FD0, boss: 0xFF4DA6 };
   const MEMBRANE = 0x7FA8FF;
@@ -935,7 +1034,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
   const shader = (uniforms, frag, o = {}) => new THREE.ShaderMaterial(Object.assign({ uniforms: Object.assign({}, U, uniforms), vertexShader: VS, fragmentShader: frag, transparent: !!o.transparent, depthWrite: !o.transparent, side: o.side || THREE.DoubleSide, blending: o.additive ? THREE.AdditiveBlending : THREE.NormalBlending }));
 
   // axon membrane (inside view): lipid bilayer shimmer, ion-channel dots, AP glow around STAR-01
-  const MEMB_F = `uniform vec3 uCol,uStar;uniform float uTime,uAlpha;varying vec2 vUv;varying vec3 vW;varying vec3 vN;${FOG_F}
+  const MEMB_F = `uniform vec3 uCol,uStar;uniform float uTime,uAlpha,uFire,uSeize;varying vec2 vUv;varying vec3 vW;varying vec3 vN;${FOG_F}
     float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
     void main(){vec3 V=normalize(cameraPosition-vW);float fr=pow(1.-abs(dot(normalize(vN),V)),2.2);
      float u=vUv.x,v=vUv.y;float lip=.5+.5*sin(v*1.7+sin(u*37.)*.8);
@@ -943,7 +1042,8 @@ window.NRW_INIT = function () { window.NRW = (function () {
      float d=length(vW-uStar);float ap=exp(-d*.12);
      float wave=smoothstep(.965,1.,fract(v/55.-uTime*.7));
      vec3 c=uCol*(.10+.42*fr+.07*lip)+vec3(.35,1.,.95)*ch*(.25+1.8*ap)+vec3(1.,.82,.38)*ap*(.3+.4*fr)+uCol*wave*.35;
-     float a=clamp(uAlpha+.55*fr+.35*ap+ch*.35,0.,1.);float fg=smoothstep(fogNear,fogFar,vD);
+     float fw=uFire*smoothstep(.0,.2,fract(v/30.-uTime*2.5));c+=vec3(1.,.92,.55)*fw*(.5+fr)*1.2;c+=vec3(1.,.08,.2)*uSeize*(.3+fr);
+     float a=clamp(uAlpha+.55*fr+.35*ap+ch*.35+fw*.4+uSeize*.3,0.,1.);float fg=smoothstep(fogNear,fogFar,vD);
      gl_FragColor=vec4(mix(c,fogColor,fg),a*(1.-fg*.6));
      gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
 #include <colorspace_fragment>
@@ -1021,6 +1121,9 @@ window.NRW_INIT = function () { window.NRW = (function () {
     }
     const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g;
   }
+  // long sweeps are cut into ~110 m pieces so off-screen parts are culled
+  const parts = (s0, s1, L = 110) => { const a = []; for (let x = s0; x < s1 - 0.5; x += L) a.push([x, Math.min(s1, x + L + 0.01)]); return a; };
+  function sweepN(seg, s0, s1, step, ring, opts) { return parts(s0, s1).map(([a, b]) => sweep(seg, a, b, step, ring, opts)); }
   const archRing = (Rw, H, n = 20) => { const r = []; for (let i = 0; i <= n; i++) { const t = (-0.07 + 1.14 * i / n) * Math.PI; r.push([Math.cos(t) * Rw, Math.sin(t) * H]); } return r; };
   const circleRing = (r, n = 7) => { const a = []; for (let i = 0; i <= n; i++) { const t = i / n * Math.PI * 2; a.push([Math.cos(t) * r, Math.sin(t) * r]); } return a; };
   const tubeRadius = hw => [hw + 1.6, hw * 0.85 + 3.6];   // [half-width, height] of the membrane arch
@@ -1040,8 +1143,13 @@ window.NRW_INIT = function () { window.NRW = (function () {
   }
   class Batch {
     constructor() { this.m = new Map(); }
-    add(mat, geo, matrix) { let b = this.m.get(mat); if (!b) this.m.set(mat, b = []); const g = geo.clone(); if (matrix) g.applyMatrix4(matrix); b.push(g); }
-    flush(root) { for (const [mat, list] of this.m) { const mesh = new THREE.Mesh(merge(list), mat); mesh.frustumCulled = false; root.add(mesh); } this.m.clear(); }
+    // batched per material AND per 160 m map cell, so the camera only draws what it can see
+    add(mat, geo, matrix) {
+      const g = matrix ? geo.clone().applyMatrix4(matrix) : geo; if (!g.boundingSphere) g.computeBoundingSphere(); const c = g.boundingSphere.center;
+      const key = mat.uuid + ":" + Math.floor(c.x / 160) + ":" + Math.floor(c.z / 160) + ":" + Math.floor(c.y / 160);
+      let b = this.m.get(key); if (!b) this.m.set(key, b = { mat, list: [] }); b.list.push(g);
+    }
+    flush(root) { for (const { mat, list } of this.m.values()) { const geo = merge(list); geo.computeBoundingSphere(); root.add(new THREE.Mesh(geo, mat)); } this.m.clear(); }
   }
   const G = {
     ico: new THREE.IcosahedronGeometry(1, 2), ico1: new THREE.IcosahedronGeometry(1, 1), cyl: new THREE.CylinderGeometry(0.55, 1, 1, 6, 1, true), cylS: new THREE.CylinderGeometry(1, 1, 1, 6, 1, true),
@@ -1073,17 +1181,16 @@ window.NRW_INIT = function () { window.NRW = (function () {
 
   function build(scene, stage, graph, bank, quality) {
     const root = new THREE.Group(); scene.add(root);
-    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forks: new Map(), nodes: [], anim: [], flashes: [], particles: null, nt: null, boss: null, bounds: new THREE.Box3(), low: quality === "low" };
+    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forks: new Map(), nodes: [], anim: [], flashes: [], particles: null, nt: null, boss: null, bounds: new THREE.Box3(), low: quality === "low", mid: quality === "mid", psp: [] };
     const B = new Batch(), Z = NR.ZONE;
     for (const seg of graph.segments) {
       const col = segColor(seg), hw = seg.halfWidth, [Rw, H] = tubeRadius(hw);
-      const floor = sweep(seg, 0, seg.length, 2, [[-hw, 0.01], [hw, 0.01]], { u: [-1, 1] });
-      const fm = new THREE.Mesh(floor, floorMat(col)); root.add(fm); floor.computeBoundingBox(); W.bounds.union(floor.boundingBox);
+      for (const floor of sweepN(seg, 0, seg.length, 2, [[-hw, 0.01], [hw, 0.01]], { u: [-1, 1] })) { root.add(new THREE.Mesh(floor, floorMat(col))); floor.computeBoundingBox(); W.bounds.union(floor.boundingBox); }
       if (seg.zone === Z.Myelin || seg.zone === Z.Damaged) buildMyelin(W, B, seg, col);
       else if (seg.zone === Z.Synapse) buildCleft(W, B, seg);
-      else if (!isSoma(seg)) root.add(new THREE.Mesh(sweep(seg, 0, seg.length, 3, archRing(Rw, H)), membraneMat(col)));
+      else if (!isSoma(seg)) for (const g of sweepN(seg, 0, seg.length, 3, archRing(Rw, H, W.low ? 12 : 18))) root.add(new THREE.Mesh(g, membraneMat(col)));
       // edge light strips (the membrane meets the floor)
-      for (const side of [-1, 1]) B.add(glow(col, 0.75), sweep(seg, 0, seg.length, 4, [[side * (hw + 0.05), 0.02], [side * (hw + 0.05), 0.45]]));
+      for (const side of [-1, 1]) for (const g of sweepN(seg, 0, seg.length, 4, [[side * (hw + 0.05), 0.02], [side * (hw + 0.05), 0.45]])) B.add(glow(col, 0.75), g);
       if (isSoma(seg)) buildSoma(W, B, seg);
       if (isDendrite(seg)) buildDendrites(W, B, seg, Rw, H);
       if (isTerminal(seg)) buildVesicles(W, B, seg, Rw, H);
@@ -1102,7 +1209,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
     const nodesS = seg.events.filter(e => e.type === NR.EV.NodeRing).map(e => e.s);
     const cuts = nodesS.length ? nodesS : (() => { const a = []; for (let s = 45; s < seg.length - 20; s += 55) a.push(s); return a; })();
     // bare axon membrane everywhere (visible in the node gaps)
-    W.root.add(new THREE.Mesh(sweep(seg, 0, seg.length, 3, archRing(Rw - 0.3, H - 0.3)), membraneMat(dmg ? 0xFF6D8D : 0x5CE6FF)));
+    for (const g of sweepN(seg, 0, seg.length, 3, archRing(Rw - 0.3, H - 0.3, W.low ? 12 : 18))) W.root.add(new THREE.Mesh(g, membraneMat(dmg ? 0xFF6D8D : 0x5CE6FF)));
     let prev = 0, k = 0;
     for (const sN of cuts.concat([seg.length])) {
       const a = prev + 3.2, b = sN - 3.2; prev = sN; k++;
@@ -1195,12 +1302,13 @@ window.NRW_INIT = function () { window.NRW = (function () {
   function buildBundle(W, B, seg, Rw, H, stage) {
     if (seg.zone === NR.ZONE.Synapse || isSoma(seg)) return;
     const theme = THEME[seg.theme] || MEMBRANE, myel = /spinal|tract|cranial/.test(seg.theme || "") || seg.zone === NR.ZONE.Myelin;
-    const n = W.low ? 3 : (seg.zone === NR.ZONE.Review || seg.zone === NR.ZONE.Shortcut ? 3 : 7);
+    const n = W.low ? 2 : W.mid ? (seg.zone === NR.ZONE.Review || seg.zone === NR.ZONE.Shortcut ? 2 : 4) : (seg.zone === NR.ZONE.Review || seg.zone === NR.ZONE.Shortcut ? 3 : 6);
     for (let i = 0; i < n; i++) {
       const side = i % 2 ? 1 : -1, ox = side * (Rw + rnd(5, 26)), oy = rnd(-8, H + 18), r = rnd(0.8, 2.6);
       const col = seg.theme === "tract" ? (i % 2 ? 0x5C9CFF : 0xFF5C7A) : i % 3 === 0 ? 0xFFD34D : theme;
       const sp = seg.theme === "tract" ? (i % 2 ? 0.6 : -0.6) : rnd(0.3, 0.9);
-      B.add(fiberMat(col, myel && i % 2 === 0, +sp.toFixed(1)), sweep(seg, 0, seg.length, 6, circleRing(r), { ox, oy, vOff: rnd(0, 100) }));
+      const fm = fiberMat(col, myel && i % 2 === 0, +sp.toFixed(1)), vOff = rnd(0, 100);
+      for (const g of sweepN(seg, 0, seg.length, 8, circleRing(r, W.mid || W.low ? 5 : 7), { ox, oy, vOff })) B.add(fm, g);
     }
     if (!W.low && seg.length > 60) for (let s = rnd(20, 60); s < seg.length - 10; s += rnd(70, 140)) {
       const side = Math.random() < 0.5 ? -1 : 1, p = frameAt(seg, s, side * (Rw + rnd(8, 20)), rnd(2, H + 10)).p;
@@ -1248,6 +1356,13 @@ window.NRW_INIT = function () { window.NRW = (function () {
       const w = Math.min(5.6, Math.abs(e.laneX[1] - e.laneX[0]) * 0.92);
       const signs = e.laneX.map((lx, i) => hologram(W, seg, e.s - 0.5, lx, 4.6, labelTex([LETTER(i), short(q ? q.options[i] : "")], { big: true, border: HEXS(LANE[i % 4]), bigColor: HEXS(LANE[i % 4]) }), w, w * 0.5));
       W.gates.push({ e, signs });
+    } else if (e.type === E.Epsp || e.type === E.Ipsp) {
+      const ex = e.type === E.Epsp, sp = new THREE.Sprite(pspMat(ex)); sp.scale.set(1.7, 1.7, 1); sp.position.copy(M(seg.worldPos(e.s, e.x, NR.Sim.HOVER + 0.3)));
+      W.root.add(sp); W.psp.push({ e, sp, y: sp.position.y, ph: Math.random() * 6 });
+    } else if (e.type === E.Trigger && /^integ:(excite|inhibit)$/.test(e.tag)) {
+      const ex = e.tag === "integ:excite";
+      hologram(W, seg, Math.min(seg.length - 1, e.s + 28), 0, H - 2.2, labelTex(ex ? ["EPSP 가중 구간", "초록 ＋ 를 연달아 → 역치 → 발화!"] : ["IPSP 억제 구간", "파랑 − 로 과흥분을 막아!"], { w: 768, h: 220, border: ex ? "#5CFF9D" : "#5C9CFF", bg: "rgba(10,20,40,.85)" }), 9, 2.6);
+      W.root.add(new THREE.Mesh(archTube(seg, Math.min(seg.length - 1, e.s + 30), Rw - 0.5, H - 0.5, 0.35), glow(ex ? 0x5CFF9D : 0x5C9CFF)));
     } else if (e.type === E.NodeRing) {
       const m = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.17, 8, 32), glow(0x5CF6FF)); const f = frameAt(seg, e.s, e.x, NR.Sim.HOVER); m.position.copy(f.p); m.quaternion.copy(f.q); W.root.add(m); W.rings.push({ e, m, t: 0 });
     } else if (e.type === E.Obstacle) {
@@ -1265,6 +1380,16 @@ window.NRW_INIT = function () { window.NRW = (function () {
     }
   }
 
+  const pspCache = {};
+  function pspMat(ex) {
+    if (pspCache[ex]) return pspCache[ex];
+    const c = document.createElement("canvas"); c.width = c.height = 128; const x = c.getContext("2d"), col = ex ? "92,255,157" : "92,156,255";
+    const g = x.createRadialGradient(64, 64, 8, 64, 64, 62); g.addColorStop(0, `rgba(${col},1)`); g.addColorStop(0.55, `rgba(${col},.55)`); g.addColorStop(1, `rgba(${col},0)`);
+    x.fillStyle = g; x.fillRect(0, 0, 128, 128); x.fillStyle = "#0B1A2A"; x.font = "bold 86px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(ex ? "+" : "−", 64, 60);
+    x.font = "bold 20px sans-serif"; x.fillStyle = "#ffffff"; x.fillText(ex ? "EPSP" : "IPSP", 64, 104);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    return (pspCache[ex] = new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false }));
+  }
   function buildOrbs(W) {
     const list = []; for (const seg of W.graph.segments) for (const e of seg.events) if (e.type === NR.EV.Orb || e.type === NR.EV.RepairOrb) list.push({ seg, e });
     const mk = (filter, geo, mat, sc) => {
@@ -1346,6 +1471,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
         for (const g of W.orbs) { q.setFromEuler(new THREE.Euler(0, t * 2.5, 0.4)); for (const it of g.items) { tmp.compose(it.p, q, it.gone ? zero : one); g.im.setMatrixAt(it.i, tmp); } g.im.instanceMatrix.needsUpdate = true; }
         for (const o of W.obstacles) { if (o.pulse) o.grp.children[0].material.opacity = 0.5 + 0.35 * Math.sin(t * 8); else o.grp.children[0].scale.x = 1 + (Math.random() < 0.05 ? rnd(-0.15, 0.15) : 0); }
         for (const a of W.anim) { if (a.spin) a.o.rotation.y += dt * a.spin; if (a.flick) a.o.visible = Math.random() > 0.04; }
+        for (const p of W.psp) if (p.sp.visible) p.sp.position.y = p.y + Math.sin(t * 3 + p.ph) * 0.25;
         for (const f of W.flashes) { const k = 0.5 + 0.5 * Math.sin(t * 2.2 + f.ph); f.m.scale.setScalar(1.3 + k * 0.7); }
         for (const r of W.rings) { if (r.t > 0) { r.t -= dt; r.m.scale.setScalar(1 + (0.6 - r.t) * 2.5); if (r.t <= 0) r.m.visible = false; } else r.m.rotation.z += dt * 1.5; }
         for (const nd of W.nodes) if (nd.t > 0) { nd.t -= dt; nd.m.material.color.setHex(nd.t > 0 ? 0xFFFFFF : 0x2EE6D6); }
@@ -1360,6 +1486,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
           P.g.attributes.position.needsUpdate = true;
         }
       },
+      pspCollect(e) { const p = W.psp.find(x => x.e === e); if (p) p.sp.visible = false; },
       collect(e) { for (const g of W.orbs) { const it = g.items.find(x => x.e === e); if (it) { it.gone = true; return; } } },
       ringHit(e, hit) { const r = W.rings.find(x => x.e === e); if (!r) return; if (hit) { r.m.material = glow(0xFFFFFF); r.t = 0.6; for (const nd of W.nodes) if (Math.abs(nd.s - e.s) < 0.5) nd.t = 0.25; } else r.m.material = glow(0x553355, 0.5); },
       markSigns(signs, lane, correctLane) { signs.forEach((p, i) => { p.material.color.setHex(i === correctLane ? 0xB8FFD0 : i === lane ? 0xFF8A9A : 0x555577); }); },
@@ -1391,6 +1518,7 @@ window.NR_MAIN = function () {
   //================== SAVE ==================
   const SAVE_KEY = "nerverunner_web_v1";
   const save = Object.assign({ voiceRate: 1.05, voicePitch: 1.12, voiceURI: "", voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
+  if (!(save.v >= 3)) { save.thinkSlow = 0.75; save.v = 3; }      // 2.5: slow motion was too slow
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } };
 
   //================== AUDIO (NRMusic.cs port + simple SFX) ==================
@@ -1533,7 +1661,11 @@ window.NR_MAIN = function () {
   window.addEventListener("keydown", firstTouch, { capture: true });
 
   //================== THREE SETUP ==================
-  const canvas = $("#gl"), dprCap = () => save.quality === "low" ? 1 : save.quality === "high" ? 2 : Math.min(devicePixelRatio || 1, 1.6);
+  // quality: "auto" = phones/tablets start without bloom; an FPS watchdog steps down if frames get slow
+  const TOUCH = matchMedia("(pointer: coarse)").matches || "ontouchstart" in window;
+  let autoLevel = TOUCH ? "mid" : "high";
+  const qEff = () => save.quality === "auto" ? autoLevel : save.quality;
+  const canvas = $("#gl"), dprCap = () => { const q = qEff(), d = devicePixelRatio || 1; return q === "low" ? 1 : q === "mid" ? Math.min(d, 1.3) : Math.min(d, 1.75); };
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(dprCap());
   const scene = new THREE.Scene(), BG = new THREE.Color(0x0A0724);
@@ -1551,11 +1683,11 @@ window.NR_MAIN = function () {
 
   const { M, frameAt, LANE, HEXS } = NRW; const LETTER = i => String.fromCharCode(65 + i);
   let world = null;
-  function buildWorld(stage, graph) { if (world) world.dispose(scene); world = NRW.build(scene, stage, graph, bank, save.quality); return world; }
+  function buildWorld(stage, graph) { if (world) world.dispose(scene); world = NRW.build(scene, stage, graph, bank, qEff()); return world; }
 
   // bloom post-processing (skipped on "가볍게")
   function setupPost() {
-    const PP = window.THREE_PP; composer = null; if (!PP || save.quality === "low") return;
+    const PP = window.THREE_PP; composer = null; if (!PP || qEff() !== "high") { resize(); return; }
     try { composer = new PP.EffectComposer(renderer); composer.addPass(new PP.RenderPass(scene, camera)); composer.addPass(new PP.UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.6, 0.4, 0.86)); composer.addPass(new PP.OutputPass()); } catch (e) { composer = null; }
     resize();
   }
@@ -1679,11 +1811,14 @@ window.NR_MAIN = function () {
     return pickOne(["자, 문제!", "문제 나간다!", "이번 문제야.", "잘 들어 봐!"]) + " " + q.question + " " +
       q.options.map((o, i) => w[i] + (hasBatchim(w[i]) ? "은 " : "는 ") + optSpeech(o)).join(", ") + ". " + pickOne(["어느 쪽일까?", "골라 봐!", "어디로 갈래?", "정답 쪽으로 가 보자!"]);
   }
+  // while racing STAR-01 says the key sentence only; the full explanation is one tap away (🔊 해설 듣기)
+  const firstSentence = t => { const m = String(t).match(/^[^.!?]+[.!?]/); return m ? m[0] : String(t); };
   function answerSpeech(q, chosen, correct) {
     const ans = optSpeech(q.options[q.answer]), wrong = correct ? "" : NR.wrongExp(q, chosen);
-    if (correct) return pickOne(["딩동댕! 맞았어!", "정답! 잘했어!", "맞아, 역시!", "좋아, 정답이야!"]) + " " + q.explanation;
-    return pickOne(["앗, 아깝다!", "아쉽다!", "음, 이건 틀렸어."]) + " 정답은 " + ans + (hasBatchim(ans) ? "이야. " : "야. ") + (wrong ? wrong + " " : "") + pickOne(["정리해 줄게.", "다시 보자.", "기억해 둬!"]) + " " + q.explanation;
+    if (correct) return pickOne(["딩동댕! 맞았어!", "정답! 잘했어!", "맞아, 역시!", "좋아, 정답이야!"]) + " " + firstSentence(q.explanation);
+    return pickOne(["앗, 아깝다!", "아쉽다!", "음, 이건 틀렸어."]) + " 정답은 " + ans + (hasBatchim(ans) ? "이야. " : "야. ") + firstSentence(wrong || q.explanation);
   }
+  let lastAnswer = null;
   function showQuestion(q, title) {
     if (!q) return; show("#apanel", false); answerT = 0;
     $("#q-title").textContent = title; $("#q-tag").textContent = "[" + q.topic + " · " + q.difficulty + "]"; $("#q-text").textContent = q.question;
@@ -1697,10 +1832,12 @@ window.NR_MAIN = function () {
     p.classList.toggle("bad", !correct); $("#a-title").textContent = (correct ? "정답!  " : "오답…  정답은 ") + LETTER(q.answer) + ". " + q.options[q.answer];
     const wrong = correct ? "" : NR.wrongExp(q, chosen); $("#a-wrong").textContent = wrong; $("#a-wrong").style.display = wrong ? "block" : "none";
     $("#a-text").textContent = q.explanation; $("#a-extra").textContent = extra || "";
-    show("#apanel", true); answerT = sec;
+    p.classList.remove("full"); $("#a-more").textContent = "자세히 ▾"; show("#apanel", true); answerT = Math.min(sec, 6); lastAnswer = { q, chosen, correct };
     Voice.say(answerSpeech(q, chosen, correct), { tag: "exp" });   // explanation is never cut off by the next question (it waits)
   }
   $("#a-close").addEventListener("pointerup", () => { show("#apanel", false); answerT = 0; Voice.stop(); });
+  $("#a-more").addEventListener("pointerup", () => { const p = $("#apanel"), f = !p.classList.contains("full"); p.classList.toggle("full", f); $("#a-more").textContent = f ? "접기 ▴" : "자세히 ▾"; answerT = Math.max(answerT, f ? 12 : 4); });
+  $("#a-listen").addEventListener("pointerup", () => { if (!lastAnswer) return; const { q, chosen, correct } = lastAnswer, w = correct ? "" : NR.wrongExp(q, chosen); Voice.say((w ? w + " " : "") + q.explanation, { tag: "exp" }); answerT = Math.max(answerT, 6); });
 
   let storyWait = 0;
   function tickUi(dt) {
@@ -1768,19 +1905,19 @@ window.NR_MAIN = function () {
     } else if (r.phase === "run") {
       r.t += dt; if (r.t > 0.8 && r.t < 1.2) countdown("");
       const inp = r.auto ? r.auto.think(sim) : readInput(dt);
-      if (r.queued && (!Voice.has("exp") || distToDecision() < 60)) { const qd = r.queued; r.queued = null; showQuestion(bank.get(qd.id), qd.title); Snd.beep(); }
+      if (r.queued && (!Voice.has("exp") || distToDecision() < 110)) { const qd = r.queued; r.queued = null; showQuestion(bank.get(qd.id), qd.title); Snd.beep(); }
       let wantSlow = 1;
       if (r.pending && !r.auto) {
         const base = NR.clamp(save.thinkSlow, 0.2, 1), D = distToDecision(), v = Math.max(12, sim.speed);
-        const need = r.queued ? Voice.remaining("exp") + 9 : save.voiceOn ? Voice.remaining("q") + 2.5 : 0;   // seconds of talking/reading still needed
-        wantSlow = need > 0 && D < 900 ? NR.clamp(D / (v * need), 0.12, base) : base;
+        const need = r.queued ? Voice.remaining("exp") + 6 : save.voiceOn ? Voice.remaining("q") + 1.5 : 0;   // seconds of talking/reading still needed
+        wantSlow = need > 0 && D < 900 ? NR.clamp(D / (v * need), Math.min(base, 0.5), base) : base;
       }
       r.timeScale += NR.clamp(wantSlow - r.timeScale, -dt * 2.5, dt * 2.5);
       $("#h-slow").style.display = r.timeScale < 0.97 && !$("#qpanel").classList.contains("on") ? "block" : "none"; $("#h-slow").textContent = r.queued ? "해설 듣는 중 · 슬로모션" : "생각 시간 · 슬로모션";
       let sdt = dt * r.timeScale * (r.auto ? WARP : 1);
       const n = Math.max(1, Math.ceil(sdt / (1 / 120) - 1e-4)), h = sdt / n;
       for (let i = 0; i < n && r.phase === "run"; i++) { sim.step(inp, h); inp.jump = false; handleEvents(); }
-      if (r.pending && r.pendingLanes) { const lane = NR.Sim.nearest(r.pendingLanes, sim.x); $$("#q-opts .opt").forEach((o, i) => o.classList.toggle("cur", i === lane)); }
+      updateLane();
     } else if (r.phase === "finish") {
       r.finishT += dt; if (r.finishT > 3.2) { r.phase = "done"; showResult(); }
     }
@@ -1789,11 +1926,38 @@ window.NR_MAIN = function () {
     follow(sim, dt, running);
     // HUD
     const prog = r.graph.referenceLength > 0 ? NR.clamp01(sim.distance / r.graph.referenceLength) : 0, pf = r.phase === "finish" || r.phase === "done" ? 1 : prog;
-    $("#h-prog").style.width = (pf * 100) + "%"; $("#h-star").style.left = (pf * 100) + "%";
-    $("#h-time").textContent = fmt(sim.raceTime); $("#h-score").textContent = r.learn.correct + "/" + r.learn.total; $("#h-coins").textContent = sim.coins;
-    $("#h-energy").style.width = (sim.boostEnergy * 100) + "%";
+    setStyle("#h-prog", "width", (pf * 100).toFixed(1) + "%"); setStyle("#h-star", "left", (pf * 100).toFixed(1) + "%");
+    setText("#h-time", fmt(sim.raceTime)); setText("#h-score", r.learn.correct + "/" + r.learn.total); setText("#h-coins", sim.coins);
+    setStyle("#h-energy", "width", (sim.boostEnergy * 100).toFixed(0) + "%");
+    updateVm(dt);
     Snd.setHum(running ? sim.speed01 : 0, running && sim.boosting);
   }
+
+  // DOM writes only when something changed (cheaper on phones)
+  const domCache = new Map();
+  function setText(sel, v) { v = String(v); if (domCache.get(sel) !== v) { domCache.set(sel, v); $(sel).textContent = v; } }
+  function setStyle(sel, k, v) { const key = sel + k; if (domCache.get(key) !== v) { domCache.set(key, v); $(sel).style[k] = v; } }
+  let laneShown = -2;
+  function updateLane() {
+    const r = race, pill = $("#h-lane");
+    if (!r.pending || !r.pendingLanes) { if (laneShown !== -2) { pill.style.display = "none"; laneShown = -2; $$("#q-opts .opt").forEach(o => o.classList.remove("cur")); } return; }
+    const lane = NR.Sim.nearest(r.pendingLanes, r.sim.x); if (lane === laneShown) return; laneShown = lane;
+    const q = bank.get(r.pending), c = HEXS(LANE[lane % 4]);
+    pill.style.display = "block"; pill.style.borderColor = c; pill.innerHTML = `지금 <span style="color:${c}">${LETTER(lane)}</span> ${q ? esc(q.options[lane].length > 14 ? q.options[lane].slice(0, 13) + "…" : q.options[lane]) : ""}`;
+    $$("#q-opts .opt").forEach((o, i) => o.classList.toggle("cur", i === lane));
+  }
+  // membrane-potential meter (shown in EPSP / IPSP zones)
+  let vmHold = 0;
+  function updateVm(dt) {
+    const sim = race.sim, el = $("#h-vm");
+    if (sim.mission) vmHold = 3; else vmHold -= dt;
+    const on = vmHold > 0; if (el.classList.contains("on") !== on) el.classList.toggle("on", on); if (!on) return;
+    const v = sim.vm, pct = NR.clamp01((v + 90) / 130) * 100;
+    setStyle("#h-vm-fill", "height", pct.toFixed(0) + "%"); setText("#h-vm-val", Math.round(v) + " mV");
+    setStyle("#h-vm-fill", "background", v >= -58 ? "linear-gradient(0deg,#FFB627,#FF4D6D)" : v > -70 ? "linear-gradient(0deg,#5C9CFF,#5CFF9D)" : "linear-gradient(0deg,#3A4DFF,#5C9CFF)");
+    setText("#h-vm-goal", sim.mission === "excite" ? "역치 -55까지 올려!" : sim.mission === "inhibit" ? "-55 아래로 지켜!" : "");
+  }
+  function pulseVm(cls) { const el = $("#h-vm"); el.classList.remove("fire", "seize"); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 900); }
 
   function handleEvents() { const sim = race.sim; for (const e of sim.events) handle(e); sim.events.length = 0; }
   function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); SV.spinVel = 540; } else { Snd.thud(); setExpr("Wrong", 2.2); CAM.shake = 0.5; } }
@@ -1836,6 +2000,24 @@ window.NR_MAIN = function () {
       case S.Checkpoint: toast("체크포인트", "#9B5CFF", 1); break;
       case S.EnterSegment: setSection(sim.seg.zone === NR.ZONE.Review ? "복습 구간" : sim.seg.zone === NR.ZONE.Shortcut ? "지름길" : sim.seg.name); break;
       case S.Finish: finish(); break;
+      case S.Psp: {
+        world.pspCollect(e.src); const ex = e.tag === "epsp";
+        if (!e.correct) { toast("불응기! 지금은 반응이 없어요", "#B4AEDB", 0.8); break; }
+        Snd.tone("triangle", ex ? 660 : 520, ex ? 990 : 300, 0.12, 0.2);
+        toast(ex ? "EPSP +7 mV" : "IPSP −7 mV", ex ? "#5CFF9D" : "#5C9CFF", 0.6); break;
+      }
+      case S.Fire:
+        Snd.chime(); Snd.whoosh(); CAM.shake = 0.5; SV.spinVel = 720; setExpr("Joy", 1.5); NRW.U.uFire.value = 1; pulseVm("fire");
+        toast("⚡ 역치 도달! 활동전위 발화!", "#FFD34D", 1.6); Voice.say(pickOne(["발화! 활동전위다!", "역치 넘었다! 슝!", "좋아, 발화 성공!"]), { mode: "idle" }); break;
+      case S.Seizure:
+        Snd.thud(); CAM.shake = 0.8; setExpr("Hurt", 1.2); NRW.U.uSeize.value = 1; pulseVm("seize");
+        toast("과흥분! 발작 위험 — IPSP로 진정시켜!", "#FF4D6D", 1.6); Voice.say("앗, 과흥분이야! 파란 IPSP를 모아 줘!", { mode: "idle" }); break;
+      case S.MissionEnd: {
+        const ex = e.tag === "excite";
+        if (e.correct) { toast(ex ? "EPSP 가중 성공! 발화 " + sim.missionFires + "회" : "과흥분 억제 성공! 보너스 가속", "#5CFF9D", 2); Voice.say(ex ? "시간적 가중 성공! EPSP가 모여서 발화했어!" : "잘했어! IPSP가 막전위를 낮춰서 과흥분을 막았어!", { mode: "idle" }); }
+        else { toast(ex ? "역치에 못 미쳤어요 — EPSP를 더 빨리 연달아!" : "억제 실패 — 과흥분이 일어났어요", "#FF8A3D", 2); Voice.say(ex ? "아깝다! EPSP를 더 빠르게 연달아 모아야 역치까지 가." : "과흥분이 일어났어. IPSP를 더 모아 보자!", { mode: "idle" }); }
+        break;
+      }
     }
   }
   function trigger(tag) {
@@ -1847,6 +2029,11 @@ window.NR_MAIN = function () {
         if (arg === "corner") hint("코너 진입! 안쪽으로 조향해 벽에 부딪히지 않게 하세요.", 4);
         else if (arg === "jump") hint("NULL 교란 구간! 큰 파동은 [점프], 작은 블록은 피하세요.", 4);
         else if (arg === "drift") hint("급커브! [드리프트]를 누른 채 커브 방향으로 조향 → 놓으면 미니 터보!", 6);
+        break;
+      case "integ":
+        if (arg === "excite") hint("EPSP 가중 구간! 초록 ＋ 를 연달아 먹으면 막전위가 올라가 역치(-55 mV)에서 발화 → 가속! 파랑 − 는 피하기", 6);
+        else if (arg === "inhibit") hint("IPSP 억제 구간! NULL이 막전위를 계속 올려요. 파랑 − 를 먹어서 역치 아래로 지키기! 초록 ＋ 는 피하기", 6);
+        if (arg === "excite" || arg === "inhibit") Voice.say(arg === "excite" ? "EPSP 구간이야! 초록 플러스를 연달아 모으면 역치까지 올라가서 발화해!" : "NULL 때문에 뉴런이 과흥분 중이야! 파란 마이너스를 모아서 진정시켜 줘!", { mode: Voice.has("exp") ? "queue" : "replace" });
         break;
       case "banner": toast(arg === "soma" ? "세포체 - 입력 신호의 가중(통합)" : "축삭종말 접근 - 시냅스 소포 준비", "#2EE6D6", 2.2); break;
       case "codex": r.learn.codexSeen.add(arg); { const ce = codexById.get(arg); if (ce && !save.codexUnlocked.includes(arg)) toast("신경 도감 등록: " + ce.name, "#2EE6D6", 1.8); } break;
@@ -1959,7 +2146,7 @@ window.NR_MAIN = function () {
       ["말 속도", "", "voiceRate", [[0.95, "천천히"], [1.05, "보통"], [1.18, "빠르게"]]],
       ["배경 음악", "", "musicOn", [[true, "켜기"], [false, "끄기"]]],
       ["효과음", "", "sfxOn", [[true, "켜기"], [false, "끄기"]]],
-      ["문제 생각 시간", "문제가 뜨면 레이스가 느려져요 (기록 손해 없음)", "thinkSlow", [[0.25, "아주 느리게"], [0.4, "느리게"], [0.6, "조금"], [1, "끄기"]]],
+      ["문제 생각 시간", "문제가 뜨면 레이스가 조금 느려져요 (기록 손해 없음)", "thinkSlow", [[0.5, "느리게"], [0.75, "조금"], [1, "끄기"]]],
       ["도움말 힌트", "", "showHints", [[true, "켜기"], [false, "끄기"]]],
       ["그래픽 품질", "버벅이면 '가볍게'", "quality", [["low", "가볍게"], ["auto", "자동"], ["high", "선명"]]],
     ];
@@ -1967,7 +2154,7 @@ window.NR_MAIN = function () {
     el.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => {
       const k = b.dataset.k, v = JSON.parse(b.dataset.v); save[k] = v; persist();
       if (k === "musicOn") Snd.setMusic(v); if (k === "sfxOn" && Snd.sfx) Snd.sfx.gain.value = v ? 0.5 : 0;
-      if (k === "quality") { renderer.setPixelRatio(dprCap()); setupPost(); resize(); if (!race) { if (world) world.dispose(scene); world = null; menuScene(); } }
+      if (k === "quality") { autoLevel = TOUCH ? "mid" : "high"; renderer.setPixelRatio(dprCap()); setupPost(); resize(); if (!race) { if (world) world.dispose(scene); world = null; menuScene(); } }
       if ((k === "voiceOn" && v) || k === "voicePitch" || k === "voiceRate") Voice.say("안녕! 나는 스타 제로원이야. 이렇게 읽어 줄게!"); if (k === "voiceOn" && !v) Voice.stop();
       renderSettings(el, compact);
     }));
@@ -2015,11 +2202,23 @@ window.NR_MAIN = function () {
     camera.lookAt(fr.p.clone().addScaledVector(right, -3.2)); if (camera.fov !== 50) { camera.fov = 50; camera.updateProjectionMatrix(); }
   }
 
+  // FPS watchdog: if the race runs below ~42 fps for 2 s, drop bloom, then resolution
+  let fpsAcc = 0, fpsN = 0, fpsCool = 3;
+  function watchFps(dt) {
+    if (!race || race.phase !== "run" || race.paused || save.quality !== "auto") { fpsAcc = fpsN = 0; return; }
+    if (fpsCool > 0) { fpsCool -= dt; return; }
+    fpsAcc += dt; fpsN++; if (fpsAcc < 2) return;
+    const avg = fpsAcc / fpsN; fpsAcc = fpsN = 0;
+    if (avg > 1 / 42 && autoLevel !== "low") { autoLevel = autoLevel === "high" ? "mid" : "low"; renderer.setPixelRatio(dprCap()); setupPost(); fpsCool = 3; toast("부드럽게 달리도록 화질을 자동으로 낮췄어요", "#B4AEDB", 1.6); }
+  }
+
   //================== LOOP ==================
   let last = performance.now(), tAll = 0;
   function frame(now) {
     requestAnimationFrame(frame);
     const dt = Math.min(0.1, (now - last) / 1000); last = now; tAll += dt; NRW.U.uTime.value = tAll;
+    watchFps(dt);
+    NRW.U.uFire.value = Math.max(0, NRW.U.uFire.value - dt * 1.2); NRW.U.uSeize.value = Math.max(0, NRW.U.uSeize.value - dt * 1.5);
     if (race) tickRace(dt); else tickMenu(dt);
     NRW.U.uStar.value.copy(star.root.position);
     if (world) world.update(dt, tAll, race ? race.sim : null);
