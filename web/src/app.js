@@ -360,15 +360,15 @@ window.NR_MAIN = function () {
   const LANE_WORD = n => n === 2 ? ["왼쪽", "오른쪽"] : n === 3 ? ["왼쪽", "가운데", "오른쪽"] : Array.from({ length: n }, (_, i) => (i + 1) + "번");
   function questionSpeech(q) {
     const w = LANE_WORD(q.options.length);
-    return pickOne(["자, 문제!", "문제 나간다!", "이번 문제야.", "잘 들어 봐!"]) + " " + q.question + " " +
-      q.options.map((o, i) => w[i] + (hasBatchim(w[i]) ? "은 " : "는 ") + optSpeech(o)).join(", ") + ". " + pickOne(["어느 쪽일까?", "골라 봐!", "어디로 갈래?", "정답 쪽으로 가 보자!"]);
+    // question only - answer options are on screen, not read aloud
+    return pickOne(["자, 문제!", "문제 나간다!", "이번 문제야.", "잘 들어 봐!"]) + " " + q.question;
   }
   // while racing STAR-01 says the key sentence only; the full explanation is one tap away (🔊 해설 듣기)
   const firstSentence = t => { const ss = String(t).match(/[^.!?]+[.!?]?/g) || [String(t)]; let out = ss[0].trim(); if (out.length < 30 && ss[1]) out += " " + ss[1].trim(); return out; };
   function answerSpeech(q, chosen, correct) {
     const ans = optSpeech(q.options[q.answer]), wrong = correct ? "" : NR.wrongExp(q, chosen);
     if (correct) return pickOne(["딩동댕! 맞았어!", "정답! 잘했어!", "맞아, 역시!", "좋아, 정답이야!"]) + " " + firstSentence(q.explanation);
-    return pickOne(["앗, 아깝다!", "아쉽다!", "음, 이건 틀렸어."]) + " 정답은 " + ans + (hasBatchim(ans) ? "이야. " : "야. ") + firstSentence(wrong || q.explanation);
+    return pickOne(["앗, 아깝다!", "아쉽다!", "음, 이건 틀렸어."]) + " " + firstSentence(q.explanation);   // key point only, no option names
   }
   let lastAnswer = null;
   function showQuestion(q, title) {
@@ -756,7 +756,7 @@ window.NR_MAIN = function () {
     function phase2() {
       $("#mg-fb").textContent = "전달 순서 완성! " + (mistakes === 0 ? "완벽해요!" : "실수 " + mistakes + "회"); Snd.chime();
       setTimeout(() => {
-        $("#mg-prompt").textContent = qe.question; Voice.say("좋아, 마지막 문제! " + qe.question + " " + qe.options.map(o => optSpeech(o)).join(", 아니면 ") + "?");
+        $("#mg-prompt").textContent = qe.question; Voice.say("좋아, 마지막 문제! " + qe.question);
         btns.innerHTML = qe.options.map((o, i) => `<button data-i="${i}"><b>${LETTER(i)}</b>. ${esc(o)}</button>`).join("");
         btns.querySelectorAll("button").forEach(b => b.addEventListener("pointerup", () => {
           const ch = +b.dataset.i, ok = ch === qe.answer, success = mistakes <= 1 && ok;

@@ -284,6 +284,21 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 .mission.low{top:auto;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 64px)}
 @media (max-height:520px){.mission.low{bottom:40px}}
 
+/* ---------- 4.1: slimmer, see-through top boxes (same text size) ---------- */
+.qpanel,.apanel{width:auto;max-width:min(760px,66vw);padding:4px 10px 6px;background:rgba(16,12,48,.5);border-width:1.5px;border-radius:12px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.apanel.bad{background:rgba(48,12,28,.5)}
+.q-title{gap:8px;line-height:1.2}.q-text{margin:1px 0 4px;line-height:1.3;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.q-opts{gap:5px}
+.opt{padding:2px 8px;border-width:1.5px;border-radius:9px;background:rgba(36,28,87,.45);line-height:1.2}
+.opt .lane{display:none}
+.opt.cur{background:rgba(58,45,122,.7)}
+.a-title{line-height:1.2}.a-text{margin-top:1px;line-height:1.35;text-shadow:0 1px 3px rgba(0,0,0,.8)}.a-wrong{margin-top:1px}.a-extra{display:none}
+.a-btns{margin-top:3px;gap:4px}.a-btn{padding:2px 8px;background:rgba(36,28,87,.6)}
+#mi-prompt{padding:2px 10px;background:rgba(10,24,40,.5);border-width:1.5px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+#mi-lanes div{padding:1px 6px;background:rgba(20,16,56,.45);border-width:1.5px}
+.hint,.story{padding:4px 10px;background:rgba(20,15,56,.5);border-width:1.5px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.section,.stat{background:rgba(20,15,56,.55)}
+
 </style>
 </head>
 <body>
@@ -2323,15 +2338,15 @@ window.NR_MAIN = function () {
   const LANE_WORD = n => n === 2 ? ["왼쪽", "오른쪽"] : n === 3 ? ["왼쪽", "가운데", "오른쪽"] : Array.from({ length: n }, (_, i) => (i + 1) + "번");
   function questionSpeech(q) {
     const w = LANE_WORD(q.options.length);
-    return pickOne(["자, 문제!", "문제 나간다!", "이번 문제야.", "잘 들어 봐!"]) + " " + q.question + " " +
-      q.options.map((o, i) => w[i] + (hasBatchim(w[i]) ? "은 " : "는 ") + optSpeech(o)).join(", ") + ". " + pickOne(["어느 쪽일까?", "골라 봐!", "어디로 갈래?", "정답 쪽으로 가 보자!"]);
+    // question only - answer options are on screen, not read aloud
+    return pickOne(["자, 문제!", "문제 나간다!", "이번 문제야.", "잘 들어 봐!"]) + " " + q.question;
   }
   // while racing STAR-01 says the key sentence only; the full explanation is one tap away (🔊 해설 듣기)
   const firstSentence = t => { const ss = String(t).match(/[^.!?]+[.!?]?/g) || [String(t)]; let out = ss[0].trim(); if (out.length < 30 && ss[1]) out += " " + ss[1].trim(); return out; };
   function answerSpeech(q, chosen, correct) {
     const ans = optSpeech(q.options[q.answer]), wrong = correct ? "" : NR.wrongExp(q, chosen);
     if (correct) return pickOne(["딩동댕! 맞았어!", "정답! 잘했어!", "맞아, 역시!", "좋아, 정답이야!"]) + " " + firstSentence(q.explanation);
-    return pickOne(["앗, 아깝다!", "아쉽다!", "음, 이건 틀렸어."]) + " 정답은 " + ans + (hasBatchim(ans) ? "이야. " : "야. ") + firstSentence(wrong || q.explanation);
+    return pickOne(["앗, 아깝다!", "아쉽다!", "음, 이건 틀렸어."]) + " " + firstSentence(q.explanation);   // key point only, no option names
   }
   let lastAnswer = null;
   function showQuestion(q, title) {
@@ -2719,7 +2734,7 @@ window.NR_MAIN = function () {
     function phase2() {
       $("#mg-fb").textContent = "전달 순서 완성! " + (mistakes === 0 ? "완벽해요!" : "실수 " + mistakes + "회"); Snd.chime();
       setTimeout(() => {
-        $("#mg-prompt").textContent = qe.question; Voice.say("좋아, 마지막 문제! " + qe.question + " " + qe.options.map(o => optSpeech(o)).join(", 아니면 ") + "?");
+        $("#mg-prompt").textContent = qe.question; Voice.say("좋아, 마지막 문제! " + qe.question);
         btns.innerHTML = qe.options.map((o, i) => `<button data-i="${i}"><b>${LETTER(i)}</b>. ${esc(o)}</button>`).join("");
         btns.querySelectorAll("button").forEach(b => b.addEventListener("pointerup", () => {
           const ch = +b.dataset.i, ok = ch === qe.answer, success = mistakes <= 1 && ok;
