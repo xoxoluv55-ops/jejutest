@@ -9,8 +9,9 @@ window.NR_MAIN = function () {
 
   //================== SAVE ==================
   const SAVE_KEY = "nerverunner_web_v1";
-  const save = Object.assign({ voiceRate: 1.05, voicePitch: 1.12, voiceURI: "", voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
+  const save = Object.assign({ voiceRate: 1.08, voicePitch: 1.0, voiceURI: "", voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
   if (!(save.v >= 3)) { save.thinkSlow = 0.75; save.v = 3; }      // 2.5: slow motion was too slow
+  if (!(save.v >= 4)) { save.voicePitch = 1.0; save.voiceRate = 1.08; save.v = 4; }   // 2.6: raised pitch sounded synthetic
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } };
 
   //================== AUDIO (NRMusic.cs port + simple SFX) ==================
@@ -125,6 +126,7 @@ window.NR_MAIN = function () {
       if (!save.voiceOn || !text) return false; const mode = o.mode || "replace";
       if (mode === "idle" && this.talking) return false;
       if (mode === "replace") this.stop();
+      if (mode === "polite") this.q.length = 0;   // let the sentence being spoken finish, drop the rest, then talk
       for (const c of this.chunks(this.clean(text))) this.q.push({ text: c, star: o.star !== false, tag: o.tag || null });
       if (!this.cur) this.next(); return true;
     },
@@ -136,7 +138,7 @@ window.NR_MAIN = function () {
       if (!this.ok) return;
       try {
         const u = new SpeechSynthesisUtterance(c.text); u.lang = "ko-KR"; if (this.voice) u.voice = this.voice;
-        u.rate = save.voiceRate || 1.05; u.pitch = c.star ? (save.voicePitch || 1.12) : 0.95; u.onend = done; u.onerror = done; speechSynthesis.speak(u);
+        u.rate = save.voiceRate || 1.05; u.pitch = c.star ? (save.voicePitch || 1.0) : 0.92; u.onend = done; u.onerror = done; speechSynthesis.speak(u);
       } catch (e) { }
     },
     stop() { this.q.length = 0; this.cur = null; clearTimeout(this.timer); if (this.ok) try { speechSynthesis.cancel(); } catch (e) { } },
@@ -175,7 +177,7 @@ window.NR_MAIN = function () {
 
   const { M, frameAt, LANE, HEXS } = NRW; const LETTER = i => String.fromCharCode(65 + i);
   let world = null;
-  function buildWorld(stage, graph) { if (world) world.dispose(scene); world = NRW.build(scene, stage, graph, bank, qEff()); return world; }
+  function buildWorld(stage, graph) { if (world) world.dispose(scene); world = NRW.build(scene, stage, graph, race || stage ? qbank : bank, qEff()); return world; }
 
   // bloom post-processing (skipped on "가볍게")
   function setupPost() {
@@ -304,7 +306,7 @@ window.NR_MAIN = function () {
       q.options.map((o, i) => w[i] + (hasBatchim(w[i]) ? "은 " : "는 ") + optSpeech(o)).join(", ") + ". " + pickOne(["어느 쪽일까?", "골라 봐!", "어디로 갈래?", "정답 쪽으로 가 보자!"]);
   }
   // while racing STAR-01 says the key sentence only; the full explanation is one tap away (🔊 해설 듣기)
-  const firstSentence = t => { const m = String(t).match(/^[^.!?]+[.!?]/); return m ? m[0] : String(t); };
+  const firstSentence = t => { const ss = String(t).match(/[^.!?]+[.!?]?/g) || [String(t)]; let out = ss[0].trim(); if (out.length < 30 && ss[1]) out += " " + ss[1].trim(); return out; };
   function answerSpeech(q, chosen, correct) {
     const ans = optSpeech(q.options[q.answer]), wrong = correct ? "" : NR.wrongExp(q, chosen);
     if (correct) return pickOne(["딩동댕! 맞았어!", "정답! 잘했어!", "맞아, 역시!", "좋아, 정답이야!"]) + " " + firstSentence(q.explanation);
@@ -317,7 +319,7 @@ window.NR_MAIN = function () {
     const lanes = questionLanes(q, q.options.length);
     $("#q-opts").innerHTML = q.options.map((o, i) => `<div class="opt" data-i="${i}" style="border-left:8px solid ${HEXS(LANE[i % 4])}"><span class="lane">${lanes[i]}</span><span class="k" style="color:${HEXS(LANE[i % 4])}">${LETTER(i)}</span>${esc(o)}</div>`).join("");
     show("#qpanel", true);
-    Voice.say(questionSpeech(q), { tag: "q" });
+    Voice.say(questionSpeech(q), { tag: "q", mode: "polite" });
   }
   function showAnswer(q, chosen, correct, extra, sec) {
     show("#qpanel", false); if (!q) return; const p = $("#apanel");
@@ -325,7 +327,7 @@ window.NR_MAIN = function () {
     const wrong = correct ? "" : NR.wrongExp(q, chosen); $("#a-wrong").textContent = wrong; $("#a-wrong").style.display = wrong ? "block" : "none";
     $("#a-text").textContent = q.explanation; $("#a-extra").textContent = extra || "";
     p.classList.remove("full"); $("#a-more").textContent = "자세히 ▾"; show("#apanel", true); answerT = Math.min(sec, 6); lastAnswer = { q, chosen, correct };
-    Voice.say(answerSpeech(q, chosen, correct), { tag: "exp" });   // explanation is never cut off by the next question (it waits)
+    Voice.say(answerSpeech(q, chosen, correct), { tag: "exp", mode: "polite" });   // never cut mid-sentence; the next question waits
   }
   $("#a-close").addEventListener("pointerup", () => { show("#apanel", false); answerT = 0; Voice.stop(); });
   $("#a-more").addEventListener("pointerup", () => { const p = $("#apanel"), f = !p.classList.contains("full"); p.classList.toggle("full", f); $("#a-more").textContent = f ? "접기 ▴" : "자세히 ▾"; answerT = Math.max(answerT, f ? 12 : 4); });
@@ -353,10 +355,22 @@ window.NR_MAIN = function () {
 
   //================== RACE ==================
   let race = null;
+  // 2.6: answer options are shuffled every run (the data has most answers in A / the same lane)
+  let qbank = bank;
+  function shuffledBank() {
+    return new NR.Bank(C.questions.map(q => {
+      if (/syn_order/.test(q.id) || !q.options || q.options.length < 2) return q;
+      const n = q.options.length, perm = [...Array(n).keys()];
+      for (let i = n - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [perm[i], perm[j]] = [perm[j], perm[i]]; }
+      const w = q.wrongExplanations || [];
+      return Object.assign({}, q, { options: perm.map(k => q.options[k]), answer: perm.indexOf(q.answer), wrongExplanations: perm.map(k => w[k] || ""), perm });
+    }));
+  }
   function startStage(id) {
+    qbank = shuffledBank();
     const stage = NR.STAGES.find(s => s.id === id) || NR.STAGES[0]; save.lastStage = stage.id; persist();
-    const graph = stage.build(bank); buildWorld(stage, graph);
-    const sim = new NR.Sim(graph), learn = new NR.Session(bank), forkSegByQ = new Map();
+    const graph = stage.build(qbank); buildWorld(stage, graph);
+    const sim = new NR.Sim(graph), learn = new NR.Session(qbank), forkSegByQ = new Map();
     for (const seg of graph.segments) if (seg.fork) forkSegByQ.set(seg.fork.questionId, seg);
     let bossMax = 0; if (stage.boss) { for (const e of graph.allEvents()) if (e.type === NR.EV.Gate && e.tag === "boss") bossMax++; for (const s of graph.segments) if (s.fork) bossMax++; }
     race = { stage, graph, sim, learn, forkSegByQ, phase: "intro", t: 0, cd: 4, timeScale: 1, pending: null, pendingLanes: null, bossMax, bossHp: bossMax, finishT: 0, auto: AUTO ? new NR.AutoPilot() : null, paused: false, lastSection: "" };
@@ -379,7 +393,7 @@ window.NR_MAIN = function () {
   function ask(id, title, lanes, decision) {
     const r = race; r.pending = id; r.pendingLanes = lanes; r.decision = decision; r.queued = null;
     if (!r.auto && save.voiceOn && Voice.has("exp")) { r.queued = { id, title }; return; }
-    showQuestion(bank.get(id), title); Snd.beep();
+    showQuestion(qbank.get(id), title); Snd.beep();
   }
   function distToDecision() { const r = race, d = r.decision; if (!d || d.seg !== r.sim.seg) return 999; return Math.max(0, d.s - r.sim.s); }
 
@@ -397,7 +411,7 @@ window.NR_MAIN = function () {
     } else if (r.phase === "run") {
       r.t += dt; if (r.t > 0.8 && r.t < 1.2) countdown("");
       const inp = r.auto ? r.auto.think(sim) : readInput(dt);
-      if (r.queued && (!Voice.has("exp") || distToDecision() < 110)) { const qd = r.queued; r.queued = null; showQuestion(bank.get(qd.id), qd.title); Snd.beep(); }
+      if (r.queued && (!Voice.has("exp") || distToDecision() < 110)) { const qd = r.queued; r.queued = null; showQuestion(qbank.get(qd.id), qd.title); Snd.beep(); }
       let wantSlow = 1;
       if (r.pending && !r.auto) {
         const base = NR.clamp(save.thinkSlow, 0.2, 1), D = distToDecision(), v = Math.max(12, sim.speed);
@@ -434,7 +448,7 @@ window.NR_MAIN = function () {
     const r = race, pill = $("#h-lane");
     if (!r.pending || !r.pendingLanes) { if (laneShown !== -2) { pill.style.display = "none"; laneShown = -2; $$("#q-opts .opt").forEach(o => o.classList.remove("cur")); } return; }
     const lane = NR.Sim.nearest(r.pendingLanes, r.sim.x); if (lane === laneShown) return; laneShown = lane;
-    const q = bank.get(r.pending), c = HEXS(LANE[lane % 4]);
+    const q = qbank.get(r.pending), c = HEXS(LANE[lane % 4]);
     pill.style.display = "block"; pill.style.borderColor = c; pill.innerHTML = `지금 <span style="color:${c}">${LETTER(lane)}</span> ${q ? esc(q.options[lane].length > 14 ? q.options[lane].slice(0, 13) + "…" : q.options[lane]) : ""}`;
     $$("#q-opts .opt").forEach((o, i) => o.classList.toggle("cur", i === lane));
   }
@@ -463,7 +477,7 @@ window.NR_MAIN = function () {
     switch (e.type) {
       case S.Trigger: trigger(e.tag); break;
       case S.GateResult: {
-        const q = bank.get(e.src.questionId); r.learn.answer(e.src.questionId, e.lane, sim.raceTime);
+        const q = qbank.get(e.src.questionId); r.learn.answer(e.src.questionId, e.lane, sim.raceTime);
         world.gateResult(e.src, e.lane);
         feedback(e.correct); let extra = null;
         if (e.src.tag === "glia" && e.correct) { extra = "희소돌기아교세포가 수초를 재생했습니다. 전도 속도 회복!"; toast("수초 복구 완료!", "#5CFF9D"); }
@@ -472,7 +486,7 @@ window.NR_MAIN = function () {
         showAnswer(q, e.lane, e.correct, extra, e.correct ? 7 : 11); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
       case S.ForkChosen: {
-        const q = bank.get(e.tag); r.learn.answer(e.tag, e.lane, sim.raceTime);
+        const q = qbank.get(e.tag); r.learn.answer(e.tag, e.lane, sim.raceTime);
         world.forkResult(e.tag, e.lane);
         if (r.stage.boss) bossAnswer(e.correct); feedback(e.correct);
         showAnswer(q, e.lane, e.correct, e.correct ? "정답 경로: 지름길 + 신호 에너지 보너스!" : "복습 구간에 진입했습니다. 해설을 읽으며 천천히 이동하세요.", e.correct ? 7 : 12);
@@ -543,7 +557,7 @@ window.NR_MAIN = function () {
   //================== SYNAPSE MINIGAME (GameUI.Minigame.cs) ==================
   function openMinigame() {
     const r = race; r.phase = "mini"; show("#touch", false); show("#qpanel", false); setExpr("Surprise", 1.5);
-    const qo = bank.get("ch1_syn_order"), qe = bank.get("ch1_syn_epsp");
+    const qo = qbank.get("ch1_syn_order"), qe = qbank.get("ch1_syn_epsp");
     const done = (success, mistakes, epsp) => { r.learn.answer(qo.id, mistakes === 0 ? qo.answer : 1, r.sim.raceTime); r.learn.answer(qe.id, epsp, r.sim.raceTime); closeMinigame(success); };
     if (r.auto) { done(true, 0, qe.answer); return; }
     show("#mini", true); let next = 0, mistakes = 0;
@@ -582,7 +596,8 @@ window.NR_MAIN = function () {
   //================== RESULT ==================
   function showResult() {
     const r = race, sim = r.sim, L = r.learn, par = r.graph.parTime, t = sim.raceTime;
-    const today = new Date().toISOString().slice(0, 10); L.mergeInto(save, today); save.plays++;
+    const today = new Date().toISOString().slice(0, 10); for (const a of L.answers) { const q = qbank.get(a.questionId); if (q && q.perm) { a.chosen = q.perm[a.chosen]; a.mapped = true; } }
+    L.mergeInto(save, today); save.plays++;
     const b = save.best[r.stage.id], isBest = !b || t < b.time; if (isBest) save.best[r.stage.id] = { time: t, acc: L.accuracy };
     persist();
     const acc = Math.round(L.accuracy * 100), grade = acc === 100 && t <= par ? "S" : acc >= 80 && t <= par * 1.1 ? "A" : acc >= 60 ? "B" : "C";
@@ -634,8 +649,8 @@ window.NR_MAIN = function () {
   function renderSettings(el, compact) {
     const rows = [
       ["별 음성 안내", "STAR-01이 문제·해설을 읽어 줘요" + (Voice.ok ? "" : " (이 브라우저는 미지원)"), "voiceOn", [[true, "켜기"], [false, "끄기"]]],
-      ["목소리 톤", "", "voicePitch", [[1.0, "차분하게"], [1.12, "밝게"], [1.28, "귀엽게"]]],
-      ["말 속도", "", "voiceRate", [[0.95, "천천히"], [1.05, "보통"], [1.18, "빠르게"]]],
+      ["목소리 톤", "", "voicePitch", [[0.95, "차분하게"], [1.0, "자연스럽게"], [1.15, "밝게"]]],
+      ["말 속도", "", "voiceRate", [[0.95, "천천히"], [1.08, "보통"], [1.2, "빠르게"]]],
       ["배경 음악", "", "musicOn", [[true, "켜기"], [false, "끄기"]]],
       ["효과음", "", "sfxOn", [[true, "켜기"], [false, "끄기"]]],
       ["문제 생각 시간", "문제가 뜨면 레이스가 조금 느려져요 (기록 손해 없음)", "thinkSlow", [[0.5, "느리게"], [0.75, "조금"], [1, "끄기"]]],
@@ -718,7 +733,7 @@ window.NR_MAIN = function () {
   }
 
   // boot
-  window.NR_APP = { startStage, get race() { return race; }, save, cam: CAM };
+  window.NR_APP = { startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
   function boot() {
     if (boot.done) return; boot.done = true;
     setupPost(); renderStages(); menuScene(); screen("title");

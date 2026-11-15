@@ -69,7 +69,7 @@ const NR = (function () {
   const ZONE = { Normal: 0, ForkApproach: 1, Shortcut: 2, Review: 3, Myelin: 4, Damaged: 5, Synapse: 6 };
   const EV = { Trigger: 0, Gate: 1, NodeRing: 2, Obstacle: 3, Orb: 4, RepairOrb: 5, Checkpoint: 6, Finish: 7, Epsp: 8, Ipsp: 9 };
   // web 2.5 tuning (Unity/C# parity = { width: 1, arcade: false }): wider roads, arcade drift
-  const TUNE = { width: 1.45, arcade: true };
+  const TUNE = { width: 1.45, arcade: true, gap: 560, gateTail: 220 };   // gap/gateTail: room for STAR-01 to finish talking between questions (Unity: 320 / 0)
 
   class Segment {
     constructor(id, name, zone, hw) { this.id = id; this.name = name; this.zone = zone; this.halfWidth = hw; this.next = []; this.events = []; this.mergeOffset = 0; this.fork = null; this.theme = null; }
@@ -213,7 +213,7 @@ const NR = (function () {
     b.trigger("forkq:" + qH.id, 0).trigger("codex:hillock", 0); b.straight(300);
     const fork1 = b.cut("축삭둔덕 갈림길", ZONE.ForkApproach, 9); b.fork(fork1, qH, 380, 165, 9);
     b.trigger("story:ap", 0).trigger("codex:ap", 0);
-    const AP = ["ch1_ap_1", "ch1_ap_2", "ch1_ap_3", "ch1_ap_4"], GAP = 320;
+    const AP = ["ch1_ap_1", "ch1_ap_2", "ch1_ap_3", "ch1_ap_4"], GAP = TUNE.gap || 320;
     AP.forEach((id, g) => {
       const q = bank.get(id), s0 = 60 + g * GAP;
       b.eventAt(EV.Trigger, s0, 0, "gateq:" + id);
@@ -255,7 +255,7 @@ const NR = (function () {
     b.trigger("integ:excite", 40); psps(b, "excite", 60, 330); b.eventAt(EV.Trigger, 335, 0, "integ:end");
     b.straight(220, 4); b.turn(45, 150); b.straight(120, 6); b.turn(-50, 120);
     b.cut("이마엽 지구 (Frontal)", ZONE.Normal, 6, "frontal");
-    b.trigger("codex:m1", 10).trigger("codex:broca", 300); gate("ch7_gate_m1", 40, "lobe", 6); gate("ch7_gate_broca", 340, "lobe", 6); b.straight(600, -4);
+    b.trigger("codex:m1", 10).trigger("codex:broca", TUNE.gap || 300); const G7 = TUNE.gap || 300; gate("ch7_gate_m1", 40, "lobe", 6); gate("ch7_gate_broca", 40 + G7, "lobe", 6); b.straight(260 + G7, -4);
     b.cut("이마엽 · 운동/언어 게이트", ZONE.Normal, 9, "frontal");
     b.trigger("forkq:ch7_fork_s1", 0); b.straight(300); let f = b.cut("감각 정보 갈림길", ZONE.ForkApproach, 9, "frontal"); b.fork(f, bank.get("ch7_fork_s1"), 380, 150, 6);
     b.trigger("story:ch7_parietal", 0).trigger("codex:parietal", 0).trigger("codex:s1", 20);
@@ -266,7 +266,7 @@ const NR = (function () {
     b.trigger("story:ch7_temporal", 0).trigger("codex:temporal", 0).trigger("codex:a1", 20);
     b.turn(-45, 160, -6); b.straightWith(140, 3, (i, s) => b.eventAt(EV.Orb, s, 2.6 * Math.sin(i * 1.3))); b.turn(80, 70); b.straight(60);
     b.cut("관자엽 지구 (Temporal)", ZONE.Normal, 6, "temporal");
-    b.trigger("codex:wernicke", 10).trigger("codex:hippocampus", 300); gate("ch7_gate_wernicke", 40, "lobe", 6); gate("ch7_gate_hippocampus", 340, "lobe", 6); b.straight(600, 4);
+    b.trigger("codex:wernicke", 10).trigger("codex:hippocampus", TUNE.gap || 300); gate("ch7_gate_wernicke", 40, "lobe", 6); gate("ch7_gate_hippocampus", 40 + G7, "lobe", 6); b.straight(260 + G7, 4);
     b.cut("관자엽 · 언어/기억 게이트", ZONE.Normal, 9, "temporal");
     b.trigger("forkq:ch7_fork_v1", 0); b.straight(300); f = b.cut("시각 정보 갈림길", ZONE.ForkApproach, 9, "temporal"); b.fork(f, bank.get("ch7_fork_v1"), 380, 150, 9);
     b.trigger("story:ch7_occipital", 0).trigger("codex:occipital", 0).trigger("codex:v1", 20);
@@ -310,7 +310,7 @@ const NR = (function () {
         case "gate": {
           const q = bank.get(arg); b.eventAt(EV.Trigger, 40, 0, "gateq:" + q.id);
           const g = b.eventAt(EV.Gate, 215, 0, "quiz"); g.questionId = q.id; g.laneX = laneXs(q.options.length, q.options.length === 2 ? 9 : 6); g.correctLane = q.answer;
-          b.straight(300); b.turn(dir * 35, 160); b.cut(q.topic + " 게이트", ZONE.Normal, 9, theme); break;
+          b.straight(300 + (TUNE.gateTail || 0)); b.turn(dir * 35, 160); b.cut(q.topic + " 게이트", ZONE.Normal, 9, theme); break;
         }
         case "fork": { const q = bank.get(arg); b.trigger("forkq:" + q.id, 0); b.straight(300); const f = b.cut(q.topic + " 갈림길", ZONE.ForkApproach, 9, theme); b.fork(f, q, 380, 150, q.options.length === 2 ? 9 : 6); break; }
         case "hairpin": b.trigger("hint:drift", 0); b.straight(100); b.turn(dir * 140, 42); b.straight(150, -4); b.turn(-dir * 80, 70); b.straight(60); b.cut("드리프트 커브", ZONE.Normal, 6, theme); break;

@@ -214,3 +214,19 @@ h2{font-family:var(--title);font-weight:400;margin:0}
   .slow{top:56px;font-size:12px}
   .d-text{font-size:17px}.d-box{padding:10px 16px}.d-who b{font-size:17px}
 }
+
+/* ---------- 2.6: synapse minigame fits a phone screen (buttons first, picture hidden) ---------- */
+.mini{overflow:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch}
+@media (max-height:620px){
+  .mini{padding:max(6px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left));gap:4px}
+  .mini h2{font-size:22px}
+  .mg-prompt{font-size:15px}
+  .mg-body{gap:10px}
+  .mg-ill{display:none}
+  .mg-right{gap:6px}
+  .mg-btns{order:-1;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:6px}
+  .mg-btns button{font-size:14px;min-height:44px;padding:6px 8px;border-radius:12px}
+  .mg-slots{flex-direction:row;flex-wrap:wrap;gap:4px}
+  .mg-slots li{flex:1 1 30%;font-size:12px;padding:4px 8px;min-height:0;border-radius:8px}
+  .mg-fb{font-size:13px}
+}
