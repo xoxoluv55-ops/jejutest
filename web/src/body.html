@@ -1,0 +1,147 @@
+<div id="app">
+  <canvas id="gl"></canvas>
+
+  <!-- TITLE -->
+  <section id="scr-title" class="screen on">
+    <div class="title-wrap">
+      <div class="logo"><span class="l1">NERVE</span><span class="l2">RUNNER</span></div>
+      <div class="sub">STAR-01과 함께 달리는 신경해부·신경생리 레이싱</div>
+      <div class="menu">
+        <button class="big primary" data-act="play">▶ 게임 시작</button>
+        <button class="big" data-act="stages">스테이지 선택</button>
+        <div class="row2">
+          <button data-act="codex">📘 신경 도감</button>
+          <button data-act="notes">📝 오답 노트</button>
+          <button data-act="settings">⚙️ 설정</button>
+        </div>
+      </div>
+      <div class="foot">터치 한 번이면 음악과 별의 목소리가 켜져요 · iPad는 가로 화면 권장</div>
+    </div>
+  </section>
+
+  <!-- STAGE SELECT -->
+  <section id="scr-stages" class="screen panel-screen">
+    <header><button class="back" data-act="title">◀</button><h2>스테이지 선택</h2></header>
+    <div id="stage-grid" class="stage-grid"></div>
+  </section>
+
+  <!-- CODEX / NOTES -->
+  <section id="scr-codex" class="screen panel-screen">
+    <header><button class="back" data-act="title">◀</button><h2 id="codex-h">신경 도감</h2></header>
+    <div id="codex-tabs" class="tabs"></div>
+    <div id="codex-list" class="list"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="scr-settings" class="screen panel-screen">
+    <header><button class="back" data-act="title">◀</button><h2>설정</h2></header>
+    <div id="settings-list" class="settings"></div>
+  </section>
+
+  <!-- HUD -->
+  <section id="hud" class="hud">
+    <div class="hud-top">
+      <div class="hud-left">
+        <div id="h-section" class="section">-</div>
+        <div class="prog"><div id="h-prog"></div><span id="h-star">★</span></div>
+      </div>
+      <div id="h-boss" class="boss"><span>NULL 보호막</span><div class="bar"><div id="h-boss-fill"></div></div></div>
+      <div class="hud-right">
+        <div class="stat"><small>시간</small><b id="h-time">0:00.0</b></div>
+        <div class="stat"><small>정답</small><b id="h-score">0/0</b></div>
+        <div class="stat"><small>오브</small><b id="h-coins">0</b></div>
+        <button id="b-pause" class="icon">Ⅱ</button>
+      </div>
+    </div>
+    <div class="energy"><div id="h-energy"></div><span>신호 에너지</span></div>
+    <div id="h-count" class="countdown"></div>
+    <div id="h-toast" class="toast"></div>
+    <div id="h-hint" class="hint"></div>
+    <div id="h-story" class="story"><b></b><span></span></div>
+    <div id="h-slow" class="slow">생각 시간 · 슬로모션</div>
+  </section>
+
+  <!-- QUESTION / ANSWER -->
+  <section id="qpanel" class="qpanel">
+    <div class="q-title"><b id="q-title"></b><small id="q-tag"></small></div>
+    <div id="q-text" class="q-text"></div>
+    <div id="q-opts" class="q-opts"></div>
+    <div class="q-help">원하는 답의 차선으로 조향해서 들어가세요 · 지금 차선이 반짝여요</div>
+  </section>
+  <section id="apanel" class="apanel">
+    <div id="a-title" class="a-title"></div>
+    <div id="a-wrong" class="a-wrong"></div>
+    <div id="a-text" class="a-text"></div>
+    <div id="a-extra" class="a-extra"></div>
+    <button id="a-close" class="a-close">닫기 ✕</button>
+  </section>
+
+  <!-- TOUCH CONTROLS -->
+  <section id="touch" class="touch">
+    <div class="pad left">
+      <button class="tb steer" data-k="left">◀</button>
+      <button class="tb steer" data-k="right">▶</button>
+    </div>
+    <div class="pad right">
+      <button class="tb act drift" data-k="drift"><i>↯</i>드리프트</button>
+      <button class="tb act boost" data-k="boost"><i>⚡</i>부스트</button>
+      <button class="tb act jump" data-k="jump"><i>⤒</i>점프</button>
+    </div>
+  </section>
+
+  <!-- DIALOG -->
+  <section id="dialog" class="dialog">
+    <div class="d-box">
+      <div class="d-who"><span id="d-face">★</span><b id="d-speaker"></b></div>
+      <div id="d-text" class="d-text"></div>
+      <div class="d-next">화면을 터치하면 다음 ▶</div>
+    </div>
+  </section>
+
+  <!-- SYNAPSE MINIGAME -->
+  <section id="mini" class="mini">
+    <h2>시냅스 게이트</h2>
+    <div id="mg-prompt" class="mg-prompt"></div>
+    <div class="mg-body">
+      <div class="mg-ill">
+        <div class="pre">시냅스전 말단<div id="mg-ves"></div><div id="mg-ca" class="ca">Ca²⁺</div></div>
+        <div class="cleft">시냅스틈새</div>
+        <div class="post">시냅스후막 (수용체)</div>
+      </div>
+      <div class="mg-right">
+        <ol id="mg-slots" class="mg-slots"></ol>
+        <div id="mg-btns" class="mg-btns"></div>
+        <div id="mg-fb" class="mg-fb"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAUSE -->
+  <section id="pause" class="overlay">
+    <div class="card">
+      <h2>일시정지</h2>
+      <button class="big primary" data-act="resume">계속하기</button>
+      <button class="big" data-act="retry">처음부터</button>
+      <button class="big" data-act="quit">스테이지 선택으로</button>
+      <div id="pause-settings" class="settings mini-settings"></div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result" class="overlay">
+    <div class="card wide">
+      <h2 id="r-title">STAGE CLEAR!</h2>
+      <div id="r-grade" class="grade"></div>
+      <div id="r-stats" class="r-stats"></div>
+      <div id="r-wrong" class="r-wrong"></div>
+      <div class="r-btns">
+        <button class="big" data-act="retry">다시 달리기</button>
+        <button class="big primary" data-act="next">다음 스테이지 ▶</button>
+        <button class="big" data-act="stages">스테이지 선택</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="rotate" class="rotate"><div>📱↻<br>가로 화면으로 돌려 주세요</div></div>
+  <div id="loading" class="loading">NERVE RUNNER 불러오는 중…</div>
+</div>
