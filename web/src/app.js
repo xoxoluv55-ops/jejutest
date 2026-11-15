@@ -11,6 +11,8 @@ window.NR_MAIN = function () {
   const SAVE_KEY = "nerverunner_web_v1";
   const save = Object.assign({ voiceRate: 1.08, voicePitch: 1.0, voiceURI: "", voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
   if (!(save.v >= 3)) { save.thinkSlow = 0.75; save.v = 3; }      // 2.5: slow motion was too slow
+  if (save.musicVol == null) save.musicVol = save.musicOn === false ? 0 : 0.7;
+  if (save.sfxVol == null) save.sfxVol = save.sfxOn === false ? 0 : 0.8;
   if (!(save.v >= 4)) { save.voicePitch = 1.0; save.voiceRate = 1.08; save.v = 4; }   // 2.6: raised pitch sounded synthetic
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } };
 
@@ -21,10 +23,14 @@ window.NR_MAIN = function () {
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
         this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.connect(this.ctx.destination);
-        this.music = this.ctx.createGain(); this.music.gain.value = save.musicOn ? 0.55 : 0; this.music.connect(this.master);
-        this.sfx = this.ctx.createGain(); this.sfx.gain.value = save.sfxOn ? 0.5 : 0; this.sfx.connect(this.master);
+        this.music = this.ctx.createGain(); this.music.gain.value = 0.75 * save.musicVol; this.music.connect(this.master);
+        this.sfx = this.ctx.createGain(); this.sfx.gain.value = 0.65 * save.sfxVol; this.sfx.connect(this.master);
         const o = this.ctx.createOscillator(), f = this.ctx.createBiquadFilter(); o.type = "sawtooth"; o.frequency.value = 70; f.type = "lowpass"; f.frequency.value = 500;
         this.humGain = this.ctx.createGain(); this.humGain.gain.value = 0; o.connect(f); f.connect(this.humGain); this.humGain.connect(this.sfx); o.start(); this.hum = o;
+        // 3.0: looping noise beds - drift screech (band-pass) and boost roar (low-pass); levels follow the game state
+        const nb = this.ctx.createBuffer(1, this.ctx.sampleRate, this.ctx.sampleRate), d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        const loop = (type, freq, q) => { const src = this.ctx.createBufferSource(), fl = this.ctx.createBiquadFilter(), g = this.ctx.createGain(); src.buffer = nb; src.loop = true; fl.type = type; fl.frequency.value = freq; fl.Q.value = q; g.gain.value = 0; src.connect(fl); fl.connect(g); g.connect(this.sfx); src.start(); return { g, fl }; };
+        this.driftN = loop("bandpass", 2600, 4); this.boostN = loop("lowpass", 700, 0.7);
       }
       if (this.ctx.state !== "running") this.ctx.resume();
       if (this.want) this.play(this.want);
@@ -77,15 +83,31 @@ window.NR_MAIN = function () {
       const s = this.ctx.createBufferSource(), g = this.ctx.createGain(); s.buffer = this.buf(name); s.loop = true; g.gain.value = 0; g.gain.setTargetAtTime(1, t, 0.3);
       s.connect(g); g.connect(this.music); s.start(); this.cur = { s, g }; this.curName = name;
     },
-    setMusic(on) { if (this.music) this.music.gain.value = on ? 0.55 * this.duck : 0; },
-    setDuck(d) { if (Math.abs(d - this.duck) < 0.01 || !this.music) return; this.duck = d; if (save.musicOn) this.music.gain.setTargetAtTime(0.55 * d, this.ctx.currentTime, 0.15); },
+    setMusic() { if (this.music) this.music.gain.value = 0.75 * save.musicVol * this.duck; },
+    setSfx() { if (this.sfx) this.sfx.gain.value = 0.65 * save.sfxVol; },
+    setDuck(d) { if (Math.abs(d - this.duck) < 0.01 || !this.music) return; this.duck = d; this.music.gain.setTargetAtTime(0.75 * save.musicVol * d, this.ctx.currentTime, 0.15); },
+    setLoops(drift, tier, boost) {
+      if (!this.driftN) return; const t = this.ctx.currentTime;
+      this.driftN.g.gain.setTargetAtTime(drift ? 0.05 + 0.03 * tier : 0, t, 0.05); this.driftN.fl.frequency.setTargetAtTime(2200 + tier * 500, t, 0.1);
+      this.boostN.g.gain.setTargetAtTime(boost ? 0.22 : 0, t, boost ? 0.04 : 0.25);
+    },
+    last: {},
+    once(key, gap) { const now = performance.now(); if (now - (this.last[key] || 0) < gap) return false; this.last[key] = now; return true; },   // no stacked duplicates
+    land() { if (this.once("land", 120)) this.tone("sine", 140, 60, 0.12, 0.35); },
+    jump() { if (this.once("jump", 80)) this.tone("square", 420, 900, 0.14, 0.12); },
+    driftOk(tier) { [0, 1, 2].slice(0, tier).forEach((k, i) => setTimeout(() => this.tone("triangle", 700 + 220 * i, 1400 + 300 * i, 0.16, 0.25), i * 70)); this.whoosh(); },
+    driftFail() { this.tone("sawtooth", 320, 110, 0.25, 0.18); },
+    boostStart() { this.tone("sawtooth", 150, 1200, 0.45, 0.2); },
+    fire() { this.tone("square", 220, 1760, 0.3, 0.22); setTimeout(() => this.tone("triangle", 1760, 2640, 0.25, 0.2), 80); },
+    hit() { this.tone("sine", 200, 45, 0.35, 0.55); this.tone("square", 90, 50, 0.15, 0.15); },
+    combo(n) { if (this.once("combo", 60)) this.tone("triangle", 520 + Math.min(n, 30) * 40, 1040 + Math.min(n, 30) * 60, 0.09, 0.14); },
     tone(type, f0, f1, dur, vol) {
-      if (!this.ctx || !save.sfxOn) return; const t = this.ctx.currentTime, o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      if (!this.ctx || !(save.sfxVol > 0)) return; const t = this.ctx.currentTime, o = this.ctx.createOscillator(), g = this.ctx.createGain();
       o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
       g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g); g.connect(this.sfx); o.start(t); o.stop(t + dur + 0.02);
     },
     beep() { this.tone("square", 880, 880, 0.12, 0.18); },
-    coin() { this.tone("square", 1320, 1980, 0.09, 0.12); },
+    coin() { if (!this.once("coin", 50)) return; this.tone("square", 1320, 1980, 0.09, 0.12); },
     chime() { this.tone("triangle", 880, 1760, 0.35, 0.3); setTimeout(() => this.tone("triangle", 1320, 2640, 0.3, 0.2), 90); },
     thud() { this.tone("sine", 180, 40, 0.3, 0.5); },
     whoosh() { this.tone("sawtooth", 200, 900, 0.35, 0.12); },
@@ -191,8 +213,13 @@ window.NR_MAIN = function () {
 
   //================== STAR ==================
   const star = buildStar(); scene.add(star.root);
+  scene.add(camera); const fx = createFX(scene, camera);   // camera in the scene so speed lines (its children) render
   const trail = []; { const tm = addMat(0xFFD34D, 0.28); for (let i = 0; i < 12; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), tm); scene.add(m); trail.push(m); } }
-  const SV = { t: 0, expr: "Normal", base: "Normal", exprT: 0, spin: 0, spinVel: 0, squash: 0, squashVel: 0, wasGround: true, shake: 0, lastV: -1, lean: 0, victory: false, hist: [] };
+  const SV = { t: 0, expr: "Normal", base: "Normal", exprT: 0, spin: 0, spinVel: 0, squash: 0, squashVel: 0, wasGround: true, shake: 0, lastV: -1, lean: 0, victory: false, hist: [], bend: 0, flash: 0, hop: 0, headShake: 0, roll: 0 };
+  // 3.0 reactions
+  function starHit() { SV.squashVel -= 9; SV.flash = 1; SV.shake = 0.25; }
+  function starCorrect() { SV.hop = 1; SV.spinVel = 540; }
+  function starWrong() { SV.headShake = 0.9; }
   function setExpr(e, sec) { SV.expr = e; SV.exprT = sec; }
   function setBase(e) { SV.base = e; }
   function poseStar(sim, dt, showcase) {
@@ -200,7 +227,11 @@ window.NR_MAIN = function () {
     const fr = frameAt(sim.seg, sim.s, sim.x, NR.Sim.HOVER + sim.y); star.root.position.copy(fr.p);
     // star faces the camera (face on +z, root looks back along -forward)
     star.root.quaternion.copy(fr.q);
-    let roll = NR.clamp(-sim.vx * 2.2, -28, 28), yaw = sim.drifting ? sim.driftDir * 28 : 0, pitch = NR.clamp(-sim.vy * 2, -20, 20), bob = sim.grounded ? Math.sin(t * 3.2) * 0.09 : 0;
+    // lean into steering (smoothed), drift yaw, pitch with vertical speed, forward lean with speed
+    SV.roll += (NR.clamp(-sim.vx * 2.4, -30, 30) - SV.roll) * (1 - Math.exp(-10 * dt));
+    let roll = SV.roll, yaw = sim.drifting ? sim.driftDir * (30 + 6 * sim.driftTier) : 0, pitch = NR.clamp(-sim.vy * 2, -20, 20) + 7 * sim.speed01, bob = sim.grounded ? Math.sin(t * 3.2) * 0.09 : 0;
+    if (SV.hop > 0) { SV.hop = Math.max(0, SV.hop - dt * 1.8); bob += Math.sin((1 - SV.hop) * Math.PI) * 0.9; }
+    if (SV.headShake > 0) { SV.headShake = Math.max(0, SV.headShake - dt); yaw += Math.sin(t * 26) * 22 * SV.headShake; }
     if (SV.lastV < 0) SV.lastV = sim.speed01; const acc = (sim.speed01 - SV.lastV) / Math.max(1e-4, dt); SV.lastV = sim.speed01;
     SV.lean += (NR.clamp(acc * 25, -6, 12) - SV.lean) * (1 - Math.exp(-6 * dt)); pitch += SV.lean;
     if (!sim.grounded) SV.spin += 520 * dt; else { const tgt = Math.round(SV.spin / 360) * 360; SV.spin += NR.clamp(tgt - SV.spin, -900 * dt, 900 * dt); }
@@ -220,13 +251,18 @@ window.NR_MAIN = function () {
     star.orbit.rotation.z += dt * (1.2 + sim.speed01 * 3); star.orbit2.rotation.z -= dt * 0.8;
     star.halo.material.opacity = 0.35 + 0.25 * (boosting ? 1 : 0) + 0.05 * Math.sin(t * 4);
     star.bodyMat.uniforms.E.value.setHex(boosting ? 0x4a3a10 : 0x2e2510);
+    SV.bend += ((boosting ? 1 : 0) - SV.bend) * (1 - Math.exp(-(boosting ? 8 : 4) * dt)); star.bodyMat.uniforms.uBend.value = SV.bend * (0.8 + 0.2 * Math.sin(t * 20));
+    SV.flash = Math.max(0, SV.flash - dt * 5); star.bodyMat.uniforms.uFlash.value = SV.flash;
     // expression
     if (SV.exprT > 0) SV.exprT -= dt; let ex = SV.exprT > 0 ? SV.expr : SV.base;
     if (Voice.talking && Voice.star && (ex === "Normal" || ex === "Focus")) ex = Math.sin(t * 22) > 0 ? "Talk" : "Normal";
     for (const k in star.faces) star.faces[k].visible = k === ex;
     // trail
-    SV.hist.unshift(star.root.position.clone()); if (SV.hist.length > 40) SV.hist.pop();
+    if (SV.hist.length < 40) SV.hist.unshift(star.root.position.clone()); else { const v = SV.hist.pop(); v.copy(star.root.position); SV.hist.unshift(v); }
     trail.forEach((m, i) => { const h = SV.hist[Math.min(SV.hist.length - 1, i * 3 + 2)]; if (!h) return; m.position.copy(h); m.quaternion.copy(camera.quaternion); const k = 1 - i / trail.length; m.position.y -= 0.25; m.scale.setScalar((0.35 + 0.9 * sim.speed01) * k + 0.05); m.visible = sim.speed > 8 && !showcase; });
+    const gf = frameAt(sim.seg, sim.s, sim.x, 0.02);
+    fx.update(dt, { ground: gf.p, groundQ: gf.q, fwd: gf.f, height: sim.y, falling: sim.vy < 0, drifting: sim.drifting && !showcase, tier: sim.driftTier, speed01: showcase ? 0 : sim.speed01, boost: boosting && !showcase, visible: true });
+    Snd.setLoops(sim.drifting && !showcase, sim.driftTier, boosting && !showcase && race && race.phase === "run");
   }
 
   //================== CAMERA (ChaseCamera.cs port) ==================
@@ -253,10 +289,10 @@ window.NR_MAIN = function () {
     }
     if (CAM.snap) { CAM.pos.copy(target); CAM.snap = false; } else CAM.pos.lerp(target, 1 - Math.pow(0.0006, dt));
     camera.position.copy(CAM.pos);
-    if (CAM.shake > 0) { CAM.shake = Math.max(0, CAM.shake - dt * 2.5); camera.position.x += (Math.random() - 0.5) * CAM.shake; camera.position.y += (Math.random() - 0.5) * CAM.shake; }
+    if (CAM.shake > 0) { CAM.shake = Math.min(0.4, Math.max(0, CAM.shake - dt * 5)); camera.position.x += (Math.random() - 0.5) * CAM.shake; camera.position.y += (Math.random() - 0.5) * CAM.shake; }
     camera.up.set(0, 1, 0); camera.lookAt(look);
     if (CAM.showcase <= 0 && Math.abs(CAM.roll) > 0.01) camera.rotateZ(CAM.roll * Math.PI / 180);
-    const fov = CAM.showcase > 0 ? 50 : 62 + 14 * sim.speed01 + 10 * CAM.kick; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov = fov; camera.updateProjectionMatrix(); }
+    CAM.kickPunch = Math.max(0, (CAM.kickPunch || 0) - dt * 2.5); const fov = CAM.showcase > 0 ? 50 : 62 + 14 * sim.speed01 + 10 * CAM.kick + 6 * CAM.kickPunch; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov = fov; camera.updateProjectionMatrix(); }
   }
 
   //================== INPUT (RaceInput.cs port) ==================
@@ -271,8 +307,17 @@ window.NR_MAIN = function () {
   addEventListener("keydown", e => { keys[e.code] = true; if (["Space", "ArrowUp", "KeyW"].includes(e.code) && !e.repeat) jumpPress = true; if ((e.code === "Escape" || e.code === "KeyP") && race && race.phase === "run") pauseRace(); if (e.code === "Space") e.preventDefault(); });
   addEventListener("keyup", e => { keys[e.code] = false; });
   addEventListener("blur", () => { for (const k in held) held[k] = 0; for (const k in keys) keys[k] = false; });
+  // 3.0: analog steering - drag anywhere on the left part of the screen (buttons still work)
+  let drag = null;
+  const dz = $("#dragzone");
+  if (dz) {
+    dz.addEventListener("pointerdown", ev => { ev.preventDefault(); drag = { id: ev.pointerId, x0: ev.clientX, v: 0 }; try { dz.setPointerCapture(ev.pointerId); } catch (e) { } dz.classList.add("on"); });
+    dz.addEventListener("pointermove", ev => { if (drag && ev.pointerId === drag.id) { drag.v = NR.clamp((ev.clientX - drag.x0) / 55, -1, 1); const k = $("#dragknob"); if (k) k.style.transform = `translateX(${drag.v * 40}px)`; } });
+    const end = ev => { if (drag && ev.pointerId === drag.id) { drag = null; dz.classList.remove("on"); const k = $("#dragknob"); if (k) k.style.transform = ""; } };
+    dz.addEventListener("pointerup", end); dz.addEventListener("pointercancel", end); dz.addEventListener("lostpointercapture", end);
+  }
   function readInput(dt) {
-    let steer = 0; if (held.left || keys.ArrowLeft || keys.KeyA) steer -= 1; if (held.right || keys.ArrowRight || keys.KeyD) steer += 1;
+    let steer = 0; if (drag) { steerSm += (drag.v - steerSm) * (1 - Math.exp(-14 * dt)); const j = jumpPress; jumpPress = false; return { steer: steerSm, jump: j, drift: !!(held.drift || keys.KeyZ || keys.ArrowDown), boost: !!(held.boost || keys.ShiftLeft || keys.KeyX) }; } if (held.left || keys.ArrowLeft || keys.KeyA) steer -= 1; if (held.right || keys.ArrowRight || keys.KeyD) steer += 1;
     const drift = !!(held.drift || keys.KeyZ || keys.ControlLeft || keys.ArrowDown || keys.KeyS), boost = !!(held.boost || keys.ShiftLeft || keys.KeyX);
     steer = NR.clamp(steer, -1, 1); const r = dt * (steer === 0 ? 10 : 6); steerSm += NR.clamp(steer - steerSm, -r, r);
     const j = jumpPress; jumpPress = false; return { steer: steerSm, jump: j, drift, boost };
@@ -376,7 +421,8 @@ window.NR_MAIN = function () {
     const sim = new NR.Sim(graph), learn = new NR.Session(qbank), forkSegByQ = new Map();
     for (const seg of graph.segments) if (seg.fork) forkSegByQ.set(seg.fork.questionId, seg);
     let bossMax = 0; if (stage.boss) { for (const e of graph.allEvents()) if (e.type === NR.EV.Gate && e.tag === "boss") bossMax++; for (const s of graph.segments) if (s.fork) bossMax++; }
-    race = { stage, graph, sim, learn, forkSegByQ, phase: "intro", t: 0, cd: 4, timeScale: 1, pending: null, pendingLanes: null, bossMax, bossHp: bossMax, finishT: 0, auto: AUTO ? new NR.AutoPilot() : null, paused: false, lastSection: "" };
+    race = { stage, graph, sim, learn, forkSegByQ, phase: "intro", t: 0, cd: 4, timeScale: 1, pending: null, pendingLanes: null, bossMax, bossHp: bossMax, finishT: 0, auto: AUTO ? new NR.AutoPilot() : null, paused: false, lastSection: "", combo: 0, comboT: 0, maxCombo: 0, score: 0, lastOrb: -9 };
+    $("#h-combo").classList.remove("on"); fx.hide();
     screen(""); show("#hud", true); show("#touch", false); show("#qpanel", false); show("#apanel", false); show("#result", false); show("#pause", false);
     $("#h-boss").classList.toggle("on", stage.boss); updateBoss();
     setSection(graph.start.name); countdown(""); storyQ.length = 0; storyT = 0; $("#h-story").style.display = "none"; $("#h-hint").style.display = "none";
@@ -410,7 +456,7 @@ window.NR_MAIN = function () {
     if (r.phase === "count") {
       r.t += dt; const n = 3 - Math.floor(r.t - 0.6);
       if (r.t >= 0.6 && n !== r.cd && n >= 1 && n <= 3) { r.cd = n; countdown(String(n)); Snd.beep(); }
-      if (r.t >= 3.6) { countdown("GO!"); Snd.chime(); r.phase = "run"; r.t = 0; hint(r.auto ? "AUTO 데모 주행 중" : "◀ ▶ 버튼으로 조향! 코너에서는 바깥쪽으로 밀려나요.", 5); }
+      if (r.t >= 3.6) { countdown("GO!"); Snd.chime(); r.phase = "run"; r.t = 0; hint(r.auto ? "AUTO 데모 주행 중" : "◀ ▶ 버튼 또는 화면 왼쪽을 좌우로 끌어서 조향! 코너에서는 드리프트를 누른 채 꺾으면 터보 충전.", 5); }
     } else if (r.phase === "run") {
       r.t += dt; if (r.t > 0.8 && r.t < 1.2) countdown("");
       const inp = r.auto ? r.auto.think(sim) : readInput(dt);
@@ -436,9 +482,9 @@ window.NR_MAIN = function () {
     // HUD
     const prog = r.graph.referenceLength > 0 ? NR.clamp01(sim.distance / r.graph.referenceLength) : 0, pf = r.phase === "finish" || r.phase === "done" ? 1 : prog;
     setStyle("#h-prog", "width", (pf * 100).toFixed(1) + "%"); setStyle("#h-star", "left", (pf * 100).toFixed(1) + "%");
-    setText("#h-time", fmt(sim.raceTime)); setText("#h-score", r.learn.correct + "/" + r.learn.total); setText("#h-coins", sim.coins);
+    setText("#h-time", fmt(sim.raceTime)); setText("#h-score", r.learn.correct + "/" + r.learn.total);
     setStyle("#h-energy", "width", (sim.boostEnergy * 100).toFixed(0) + "%");
-    updateVm(dt);
+    updateVm(dt); tickCombo(dt);
     Snd.setHum(running ? sim.speed01 : 0, running && sim.boosting);
   }
 
@@ -468,8 +514,25 @@ window.NR_MAIN = function () {
   }
   function pulseVm(cls) { const el = $("#h-vm"); el.classList.remove("fire", "seize"); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 900); }
 
+  //================== 3.0 COMBO & SCORE ==================
+  // chained actions (dodge, jump-over, drift turbo, orb streak, node hit, correct answer, AP fire) grow the
+  // combo; the multiplier scales points. A hit, wall, wrong answer, failed drift or 4 s of nothing ends it.
+  const COMBO_WINDOW = 4;
+  function comboAdd(n, pts, label) {
+    const r = race; r.combo += n; r.comboT = COMBO_WINDOW; r.maxCombo = Math.max(r.maxCombo, r.combo);
+    const mult = comboMult(); r.score += Math.round(pts * mult);
+    const el = $("#h-combo"); el.classList.add("on"); setText("#h-combo-n", r.combo); setText("#h-combo-x", "×" + mult.toFixed(1) + (label ? " " + label : ""));
+    el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); Snd.combo(r.combo);
+  }
+  const comboMult = () => 1 + Math.min(3, Math.floor((race.combo || 0) / 5) * 0.5);
+  function comboBreak() { const r = race; if (r.combo >= 5) toast("콤보 끊김 (" + r.combo + ")", "#B4AEDB", 0.8); r.combo = 0; r.comboT = 0; $("#h-combo").classList.remove("on"); }
+  function tickCombo(dt) {
+    const r = race; if (r.comboT > 0) { r.comboT -= dt; setStyle("#h-combo-t", "width", Math.max(0, r.comboT / COMBO_WINDOW * 100).toFixed(0) + "%"); if (r.comboT <= 0) comboBreak(); }
+    setText("#h-score2", r.score);
+  }
+
   function handleEvents() { const sim = race.sim; for (const e of sim.events) handle(e); sim.events.length = 0; }
-  function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); SV.spinVel = 540; } else { Snd.thud(); setExpr("Wrong", 2.2); CAM.shake = 0.5; } }
+  function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); starCorrect(); fx.burst(star.root.position, "correct"); } else { Snd.thud(); setExpr("Wrong", 2.2); starWrong(); CAM.shake = 0.15; } }
   function bossAnswer(ok) {
     const r = race; if (!r.bossMax) return;
     if (ok) { r.bossHp = Math.max(0, r.bossHp - 1); updateBoss(); world.bossHit(r.bossHp, r.bossMax); toast(r.bossHp === 0 ? "NULL 보호막 붕괴!" : "정확한 진단! NULL 보호막 " + r.bossHp + "/" + r.bossMax, "#2EE6D6", 1.8); }
@@ -486,40 +549,46 @@ window.NR_MAIN = function () {
         if (e.src.tag === "glia" && e.correct) { extra = "희소돌기아교세포가 수초를 재생했습니다. 전도 속도 회복!"; toast("수초 복구 완료!", "#5CFF9D"); }
         else if (e.src.tag === "ap") extra = "활동전위 단계 " + (e.src.index + 1) + "/4";
         if (e.src.tag === "boss") bossAnswer(e.correct);
+        if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
         showAnswer(q, e.lane, e.correct, extra, e.correct ? 7 : 11); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
       case S.ForkChosen: {
         const q = qbank.get(e.tag); r.learn.answer(e.tag, e.lane, sim.raceTime);
         world.forkResult(e.tag, e.lane);
-        if (r.stage.boss) bossAnswer(e.correct); feedback(e.correct);
+        if (r.stage.boss) bossAnswer(e.correct); feedback(e.correct); if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
         showAnswer(q, e.lane, e.correct, e.correct ? "정답 경로: 지름길 + 신호 에너지 보너스!" : "복습 구간에 진입했습니다. 해설을 읽으며 천천히 이동하세요.", e.correct ? 7 : 12);
         if (!e.correct) toast("복습 구간 - 속도 저하", "#FF8A3D", 2); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
-      case S.RingHit: { world.ringHit(e.src, true); Snd.coin(); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
+      case S.RingHit: { world.ringHit(e.src, true); Snd.coin(); comboAdd(1, 60); fx.burst(star.root.position, "land"); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
       case S.RingMiss: { world.ringHit(e.src, false); if (sim.ringsTotal > 1) toast("결절을 놓쳤어요 - 연속 끊김", "#B4AEDB", 0.9); break; }
-      case S.ObstacleHit: CAM.shake = 0.9; SV.shake = 0.4; setExpr("Hurt", 1.2); Snd.thud(); toast("NULL 충돌! 전도 지연", "#FF4D6D", 1.2); break;
+      case S.ObstacleHit: CAM.shake = 0.35; starHit(); comboBreak(); fx.burst(star.root.position, "hit"); setExpr("Hurt", 1.2); Snd.thud(); toast("NULL 충돌! 전도 지연", "#FF4D6D", 1.2); break;
       case S.OrbCollected: case S.RepairOrb: {
         world.collect(e.src);
-        if (e.type === S.OrbCollected) Snd.coin(); else { Snd.chime(); setExpr("Joy", 1); toast("수초 복구 " + sim.repairCount + "/3", "#5CFF9D", 1.4); } break;
+        if (e.type === S.OrbCollected) { Snd.coin(); const streak = sim.raceTime - r.lastOrb < 1.4; r.lastOrb = sim.raceTime; comboAdd(streak ? 1 : 0, 25); } else { Snd.chime(); setExpr("Joy", 1); toast("수초 복구 " + sim.repairCount + "/3", "#5CFF9D", 1.4); } break;
       }
-      case S.WallHit: CAM.shake = 0.35; Snd.thud(); setExpr("Surprise", 0.6); break;
-      case S.DriftEnd: if (e.tier > 0) { Snd.whoosh(); toast("미니 터보 Lv." + e.tier, ["", "#4D8DFF", "#FFB627", "#FF5CC8"][e.tier], 0.9); setExpr("Joy", 0.8); } break;
-      case S.BoostStart: Snd.whoosh(); setExpr("Joy", 1); break;
-      case S.Jump: Snd.beep(); break;
+      case S.WallHit: CAM.shake = 0.15; SV.squashVel -= 3; comboBreak(); Snd.thud(); setExpr("Surprise", 0.6); break;
+      case S.DriftEnd:
+        if (e.tier > 0) { Snd.driftOk(e.tier); toast("드리프트 성공! 미니 터보 Lv." + e.tier, ["", "#4D8DFF", "#FFB627", "#FF5CC8"][e.tier], 1); setExpr("Joy", 0.8); fx.burst(star.root.position, "drift", e.tier); comboAdd(1, 80 * e.tier, "드리프트"); }
+        else if (e.tag === "fail") { Snd.driftFail(); toast("드리프트 실패 — 코너에서 꺾어야 충전돼요", "#B4AEDB", 1.2); fx.burst(star.root.position, "fail"); comboBreak(); }
+        break;
+      case S.ObstacleDodged: if (e.tag === "jump" || e.correct) { comboAdd(1, 100, "점프 회피"); } else comboAdd(1, 50, "회피"); break;
+      case S.Land: Snd.land(); SV.squashVel -= 4; fx.burst(star.root.position, "land"); break;
+      case S.BoostStart: Snd.boostStart(); setExpr("Joy", 1); CAM.kickPunch = 1; break;
+      case S.Jump: Snd.jump(); break;
       case S.Checkpoint: toast("체크포인트", "#9B5CFF", 1); break;
       case S.EnterSegment: setSection(sim.seg.zone === NR.ZONE.Review ? "복습 구간" : sim.seg.zone === NR.ZONE.Shortcut ? "지름길" : sim.seg.name); break;
       case S.Finish: finish(); break;
       case S.Psp: {
-        world.pspCollect(e.src); const ex = e.tag === "epsp";
+        world.pspCollect(e.src); const ex = e.tag === "epsp"; if (e.correct && ((ex && sim.mission !== "inhibit") || (!ex && sim.mission === "inhibit"))) comboAdd(1, 30);
         if (!e.correct) { toast("불응기! 지금은 반응이 없어요", "#B4AEDB", 0.8); break; }
         Snd.tone("triangle", ex ? 660 : 520, ex ? 990 : 300, 0.12, 0.2);
         toast(ex ? "EPSP +7 mV" : "IPSP −7 mV", ex ? "#5CFF9D" : "#5C9CFF", 0.6); break;
       }
       case S.Fire:
-        Snd.chime(); Snd.whoosh(); CAM.shake = 0.5; SV.spinVel = 720; setExpr("Joy", 1.5); NRW.U.uFire.value = 1; pulseVm("fire");
+        Snd.fire(); fx.burst(star.root.position, "fire"); comboAdd(2, 250, "발화"); CAM.shake = 0.2; SV.spinVel = 720; setExpr("Joy", 1.5); NRW.U.uFire.value = 1; pulseVm("fire");
         toast("⚡ 역치 도달! 활동전위 발화!", "#FFD34D", 1.6); Voice.say(pickOne(["발화! 활동전위다!", "역치 넘었다! 슝!", "좋아, 발화 성공!"]), { mode: "idle" }); break;
       case S.Seizure:
-        Snd.thud(); CAM.shake = 0.8; setExpr("Hurt", 1.2); NRW.U.uSeize.value = 1; pulseVm("seize");
+        Snd.hit(); CAM.shake = 0.3; starHit(); comboBreak(); setExpr("Hurt", 1.2); NRW.U.uSeize.value = 1; pulseVm("seize");
         toast("과흥분! 발작 위험 — IPSP로 진정시켜!", "#FF4D6D", 1.6); Voice.say("앗, 과흥분이야! 파란 IPSP를 모아 줘!", { mode: "idle" }); break;
       case S.MissionEnd: {
         const ex = e.tag === "excite";
@@ -548,7 +617,7 @@ window.NR_MAIN = function () {
       case "codex": r.learn.codexSeen.add(arg); { const ce = codexById.get(arg); if (ce && !save.codexUnlocked.includes(arg)) toast("신경 도감 등록: " + ce.name, "#2EE6D6", 1.8); } break;
       case "forkq": { const fs = r.forkSegByQ.get(arg); ask(arg, "갈림길! 정답 경로로 들어가세요" + thinkTag, fs ? fs.fork.laneX : null, fs ? { seg: fs, s: fs.length } : null); break; }
       case "gateq": { const g = findGate(arg); ask(arg, (arg === "ch1_gate_glia" ? "수초 복구 게이트" : r.stage.gateTitle) + thinkTag, g ? g.e.laneX : null, g ? { seg: g.seg, s: g.e.s } : null); break; }
-      case "boss": if (arg === "attack") { world.bossAttack(); toast("NULL 반격! 파동은 점프!", "#FF4D6D", 1.4); CAM.shake = 0.4; } break;
+      case "boss": if (arg === "attack") { world.bossAttack(); toast("NULL 반격! 파동은 점프!", "#FF4D6D", 1.4); CAM.shake = 0.2; } break;
       case "synapse": if (arg === "minigame") openMinigame(); else if (arg === "cross") toast("신경전달물질 다리 통과!", "#FF5CC8", 1.5); break;
     }
   }
@@ -601,20 +670,21 @@ window.NR_MAIN = function () {
     const r = race, sim = r.sim, L = r.learn, par = r.graph.parTime, t = sim.raceTime;
     const today = new Date().toISOString().slice(0, 10); for (const a of L.answers) { const q = qbank.get(a.questionId); if (q && q.perm) { a.chosen = q.perm[a.chosen]; a.mapped = true; } }
     L.mergeInto(save, today); save.plays++;
-    const b = save.best[r.stage.id], isBest = !b || t < b.time; if (isBest) save.best[r.stage.id] = { time: t, acc: L.accuracy };
+    const b = save.best[r.stage.id], isBest = !b || t < b.time; if (isBest) save.best[r.stage.id] = { time: t, acc: L.accuracy, score: r.score };
+    if (!save.bestScore) save.bestScore = {}; if (!(save.bestScore[r.stage.id] >= r.score)) save.bestScore[r.stage.id] = r.score;
     persist();
     const acc = Math.round(L.accuracy * 100), grade = acc === 100 && t <= par ? "S" : acc >= 80 && t <= par * 1.1 ? "A" : acc >= 60 ? "B" : "C";
     $("#r-title").textContent = r.stage.boss ? (r.bossHp === 0 ? "NULL 격파! 신경망 복구" : "NULL 진단 완료") : "STAGE CLEAR!";
     $("#r-grade").textContent = `CH.${r.stage.chapter} ${r.stage.title} · 등급 ${grade}` + (isBest ? " · 최고 기록!" : "");
-    const st = [["기록", fmt(t)], ["목표(PAR)", fmt(par)], ["정답률", acc + "% (" + L.correct + "/" + L.total + ")"], ["오브", sim.coins], ["미니 터보", "-"], ["벽 충돌", sim.wallHits]];
-    if (sim.ringsTotal) st[4] = ["도약전도 결절", sim.ringsHit + "/" + sim.ringsTotal]; else st[4] = ["NULL 충돌", sim.obstacleHits];
+    const st = [["기록", fmt(t)], ["목표(PAR)", fmt(par)], ["정답률", acc + "% (" + L.correct + "/" + L.total + ")"], ["점수", r.score], ["최대 콤보", r.maxCombo], ["오브", sim.coins], ["벽 충돌", sim.wallHits]];
+    st.push(sim.ringsTotal ? ["도약전도 결절", sim.ringsHit + "/" + sim.ringsTotal] : ["NULL 충돌", sim.obstacleHits]);
     $("#r-stats").innerHTML = st.map(([a, b]) => `<div>${a}<b>${b}</b></div>`).join("");
     const wrong = L.answers.filter(a => !a.correct).map(a => bank.get(a.questionId)).filter(Boolean);
     $("#r-wrong").innerHTML = wrong.length ? `<div class="grade">복습할 문제 ${wrong.length}개 (오답 노트에 저장됨)</div>` + wrong.map(q => `<div class="entry"><b>${esc(q.question)}</b><br><span class="ok">정답: ${esc(q.options[q.answer])}</span><br>${esc(q.explanation)}</div>`).join("") : `<div class="grade">모든 문제를 맞혔어요! 완벽한 신호 전달 ★</div>`;
     const idx = NR.STAGES.indexOf(r.stage); $("#result [data-act=next]").style.display = idx < NR.STAGES.length - 1 ? "" : "none";
     show("#hud", false); show("#result", true); Snd.play("menu");
     Voice.say(acc === 100 ? "완벽해! 문제를 전부 맞혔어!" : "완주 성공! 틀린 문제는 오답 노트에서 같이 다시 보자.");
-    window.__nrResult = { stage: r.stage.id, time: t, correct: L.correct, total: L.total, coins: sim.coins };
+    window.__nrResult = { stage: r.stage.id, time: t, correct: L.correct, total: L.total, coins: sim.coins, score: r.score, maxCombo: r.maxCombo };
   }
 
   //================== MENUS ==================
@@ -654,8 +724,8 @@ window.NR_MAIN = function () {
       ["별 음성 안내", "STAR-01이 문제·해설을 읽어 줘요" + (Voice.ok ? "" : " (이 브라우저는 미지원)"), "voiceOn", [[true, "켜기"], [false, "끄기"]]],
       ["목소리 톤", "", "voicePitch", [[0.95, "차분하게"], [1.0, "자연스럽게"], [1.15, "밝게"]]],
       ["말 속도", "", "voiceRate", [[0.95, "천천히"], [1.08, "보통"], [1.2, "빠르게"]]],
-      ["배경 음악", "", "musicOn", [[true, "켜기"], [false, "끄기"]]],
-      ["효과음", "", "sfxOn", [[true, "켜기"], [false, "끄기"]]],
+      ["배경 음악 음량", "", "musicVol", [[0, "끔"], [0.35, "작게"], [0.7, "보통"], [1, "크게"]]],
+      ["효과음 음량", "", "sfxVol", [[0, "끔"], [0.4, "작게"], [0.8, "보통"], [1, "크게"]]],
       ["문제 생각 시간", "문제가 뜨면 레이스가 조금 느려져요 (기록 손해 없음)", "thinkSlow", [[0.5, "느리게"], [0.75, "조금"], [1, "끄기"]]],
       ["도움말 힌트", "", "showHints", [[true, "켜기"], [false, "끄기"]]],
       ["그래픽 품질", "버벅이면 '가볍게'", "quality", [["low", "가볍게"], ["auto", "자동"], ["high", "선명"]]],
@@ -663,7 +733,7 @@ window.NR_MAIN = function () {
     el.innerHTML = (compact ? "" : voiceRow()) + rows.map(([t, d, k, opts]) => `<div class="set"><div>${t}${d ? `<small>${d}</small>` : ""}</div><div class="opts">${opts.map(([v, l]) => `<button data-k="${k}" data-v='${JSON.stringify(v)}' class="${save[k] === v ? "on" : ""}">${l}</button>`).join("")}</div></div>`).join("") + (compact ? "" : `<div class="set"><div>기록 초기화<small>최고 기록·도감·오답 노트를 지워요</small></div><div class="opts"><button data-reset="1">초기화</button></div></div>`);
     el.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => {
       const k = b.dataset.k, v = JSON.parse(b.dataset.v); save[k] = v; persist();
-      if (k === "musicOn") Snd.setMusic(v); if (k === "sfxOn" && Snd.sfx) Snd.sfx.gain.value = v ? 0.5 : 0;
+      if (k === "musicVol") Snd.setMusic(); if (k === "sfxVol") { Snd.setSfx(); Snd.coin(); }
       if (k === "quality") { autoLevel = TOUCH ? "mid" : "high"; renderer.setPixelRatio(dprCap()); setupPost(); resize(); if (!race) { if (world) world.dispose(scene); world = null; menuScene(); } }
       if ((k === "voiceOn" && v) || k === "voicePitch" || k === "voiceRate") Voice.say("안녕! 나는 스타 제로원이야. 이렇게 읽어 줄게!"); if (k === "voiceOn" && !v) Voice.stop();
       renderSettings(el, compact);
@@ -706,7 +776,7 @@ window.NR_MAIN = function () {
     star.body.position.set(0, Math.sin(SV.t * 1.6) * 0.15, 0); star.body.rotation.set(0, Math.sin(SV.t * 0.8) * 0.3, Math.sin(SV.t * 1.3) * 0.1, "YXZ");
     star.body.scale.setScalar(1.25); star.orbit.rotation.z += dt; star.orbit2.rotation.z -= dt * 0.7;
     let ex = Voice.talking && Voice.star ? (Math.sin(SV.t * 22) > 0 ? "Talk" : "Normal") : (Math.sin(SV.t * 0.5) > 0.85 ? "Joy" : "Normal");
-    for (const k in star.faces) star.faces[k].visible = k === ex; trail.forEach(m => m.visible = false);
+    for (const k in star.faces) star.faces[k].visible = k === ex; trail.forEach(m => m.visible = false); fx.hide(); Snd.setLoops(false, 0, false);
     // star sits on the left third, menu on the right
     const f = M(sim.seg.tangentAt(12)), right = new THREE.Vector3(-f.z, 0, f.x);
     const camPos = fr.p.clone().addScaledVector(f, 7.5).addScaledVector(right, -3.2); camPos.y += 0.6; camera.position.copy(camPos);

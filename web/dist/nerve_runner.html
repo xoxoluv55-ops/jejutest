@@ -244,6 +244,23 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 
 .set .opts button{white-space:nowrap}
 
+/* ---------- 3.0: analog drag steering zone + combo ---------- */
+.dragzone{position:absolute;left:0;top:30%;bottom:0;width:46%;pointer-events:auto;touch-action:none}
+.dragzone span{position:absolute;left:50%;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 130px);transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.35);white-space:nowrap;transition:opacity .3s}
+.dragzone .dragrail{position:absolute;left:50%;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 150px);transform:translateX(-50%);width:110px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);opacity:0;transition:opacity .2s}
+.dragzone.on .dragrail{opacity:1}.dragzone.on span{opacity:0}
+.dragknob{position:absolute;left:43px;top:-9px;width:24px;height:24px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+.combo{position:absolute;right:max(12px,env(safe-area-inset-right));top:calc(max(10px,env(safe-area-inset-top)) + 70px);display:none;flex-direction:column;align-items:flex-end;font-family:var(--title);text-shadow:0 2px 0 #2A1640,0 0 12px rgba(255,180,40,.7);pointer-events:none}
+.combo.on{display:flex}
+.combo b{font-weight:400;font-size:44px;line-height:1;color:var(--yellow)}
+.combo span{font-size:14px;color:#FFE9A8;letter-spacing:2px}
+.combo i{font-style:normal;font-size:18px;color:var(--pink)}
+.combo .combo-t{width:80px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin-top:3px;overflow:hidden}
+#h-combo-t{height:100%;width:100%;background:var(--yellow)}
+.combo.pop b{animation:pop .25s ease-out}
+@keyframes pop{0%{transform:scale(1.5)}100%{transform:scale(1)}}
+@media (max-height:520px){.combo{top:52px}.combo b{font-size:30px}.combo span{font-size:10px}.combo i{font-size:13px}.dragzone span{bottom:96px}.dragzone .dragrail{bottom:110px}}
+
 </style>
 <div id="app">
   <canvas id="gl"></canvas>
@@ -296,7 +313,7 @@ h2{font-family:var(--title);font-weight:400;margin:0}
       <div class="hud-right">
         <div class="stat"><small>시간</small><b id="h-time">0:00.0</b></div>
         <div class="stat"><small>정답</small><b id="h-score">0/0</b></div>
-        <div class="stat"><small>오브</small><b id="h-coins">0</b></div>
+        <div class="stat"><small>점수</small><b id="h-score2">0</b></div>
         <button id="b-pause" class="icon">Ⅱ</button>
       </div>
     </div>
@@ -307,6 +324,7 @@ h2{font-family:var(--title);font-weight:400;margin:0}
     <div id="h-story" class="story"><b></b><span></span></div>
     <div id="h-slow" class="slow">생각 시간 · 슬로모션</div>
     <div id="h-lane" class="lanepill"></div>
+    <div id="h-combo" class="combo"><b id="h-combo-n">0</b><span>COMBO</span><i id="h-combo-x">×1</i><div class="combo-t"><div id="h-combo-t"></div></div></div>
     <div id="h-vm" class="vm"><div class="vm-title">막전위</div><div class="vm-bar"><div id="h-vm-fill"></div><i class="th" title="역치"></i><i class="rest"></i></div><b id="h-vm-val">-70 mV</b><small id="h-vm-goal"></small></div>
   </section>
 
@@ -327,6 +345,7 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 
   <!-- TOUCH CONTROLS -->
   <section id="touch" class="touch">
+    <div id="dragzone" class="dragzone"><div class="dragrail"><div id="dragknob" class="dragknob"></div></div><span>여기를 좌우로 끌어서 조향</span></div>
     <div class="pad left">
       <button class="tb steer" data-k="left">◀</button>
       <button class="tb steer" data-k="right">▶</button>
@@ -749,7 +768,7 @@ const NR = (function () {
     constructor(g) {
       this.graph = g; this.baseTopSpeed = 40; this.accel = 16; this.boostAccel = 30; this.boostMultiplier = 1.4; this.turboMultiplier = 1.25;
       this.steerMax = 12; this.steerSensitivity = 1; this.grip = 0.3; this.driftGrip = 0.07; this.driftSteerMul = 1.4; this.jumpVelocity = 9.5; this.gravity = 26;
-      if (TUNE.arcade) { this.steerMax = 14.5; this.driftSteerMul = 1.7; this.turboMultiplier = 1.32; }
+      if (TUNE.arcade) { this.steerMax = 14.5; this.driftSteerMul = 1.7; this.turboMultiplier = 1.32; this.jumpVelocity = 10.2; }
       this.events = []; this.reset();
     }
     reset() {
@@ -784,16 +803,21 @@ const NR = (function () {
       this.stepMembrane(dt);
       const g = this.drifting ? this.driftGrip : this.grip, push = -this.curvature * this.speed * this.speed * g;
       const sm = this.steerMax * this.steerSensitivity * (this.drifting ? this.driftSteerMul : 1) * (this.grounded ? 1 : 0.7);
-      this.vx = moveTowards(this.vx, steer * sm + push, 60 * dt); this.x += this.vx * dt;
+      if (TUNE.arcade) {   // 3.0: lateral inertia - eases in, settles out, reverses a bit faster (no snapping)
+        const target = steer * sm + push, reversing = target * this.vx < 0 && Math.abs(this.vx) > 1;
+        const rate = reversing ? 10 : Math.abs(target) > Math.abs(this.vx) ? 7 : 9;
+        this.vx += (target - this.vx) * (1 - Math.exp(-rate * dt));
+      } else this.vx = moveTowards(this.vx, steer * sm + push, 60 * dt);
+      this.x += this.vx * dt;
       const limit = this.seg.halfWidth - Sim.RADIUS;
       if (Math.abs(this.x) > limit) {
         const side = sign(this.x); this.x = side * limit;
-        if (this.vx * side > 0) { if (this.wallCooldown <= 0 && Math.abs(this.vx) > 2) { this.speed *= 0.8; this.wallHits++; this.wallCooldown = 0.5; this.emit(SE.WallHit); } this.vx = 0; }
+        if (this.vx * side > 0) { if (this.wallCooldown <= 0 && Math.abs(this.vx) > 2) { this.speed *= 0.8; this.wallHits++; this.wallCooldown = 0.5; this.emit(SE.WallHit); if (this.drifting && TUNE.arcade) this.failDrift(); } this.vx = 0; }
         this.speed = Math.max(0, this.speed - 10 * dt);
       }
       if (this.wallCooldown > 0) this.wallCooldown -= dt;
       if (inp.jump && this.grounded) { this.vy = this.jumpVelocity; this.grounded = false; this.emit(SE.Jump); }
-      if (!this.grounded) { this.vy -= this.gravity * dt; this.y += this.vy * dt; if (this.y <= 0) { this.y = 0; this.vy = 0; this.grounded = true; this.emit(SE.Land); } }
+      if (!this.grounded) { this.vy -= this.gravity * (TUNE.arcade ? (this.vy > 0 ? 0.9 : 1.55) : 1) * dt; this.y += this.vy * dt;   /* 3.0: snappy fall */ if (this.y <= 0) { this.y = 0; this.vy = 0; this.grounded = true; this.emit(SE.Land); } }
       if (this.turboTimer > 0) this.turboTimer -= dt; if (this.penaltyTimer > 0) this.penaltyTimer -= dt;
       const ds = this.speed * dt; this.distance += ds; let prev = this.s; this.s += ds;
       for (;;) {
@@ -807,12 +831,14 @@ const NR = (function () {
     stepDrift(steer, held, dt) {
       const can = this.speed > this.baseTopSpeed * 0.32;
       if (!this.drifting) { if (held && can && Math.abs(steer) > 0.15) { this.drifting = true; this.driftDir = steer > 0 ? 1 : -1; this.driftTime = 0; this.driftCharge = 0; this.emit(SE.DriftStart); } return; }
+      if ((!held || !can) && TUNE.arcade && this.driftTier === 0 && this.driftTime > 0.25) { this.failDrift(); return; }
       if (!held || !can) {
         const tier = this.driftTier; this.drifting = false; if (tier > 0) this.addTurbo((TUNE.arcade ? TURBO_ARCADE : TURBO_TIME)[tier]); this.addEnergy(this.driftCharge);
         this.driftTime = 0; this.driftCharge = 0; this.emit(SE.DriftEnd, null, -1, tier > 0, tier); return;
       }
-      const k = this.curvature, precision = sign(k) === this.driftDir ? clamp01(Math.abs(k) * 60) : 0;
-      this.driftTime += dt * (TUNE.arcade ? 0.6 + 0.4 * precision : 0.35 + 0.65 * precision); this.driftCharge = Math.min(0.5, this.driftCharge + dt * 0.12 * (0.25 + 0.75 * precision));
+      const k = this.curvature, precision = sign(k) === this.driftDir ? clamp01(Math.abs(k) * (TUNE.arcade ? 90 : 60)) : 0;
+      this.driftTime += dt * (TUNE.arcade ? 0.25 + 0.75 * precision : 0.35 + 0.65 * precision);   // charges only when drifting INTO a corner
+      this.driftPrecision = precision; this.driftCharge = Math.min(0.5, this.driftCharge + dt * 0.12 * (0.25 + 0.75 * precision));
     }
     // membrane potential: leak to rest (temporal summation window ~2 s); NULL drive in inhibit zones
     stepMembrane(dt) {
@@ -826,6 +852,8 @@ const NR = (function () {
         this.vm = -82; this.refractory = 0.9;
       }
     }
+    // 3.0: a drift that never reached tier 1 (e.g. on a straight) or hit a wall costs speed
+    failDrift() { this.drifting = false; this.speed *= 0.88; this.driftTime = 0; this.driftCharge = 0; this.emit(SE.DriftEnd, null, -1, false, 0, "fail"); }
     stepBoost(want, dt) {
       if (this.boostEnergy <= 0.001) this.canFire = false; else if (this.boostEnergy >= 0.2) this.canFire = true;
       const active = want && this.canFire && this.boostEnergy > 0;
@@ -867,7 +895,7 @@ const NR = (function () {
           case EV.Finish: this.finished = true; this.emit(SE.Finish, e); return;
           case EV.Gate: { const lane = Sim.nearest(e.laneX, this.x), ok = lane === e.correctLane; if (ok) { this.addTurbo(0.8); this.addEnergy(0.15); if (e.tag === "glia") this.repairCount = Math.max(this.repairCount, 3); } else this.addPenalty(1.8); this.emit(SE.GateResult, e, lane, ok); break; }
           case EV.NodeRing: this.ringsTotal++; if (Math.abs(this.x - e.x) < e.width) { this.ringChain++; this.ringsHit++; this.ringBest = Math.max(this.ringBest, this.ringChain); this.addEnergy(0.03); this.emit(SE.RingHit, e); } else { this.ringChain = 0; this.emit(SE.RingMiss, e); } break;
-          case EV.Obstacle: { const ov = Math.abs(this.x - e.x) < e.width * 0.5 + Sim.RADIUS * 0.8; if (ov && this.y < e.height) { this.obstacleHits++; this.speed *= 0.6; this.addPenalty(1.0); if (this.drifting) { this.drifting = false; this.driftTime = 0; this.driftCharge = 0; } this.emit(SE.ObstacleHit, e); } else this.emit(SE.ObstacleDodged, e); break; }
+          case EV.Obstacle: { const ov = Math.abs(this.x - e.x) < e.width * 0.5 + Sim.RADIUS * 0.8; if (ov && this.y < e.height) { this.obstacleHits++; this.speed *= 0.6; this.addPenalty(1.0); if (this.drifting) { this.drifting = false; this.driftTime = 0; this.driftCharge = 0; } this.emit(SE.ObstacleHit, e); } else this.emit(SE.ObstacleDodged, e, -1, this.y > 0.4, 0, ov ? "jump" : "dodge"); break; }
           case EV.Orb: if (Math.abs(this.x - e.x) < 1.9 && this.y < 2.6) { this.coins++; this.addEnergy(0.06); this.emit(SE.OrbCollected, e); } break;
           case EV.RepairOrb: if (Math.abs(this.x - e.x) < 2.3 && this.y < 2.6) { this.repairCount = Math.min(3, this.repairCount + 1); this.addEnergy(0.05); this.emit(SE.RepairOrb, e); } break;
         }
@@ -951,9 +979,9 @@ function wave(c,hw,amp,n=14){const l=[];for(let i=0;i<=n;i++){const u=i/n;l.push
 function openMouth(c,w,h){const l=[];for(let i=0;i<=14;i++){const a=(180+180*i/14)*Math.PI/180;l.push([c[0]+Math.cos(a)*w,c[1]+Math.sin(a)*h]);}return l;}
 function tearP(tip,r){const l=[tip];const c=[tip[0],tip[1]-r*1.6];for(let i=1;i<12;i++){const a=(60-300*i/12)*Math.PI/180;l.push([c[0]+Math.cos(a)*r,c[1]+Math.sin(a)*r]);}return l;}
 // ToonRim shader port
-function toonMat(base,shade,rim,rimPow,emis){return new THREE.ShaderMaterial({uniforms:{B:{value:new THREE.Color(base)},S:{value:new THREE.Color(shade)},R:{value:new THREE.Color(rim)},P:{value:rimPow},E:{value:new THREE.Color(emis)},L:{value:new THREE.Vector3(0.4,0.8,0.5).normalize()}},
- vertexShader:`varying vec3 n;varying vec3 vw;void main(){n=normalize(mat3(modelMatrix)*normal);vec4 w=modelMatrix*vec4(position,1.);vw=normalize(cameraPosition-w.xyz);gl_Position=projectionMatrix*viewMatrix*w;}`,
- fragmentShader:`uniform vec3 B,S,R,E,L;uniform float P;varying vec3 n;varying vec3 vw;void main(){vec3 N=normalize(n);float ndl=dot(N,L)*.5+.5;float ramp=smoothstep(.38,.62,ndl);vec3 c=mix(S,B,ramp)+B*.12;vec3 h=normalize(L+vw);float sp=pow(max(dot(N,h),0.),60.);c+=smoothstep(.45,.55,sp)*.55;c+=pow(1.-max(dot(N,vw),0.),P)*R;c+=E;gl_FragColor=vec4(c,1.);
+function toonMat(base,shade,rim,rimPow,emis){return new THREE.ShaderMaterial({uniforms:{B:{value:new THREE.Color(base)},S:{value:new THREE.Color(shade)},R:{value:new THREE.Color(rim)},P:{value:rimPow},E:{value:new THREE.Color(emis)},L:{value:new THREE.Vector3(0.4,0.8,0.5).normalize()},uBend:{value:0},uFlash:{value:0}},
+ vertexShader:`uniform float uBend;varying vec3 n;varying vec3 vw;void main(){n=normalize(mat3(modelMatrix)*normal);vec3 p=position;float r=length(p.xy);p.z+=uBend*r*r*r*.55;vec4 w=modelMatrix*vec4(p,1.);vw=normalize(cameraPosition-w.xyz);gl_Position=projectionMatrix*viewMatrix*w;}`,
+ fragmentShader:`uniform vec3 B,S,R,E,L;uniform float P,uFlash,uBend;varying vec3 n;varying vec3 vw;void main(){vec3 N=normalize(n);float ndl=dot(N,L)*.5+.5;float ramp=smoothstep(.38,.62,ndl);vec3 c=mix(S,B,ramp)+B*.12;vec3 h=normalize(L+vw);float sp=pow(max(dot(N,h),0.),60.);c+=smoothstep(.45,.55,sp)*.55;c+=pow(1.-max(dot(N,vw),0.),P)*R;c+=E;c+=vec3(1.,.95,.7)*uBend*smoothstep(.5,1.,1.-max(dot(N,vw),0.))*.6;c=mix(c,vec3(1.),uFlash*.75);gl_FragColor=vec4(c,1.);
 gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
 #include <colorspace_fragment>
 }`});}
@@ -998,6 +1026,100 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
  const halo=new THREE.Mesh(new THREE.PlaneGeometry(4.2,4.2),addMat(0xFFC74D,.5));halo.position.z=-.3;root.add(halo);
  body.scale.setScalar(1.25);
  return {root,body,mesh,bodyMat,faces,orbit,orbit2,halo};}
+
+</script>
+<script>
+// NERVE RUNNER 3.0 - racing feedback effects. Everything is created once and reused (no per-frame
+// allocations): blob shadow + landing ring, drift spark ribbon, spark particles, speed lines.
+"use strict";
+function createFX(scene, camera) {
+  const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0), LAY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2);
+  const radial = (stops) => { const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d"), g = x.createRadialGradient(32, 32, 0, 32, 32, 32); stops.forEach(([o, col]) => g.addColorStop(o, col)); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c); };
+
+  // --- blob shadow (where STAR-01 will land) + shrinking landing ring while airborne
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(2.8, 2.8), new THREE.MeshBasicMaterial({ map: radial([[0, "rgba(0,0,0,.75)"], [0.6, "rgba(0,0,0,.35)"], [1, "rgba(0,0,0,0)"]]), transparent: true, depthWrite: false }));
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.05, 40), new THREE.MeshBasicMaterial({ color: 0x5CF6FF, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  shadow.renderOrder = 2; ring.renderOrder = 3; scene.add(shadow, ring);
+
+  // --- drift ribbon on the floor behind STAR-01, colour = mini-turbo tier
+  // two thin skid streaks (4 vertices per sample: L-out, L-in, R-in, R-out)
+  const N = 48, rib = new THREE.BufferGeometry(), rp = new Float32Array(N * 4 * 3), rc = new Float32Array(N * 4 * 3), idx = [];
+  for (let i = 0; i < N - 1; i++) { const a = i * 4, b = a + 4; idx.push(a, a + 1, b, a + 1, b + 1, b, a + 2, a + 3, b + 2, a + 3, b + 3, b + 2); }
+  rib.setAttribute("position", new THREE.BufferAttribute(rp, 3)); rib.setAttribute("color", new THREE.BufferAttribute(rc, 3)); rib.setIndex(idx);
+  const ribbon = new THREE.Mesh(rib, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  ribbon.frustumCulled = false; scene.add(ribbon);
+  const hist = []; for (let i = 0; i < N; i++) hist.push({ p: new THREE.Vector3(), side: new THREE.Vector3(), a: 0 });
+  let head = 0, ribbonFade = 0; const tierCol = [new THREE.Color(0x9FB8FF), new THREE.Color(0x4D8DFF), new THREE.Color(0xFFB627), new THREE.Color(0xFF5CC8)];
+
+  // --- spark particles (pool)
+  const P = 140, sp = new THREE.BufferGeometry(), spp = new Float32Array(P * 3), spc = new Float32Array(P * 3), parts = [];
+  for (let i = 0; i < P; i++) parts.push({ p: new THREE.Vector3(0, -999, 0), v: new THREE.Vector3(), life: 0, max: 1, col: new THREE.Color() });
+  sp.setAttribute("position", new THREE.BufferAttribute(spp, 3)); sp.setAttribute("color", new THREE.BufferAttribute(spc, 3));
+  const sparks = new THREE.Points(sp, new THREE.PointsMaterial({ size: 0.32, map: radial([[0, "rgba(255,255,255,1)"], [0.4, "rgba(255,255,255,.6)"], [1, "rgba(255,255,255,0)"]]), vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  sparks.frustumCulled = false; scene.add(sparks); let pi = 0;
+  function emit(pos, n, col, speed, up = 2) {
+    for (let k = 0; k < n; k++) {
+      const q = parts[pi]; pi = (pi + 1) % P; q.p.copy(pos);
+      q.v.set((Math.random() - 0.5) * speed, Math.random() * up, (Math.random() - 0.5) * speed); q.life = q.max = 0.35 + Math.random() * 0.35; q.col.set(col);
+    }
+  }
+
+  // --- speed lines (children of the camera)
+  const L = 56, sl = new THREE.BufferGeometry(), slp = new Float32Array(L * 2 * 3), lines = [];
+  for (let i = 0; i < L; i++) { const a = Math.random() * Math.PI * 2, r = 2.6 + Math.random() * 5; lines.push({ x: Math.cos(a) * r, y: Math.sin(a) * r * 0.7, z: -6 - Math.random() * 40 }); }
+  sl.setAttribute("position", new THREE.BufferAttribute(slp, 3));
+  const speedLines = new THREE.LineSegments(sl, new THREE.LineBasicMaterial({ color: 0xBFF6FF, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
+  speedLines.frustumCulled = false; camera.add(speedLines);
+
+  return {
+    emit,
+    burst(pos, kind, tier = 1) {
+      if (kind === "land") emit(pos, 14, 0x9FE8FF, 7, 1.2);
+      else if (kind === "drift") emit(pos, 18 + tier * 8, tierCol[tier].getHex(), 10, 3);
+      else if (kind === "hit") emit(pos, 22, 0xFF4D6D, 9, 3);
+      else if (kind === "fire") emit(pos, 40, 0xFFE27A, 14, 5);
+      else if (kind === "fail") emit(pos, 10, 0x8888AA, 5, 1);
+      else if (kind === "correct") emit(pos, 24, 0x5CFF9D, 9, 5);
+    },
+    // ground: STAR-01 projected on the road (three space), fwd/right: three-space unit vectors
+    update(dt, s) {
+      // shadow + landing ring
+      shadow.position.copy(s.ground); shadow.position.y += 0.05; shadow.quaternion.copy(s.groundQ).multiply(LAY);
+      const h = Math.max(0, s.height), k = Math.max(0.35, 1 - h / 4);
+      shadow.scale.setScalar(k); shadow.material.opacity = Math.max(0.15, 0.9 - h / 5); shadow.visible = s.visible;
+      ring.visible = s.visible && h > 0.5; if (ring.visible) { ring.position.copy(shadow.position); ring.position.y += 0.02; ring.quaternion.copy(shadow.quaternion); const r = 0.7 + h * 0.6; ring.scale.setScalar(r); ring.material.opacity = Math.min(1, 1.6 - h * 0.35) * (s.falling ? 1 : 0.4); }
+      // drift ribbon
+      if (s.drifting) {
+        ribbonFade = 1; head = (head + 1) % N; const e = hist[head];
+        e.p.copy(s.ground); e.p.y += 0.06; e.side.crossVectors(UP, s.fwd).normalize(); e.a = 1;
+        if (Math.random() < 0.35 + s.tier * 0.25) { tmpA.copy(s.ground).addScaledVector(e.side, (Math.random() < 0.5 ? -1 : 1) * 0.6); emit(tmpA, 1, tierCol[s.tier].getHex(), 4, 1.5); }
+      } else ribbonFade = Math.max(0, ribbonFade - dt * 2.5);
+      const c = tierCol[Math.min(3, s.tier)];
+      const off = 0.6, hw = 0.1 + 0.05 * s.tier;
+      for (let i = 0; i < N; i++) {
+        const e = hist[(head - i + N) % N], f = (1 - i / N) * ribbonFade * e.a * 0.8, o = i * 12;
+        [-off - hw, -off + hw, off - hw, off + hw].forEach((d, j) => { tmpA.copy(e.p).addScaledVector(e.side, d); const q = o + j * 3; rp[q] = tmpA.x; rp[q + 1] = tmpA.y; rp[q + 2] = tmpA.z; rc[q] = c.r * f; rc[q + 1] = c.g * f; rc[q + 2] = c.b * f; });
+      }
+      if (!s.drifting && ribbonFade <= 0) for (const e of hist) e.a = 0;
+      rib.attributes.position.needsUpdate = true; rib.attributes.color.needsUpdate = true; ribbon.visible = ribbonFade > 0;
+      // sparks
+      for (let i = 0; i < P; i++) {
+        const q = parts[i], o = i * 3;
+        if (q.life > 0) { q.life -= dt; q.v.y -= 9 * dt; q.p.addScaledVector(q.v, dt); const f = Math.max(0, q.life / q.max); spp[o] = q.p.x; spp[o + 1] = q.p.y; spp[o + 2] = q.p.z; spc[o] = q.col.r * f; spc[o + 1] = q.col.g * f; spc[o + 2] = q.col.b * f; }
+        else { spp[o + 1] = -9999; }
+      }
+      sp.attributes.position.needsUpdate = true; sp.attributes.color.needsUpdate = true;
+      // speed lines
+      const amt = Math.min(0.85, Math.max(0, (s.speed01 - 0.72) * 2.6) + (s.boost ? 0.45 : 0)); speedLines.material.opacity = amt; speedLines.visible = amt > 0.02;
+      if (speedLines.visible) {
+        const v = 30 + 80 * s.speed01, len = 1.5 + 5 * s.speed01;
+        lines.forEach((l, i) => { l.z += v * dt; if (l.z > -3) l.z = -40 - Math.random() * 10; const o = i * 6; slp[o] = l.x; slp[o + 1] = l.y; slp[o + 2] = l.z; slp[o + 3] = l.x; slp[o + 4] = l.y; slp[o + 5] = l.z - len; });
+        sl.attributes.position.needsUpdate = true;
+      }
+    },
+    hide() { shadow.visible = ring.visible = ribbon.visible = speedLines.visible = false; ribbonFade = 0; for (const e of hist) e.a = 0; for (const q of parts) q.life = 0; },
+  };
+}
 
 </script>
 <script>
@@ -1208,6 +1330,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
       if (isDendrite(seg)) buildDendrites(W, B, seg, Rw, H);
       if (isTerminal(seg)) buildVesicles(W, B, seg, Rw, H);
       buildBundle(W, B, seg, Rw, H, stage);
+      buildChevrons(W, seg, Rw, H);
       if (seg.fork) buildForkPortals(W, B, seg, bank);
       for (const e of seg.events) buildEvent(W, B, seg, e, bank);
     }
@@ -1347,6 +1470,23 @@ window.NRW_INIT = function () { window.NRW = (function () {
   }
   const LETTER = i => String.fromCharCode(65 + i), HEXS = c => "#" + c.toString(16).padStart(6, "0");
 
+  // 3.0: corner warning chevrons on the outer wall of sharp curves (see the corner before it arrives)
+  let _chev = null;
+  function chevMat() {
+    if (_chev) return _chev; const c = document.createElement("canvas"); c.width = 256; c.height = 128; const x = c.getContext("2d");
+    x.fillStyle = "rgba(30,10,20,.75)"; x.fillRect(0, 0, 256, 128); x.strokeStyle = "#FFB627"; x.lineWidth = 18; x.lineJoin = "round";
+    for (const ox of [40, 110, 180]) { x.beginPath(); x.moveTo(ox, 22); x.lineTo(ox + 40, 64); x.lineTo(ox, 106); x.stroke(); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return (_chev = new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }));
+  }
+  function buildChevrons(W, seg, Rw, H) {
+    if (seg.zone === NR.ZONE.Synapse || isSoma(seg)) return;
+    const spots = [];
+    for (let s = 10; s < seg.length - 6; s += 16) { const k = seg.curvatureAt(s + 12); if (Math.abs(k) > 0.0095) spots.push([s, k]); }
+    if (!spots.length) return;
+    const im = new THREE.InstancedMesh(new THREE.PlaneGeometry(2.6, 1.3), chevMat(), spots.length), m = new THREE.Matrix4();
+    spots.forEach(([s, k], i) => { const side = k > 0 ? -1 : 1, f = frameAt(seg, s, side * (Rw - 0.9), Math.min(2.6, H * 0.4)); m.compose(f.p, f.q, new THREE.Vector3(k > 0 ? 1 : -1, 1, 1)); im.setMatrixAt(i, m); });
+    W.root.add(im);
+  }
   function buildForkPortals(W, B, seg, bank) {
     const q = bank.get(seg.fork.questionId), lx = seg.fork.laneX, signs = [];
     laneStrips(W, B, seg, seg.length - 150, seg.length, lx);
@@ -1408,7 +1548,8 @@ window.NRW_INIT = function () { window.NRW = (function () {
     const mk = (filter, geo, mat, sc) => {
       const items = list.filter(filter); if (!items.length) return;
       const im = new THREE.InstancedMesh(geo, mat, items.length); im.frustumCulled = false; W.root.add(im);
-      items.forEach((it, i) => { it.p = M(it.seg.worldPos(it.e.s, it.e.x, NR.Sim.HOVER + 0.2)); it.i = i; });
+      const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
+      items.forEach((it, i) => { it.p = M(it.seg.worldPos(it.e.s, it.e.x, NR.Sim.HOVER + 0.2)); it.i = i; q.setFromEuler(new THREE.Euler(0.4, i * 0.7, 0.4)); im.setMatrixAt(i, m4.compose(it.p, q, new THREE.Vector3(1, 1, 1))); });
       W.orbs.push({ im, items, sc });
     };
     mk(it => it.e.type === NR.EV.Orb, new THREE.OctahedronGeometry(0.55), new THREE.MeshBasicMaterial({ color: 0xFFE27A }), 1);
@@ -1481,7 +1622,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
     const tmp = new THREE.Matrix4(), q = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), zero = new THREE.Vector3();
     return {
       update(dt, t, sim) {
-        for (const g of W.orbs) { q.setFromEuler(new THREE.Euler(0, t * 2.5, 0.4)); for (const it of g.items) { tmp.compose(it.p, q, it.gone ? zero : one); g.im.setMatrixAt(it.i, tmp); } g.im.instanceMatrix.needsUpdate = true; }
+        // 3.0: orbs are static (matrices written once); only a collected orb is changed (see collect)
         for (const o of W.obstacles) { if (o.pulse) o.grp.children[0].material.opacity = 0.5 + 0.35 * Math.sin(t * 8); else o.grp.children[0].scale.x = 1 + (Math.random() < 0.05 ? rnd(-0.15, 0.15) : 0); }
         for (const a of W.anim) { if (a.spin) a.o.rotation.y += dt * a.spin; if (a.flick) a.o.visible = Math.random() > 0.04; }
         for (const p of W.psp) if (p.sp.visible) p.sp.position.y = p.y + Math.sin(t * 3 + p.ph) * 0.25;
@@ -1492,15 +1633,20 @@ window.NRW_INIT = function () { window.NRW = (function () {
         if (W.boss) { const b = W.boss; b.wire.rotation.y += dt * 0.4; b.wire.rotation.x += dt * 0.17; b.rings.forEach((r, i) => { r.rotation.x += dt * (0.3 + i * 0.2); r.rotation.y += dt * 0.2; }); if (b.flash > 0) { b.flash -= dt; b.core.material.color.setHex(b.flash > 0 ? 0xFFFFFF : 0x12000a); } if (b.atk > 0) { b.atk -= dt; b.shield.scale.setScalar(1 + (1 - b.atk) * 0.6); if (b.atk <= 0) b.shield.scale.setScalar(1); } }
         if (sim && W.particles) {
           const P = W.particles, a = P.g.attributes.position.array;
+          // 3.0: world position computed only when an ion respawns (max 6 per frame); otherwise it just drifts
+          const star = U.uStar.value; let spawns = 0;
           P.seeds.forEach((p, i) => {
-            if (!p.seg || p.seg !== sim.seg || p.s < sim.s - 8 || p.s > sim.s + 70) { const hw = sim.seg.halfWidth, [Rw, H] = tubeRadius(hw); p.seg = sim.seg; p.s = sim.s + rnd(-5, 70); p.x = rnd(-Rw, Rw) * 0.85; p.y = rnd(0.3, H * 0.8); p.ds = rnd(-1.5, 1.5); }
-            p.s += p.ds * dt; const v = M(p.seg.worldPos(Math.min(p.s, p.seg.length), p.x + Math.sin(t * 0.7 + i) * 0.3, p.y)); a[i * 3] = v.x; a[i * 3 + 1] = v.y; a[i * 3 + 2] = v.z;
+            if ((!p.wp || p.wp.distanceToSquared(star) > 80 * 80) && spawns < 6) {
+              spawns++; const hw = sim.seg.halfWidth, [Rw, H] = tubeRadius(hw), s = Math.min(sim.seg.length, sim.s + rnd(-4, 70));
+              const v = M(sim.seg.worldPos(s, rnd(-Rw, Rw) * 0.85, rnd(0.3, H * 0.8))); if (!p.wp) { p.wp = new THREE.Vector3(); p.dv = new THREE.Vector3(); } p.wp.copy(v); p.dv.set(rnd(-0.6, 0.6), rnd(-0.4, 0.4), rnd(-0.6, 0.6));
+            }
+            if (p.wp) { p.wp.addScaledVector(p.dv, dt); a[i * 3] = p.wp.x; a[i * 3 + 1] = p.wp.y; a[i * 3 + 2] = p.wp.z; }
           });
           P.g.attributes.position.needsUpdate = true;
         }
       },
       pspCollect(e) { const p = W.psp.find(x => x.e === e); if (p) p.sp.visible = false; },
-      collect(e) { for (const g of W.orbs) { const it = g.items.find(x => x.e === e); if (it) { it.gone = true; return; } } },
+      collect(e) { for (const g of W.orbs) { const it = g.items.find(x => x.e === e); if (it) { it.gone = true; tmp.compose(it.p, q, zero); g.im.setMatrixAt(it.i, tmp); g.im.instanceMatrix.needsUpdate = true; return; } } },
       ringHit(e, hit) { const r = W.rings.find(x => x.e === e); if (!r) return; if (hit) { r.m.material = glow(0xFFFFFF); r.t = 0.6; for (const nd of W.nodes) if (Math.abs(nd.s - e.s) < 0.5) nd.t = 0.25; } else r.m.material = glow(0x553355, 0.5); },
       markSigns(signs, lane, correctLane) { signs.forEach((p, i) => { p.material.color.setHex(i === correctLane ? 0xB8FFD0 : i === lane ? 0xFF8A9A : 0x555577); }); },
       gateResult(e, lane) { const g = W.gates.find(x => x.e === e); if (g) this.markSigns(g.signs, lane, e.correctLane); },
@@ -1532,6 +1678,8 @@ window.NR_MAIN = function () {
   const SAVE_KEY = "nerverunner_web_v1";
   const save = Object.assign({ voiceRate: 1.08, voicePitch: 1.0, voiceURI: "", voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
   if (!(save.v >= 3)) { save.thinkSlow = 0.75; save.v = 3; }      // 2.5: slow motion was too slow
+  if (save.musicVol == null) save.musicVol = save.musicOn === false ? 0 : 0.7;
+  if (save.sfxVol == null) save.sfxVol = save.sfxOn === false ? 0 : 0.8;
   if (!(save.v >= 4)) { save.voicePitch = 1.0; save.voiceRate = 1.08; save.v = 4; }   // 2.6: raised pitch sounded synthetic
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } };
 
@@ -1542,10 +1690,14 @@ window.NR_MAIN = function () {
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
         this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.connect(this.ctx.destination);
-        this.music = this.ctx.createGain(); this.music.gain.value = save.musicOn ? 0.55 : 0; this.music.connect(this.master);
-        this.sfx = this.ctx.createGain(); this.sfx.gain.value = save.sfxOn ? 0.5 : 0; this.sfx.connect(this.master);
+        this.music = this.ctx.createGain(); this.music.gain.value = 0.75 * save.musicVol; this.music.connect(this.master);
+        this.sfx = this.ctx.createGain(); this.sfx.gain.value = 0.65 * save.sfxVol; this.sfx.connect(this.master);
         const o = this.ctx.createOscillator(), f = this.ctx.createBiquadFilter(); o.type = "sawtooth"; o.frequency.value = 70; f.type = "lowpass"; f.frequency.value = 500;
         this.humGain = this.ctx.createGain(); this.humGain.gain.value = 0; o.connect(f); f.connect(this.humGain); this.humGain.connect(this.sfx); o.start(); this.hum = o;
+        // 3.0: looping noise beds - drift screech (band-pass) and boost roar (low-pass); levels follow the game state
+        const nb = this.ctx.createBuffer(1, this.ctx.sampleRate, this.ctx.sampleRate), d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        const loop = (type, freq, q) => { const src = this.ctx.createBufferSource(), fl = this.ctx.createBiquadFilter(), g = this.ctx.createGain(); src.buffer = nb; src.loop = true; fl.type = type; fl.frequency.value = freq; fl.Q.value = q; g.gain.value = 0; src.connect(fl); fl.connect(g); g.connect(this.sfx); src.start(); return { g, fl }; };
+        this.driftN = loop("bandpass", 2600, 4); this.boostN = loop("lowpass", 700, 0.7);
       }
       if (this.ctx.state !== "running") this.ctx.resume();
       if (this.want) this.play(this.want);
@@ -1598,15 +1750,31 @@ window.NR_MAIN = function () {
       const s = this.ctx.createBufferSource(), g = this.ctx.createGain(); s.buffer = this.buf(name); s.loop = true; g.gain.value = 0; g.gain.setTargetAtTime(1, t, 0.3);
       s.connect(g); g.connect(this.music); s.start(); this.cur = { s, g }; this.curName = name;
     },
-    setMusic(on) { if (this.music) this.music.gain.value = on ? 0.55 * this.duck : 0; },
-    setDuck(d) { if (Math.abs(d - this.duck) < 0.01 || !this.music) return; this.duck = d; if (save.musicOn) this.music.gain.setTargetAtTime(0.55 * d, this.ctx.currentTime, 0.15); },
+    setMusic() { if (this.music) this.music.gain.value = 0.75 * save.musicVol * this.duck; },
+    setSfx() { if (this.sfx) this.sfx.gain.value = 0.65 * save.sfxVol; },
+    setDuck(d) { if (Math.abs(d - this.duck) < 0.01 || !this.music) return; this.duck = d; this.music.gain.setTargetAtTime(0.75 * save.musicVol * d, this.ctx.currentTime, 0.15); },
+    setLoops(drift, tier, boost) {
+      if (!this.driftN) return; const t = this.ctx.currentTime;
+      this.driftN.g.gain.setTargetAtTime(drift ? 0.05 + 0.03 * tier : 0, t, 0.05); this.driftN.fl.frequency.setTargetAtTime(2200 + tier * 500, t, 0.1);
+      this.boostN.g.gain.setTargetAtTime(boost ? 0.22 : 0, t, boost ? 0.04 : 0.25);
+    },
+    last: {},
+    once(key, gap) { const now = performance.now(); if (now - (this.last[key] || 0) < gap) return false; this.last[key] = now; return true; },   // no stacked duplicates
+    land() { if (this.once("land", 120)) this.tone("sine", 140, 60, 0.12, 0.35); },
+    jump() { if (this.once("jump", 80)) this.tone("square", 420, 900, 0.14, 0.12); },
+    driftOk(tier) { [0, 1, 2].slice(0, tier).forEach((k, i) => setTimeout(() => this.tone("triangle", 700 + 220 * i, 1400 + 300 * i, 0.16, 0.25), i * 70)); this.whoosh(); },
+    driftFail() { this.tone("sawtooth", 320, 110, 0.25, 0.18); },
+    boostStart() { this.tone("sawtooth", 150, 1200, 0.45, 0.2); },
+    fire() { this.tone("square", 220, 1760, 0.3, 0.22); setTimeout(() => this.tone("triangle", 1760, 2640, 0.25, 0.2), 80); },
+    hit() { this.tone("sine", 200, 45, 0.35, 0.55); this.tone("square", 90, 50, 0.15, 0.15); },
+    combo(n) { if (this.once("combo", 60)) this.tone("triangle", 520 + Math.min(n, 30) * 40, 1040 + Math.min(n, 30) * 60, 0.09, 0.14); },
     tone(type, f0, f1, dur, vol) {
-      if (!this.ctx || !save.sfxOn) return; const t = this.ctx.currentTime, o = this.ctx.createOscillator(), g = this.ctx.createGain();
+      if (!this.ctx || !(save.sfxVol > 0)) return; const t = this.ctx.currentTime, o = this.ctx.createOscillator(), g = this.ctx.createGain();
       o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
       g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur); o.connect(g); g.connect(this.sfx); o.start(t); o.stop(t + dur + 0.02);
     },
     beep() { this.tone("square", 880, 880, 0.12, 0.18); },
-    coin() { this.tone("square", 1320, 1980, 0.09, 0.12); },
+    coin() { if (!this.once("coin", 50)) return; this.tone("square", 1320, 1980, 0.09, 0.12); },
     chime() { this.tone("triangle", 880, 1760, 0.35, 0.3); setTimeout(() => this.tone("triangle", 1320, 2640, 0.3, 0.2), 90); },
     thud() { this.tone("sine", 180, 40, 0.3, 0.5); },
     whoosh() { this.tone("sawtooth", 200, 900, 0.35, 0.12); },
@@ -1712,8 +1880,13 @@ window.NR_MAIN = function () {
 
   //================== STAR ==================
   const star = buildStar(); scene.add(star.root);
+  scene.add(camera); const fx = createFX(scene, camera);   // camera in the scene so speed lines (its children) render
   const trail = []; { const tm = addMat(0xFFD34D, 0.28); for (let i = 0; i < 12; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), tm); scene.add(m); trail.push(m); } }
-  const SV = { t: 0, expr: "Normal", base: "Normal", exprT: 0, spin: 0, spinVel: 0, squash: 0, squashVel: 0, wasGround: true, shake: 0, lastV: -1, lean: 0, victory: false, hist: [] };
+  const SV = { t: 0, expr: "Normal", base: "Normal", exprT: 0, spin: 0, spinVel: 0, squash: 0, squashVel: 0, wasGround: true, shake: 0, lastV: -1, lean: 0, victory: false, hist: [], bend: 0, flash: 0, hop: 0, headShake: 0, roll: 0 };
+  // 3.0 reactions
+  function starHit() { SV.squashVel -= 9; SV.flash = 1; SV.shake = 0.25; }
+  function starCorrect() { SV.hop = 1; SV.spinVel = 540; }
+  function starWrong() { SV.headShake = 0.9; }
   function setExpr(e, sec) { SV.expr = e; SV.exprT = sec; }
   function setBase(e) { SV.base = e; }
   function poseStar(sim, dt, showcase) {
@@ -1721,7 +1894,11 @@ window.NR_MAIN = function () {
     const fr = frameAt(sim.seg, sim.s, sim.x, NR.Sim.HOVER + sim.y); star.root.position.copy(fr.p);
     // star faces the camera (face on +z, root looks back along -forward)
     star.root.quaternion.copy(fr.q);
-    let roll = NR.clamp(-sim.vx * 2.2, -28, 28), yaw = sim.drifting ? sim.driftDir * 28 : 0, pitch = NR.clamp(-sim.vy * 2, -20, 20), bob = sim.grounded ? Math.sin(t * 3.2) * 0.09 : 0;
+    // lean into steering (smoothed), drift yaw, pitch with vertical speed, forward lean with speed
+    SV.roll += (NR.clamp(-sim.vx * 2.4, -30, 30) - SV.roll) * (1 - Math.exp(-10 * dt));
+    let roll = SV.roll, yaw = sim.drifting ? sim.driftDir * (30 + 6 * sim.driftTier) : 0, pitch = NR.clamp(-sim.vy * 2, -20, 20) + 7 * sim.speed01, bob = sim.grounded ? Math.sin(t * 3.2) * 0.09 : 0;
+    if (SV.hop > 0) { SV.hop = Math.max(0, SV.hop - dt * 1.8); bob += Math.sin((1 - SV.hop) * Math.PI) * 0.9; }
+    if (SV.headShake > 0) { SV.headShake = Math.max(0, SV.headShake - dt); yaw += Math.sin(t * 26) * 22 * SV.headShake; }
     if (SV.lastV < 0) SV.lastV = sim.speed01; const acc = (sim.speed01 - SV.lastV) / Math.max(1e-4, dt); SV.lastV = sim.speed01;
     SV.lean += (NR.clamp(acc * 25, -6, 12) - SV.lean) * (1 - Math.exp(-6 * dt)); pitch += SV.lean;
     if (!sim.grounded) SV.spin += 520 * dt; else { const tgt = Math.round(SV.spin / 360) * 360; SV.spin += NR.clamp(tgt - SV.spin, -900 * dt, 900 * dt); }
@@ -1741,13 +1918,18 @@ window.NR_MAIN = function () {
     star.orbit.rotation.z += dt * (1.2 + sim.speed01 * 3); star.orbit2.rotation.z -= dt * 0.8;
     star.halo.material.opacity = 0.35 + 0.25 * (boosting ? 1 : 0) + 0.05 * Math.sin(t * 4);
     star.bodyMat.uniforms.E.value.setHex(boosting ? 0x4a3a10 : 0x2e2510);
+    SV.bend += ((boosting ? 1 : 0) - SV.bend) * (1 - Math.exp(-(boosting ? 8 : 4) * dt)); star.bodyMat.uniforms.uBend.value = SV.bend * (0.8 + 0.2 * Math.sin(t * 20));
+    SV.flash = Math.max(0, SV.flash - dt * 5); star.bodyMat.uniforms.uFlash.value = SV.flash;
     // expression
     if (SV.exprT > 0) SV.exprT -= dt; let ex = SV.exprT > 0 ? SV.expr : SV.base;
     if (Voice.talking && Voice.star && (ex === "Normal" || ex === "Focus")) ex = Math.sin(t * 22) > 0 ? "Talk" : "Normal";
     for (const k in star.faces) star.faces[k].visible = k === ex;
     // trail
-    SV.hist.unshift(star.root.position.clone()); if (SV.hist.length > 40) SV.hist.pop();
+    if (SV.hist.length < 40) SV.hist.unshift(star.root.position.clone()); else { const v = SV.hist.pop(); v.copy(star.root.position); SV.hist.unshift(v); }
     trail.forEach((m, i) => { const h = SV.hist[Math.min(SV.hist.length - 1, i * 3 + 2)]; if (!h) return; m.position.copy(h); m.quaternion.copy(camera.quaternion); const k = 1 - i / trail.length; m.position.y -= 0.25; m.scale.setScalar((0.35 + 0.9 * sim.speed01) * k + 0.05); m.visible = sim.speed > 8 && !showcase; });
+    const gf = frameAt(sim.seg, sim.s, sim.x, 0.02);
+    fx.update(dt, { ground: gf.p, groundQ: gf.q, fwd: gf.f, height: sim.y, falling: sim.vy < 0, drifting: sim.drifting && !showcase, tier: sim.driftTier, speed01: showcase ? 0 : sim.speed01, boost: boosting && !showcase, visible: true });
+    Snd.setLoops(sim.drifting && !showcase, sim.driftTier, boosting && !showcase && race && race.phase === "run");
   }
 
   //================== CAMERA (ChaseCamera.cs port) ==================
@@ -1774,10 +1956,10 @@ window.NR_MAIN = function () {
     }
     if (CAM.snap) { CAM.pos.copy(target); CAM.snap = false; } else CAM.pos.lerp(target, 1 - Math.pow(0.0006, dt));
     camera.position.copy(CAM.pos);
-    if (CAM.shake > 0) { CAM.shake = Math.max(0, CAM.shake - dt * 2.5); camera.position.x += (Math.random() - 0.5) * CAM.shake; camera.position.y += (Math.random() - 0.5) * CAM.shake; }
+    if (CAM.shake > 0) { CAM.shake = Math.min(0.4, Math.max(0, CAM.shake - dt * 5)); camera.position.x += (Math.random() - 0.5) * CAM.shake; camera.position.y += (Math.random() - 0.5) * CAM.shake; }
     camera.up.set(0, 1, 0); camera.lookAt(look);
     if (CAM.showcase <= 0 && Math.abs(CAM.roll) > 0.01) camera.rotateZ(CAM.roll * Math.PI / 180);
-    const fov = CAM.showcase > 0 ? 50 : 62 + 14 * sim.speed01 + 10 * CAM.kick; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov = fov; camera.updateProjectionMatrix(); }
+    CAM.kickPunch = Math.max(0, (CAM.kickPunch || 0) - dt * 2.5); const fov = CAM.showcase > 0 ? 50 : 62 + 14 * sim.speed01 + 10 * CAM.kick + 6 * CAM.kickPunch; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov = fov; camera.updateProjectionMatrix(); }
   }
 
   //================== INPUT (RaceInput.cs port) ==================
@@ -1792,8 +1974,17 @@ window.NR_MAIN = function () {
   addEventListener("keydown", e => { keys[e.code] = true; if (["Space", "ArrowUp", "KeyW"].includes(e.code) && !e.repeat) jumpPress = true; if ((e.code === "Escape" || e.code === "KeyP") && race && race.phase === "run") pauseRace(); if (e.code === "Space") e.preventDefault(); });
   addEventListener("keyup", e => { keys[e.code] = false; });
   addEventListener("blur", () => { for (const k in held) held[k] = 0; for (const k in keys) keys[k] = false; });
+  // 3.0: analog steering - drag anywhere on the left part of the screen (buttons still work)
+  let drag = null;
+  const dz = $("#dragzone");
+  if (dz) {
+    dz.addEventListener("pointerdown", ev => { ev.preventDefault(); drag = { id: ev.pointerId, x0: ev.clientX, v: 0 }; try { dz.setPointerCapture(ev.pointerId); } catch (e) { } dz.classList.add("on"); });
+    dz.addEventListener("pointermove", ev => { if (drag && ev.pointerId === drag.id) { drag.v = NR.clamp((ev.clientX - drag.x0) / 55, -1, 1); const k = $("#dragknob"); if (k) k.style.transform = `translateX(${drag.v * 40}px)`; } });
+    const end = ev => { if (drag && ev.pointerId === drag.id) { drag = null; dz.classList.remove("on"); const k = $("#dragknob"); if (k) k.style.transform = ""; } };
+    dz.addEventListener("pointerup", end); dz.addEventListener("pointercancel", end); dz.addEventListener("lostpointercapture", end);
+  }
   function readInput(dt) {
-    let steer = 0; if (held.left || keys.ArrowLeft || keys.KeyA) steer -= 1; if (held.right || keys.ArrowRight || keys.KeyD) steer += 1;
+    let steer = 0; if (drag) { steerSm += (drag.v - steerSm) * (1 - Math.exp(-14 * dt)); const j = jumpPress; jumpPress = false; return { steer: steerSm, jump: j, drift: !!(held.drift || keys.KeyZ || keys.ArrowDown), boost: !!(held.boost || keys.ShiftLeft || keys.KeyX) }; } if (held.left || keys.ArrowLeft || keys.KeyA) steer -= 1; if (held.right || keys.ArrowRight || keys.KeyD) steer += 1;
     const drift = !!(held.drift || keys.KeyZ || keys.ControlLeft || keys.ArrowDown || keys.KeyS), boost = !!(held.boost || keys.ShiftLeft || keys.KeyX);
     steer = NR.clamp(steer, -1, 1); const r = dt * (steer === 0 ? 10 : 6); steerSm += NR.clamp(steer - steerSm, -r, r);
     const j = jumpPress; jumpPress = false; return { steer: steerSm, jump: j, drift, boost };
@@ -1897,7 +2088,8 @@ window.NR_MAIN = function () {
     const sim = new NR.Sim(graph), learn = new NR.Session(qbank), forkSegByQ = new Map();
     for (const seg of graph.segments) if (seg.fork) forkSegByQ.set(seg.fork.questionId, seg);
     let bossMax = 0; if (stage.boss) { for (const e of graph.allEvents()) if (e.type === NR.EV.Gate && e.tag === "boss") bossMax++; for (const s of graph.segments) if (s.fork) bossMax++; }
-    race = { stage, graph, sim, learn, forkSegByQ, phase: "intro", t: 0, cd: 4, timeScale: 1, pending: null, pendingLanes: null, bossMax, bossHp: bossMax, finishT: 0, auto: AUTO ? new NR.AutoPilot() : null, paused: false, lastSection: "" };
+    race = { stage, graph, sim, learn, forkSegByQ, phase: "intro", t: 0, cd: 4, timeScale: 1, pending: null, pendingLanes: null, bossMax, bossHp: bossMax, finishT: 0, auto: AUTO ? new NR.AutoPilot() : null, paused: false, lastSection: "", combo: 0, comboT: 0, maxCombo: 0, score: 0, lastOrb: -9 };
+    $("#h-combo").classList.remove("on"); fx.hide();
     screen(""); show("#hud", true); show("#touch", false); show("#qpanel", false); show("#apanel", false); show("#result", false); show("#pause", false);
     $("#h-boss").classList.toggle("on", stage.boss); updateBoss();
     setSection(graph.start.name); countdown(""); storyQ.length = 0; storyT = 0; $("#h-story").style.display = "none"; $("#h-hint").style.display = "none";
@@ -1931,7 +2123,7 @@ window.NR_MAIN = function () {
     if (r.phase === "count") {
       r.t += dt; const n = 3 - Math.floor(r.t - 0.6);
       if (r.t >= 0.6 && n !== r.cd && n >= 1 && n <= 3) { r.cd = n; countdown(String(n)); Snd.beep(); }
-      if (r.t >= 3.6) { countdown("GO!"); Snd.chime(); r.phase = "run"; r.t = 0; hint(r.auto ? "AUTO 데모 주행 중" : "◀ ▶ 버튼으로 조향! 코너에서는 바깥쪽으로 밀려나요.", 5); }
+      if (r.t >= 3.6) { countdown("GO!"); Snd.chime(); r.phase = "run"; r.t = 0; hint(r.auto ? "AUTO 데모 주행 중" : "◀ ▶ 버튼 또는 화면 왼쪽을 좌우로 끌어서 조향! 코너에서는 드리프트를 누른 채 꺾으면 터보 충전.", 5); }
     } else if (r.phase === "run") {
       r.t += dt; if (r.t > 0.8 && r.t < 1.2) countdown("");
       const inp = r.auto ? r.auto.think(sim) : readInput(dt);
@@ -1957,9 +2149,9 @@ window.NR_MAIN = function () {
     // HUD
     const prog = r.graph.referenceLength > 0 ? NR.clamp01(sim.distance / r.graph.referenceLength) : 0, pf = r.phase === "finish" || r.phase === "done" ? 1 : prog;
     setStyle("#h-prog", "width", (pf * 100).toFixed(1) + "%"); setStyle("#h-star", "left", (pf * 100).toFixed(1) + "%");
-    setText("#h-time", fmt(sim.raceTime)); setText("#h-score", r.learn.correct + "/" + r.learn.total); setText("#h-coins", sim.coins);
+    setText("#h-time", fmt(sim.raceTime)); setText("#h-score", r.learn.correct + "/" + r.learn.total);
     setStyle("#h-energy", "width", (sim.boostEnergy * 100).toFixed(0) + "%");
-    updateVm(dt);
+    updateVm(dt); tickCombo(dt);
     Snd.setHum(running ? sim.speed01 : 0, running && sim.boosting);
   }
 
@@ -1989,8 +2181,25 @@ window.NR_MAIN = function () {
   }
   function pulseVm(cls) { const el = $("#h-vm"); el.classList.remove("fire", "seize"); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), 900); }
 
+  //================== 3.0 COMBO & SCORE ==================
+  // chained actions (dodge, jump-over, drift turbo, orb streak, node hit, correct answer, AP fire) grow the
+  // combo; the multiplier scales points. A hit, wall, wrong answer, failed drift or 4 s of nothing ends it.
+  const COMBO_WINDOW = 4;
+  function comboAdd(n, pts, label) {
+    const r = race; r.combo += n; r.comboT = COMBO_WINDOW; r.maxCombo = Math.max(r.maxCombo, r.combo);
+    const mult = comboMult(); r.score += Math.round(pts * mult);
+    const el = $("#h-combo"); el.classList.add("on"); setText("#h-combo-n", r.combo); setText("#h-combo-x", "×" + mult.toFixed(1) + (label ? " " + label : ""));
+    el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); Snd.combo(r.combo);
+  }
+  const comboMult = () => 1 + Math.min(3, Math.floor((race.combo || 0) / 5) * 0.5);
+  function comboBreak() { const r = race; if (r.combo >= 5) toast("콤보 끊김 (" + r.combo + ")", "#B4AEDB", 0.8); r.combo = 0; r.comboT = 0; $("#h-combo").classList.remove("on"); }
+  function tickCombo(dt) {
+    const r = race; if (r.comboT > 0) { r.comboT -= dt; setStyle("#h-combo-t", "width", Math.max(0, r.comboT / COMBO_WINDOW * 100).toFixed(0) + "%"); if (r.comboT <= 0) comboBreak(); }
+    setText("#h-score2", r.score);
+  }
+
   function handleEvents() { const sim = race.sim; for (const e of sim.events) handle(e); sim.events.length = 0; }
-  function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); SV.spinVel = 540; } else { Snd.thud(); setExpr("Wrong", 2.2); CAM.shake = 0.5; } }
+  function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); starCorrect(); fx.burst(star.root.position, "correct"); } else { Snd.thud(); setExpr("Wrong", 2.2); starWrong(); CAM.shake = 0.15; } }
   function bossAnswer(ok) {
     const r = race; if (!r.bossMax) return;
     if (ok) { r.bossHp = Math.max(0, r.bossHp - 1); updateBoss(); world.bossHit(r.bossHp, r.bossMax); toast(r.bossHp === 0 ? "NULL 보호막 붕괴!" : "정확한 진단! NULL 보호막 " + r.bossHp + "/" + r.bossMax, "#2EE6D6", 1.8); }
@@ -2007,40 +2216,46 @@ window.NR_MAIN = function () {
         if (e.src.tag === "glia" && e.correct) { extra = "희소돌기아교세포가 수초를 재생했습니다. 전도 속도 회복!"; toast("수초 복구 완료!", "#5CFF9D"); }
         else if (e.src.tag === "ap") extra = "활동전위 단계 " + (e.src.index + 1) + "/4";
         if (e.src.tag === "boss") bossAnswer(e.correct);
+        if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
         showAnswer(q, e.lane, e.correct, extra, e.correct ? 7 : 11); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
       case S.ForkChosen: {
         const q = qbank.get(e.tag); r.learn.answer(e.tag, e.lane, sim.raceTime);
         world.forkResult(e.tag, e.lane);
-        if (r.stage.boss) bossAnswer(e.correct); feedback(e.correct);
+        if (r.stage.boss) bossAnswer(e.correct); feedback(e.correct); if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
         showAnswer(q, e.lane, e.correct, e.correct ? "정답 경로: 지름길 + 신호 에너지 보너스!" : "복습 구간에 진입했습니다. 해설을 읽으며 천천히 이동하세요.", e.correct ? 7 : 12);
         if (!e.correct) toast("복습 구간 - 속도 저하", "#FF8A3D", 2); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
-      case S.RingHit: { world.ringHit(e.src, true); Snd.coin(); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
+      case S.RingHit: { world.ringHit(e.src, true); Snd.coin(); comboAdd(1, 60); fx.burst(star.root.position, "land"); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
       case S.RingMiss: { world.ringHit(e.src, false); if (sim.ringsTotal > 1) toast("결절을 놓쳤어요 - 연속 끊김", "#B4AEDB", 0.9); break; }
-      case S.ObstacleHit: CAM.shake = 0.9; SV.shake = 0.4; setExpr("Hurt", 1.2); Snd.thud(); toast("NULL 충돌! 전도 지연", "#FF4D6D", 1.2); break;
+      case S.ObstacleHit: CAM.shake = 0.35; starHit(); comboBreak(); fx.burst(star.root.position, "hit"); setExpr("Hurt", 1.2); Snd.thud(); toast("NULL 충돌! 전도 지연", "#FF4D6D", 1.2); break;
       case S.OrbCollected: case S.RepairOrb: {
         world.collect(e.src);
-        if (e.type === S.OrbCollected) Snd.coin(); else { Snd.chime(); setExpr("Joy", 1); toast("수초 복구 " + sim.repairCount + "/3", "#5CFF9D", 1.4); } break;
+        if (e.type === S.OrbCollected) { Snd.coin(); const streak = sim.raceTime - r.lastOrb < 1.4; r.lastOrb = sim.raceTime; comboAdd(streak ? 1 : 0, 25); } else { Snd.chime(); setExpr("Joy", 1); toast("수초 복구 " + sim.repairCount + "/3", "#5CFF9D", 1.4); } break;
       }
-      case S.WallHit: CAM.shake = 0.35; Snd.thud(); setExpr("Surprise", 0.6); break;
-      case S.DriftEnd: if (e.tier > 0) { Snd.whoosh(); toast("미니 터보 Lv." + e.tier, ["", "#4D8DFF", "#FFB627", "#FF5CC8"][e.tier], 0.9); setExpr("Joy", 0.8); } break;
-      case S.BoostStart: Snd.whoosh(); setExpr("Joy", 1); break;
-      case S.Jump: Snd.beep(); break;
+      case S.WallHit: CAM.shake = 0.15; SV.squashVel -= 3; comboBreak(); Snd.thud(); setExpr("Surprise", 0.6); break;
+      case S.DriftEnd:
+        if (e.tier > 0) { Snd.driftOk(e.tier); toast("드리프트 성공! 미니 터보 Lv." + e.tier, ["", "#4D8DFF", "#FFB627", "#FF5CC8"][e.tier], 1); setExpr("Joy", 0.8); fx.burst(star.root.position, "drift", e.tier); comboAdd(1, 80 * e.tier, "드리프트"); }
+        else if (e.tag === "fail") { Snd.driftFail(); toast("드리프트 실패 — 코너에서 꺾어야 충전돼요", "#B4AEDB", 1.2); fx.burst(star.root.position, "fail"); comboBreak(); }
+        break;
+      case S.ObstacleDodged: if (e.tag === "jump" || e.correct) { comboAdd(1, 100, "점프 회피"); } else comboAdd(1, 50, "회피"); break;
+      case S.Land: Snd.land(); SV.squashVel -= 4; fx.burst(star.root.position, "land"); break;
+      case S.BoostStart: Snd.boostStart(); setExpr("Joy", 1); CAM.kickPunch = 1; break;
+      case S.Jump: Snd.jump(); break;
       case S.Checkpoint: toast("체크포인트", "#9B5CFF", 1); break;
       case S.EnterSegment: setSection(sim.seg.zone === NR.ZONE.Review ? "복습 구간" : sim.seg.zone === NR.ZONE.Shortcut ? "지름길" : sim.seg.name); break;
       case S.Finish: finish(); break;
       case S.Psp: {
-        world.pspCollect(e.src); const ex = e.tag === "epsp";
+        world.pspCollect(e.src); const ex = e.tag === "epsp"; if (e.correct && ((ex && sim.mission !== "inhibit") || (!ex && sim.mission === "inhibit"))) comboAdd(1, 30);
         if (!e.correct) { toast("불응기! 지금은 반응이 없어요", "#B4AEDB", 0.8); break; }
         Snd.tone("triangle", ex ? 660 : 520, ex ? 990 : 300, 0.12, 0.2);
         toast(ex ? "EPSP +7 mV" : "IPSP −7 mV", ex ? "#5CFF9D" : "#5C9CFF", 0.6); break;
       }
       case S.Fire:
-        Snd.chime(); Snd.whoosh(); CAM.shake = 0.5; SV.spinVel = 720; setExpr("Joy", 1.5); NRW.U.uFire.value = 1; pulseVm("fire");
+        Snd.fire(); fx.burst(star.root.position, "fire"); comboAdd(2, 250, "발화"); CAM.shake = 0.2; SV.spinVel = 720; setExpr("Joy", 1.5); NRW.U.uFire.value = 1; pulseVm("fire");
         toast("⚡ 역치 도달! 활동전위 발화!", "#FFD34D", 1.6); Voice.say(pickOne(["발화! 활동전위다!", "역치 넘었다! 슝!", "좋아, 발화 성공!"]), { mode: "idle" }); break;
       case S.Seizure:
-        Snd.thud(); CAM.shake = 0.8; setExpr("Hurt", 1.2); NRW.U.uSeize.value = 1; pulseVm("seize");
+        Snd.hit(); CAM.shake = 0.3; starHit(); comboBreak(); setExpr("Hurt", 1.2); NRW.U.uSeize.value = 1; pulseVm("seize");
         toast("과흥분! 발작 위험 — IPSP로 진정시켜!", "#FF4D6D", 1.6); Voice.say("앗, 과흥분이야! 파란 IPSP를 모아 줘!", { mode: "idle" }); break;
       case S.MissionEnd: {
         const ex = e.tag === "excite";
@@ -2069,7 +2284,7 @@ window.NR_MAIN = function () {
       case "codex": r.learn.codexSeen.add(arg); { const ce = codexById.get(arg); if (ce && !save.codexUnlocked.includes(arg)) toast("신경 도감 등록: " + ce.name, "#2EE6D6", 1.8); } break;
       case "forkq": { const fs = r.forkSegByQ.get(arg); ask(arg, "갈림길! 정답 경로로 들어가세요" + thinkTag, fs ? fs.fork.laneX : null, fs ? { seg: fs, s: fs.length } : null); break; }
       case "gateq": { const g = findGate(arg); ask(arg, (arg === "ch1_gate_glia" ? "수초 복구 게이트" : r.stage.gateTitle) + thinkTag, g ? g.e.laneX : null, g ? { seg: g.seg, s: g.e.s } : null); break; }
-      case "boss": if (arg === "attack") { world.bossAttack(); toast("NULL 반격! 파동은 점프!", "#FF4D6D", 1.4); CAM.shake = 0.4; } break;
+      case "boss": if (arg === "attack") { world.bossAttack(); toast("NULL 반격! 파동은 점프!", "#FF4D6D", 1.4); CAM.shake = 0.2; } break;
       case "synapse": if (arg === "minigame") openMinigame(); else if (arg === "cross") toast("신경전달물질 다리 통과!", "#FF5CC8", 1.5); break;
     }
   }
@@ -2122,20 +2337,21 @@ window.NR_MAIN = function () {
     const r = race, sim = r.sim, L = r.learn, par = r.graph.parTime, t = sim.raceTime;
     const today = new Date().toISOString().slice(0, 10); for (const a of L.answers) { const q = qbank.get(a.questionId); if (q && q.perm) { a.chosen = q.perm[a.chosen]; a.mapped = true; } }
     L.mergeInto(save, today); save.plays++;
-    const b = save.best[r.stage.id], isBest = !b || t < b.time; if (isBest) save.best[r.stage.id] = { time: t, acc: L.accuracy };
+    const b = save.best[r.stage.id], isBest = !b || t < b.time; if (isBest) save.best[r.stage.id] = { time: t, acc: L.accuracy, score: r.score };
+    if (!save.bestScore) save.bestScore = {}; if (!(save.bestScore[r.stage.id] >= r.score)) save.bestScore[r.stage.id] = r.score;
     persist();
     const acc = Math.round(L.accuracy * 100), grade = acc === 100 && t <= par ? "S" : acc >= 80 && t <= par * 1.1 ? "A" : acc >= 60 ? "B" : "C";
     $("#r-title").textContent = r.stage.boss ? (r.bossHp === 0 ? "NULL 격파! 신경망 복구" : "NULL 진단 완료") : "STAGE CLEAR!";
     $("#r-grade").textContent = `CH.${r.stage.chapter} ${r.stage.title} · 등급 ${grade}` + (isBest ? " · 최고 기록!" : "");
-    const st = [["기록", fmt(t)], ["목표(PAR)", fmt(par)], ["정답률", acc + "% (" + L.correct + "/" + L.total + ")"], ["오브", sim.coins], ["미니 터보", "-"], ["벽 충돌", sim.wallHits]];
-    if (sim.ringsTotal) st[4] = ["도약전도 결절", sim.ringsHit + "/" + sim.ringsTotal]; else st[4] = ["NULL 충돌", sim.obstacleHits];
+    const st = [["기록", fmt(t)], ["목표(PAR)", fmt(par)], ["정답률", acc + "% (" + L.correct + "/" + L.total + ")"], ["점수", r.score], ["최대 콤보", r.maxCombo], ["오브", sim.coins], ["벽 충돌", sim.wallHits]];
+    st.push(sim.ringsTotal ? ["도약전도 결절", sim.ringsHit + "/" + sim.ringsTotal] : ["NULL 충돌", sim.obstacleHits]);
     $("#r-stats").innerHTML = st.map(([a, b]) => `<div>${a}<b>${b}</b></div>`).join("");
     const wrong = L.answers.filter(a => !a.correct).map(a => bank.get(a.questionId)).filter(Boolean);
     $("#r-wrong").innerHTML = wrong.length ? `<div class="grade">복습할 문제 ${wrong.length}개 (오답 노트에 저장됨)</div>` + wrong.map(q => `<div class="entry"><b>${esc(q.question)}</b><br><span class="ok">정답: ${esc(q.options[q.answer])}</span><br>${esc(q.explanation)}</div>`).join("") : `<div class="grade">모든 문제를 맞혔어요! 완벽한 신호 전달 ★</div>`;
     const idx = NR.STAGES.indexOf(r.stage); $("#result [data-act=next]").style.display = idx < NR.STAGES.length - 1 ? "" : "none";
     show("#hud", false); show("#result", true); Snd.play("menu");
     Voice.say(acc === 100 ? "완벽해! 문제를 전부 맞혔어!" : "완주 성공! 틀린 문제는 오답 노트에서 같이 다시 보자.");
-    window.__nrResult = { stage: r.stage.id, time: t, correct: L.correct, total: L.total, coins: sim.coins };
+    window.__nrResult = { stage: r.stage.id, time: t, correct: L.correct, total: L.total, coins: sim.coins, score: r.score, maxCombo: r.maxCombo };
   }
 
   //================== MENUS ==================
@@ -2175,8 +2391,8 @@ window.NR_MAIN = function () {
       ["별 음성 안내", "STAR-01이 문제·해설을 읽어 줘요" + (Voice.ok ? "" : " (이 브라우저는 미지원)"), "voiceOn", [[true, "켜기"], [false, "끄기"]]],
       ["목소리 톤", "", "voicePitch", [[0.95, "차분하게"], [1.0, "자연스럽게"], [1.15, "밝게"]]],
       ["말 속도", "", "voiceRate", [[0.95, "천천히"], [1.08, "보통"], [1.2, "빠르게"]]],
-      ["배경 음악", "", "musicOn", [[true, "켜기"], [false, "끄기"]]],
-      ["효과음", "", "sfxOn", [[true, "켜기"], [false, "끄기"]]],
+      ["배경 음악 음량", "", "musicVol", [[0, "끔"], [0.35, "작게"], [0.7, "보통"], [1, "크게"]]],
+      ["효과음 음량", "", "sfxVol", [[0, "끔"], [0.4, "작게"], [0.8, "보통"], [1, "크게"]]],
       ["문제 생각 시간", "문제가 뜨면 레이스가 조금 느려져요 (기록 손해 없음)", "thinkSlow", [[0.5, "느리게"], [0.75, "조금"], [1, "끄기"]]],
       ["도움말 힌트", "", "showHints", [[true, "켜기"], [false, "끄기"]]],
       ["그래픽 품질", "버벅이면 '가볍게'", "quality", [["low", "가볍게"], ["auto", "자동"], ["high", "선명"]]],
@@ -2184,7 +2400,7 @@ window.NR_MAIN = function () {
     el.innerHTML = (compact ? "" : voiceRow()) + rows.map(([t, d, k, opts]) => `<div class="set"><div>${t}${d ? `<small>${d}</small>` : ""}</div><div class="opts">${opts.map(([v, l]) => `<button data-k="${k}" data-v='${JSON.stringify(v)}' class="${save[k] === v ? "on" : ""}">${l}</button>`).join("")}</div></div>`).join("") + (compact ? "" : `<div class="set"><div>기록 초기화<small>최고 기록·도감·오답 노트를 지워요</small></div><div class="opts"><button data-reset="1">초기화</button></div></div>`);
     el.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => {
       const k = b.dataset.k, v = JSON.parse(b.dataset.v); save[k] = v; persist();
-      if (k === "musicOn") Snd.setMusic(v); if (k === "sfxOn" && Snd.sfx) Snd.sfx.gain.value = v ? 0.5 : 0;
+      if (k === "musicVol") Snd.setMusic(); if (k === "sfxVol") { Snd.setSfx(); Snd.coin(); }
       if (k === "quality") { autoLevel = TOUCH ? "mid" : "high"; renderer.setPixelRatio(dprCap()); setupPost(); resize(); if (!race) { if (world) world.dispose(scene); world = null; menuScene(); } }
       if ((k === "voiceOn" && v) || k === "voicePitch" || k === "voiceRate") Voice.say("안녕! 나는 스타 제로원이야. 이렇게 읽어 줄게!"); if (k === "voiceOn" && !v) Voice.stop();
       renderSettings(el, compact);
@@ -2227,7 +2443,7 @@ window.NR_MAIN = function () {
     star.body.position.set(0, Math.sin(SV.t * 1.6) * 0.15, 0); star.body.rotation.set(0, Math.sin(SV.t * 0.8) * 0.3, Math.sin(SV.t * 1.3) * 0.1, "YXZ");
     star.body.scale.setScalar(1.25); star.orbit.rotation.z += dt; star.orbit2.rotation.z -= dt * 0.7;
     let ex = Voice.talking && Voice.star ? (Math.sin(SV.t * 22) > 0 ? "Talk" : "Normal") : (Math.sin(SV.t * 0.5) > 0.85 ? "Joy" : "Normal");
-    for (const k in star.faces) star.faces[k].visible = k === ex; trail.forEach(m => m.visible = false);
+    for (const k in star.faces) star.faces[k].visible = k === ex; trail.forEach(m => m.visible = false); fx.hide(); Snd.setLoops(false, 0, false);
     // star sits on the left third, menu on the right
     const f = M(sim.seg.tangentAt(12)), right = new THREE.Vector3(-f.z, 0, f.x);
     const camPos = fr.p.clone().addScaledVector(f, 7.5).addScaledVector(right, -3.2); camPos.y += 0.6; camera.position.copy(camPos);

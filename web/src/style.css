@@ -232,3 +232,20 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 }
 
 .set .opts button{white-space:nowrap}
+
+/* ---------- 3.0: analog drag steering zone + combo ---------- */
+.dragzone{position:absolute;left:0;top:30%;bottom:0;width:46%;pointer-events:auto;touch-action:none}
+.dragzone span{position:absolute;left:50%;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 130px);transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.35);white-space:nowrap;transition:opacity .3s}
+.dragzone .dragrail{position:absolute;left:50%;bottom:calc(max(16px,env(safe-area-inset-bottom)) + 150px);transform:translateX(-50%);width:110px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);opacity:0;transition:opacity .2s}
+.dragzone.on .dragrail{opacity:1}.dragzone.on span{opacity:0}
+.dragknob{position:absolute;left:43px;top:-9px;width:24px;height:24px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px var(--cyan)}
+.combo{position:absolute;right:max(12px,env(safe-area-inset-right));top:calc(max(10px,env(safe-area-inset-top)) + 70px);display:none;flex-direction:column;align-items:flex-end;font-family:var(--title);text-shadow:0 2px 0 #2A1640,0 0 12px rgba(255,180,40,.7);pointer-events:none}
+.combo.on{display:flex}
+.combo b{font-weight:400;font-size:44px;line-height:1;color:var(--yellow)}
+.combo span{font-size:14px;color:#FFE9A8;letter-spacing:2px}
+.combo i{font-style:normal;font-size:18px;color:var(--pink)}
+.combo .combo-t{width:80px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin-top:3px;overflow:hidden}
+#h-combo-t{height:100%;width:100%;background:var(--yellow)}
+.combo.pop b{animation:pop .25s ease-out}
+@keyframes pop{0%{transform:scale(1.5)}100%{transform:scale(1)}}
+@media (max-height:520px){.combo{top:52px}.combo b{font-size:30px}.combo span{font-size:10px}.combo i{font-size:13px}.dragzone span{bottom:96px}.dragzone .dragrail{bottom:110px}}

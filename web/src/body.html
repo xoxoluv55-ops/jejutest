@@ -49,7 +49,7 @@
       <div class="hud-right">
         <div class="stat"><small>시간</small><b id="h-time">0:00.0</b></div>
         <div class="stat"><small>정답</small><b id="h-score">0/0</b></div>
-        <div class="stat"><small>오브</small><b id="h-coins">0</b></div>
+        <div class="stat"><small>점수</small><b id="h-score2">0</b></div>
         <button id="b-pause" class="icon">Ⅱ</button>
       </div>
     </div>
@@ -60,6 +60,7 @@
     <div id="h-story" class="story"><b></b><span></span></div>
     <div id="h-slow" class="slow">생각 시간 · 슬로모션</div>
     <div id="h-lane" class="lanepill"></div>
+    <div id="h-combo" class="combo"><b id="h-combo-n">0</b><span>COMBO</span><i id="h-combo-x">×1</i><div class="combo-t"><div id="h-combo-t"></div></div></div>
     <div id="h-vm" class="vm"><div class="vm-title">막전위</div><div class="vm-bar"><div id="h-vm-fill"></div><i class="th" title="역치"></i><i class="rest"></i></div><b id="h-vm-val">-70 mV</b><small id="h-vm-goal"></small></div>
   </section>
 
@@ -80,6 +81,7 @@
 
   <!-- TOUCH CONTROLS -->
   <section id="touch" class="touch">
+    <div id="dragzone" class="dragzone"><div class="dragrail"><div id="dragknob" class="dragknob"></div></div><span>여기를 좌우로 끌어서 조향</span></div>
     <div class="pad left">
       <button class="tb steer" data-k="left">◀</button>
       <button class="tb steer" data-k="right">▶</button>

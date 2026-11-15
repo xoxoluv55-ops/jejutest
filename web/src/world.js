@@ -205,6 +205,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
       if (isDendrite(seg)) buildDendrites(W, B, seg, Rw, H);
       if (isTerminal(seg)) buildVesicles(W, B, seg, Rw, H);
       buildBundle(W, B, seg, Rw, H, stage);
+      buildChevrons(W, seg, Rw, H);
       if (seg.fork) buildForkPortals(W, B, seg, bank);
       for (const e of seg.events) buildEvent(W, B, seg, e, bank);
     }
@@ -344,6 +345,23 @@ window.NRW_INIT = function () { window.NRW = (function () {
   }
   const LETTER = i => String.fromCharCode(65 + i), HEXS = c => "#" + c.toString(16).padStart(6, "0");
 
+  // 3.0: corner warning chevrons on the outer wall of sharp curves (see the corner before it arrives)
+  let _chev = null;
+  function chevMat() {
+    if (_chev) return _chev; const c = document.createElement("canvas"); c.width = 256; c.height = 128; const x = c.getContext("2d");
+    x.fillStyle = "rgba(30,10,20,.75)"; x.fillRect(0, 0, 256, 128); x.strokeStyle = "#FFB627"; x.lineWidth = 18; x.lineJoin = "round";
+    for (const ox of [40, 110, 180]) { x.beginPath(); x.moveTo(ox, 22); x.lineTo(ox + 40, 64); x.lineTo(ox, 106); x.stroke(); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return (_chev = new THREE.MeshBasicMaterial({ map: t, side: THREE.DoubleSide }));
+  }
+  function buildChevrons(W, seg, Rw, H) {
+    if (seg.zone === NR.ZONE.Synapse || isSoma(seg)) return;
+    const spots = [];
+    for (let s = 10; s < seg.length - 6; s += 16) { const k = seg.curvatureAt(s + 12); if (Math.abs(k) > 0.0095) spots.push([s, k]); }
+    if (!spots.length) return;
+    const im = new THREE.InstancedMesh(new THREE.PlaneGeometry(2.6, 1.3), chevMat(), spots.length), m = new THREE.Matrix4();
+    spots.forEach(([s, k], i) => { const side = k > 0 ? -1 : 1, f = frameAt(seg, s, side * (Rw - 0.9), Math.min(2.6, H * 0.4)); m.compose(f.p, f.q, new THREE.Vector3(k > 0 ? 1 : -1, 1, 1)); im.setMatrixAt(i, m); });
+    W.root.add(im);
+  }
   function buildForkPortals(W, B, seg, bank) {
     const q = bank.get(seg.fork.questionId), lx = seg.fork.laneX, signs = [];
     laneStrips(W, B, seg, seg.length - 150, seg.length, lx);
@@ -405,7 +423,8 @@ window.NRW_INIT = function () { window.NRW = (function () {
     const mk = (filter, geo, mat, sc) => {
       const items = list.filter(filter); if (!items.length) return;
       const im = new THREE.InstancedMesh(geo, mat, items.length); im.frustumCulled = false; W.root.add(im);
-      items.forEach((it, i) => { it.p = M(it.seg.worldPos(it.e.s, it.e.x, NR.Sim.HOVER + 0.2)); it.i = i; });
+      const m4 = new THREE.Matrix4(), q = new THREE.Quaternion();
+      items.forEach((it, i) => { it.p = M(it.seg.worldPos(it.e.s, it.e.x, NR.Sim.HOVER + 0.2)); it.i = i; q.setFromEuler(new THREE.Euler(0.4, i * 0.7, 0.4)); im.setMatrixAt(i, m4.compose(it.p, q, new THREE.Vector3(1, 1, 1))); });
       W.orbs.push({ im, items, sc });
     };
     mk(it => it.e.type === NR.EV.Orb, new THREE.OctahedronGeometry(0.55), new THREE.MeshBasicMaterial({ color: 0xFFE27A }), 1);
@@ -478,7 +497,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
     const tmp = new THREE.Matrix4(), q = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), zero = new THREE.Vector3();
     return {
       update(dt, t, sim) {
-        for (const g of W.orbs) { q.setFromEuler(new THREE.Euler(0, t * 2.5, 0.4)); for (const it of g.items) { tmp.compose(it.p, q, it.gone ? zero : one); g.im.setMatrixAt(it.i, tmp); } g.im.instanceMatrix.needsUpdate = true; }
+        // 3.0: orbs are static (matrices written once); only a collected orb is changed (see collect)
         for (const o of W.obstacles) { if (o.pulse) o.grp.children[0].material.opacity = 0.5 + 0.35 * Math.sin(t * 8); else o.grp.children[0].scale.x = 1 + (Math.random() < 0.05 ? rnd(-0.15, 0.15) : 0); }
         for (const a of W.anim) { if (a.spin) a.o.rotation.y += dt * a.spin; if (a.flick) a.o.visible = Math.random() > 0.04; }
         for (const p of W.psp) if (p.sp.visible) p.sp.position.y = p.y + Math.sin(t * 3 + p.ph) * 0.25;
@@ -489,15 +508,20 @@ window.NRW_INIT = function () { window.NRW = (function () {
         if (W.boss) { const b = W.boss; b.wire.rotation.y += dt * 0.4; b.wire.rotation.x += dt * 0.17; b.rings.forEach((r, i) => { r.rotation.x += dt * (0.3 + i * 0.2); r.rotation.y += dt * 0.2; }); if (b.flash > 0) { b.flash -= dt; b.core.material.color.setHex(b.flash > 0 ? 0xFFFFFF : 0x12000a); } if (b.atk > 0) { b.atk -= dt; b.shield.scale.setScalar(1 + (1 - b.atk) * 0.6); if (b.atk <= 0) b.shield.scale.setScalar(1); } }
         if (sim && W.particles) {
           const P = W.particles, a = P.g.attributes.position.array;
+          // 3.0: world position computed only when an ion respawns (max 6 per frame); otherwise it just drifts
+          const star = U.uStar.value; let spawns = 0;
           P.seeds.forEach((p, i) => {
-            if (!p.seg || p.seg !== sim.seg || p.s < sim.s - 8 || p.s > sim.s + 70) { const hw = sim.seg.halfWidth, [Rw, H] = tubeRadius(hw); p.seg = sim.seg; p.s = sim.s + rnd(-5, 70); p.x = rnd(-Rw, Rw) * 0.85; p.y = rnd(0.3, H * 0.8); p.ds = rnd(-1.5, 1.5); }
-            p.s += p.ds * dt; const v = M(p.seg.worldPos(Math.min(p.s, p.seg.length), p.x + Math.sin(t * 0.7 + i) * 0.3, p.y)); a[i * 3] = v.x; a[i * 3 + 1] = v.y; a[i * 3 + 2] = v.z;
+            if ((!p.wp || p.wp.distanceToSquared(star) > 80 * 80) && spawns < 6) {
+              spawns++; const hw = sim.seg.halfWidth, [Rw, H] = tubeRadius(hw), s = Math.min(sim.seg.length, sim.s + rnd(-4, 70));
+              const v = M(sim.seg.worldPos(s, rnd(-Rw, Rw) * 0.85, rnd(0.3, H * 0.8))); if (!p.wp) { p.wp = new THREE.Vector3(); p.dv = new THREE.Vector3(); } p.wp.copy(v); p.dv.set(rnd(-0.6, 0.6), rnd(-0.4, 0.4), rnd(-0.6, 0.6));
+            }
+            if (p.wp) { p.wp.addScaledVector(p.dv, dt); a[i * 3] = p.wp.x; a[i * 3 + 1] = p.wp.y; a[i * 3 + 2] = p.wp.z; }
           });
           P.g.attributes.position.needsUpdate = true;
         }
       },
       pspCollect(e) { const p = W.psp.find(x => x.e === e); if (p) p.sp.visible = false; },
-      collect(e) { for (const g of W.orbs) { const it = g.items.find(x => x.e === e); if (it) { it.gone = true; return; } } },
+      collect(e) { for (const g of W.orbs) { const it = g.items.find(x => x.e === e); if (it) { it.gone = true; tmp.compose(it.p, q, zero); g.im.setMatrixAt(it.i, tmp); g.im.instanceMatrix.needsUpdate = true; return; } } },
       ringHit(e, hit) { const r = W.rings.find(x => x.e === e); if (!r) return; if (hit) { r.m.material = glow(0xFFFFFF); r.t = 0.6; for (const nd of W.nodes) if (Math.abs(nd.s - e.s) < 0.5) nd.t = 0.25; } else r.m.material = glow(0x553355, 0.5); },
       markSigns(signs, lane, correctLane) { signs.forEach((p, i) => { p.material.color.setHex(i === correctLane ? 0xB8FFD0 : i === lane ? 0xFF8A9A : 0x555577); }); },
       gateResult(e, lane) { const g = W.gates.find(x => x.e === e); if (g) this.markSigns(g.signs, lane, e.correctLane); },

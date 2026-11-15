@@ -22,9 +22,9 @@ function wave(c,hw,amp,n=14){const l=[];for(let i=0;i<=n;i++){const u=i/n;l.push
 function openMouth(c,w,h){const l=[];for(let i=0;i<=14;i++){const a=(180+180*i/14)*Math.PI/180;l.push([c[0]+Math.cos(a)*w,c[1]+Math.sin(a)*h]);}return l;}
 function tearP(tip,r){const l=[tip];const c=[tip[0],tip[1]-r*1.6];for(let i=1;i<12;i++){const a=(60-300*i/12)*Math.PI/180;l.push([c[0]+Math.cos(a)*r,c[1]+Math.sin(a)*r]);}return l;}
 // ToonRim shader port
-function toonMat(base,shade,rim,rimPow,emis){return new THREE.ShaderMaterial({uniforms:{B:{value:new THREE.Color(base)},S:{value:new THREE.Color(shade)},R:{value:new THREE.Color(rim)},P:{value:rimPow},E:{value:new THREE.Color(emis)},L:{value:new THREE.Vector3(0.4,0.8,0.5).normalize()}},
- vertexShader:`varying vec3 n;varying vec3 vw;void main(){n=normalize(mat3(modelMatrix)*normal);vec4 w=modelMatrix*vec4(position,1.);vw=normalize(cameraPosition-w.xyz);gl_Position=projectionMatrix*viewMatrix*w;}`,
- fragmentShader:`uniform vec3 B,S,R,E,L;uniform float P;varying vec3 n;varying vec3 vw;void main(){vec3 N=normalize(n);float ndl=dot(N,L)*.5+.5;float ramp=smoothstep(.38,.62,ndl);vec3 c=mix(S,B,ramp)+B*.12;vec3 h=normalize(L+vw);float sp=pow(max(dot(N,h),0.),60.);c+=smoothstep(.45,.55,sp)*.55;c+=pow(1.-max(dot(N,vw),0.),P)*R;c+=E;gl_FragColor=vec4(c,1.);
+function toonMat(base,shade,rim,rimPow,emis){return new THREE.ShaderMaterial({uniforms:{B:{value:new THREE.Color(base)},S:{value:new THREE.Color(shade)},R:{value:new THREE.Color(rim)},P:{value:rimPow},E:{value:new THREE.Color(emis)},L:{value:new THREE.Vector3(0.4,0.8,0.5).normalize()},uBend:{value:0},uFlash:{value:0}},
+ vertexShader:`uniform float uBend;varying vec3 n;varying vec3 vw;void main(){n=normalize(mat3(modelMatrix)*normal);vec3 p=position;float r=length(p.xy);p.z+=uBend*r*r*r*.55;vec4 w=modelMatrix*vec4(p,1.);vw=normalize(cameraPosition-w.xyz);gl_Position=projectionMatrix*viewMatrix*w;}`,
+ fragmentShader:`uniform vec3 B,S,R,E,L;uniform float P,uFlash,uBend;varying vec3 n;varying vec3 vw;void main(){vec3 N=normalize(n);float ndl=dot(N,L)*.5+.5;float ramp=smoothstep(.38,.62,ndl);vec3 c=mix(S,B,ramp)+B*.12;vec3 h=normalize(L+vw);float sp=pow(max(dot(N,h),0.),60.);c+=smoothstep(.45,.55,sp)*.55;c+=pow(1.-max(dot(N,vw),0.),P)*R;c+=E;c+=vec3(1.,.95,.7)*uBend*smoothstep(.5,1.,1.-max(dot(N,vw),0.))*.6;c=mix(c,vec3(1.),uFlash*.75);gl_FragColor=vec4(c,1.);
 gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
 #include <colorspace_fragment>
 }`});}

@@ -350,7 +350,7 @@ const NR = (function () {
     constructor(g) {
       this.graph = g; this.baseTopSpeed = 40; this.accel = 16; this.boostAccel = 30; this.boostMultiplier = 1.4; this.turboMultiplier = 1.25;
       this.steerMax = 12; this.steerSensitivity = 1; this.grip = 0.3; this.driftGrip = 0.07; this.driftSteerMul = 1.4; this.jumpVelocity = 9.5; this.gravity = 26;
-      if (TUNE.arcade) { this.steerMax = 14.5; this.driftSteerMul = 1.7; this.turboMultiplier = 1.32; }
+      if (TUNE.arcade) { this.steerMax = 14.5; this.driftSteerMul = 1.7; this.turboMultiplier = 1.32; this.jumpVelocity = 10.2; }
       this.events = []; this.reset();
     }
     reset() {
@@ -385,16 +385,21 @@ const NR = (function () {
       this.stepMembrane(dt);
       const g = this.drifting ? this.driftGrip : this.grip, push = -this.curvature * this.speed * this.speed * g;
       const sm = this.steerMax * this.steerSensitivity * (this.drifting ? this.driftSteerMul : 1) * (this.grounded ? 1 : 0.7);
-      this.vx = moveTowards(this.vx, steer * sm + push, 60 * dt); this.x += this.vx * dt;
+      if (TUNE.arcade) {   // 3.0: lateral inertia - eases in, settles out, reverses a bit faster (no snapping)
+        const target = steer * sm + push, reversing = target * this.vx < 0 && Math.abs(this.vx) > 1;
+        const rate = reversing ? 10 : Math.abs(target) > Math.abs(this.vx) ? 7 : 9;
+        this.vx += (target - this.vx) * (1 - Math.exp(-rate * dt));
+      } else this.vx = moveTowards(this.vx, steer * sm + push, 60 * dt);
+      this.x += this.vx * dt;
       const limit = this.seg.halfWidth - Sim.RADIUS;
       if (Math.abs(this.x) > limit) {
         const side = sign(this.x); this.x = side * limit;
-        if (this.vx * side > 0) { if (this.wallCooldown <= 0 && Math.abs(this.vx) > 2) { this.speed *= 0.8; this.wallHits++; this.wallCooldown = 0.5; this.emit(SE.WallHit); } this.vx = 0; }
+        if (this.vx * side > 0) { if (this.wallCooldown <= 0 && Math.abs(this.vx) > 2) { this.speed *= 0.8; this.wallHits++; this.wallCooldown = 0.5; this.emit(SE.WallHit); if (this.drifting && TUNE.arcade) this.failDrift(); } this.vx = 0; }
         this.speed = Math.max(0, this.speed - 10 * dt);
       }
       if (this.wallCooldown > 0) this.wallCooldown -= dt;
       if (inp.jump && this.grounded) { this.vy = this.jumpVelocity; this.grounded = false; this.emit(SE.Jump); }
-      if (!this.grounded) { this.vy -= this.gravity * dt; this.y += this.vy * dt; if (this.y <= 0) { this.y = 0; this.vy = 0; this.grounded = true; this.emit(SE.Land); } }
+      if (!this.grounded) { this.vy -= this.gravity * (TUNE.arcade ? (this.vy > 0 ? 0.9 : 1.55) : 1) * dt; this.y += this.vy * dt;   /* 3.0: snappy fall */ if (this.y <= 0) { this.y = 0; this.vy = 0; this.grounded = true; this.emit(SE.Land); } }
       if (this.turboTimer > 0) this.turboTimer -= dt; if (this.penaltyTimer > 0) this.penaltyTimer -= dt;
       const ds = this.speed * dt; this.distance += ds; let prev = this.s; this.s += ds;
       for (;;) {
@@ -408,12 +413,14 @@ const NR = (function () {
     stepDrift(steer, held, dt) {
       const can = this.speed > this.baseTopSpeed * 0.32;
       if (!this.drifting) { if (held && can && Math.abs(steer) > 0.15) { this.drifting = true; this.driftDir = steer > 0 ? 1 : -1; this.driftTime = 0; this.driftCharge = 0; this.emit(SE.DriftStart); } return; }
+      if ((!held || !can) && TUNE.arcade && this.driftTier === 0 && this.driftTime > 0.25) { this.failDrift(); return; }
       if (!held || !can) {
         const tier = this.driftTier; this.drifting = false; if (tier > 0) this.addTurbo((TUNE.arcade ? TURBO_ARCADE : TURBO_TIME)[tier]); this.addEnergy(this.driftCharge);
         this.driftTime = 0; this.driftCharge = 0; this.emit(SE.DriftEnd, null, -1, tier > 0, tier); return;
       }
-      const k = this.curvature, precision = sign(k) === this.driftDir ? clamp01(Math.abs(k) * 60) : 0;
-      this.driftTime += dt * (TUNE.arcade ? 0.6 + 0.4 * precision : 0.35 + 0.65 * precision); this.driftCharge = Math.min(0.5, this.driftCharge + dt * 0.12 * (0.25 + 0.75 * precision));
+      const k = this.curvature, precision = sign(k) === this.driftDir ? clamp01(Math.abs(k) * (TUNE.arcade ? 90 : 60)) : 0;
+      this.driftTime += dt * (TUNE.arcade ? 0.25 + 0.75 * precision : 0.35 + 0.65 * precision);   // charges only when drifting INTO a corner
+      this.driftPrecision = precision; this.driftCharge = Math.min(0.5, this.driftCharge + dt * 0.12 * (0.25 + 0.75 * precision));
     }
     // membrane potential: leak to rest (temporal summation window ~2 s); NULL drive in inhibit zones
     stepMembrane(dt) {
@@ -427,6 +434,8 @@ const NR = (function () {
         this.vm = -82; this.refractory = 0.9;
       }
     }
+    // 3.0: a drift that never reached tier 1 (e.g. on a straight) or hit a wall costs speed
+    failDrift() { this.drifting = false; this.speed *= 0.88; this.driftTime = 0; this.driftCharge = 0; this.emit(SE.DriftEnd, null, -1, false, 0, "fail"); }
     stepBoost(want, dt) {
       if (this.boostEnergy <= 0.001) this.canFire = false; else if (this.boostEnergy >= 0.2) this.canFire = true;
       const active = want && this.canFire && this.boostEnergy > 0;
@@ -468,7 +477,7 @@ const NR = (function () {
           case EV.Finish: this.finished = true; this.emit(SE.Finish, e); return;
           case EV.Gate: { const lane = Sim.nearest(e.laneX, this.x), ok = lane === e.correctLane; if (ok) { this.addTurbo(0.8); this.addEnergy(0.15); if (e.tag === "glia") this.repairCount = Math.max(this.repairCount, 3); } else this.addPenalty(1.8); this.emit(SE.GateResult, e, lane, ok); break; }
           case EV.NodeRing: this.ringsTotal++; if (Math.abs(this.x - e.x) < e.width) { this.ringChain++; this.ringsHit++; this.ringBest = Math.max(this.ringBest, this.ringChain); this.addEnergy(0.03); this.emit(SE.RingHit, e); } else { this.ringChain = 0; this.emit(SE.RingMiss, e); } break;
-          case EV.Obstacle: { const ov = Math.abs(this.x - e.x) < e.width * 0.5 + Sim.RADIUS * 0.8; if (ov && this.y < e.height) { this.obstacleHits++; this.speed *= 0.6; this.addPenalty(1.0); if (this.drifting) { this.drifting = false; this.driftTime = 0; this.driftCharge = 0; } this.emit(SE.ObstacleHit, e); } else this.emit(SE.ObstacleDodged, e); break; }
+          case EV.Obstacle: { const ov = Math.abs(this.x - e.x) < e.width * 0.5 + Sim.RADIUS * 0.8; if (ov && this.y < e.height) { this.obstacleHits++; this.speed *= 0.6; this.addPenalty(1.0); if (this.drifting) { this.drifting = false; this.driftTime = 0; this.driftCharge = 0; } this.emit(SE.ObstacleHit, e); } else this.emit(SE.ObstacleDodged, e, -1, this.y > 0.4, 0, ov ? "jump" : "dodge"); break; }
           case EV.Orb: if (Math.abs(this.x - e.x) < 1.9 && this.y < 2.6) { this.coins++; this.addEnergy(0.06); this.emit(SE.OrbCollected, e); } break;
           case EV.RepairOrb: if (Math.abs(this.x - e.x) < 2.3 && this.y < 2.6) { this.repairCount = Math.min(3, this.repairCount + 1); this.addEnergy(0.05); this.emit(SE.RepairOrb, e); } break;
         }

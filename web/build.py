@@ -37,6 +37,9 @@ body = f"""{src("body.html")}
 {src("star.js")}
 </script>
 <script>
+{src("fx.js")}
+</script>
+<script>
 {src("world.js")}
 </script>
 <script>
