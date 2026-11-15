@@ -764,10 +764,10 @@ const NR = (function () {
   // (temporal summation) -> action potential + turbo. inhibit: NULL over-excites the neuron, collect
   // IPSPs to keep the membrane below threshold until the end of the zone.
   function psps(b, kind, from, to) {
-    const good = kind === "excite" ? EV.Epsp : EV.Ipsp, bad = kind === "excite" ? EV.Ipsp : EV.Epsp, lanes = [-3, 2.6, 0, -2.6, 3, -1.2];
+    const good = kind === "excite" ? EV.Epsp : EV.Ipsp, bad = kind === "excite" ? EV.Ipsp : EV.Epsp, lanes = [-3.4, 3.2, -3.0, 3.4, -3.2, 3.0];   // off-centre: you must steer into them (no accidental threshold)
     let c = 0;
     for (let s0 = from; s0 + 50 < to; s0 += 68, c++) {
-      const x = lanes[c % lanes.length], bx = x > 0 ? -3.4 : 3.4;
+      const x = lanes[c % lanes.length], bx = x > 0 ? -1.2 : 1.2;
       for (let k = 0; k < 4; k++) b.eventAt(good, s0 + k * 11, x + Math.sin(k * 1.7) * 0.5);
       for (let k = 0; k < 2; k++) b.eventAt(bad, s0 + 8 + k * 16, bx);
     }
@@ -1073,7 +1073,7 @@ const NR = (function () {
             }
             this.emit(SE.Trigger, e); break;
           case EV.Epsp: case EV.Ipsp:
-            if (Math.abs(this.x - e.x) < 2.0 && this.y < 2.6) {
+            if (Math.abs(this.x - e.x) < 1.5 && this.y < 2.6) {
               const ex = e.type === EV.Epsp; if (ex) this.epsps++; else this.ipsps++;
               if (this.refractory <= 0) this.vm += ex ? 7 : -7;   // refractory period: inputs have no effect
               this.emit(SE.Psp, e, -1, this.refractory <= 0, 0, ex ? "epsp" : "ipsp");
@@ -1778,7 +1778,8 @@ window.NRW_INIT = function () { window.NRW = (function () {
     } else if (e.type === E.Trigger && /^hint:(jumppad|movers|lasers|narrow|dzone|rings|split|scurve)$/.test(e.tag)) {
       const t = { jumppad: ["점프대", "날아올라 장애물을 넘어라"], movers: ["움직이는 NULL", "빈틈을 노려 피하기"], lasers: ["레이저 장벽", "빨간 빛이 켜질 때 점프!"], narrow: ["좁은 통로", "벽 충돌 주의 · 오브 일렬"], dzone: ["드리프트 충전 구간", "충전 속도 ×1.8"], rings: ["결절 링 콤보", "3·5·10연속 → 부스트"], split: ["갈래 길", "안전 vs 위험(보상 ×3)"], scurve: ["S자 커브", "리듬 타고 좌우로"] }[e.tag.slice(5)];
       hologram(W, seg, Math.min(seg.length - 1, e.s + 30), 0, H - 2.2, labelTex(t, { w: 640, h: 200, border: "#FFB627", bg: "rgba(30,14,6,.85)" }), 7, 2.2);
-      W.psp.push({ e, ex: e.type === E.Epsp, p: M(seg.worldPos(e.s, e.x, NR.Sim.HOVER + 0.3)) });
+    } else if (e.type === E.Epsp || e.type === E.Ipsp) {
+      const f = frameAt(seg, e.s, e.x, NR.Sim.HOVER + 0.4); W.psp.push({ e, ex: e.type === E.Epsp, p: f.p, q: f.q });
     } else if (e.type === E.Trigger && /^integ:(excite|inhibit)$/.test(e.tag)) {
       const ex = e.tag === "integ:excite";
       hologram(W, seg, Math.min(seg.length - 1, e.s + 28), 0, H - 2.2, labelTex(ex ? ["EPSP 가중 구간", "초록 ＋ 를 연달아 → 역치 → 발화!"] : ["IPSP 억제 구간", "파랑 − 로 과흥분을 막아!"], { w: 768, h: 220, border: ex ? "#5CFF9D" : "#5C9CFF", bg: "rgba(10,20,40,.85)" }), 9, 2.6);
@@ -1822,10 +1823,11 @@ window.NRW_INIT = function () { window.NRW = (function () {
   function buildPspClouds(W) {
     W.pspClouds = [true, false].map(ex => {
       const list = W.psp.filter(p => p.ex === ex); if (!list.length) return null;
-      const pos = new Float32Array(list.length * 3); list.forEach((p, i) => { pos.set([p.p.x, p.p.y, p.p.z], i * 3); p.i = i; });
-      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
-      const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: 2.1, map: pspMat(ex).map, transparent: true, depthWrite: false, alphaTest: 0.05 }));
-      W.root.add(pts); list.forEach(p => { p.cloud = g; }); return { g, list };
+      // instanced badges facing the oncoming player (2 draw calls for all pickups, works on every GPU)
+      const mat = new THREE.MeshBasicMaterial({ map: pspMat(ex).map, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false });
+      const im = new THREE.InstancedMesh(new THREE.PlaneGeometry(2.8, 2.8), mat, list.length), m = new THREE.Matrix4(), one = new THREE.Vector3(1, 1, 1);
+      list.forEach((p, i) => { p.i = i; p.im = im; im.setMatrixAt(i, m.compose(p.p, p.q, one)); });
+      im.frustumCulled = false; W.root.add(im); return { im, list };
     });
   }
   function buildOrbs(W) {
@@ -1933,7 +1935,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
           P.g.attributes.position.needsUpdate = true;
         }
       },
-      pspCollect(e) { const p = W.psp.find(x => x.e === e); if (p && p.cloud) { p.cloud.attributes.position.setY(p.i, -9999); p.cloud.attributes.position.needsUpdate = true; } },
+      pspCollect(e) { const p = W.psp.find(x => x.e === e); if (p && p.im) { tmp.compose(p.p, p.q, zero); p.im.setMatrixAt(p.i, tmp); p.im.instanceMatrix.needsUpdate = true; } },
       collect(e) { for (const g of W.orbs) { const it = g.items.find(x => x.e === e); if (it) { it.gone = true; tmp.compose(it.p, q, zero); g.im.setMatrixAt(it.i, tmp); g.im.instanceMatrix.needsUpdate = true; return; } } },
       ringHit(e, hit) { const r = W.rings.find(x => x.e === e); if (!r) return; if (hit) { r.m.material = glow(0xFFFFFF); r.t = 0.6; for (const nd of W.nodes) if (Math.abs(nd.s - e.s) < 0.5) nd.t = 0.25; } else r.m.material = glow(0x553355, 0.5); },
       markSigns(signs, lane, correctLane) { signs.forEach((p, i) => { p.material.color.setHex(i === correctLane ? 0xB8FFD0 : i === lane ? 0xFF8A9A : 0x555577); }); },

@@ -323,10 +323,10 @@ const NR = (function () {
   // (temporal summation) -> action potential + turbo. inhibit: NULL over-excites the neuron, collect
   // IPSPs to keep the membrane below threshold until the end of the zone.
   function psps(b, kind, from, to) {
-    const good = kind === "excite" ? EV.Epsp : EV.Ipsp, bad = kind === "excite" ? EV.Ipsp : EV.Epsp, lanes = [-3, 2.6, 0, -2.6, 3, -1.2];
+    const good = kind === "excite" ? EV.Epsp : EV.Ipsp, bad = kind === "excite" ? EV.Ipsp : EV.Epsp, lanes = [-3.4, 3.2, -3.0, 3.4, -3.2, 3.0];   // off-centre: you must steer into them (no accidental threshold)
     let c = 0;
     for (let s0 = from; s0 + 50 < to; s0 += 68, c++) {
-      const x = lanes[c % lanes.length], bx = x > 0 ? -3.4 : 3.4;
+      const x = lanes[c % lanes.length], bx = x > 0 ? -1.2 : 1.2;
       for (let k = 0; k < 4; k++) b.eventAt(good, s0 + k * 11, x + Math.sin(k * 1.7) * 0.5);
       for (let k = 0; k < 2; k++) b.eventAt(bad, s0 + 8 + k * 16, bx);
     }
@@ -632,7 +632,7 @@ const NR = (function () {
             }
             this.emit(SE.Trigger, e); break;
           case EV.Epsp: case EV.Ipsp:
-            if (Math.abs(this.x - e.x) < 2.0 && this.y < 2.6) {
+            if (Math.abs(this.x - e.x) < 1.5 && this.y < 2.6) {
               const ex = e.type === EV.Epsp; if (ex) this.epsps++; else this.ipsps++;
               if (this.refractory <= 0) this.vm += ex ? 7 : -7;   // refractory period: inputs have no effect
               this.emit(SE.Psp, e, -1, this.refractory <= 0, 0, ex ? "epsp" : "ipsp");
