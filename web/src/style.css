@@ -230,3 +230,5 @@ h2{font-family:var(--title);font-weight:400;margin:0}
   .mg-slots li{flex:1 1 30%;font-size:12px;padding:4px 8px;min-height:0;border-radius:8px}
   .mg-fb{font-size:13px}
 }
+
+.set .opts button{white-space:nowrap}

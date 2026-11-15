@@ -105,7 +105,9 @@ window.NR_MAIN = function () {
     },
     pick() {
       if (!this.ok) return; this.list = speechSynthesis.getVoices().filter(v => /^ko/i.test(v.lang)).sort((a, b) => this.rank(b) - this.rank(a));
-      this.voice = this.list.find(v => v.voiceURI === save.voiceURI) || this.list[0] || null;
+      // a voice the player picked wins; otherwise the best-ranked one (a newly downloaded Premium voice takes over automatically)
+      const chosen = save.voiceChosen && this.list.find(v => v.voiceURI === save.voiceURI);
+      this.voice = chosen || this.list[0] || null;
     },
     unlock() { if (!this.ok || this.unlocked) return; this.unlocked = true; try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) { } },
     clean(t) {
@@ -132,6 +134,7 @@ window.NR_MAIN = function () {
     },
     next() {
       clearTimeout(this.timer); const c = this.q.shift(); this.cur = c || null; if (!c) return;
+      if (this.ok && (!this.voice || !this.list.length)) this.pick();   // iOS sometimes lists voices only after the first speech
       this.star = c.star; const est = 0.6 + c.text.length * 0.2 / (save.voiceRate || 1); c.end = performance.now() / 1000 + est;
       const done = () => { if (this.cur === c) { this.cur = null; setTimeout(() => { if (!this.cur) this.next(); }, 140); } };
       this.timer = setTimeout(done, (est + 2.5) * 1000);     // fallback: some engines never fire onend
@@ -657,7 +660,7 @@ window.NR_MAIN = function () {
       ["도움말 힌트", "", "showHints", [[true, "켜기"], [false, "끄기"]]],
       ["그래픽 품질", "버벅이면 '가볍게'", "quality", [["low", "가볍게"], ["auto", "자동"], ["high", "선명"]]],
     ];
-    el.innerHTML = rows.map(([t, d, k, opts]) => `<div class="set"><div>${t}${d ? `<small>${d}</small>` : ""}</div><div class="opts">${opts.map(([v, l]) => `<button data-k="${k}" data-v='${JSON.stringify(v)}' class="${save[k] === v ? "on" : ""}">${l}</button>`).join("")}</div></div>`).join("") + (compact ? "" : voiceRow()) + (compact ? "" : `<div class="set"><div>기록 초기화<small>최고 기록·도감·오답 노트를 지워요</small></div><div class="opts"><button data-reset="1">초기화</button></div></div>`);
+    el.innerHTML = (compact ? "" : voiceRow()) + rows.map(([t, d, k, opts]) => `<div class="set"><div>${t}${d ? `<small>${d}</small>` : ""}</div><div class="opts">${opts.map(([v, l]) => `<button data-k="${k}" data-v='${JSON.stringify(v)}' class="${save[k] === v ? "on" : ""}">${l}</button>`).join("")}</div></div>`).join("") + (compact ? "" : `<div class="set"><div>기록 초기화<small>최고 기록·도감·오답 노트를 지워요</small></div><div class="opts"><button data-reset="1">초기화</button></div></div>`);
     el.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => {
       const k = b.dataset.k, v = JSON.parse(b.dataset.v); save[k] = v; persist();
       if (k === "musicOn") Snd.setMusic(v); if (k === "sfxOn" && Snd.sfx) Snd.sfx.gain.value = v ? 0.5 : 0;
@@ -665,14 +668,15 @@ window.NR_MAIN = function () {
       if ((k === "voiceOn" && v) || k === "voicePitch" || k === "voiceRate") Voice.say("안녕! 나는 스타 제로원이야. 이렇게 읽어 줄게!"); if (k === "voiceOn" && !v) Voice.stop();
       renderSettings(el, compact);
     }));
-    const vs = el.querySelector("#voice-sel"); if (vs) vs.addEventListener("change", () => { save.voiceURI = vs.value; persist(); Voice.pick(); Voice.say("안녕! 이 목소리 어때?"); });
+    const vs = el.querySelector("#voice-sel"); if (vs) vs.addEventListener("change", () => { save.voiceURI = vs.value; save.voiceChosen = true; persist(); Voice.pick(); Voice.say("안녕! 이 목소리 어때?"); });
     const vp = el.querySelector("#voice-try"); if (vp) vp.addEventListener("click", () => Voice.say("안녕! 나는 스타 제로원! 같이 신경계를 달려 보자!"));
     const rs = el.querySelector("[data-reset]"); if (rs) rs.addEventListener("click", () => { if (confirm("기록을 모두 지울까요?")) { save.best = {}; save.wrongNotes = []; save.codexUnlocked = []; persist(); renderSettings(el, compact); } });
   }
   function voiceRow() {
     Voice.pick(); const L = Voice.list;
+    if (!L.length && Voice.ok) setTimeout(() => { Voice.pick(); if (Voice.list.length && document.querySelector("#voice-sel")) renderSettings(document.querySelector("#voice-sel").closest(".settings"), false); }, 800);
     const opts = L.length ? L.map(v => `<option value="${esc(v.voiceURI)}"${Voice.voice && v.voiceURI === Voice.voice.voiceURI ? " selected" : ""}>${esc(v.name)}</option>`).join("") : `<option>한국어 음성을 찾지 못했어요</option>`;
-    return `<div class="set voice-set"><div>STAR-01 목소리<small>iPad에서 더 자연스러운 목소리: 설정 › 손쉬운 사용 › 읽기 및 말하기 › 음성 › 한국어 › '유나(프리미엄)' 또는 '향상됨' 음성을 내려받은 뒤 여기서 고르세요.</small></div><div class="opts"><select id="voice-sel">${opts}</select><button id="voice-try">▶ 들어보기</button></div></div>`;
+    return `<div class="set voice-set"><div>STAR-01 목소리<small>지금: <b>${esc(Voice.voice ? Voice.voice.name : "기기 기본 음성")}</b>${Voice.voice && /premium|프리미엄|enhanced|향상/i.test(Voice.voice.name) ? " ✓" : ""}<br>iPad에서 더 자연스러운 목소리: 설정 › 손쉬운 사용 › 읽기 및 말하기 › 음성 › 한국어 › '지안·유나(프리미엄)' 같은 프리미엄 음성을 내려받으면 자동으로 골라져요. 목록에 없으면 Safari에서 열어 보세요.</small></div><div class="opts"><select id="voice-sel">${opts}</select><button id="voice-try">▶ 들어보기</button></div></div>`;
   }
   function goTitle() { race = null; Voice.stop(); show("#hud", false); show("#touch", false); show("#result", false); show("#pause", false); show("#qpanel", false); show("#apanel", false); show("#mini", false); show("#dialog", false); screen("title"); menuScene(); Snd.play("menu"); }
   document.addEventListener("click", ev => {
