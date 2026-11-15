@@ -302,6 +302,21 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 .rank .row{display:flex;justify-content:space-between;gap:8px}.rank .me{color:var(--yellow)}
 .rank .tag{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
 @media (max-height:520px){.rank{font-size:11px;padding:2px 8px;min-width:120px}.rank b{font-size:17px}.mode-tabs button{font-size:13px;padding:5px 9px}}
+/* ---------- 4.6: items, phases, collapse, evolution ---------- */
+.tb.item{background:rgba(155,92,255,.3);border-color:var(--purple)}.tb.item.has{background:rgba(255,211,77,.35);border-color:var(--yellow);animation:cue .5s infinite alternate}
+.tb.item i{font-style:normal}
+.phase{position:absolute;left:0;right:0;top:24%;text-align:center;font-family:var(--title);font-size:46px;color:#FF5C8A;text-shadow:0 0 18px rgba(255,40,90,.8),0 4px 0 #2A1640;display:none;pointer-events:none}
+.phase small{display:block;font-size:20px;color:#fff}
+.collapse{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(14px,env(safe-area-inset-bottom)) + 70px);display:none;align-items:center;gap:8px;font-family:var(--title);color:#FF6D8D;background:rgba(40,0,10,.45);border:2px solid #FF4D6D;border-radius:12px;padding:3px 10px;pointer-events:none}
+.collapse.on{display:flex}.collapse .cbar{width:140px;height:10px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}
+#h-collapse-fill{height:100%;background:linear-gradient(90deg,#FF2D55,#FFB627)}
+#app.danger::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px rgba(255,30,60,.55);z-index:5}
+.evo-btn{background:linear-gradient(180deg,#FF8A3D,#C2410C)}
+.evo-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:12px;overflow:auto;touch-action:pan-y}
+.evo{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.evo .sw{height:44px;border-radius:12px}.evo b{font-family:var(--title);font-weight:400;font-size:22px}.evo small{color:var(--dim);font-size:14px;line-height:1.4}
+.evo.locked{opacity:.45}.evo.cur{border-color:var(--yellow);box-shadow:0 0 14px rgba(255,211,77,.5)}
+@media (max-height:520px){.phase{font-size:30px}.phase small{font-size:14px}.collapse{bottom:44px;font-size:12px}.collapse .cbar{width:90px}}
 /* ---------- 4.1: slimmer, see-through top boxes (same text size) ---------- */
 .qpanel,.apanel{width:auto;max-width:min(760px,66vw);padding:4px 10px 6px;background:rgba(16,12,48,.5);border-width:1.5px;border-radius:12px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .apanel.bad{background:rgba(48,12,28,.5)}
@@ -352,6 +367,7 @@ h2{font-family:var(--title);font-weight:400;margin:0}
         <button class="big primary" data-act="play">▶ 게임 시작</button>
         <button class="big" data-act="stages">스테이지 선택</button>
         <button class="big story-btn" data-act="story">📖 STAR-01 이야기</button>
+        <button class="big evo-btn" data-act="evo">⭐ STAR-01 진화 · 스킨</button>
         <div class="row2">
           <button data-act="codex">📘 신경 도감</button>
           <button data-act="notes">📝 오답 노트</button>
@@ -367,6 +383,13 @@ h2{font-family:var(--title);font-weight:400;margin:0}
     <header><button class="back" data-act="title">◀</button><h2>스테이지 선택</h2><div id="mode-tabs" class="tabs mode-tabs"></div></header>
     <div id="mode-desc" class="mode-desc"></div>
     <div id="stage-grid" class="stage-grid"></div>
+  </section>
+
+  <!-- EVOLUTION / SKINS -->
+  <section id="scr-evo" class="screen panel-screen">
+    <header><button class="back" data-act="title">◀</button><h2>STAR-01 진화</h2></header>
+    <div id="evo-info" class="mode-desc"></div>
+    <div id="evo-list" class="evo-list"></div>
   </section>
 
   <!-- FULL STORY -->
@@ -421,7 +444,7 @@ h2{font-family:var(--title);font-weight:400;margin:0}
         <div class="prog"><div id="h-prog"></div><span id="h-star">★</span></div>
         <div id="h-rank" class="rank"></div>
       </div>
-      <div id="h-boss" class="boss"><span>NULL 보호막</span><div class="bar"><div id="h-boss-fill"></div></div></div>
+      <div id="h-boss" class="boss"><span>NULL 체력</span><div class="bar"><div id="h-boss-fill"></div></div></div>
       <div class="hud-right">
         <div class="stat"><small>시간</small><b id="h-time">0:00.0</b></div>
         <div class="stat"><small>정답</small><b id="h-score">0/0</b></div>
@@ -434,6 +457,8 @@ h2{font-family:var(--title);font-weight:400;margin:0}
     <div id="h-toast" class="toast"></div>
     <div id="h-hint" class="hint"></div>
     <div id="h-story" class="story"><b></b><span></span></div>
+    <div id="h-phase" class="phase"></div>
+    <div id="h-collapse" class="collapse"><span>붕괴 접근</span><div class="cbar"><div id="h-collapse-fill"></div></div><b id="h-collapse-m">-</b></div>
     <div id="h-slow" class="slow">생각 시간 · 슬로모션</div>
     <div id="h-lane" class="lanepill"></div>
     <div id="h-combo" class="combo"><b id="h-combo-n">0</b><span>COMBO</span><i id="h-combo-x">×1</i><div class="combo-t"><div id="h-combo-t"></div></div></div>
@@ -465,6 +490,7 @@ h2{font-family:var(--title);font-weight:400;margin:0}
     <div class="pad right">
       <button class="tb act drift" data-k="drift"><i>↯</i>드리프트</button>
       <button class="tb act boost" data-k="boost"><i>⚡</i>부스트</button>
+      <button class="tb act item" data-k="item"><i id="item-ico">·</i><span id="item-name">아이템</span></button>
       <button class="tb act jump" data-k="jump"><i>⤒</i>점프</button>
     </div>
   </section>
@@ -601,7 +627,7 @@ const NR = (function () {
 
   // ---------------- Track model ----------------
   const ZONE = { Normal: 0, ForkApproach: 1, Shortcut: 2, Review: 3, Myelin: 4, Damaged: 5, Synapse: 6 };
-  const EV = { Trigger: 0, Gate: 1, NodeRing: 2, Obstacle: 3, Orb: 4, RepairOrb: 5, Checkpoint: 6, Finish: 7, Epsp: 8, Ipsp: 9, JumpPad: 10, Mover: 11, Laser: 12, Sort: 13, Reflex: 14 };
+  const EV = { Trigger: 0, Gate: 1, NodeRing: 2, Obstacle: 3, Orb: 4, RepairOrb: 5, Checkpoint: 6, Finish: 7, Epsp: 8, Ipsp: 9, JumpPad: 10, Mover: 11, Laser: 12, Sort: 13, Reflex: 14, ItemBox: 15, Weak: 16 };
   // web 2.5 tuning (Unity/C# parity = { width: 1, arcade: false }): wider roads, arcade drift
   const TUNE = { width: 1.45, arcade: true, gap: 560, gateTail: 220 };   // gap/gateTail: room for STAR-01 to finish talking between questions (Unity: 320 / 0)
 
@@ -627,8 +653,12 @@ const NR = (function () {
     pointAt(s) { const [i, f] = this.idx(s); return lerpV(this.pos[i], this.pos[i + 1], f); }
     tangentAt(s) { const [i, f] = this.idx(s); return norm(lerpV(this.tan[i], this.tan[i + 1], f)); }
     curvatureAt(s) { const [i, f] = this.idx(s); return lerp(this.curv[i], this.curv[i + 1], f); }
-    rightAt(s) { const t = this.tangentAt(s); let r = V(t.z, 0, -t.x); if (r.x * r.x + r.z * r.z < 1e-6) r = V(1, 0, 0); return norm(r); }
-    worldPos(s, x, y) { return add(add(this.pointAt(s), mul(this.rightAt(s), x)), mul(UP, y)); }
+    // 4.6: optional roll around the travel direction (360° corkscrew = riding the tube walls)
+    rollAt(s) { const R = this.roll; if (!R) return 0; const u = clamp01((s - R.s0) / (R.s1 - R.s0)); return R.turns * Math.PI * 2 * u * u * (3 - 2 * u); }
+    flatRight(s) { const t = this.tangentAt(s); let r = V(t.z, 0, -t.x); if (r.x * r.x + r.z * r.z < 1e-6) r = V(1, 0, 0); return norm(r); }
+    rightAt(s) { const r = this.flatRight(s); if (!this.roll) return r; const a = this.rollAt(s); return norm(add(mul(r, Math.cos(a)), mul(UP, Math.sin(a)))); }
+    upAt(s) { if (!this.roll) return UP; const r = this.flatRight(s), a = this.rollAt(s); return norm(sub(mul(UP, Math.cos(a)), mul(r, Math.sin(a)))); }
+    worldPos(s, x, y) { if (!this.roll) return add(add(this.pointAt(s), mul(this.flatRight(s), x)), mul(UP, y)); return add(add(this.pointAt(s), mul(this.rightAt(s), x)), mul(this.upAt(s), y)); }
     sortEvents() { this.events.sort((a, b) => a.s - b.s); }
   }
 
@@ -665,8 +695,8 @@ const NR = (function () {
     trigger(tag, ahead = 0) { this.event(EV.Trigger, 0, tag, ahead); return this; }
     eventAt(type, sFromNow, x, tag = null) { const e = mkEvent(type, this.polyLen + sFromNow, x, tag); this.pending.push(e); return e; }
     straightWith(L, count, make, rise = 0) { for (let i = 0; i < count; i++) make(i, L * (i + 1) / (count + 1)); return this.straight(L, rise); }
-    cut(name, zone, hw, theme = null) {
-      const W = TUNE.width, seg = this.graph.add(name, zone, hw * W); seg.theme = theme; seg.build(this.pts.slice());
+    cut(name, zone, hw, theme = null, extra = null) {
+      const W = TUNE.width, seg = this.graph.add(name, zone, hw * W); seg.theme = theme; seg.build(this.pts.slice()); if (extra) Object.assign(seg, extra);
       const scale = this.polyLen > 1e-3 ? seg.length / this.polyLen : 1;
       for (const e of this.pending) {
         e.s = clamp(e.s * scale, 0, seg.length); seg.events.push(e);
@@ -681,13 +711,14 @@ const NR = (function () {
       this.prevSeg = seg; this.pts = [this.pos]; this.polyLen = 0; return seg;
     }
     // 4.0: risk/reward split without a question: lane 0 = safe (few orbs), lane 1 = risky (movers, lasers, many orbs)
-    split(approach, length, bulge) {
+    split(approach, length, bulge, bulge1) {
       const laneX = laneXs(2, 9 * TUNE.width); approach.fork = { questionId: null, laneX, correctLane: -1, free: true, labels: ["안전 루트", "위험 루트 · 보상 ×3"] }; approach.nextStartOffset = laneX;
       const F = this.pos, f = this.fwd, r = this.right, M = add(F, mul(f, length)), branches = [], mergeOffsets = [];
       for (let i = 0; i < 2; i++) {
         const o = laneX[i], oEnd = o * 0.3; mergeOffsets.push(oEnd);
         const bp = [add(F, mul(r, o)), add(add(F, mul(f, 20)), mul(r, o))], n = Math.ceil((length - 40) / 8);
-        for (let k = 1; k < n; k++) { const t = k / n, along = 20 + (length - 40) * t; bp.push(add(add(F, mul(f, along)), mul(r, lerp(o, oEnd, t) + sign(o) * bulge * Math.sin(Math.PI * t)))); }
+        const bg = i === 1 && bulge1 != null ? bulge1 : bulge;
+        for (let k = 1; k < n; k++) { const t = k / n, along = 20 + (length - 40) * t; bp.push(add(add(F, mul(f, along)), mul(r, lerp(o, oEnd, t) + sign(o) * bg * Math.sin(Math.PI * t)))); }
         bp.push(add(sub(M, mul(f, 20)), mul(r, oEnd))); bp.push(add(M, mul(r, oEnd)));
         const seg = this.graph.add(i ? "위험 루트" : "안전 루트", ZONE.Normal, 6 * TUNE.width); seg.theme = approach.theme; seg.build(bp); seg.risk = i === 1;
         const L = seg.length, W = TUNE.width;
@@ -699,6 +730,15 @@ const NR = (function () {
         seg.sortEvents(); approach.next.push(seg); branches.push(seg);
       }
       this.pendingMerge = branches; this.pendingMergeOffsets = mergeOffsets; this.prevSeg = null; this.pos = M; this.pts = [this.pos]; this.polyLen = 0; return branches;
+    }
+    // 4.6 neuroplasticity: lane 1 is a short path that is walled off until the player has mastered the chapter (STATE.plastic >= 3)
+    plasticSplit(approach, length, open, level) {
+      const branches = this.split(approach, length, 110, 8);
+      approach.fork.labels = ["기존 경로", open ? "가소성 지름길 (개방!)" : `가소성 지름길 (강화 ${level}/3)`]; approach.fork.kind = "plastic"; approach.fork.open = open;
+      const sc = branches[1]; sc.events = sc.events.filter(e => e.type === EV.Orb); sc.risk = false; sc.name = "가소성 지름길";
+      if (!open) { const wall = mkEvent(EV.Obstacle, 25, 0, "barrier"); wall.width = 40; wall.height = 99; sc.events.push(wall); }
+      else for (let k = 0; k < 6; k++) { const pad = mkEvent(EV.JumpPad, 40 + k * 55, 0, "boost"); pad.width = 6; sc.events.push(pad); }
+      sc.sortEvents(); return branches;
     }
     fork(approach, q, length, bulge, spacing) {
       const lanes = q.options.length, laneX = laneXs(lanes, spacing * TUNE.width);
@@ -798,16 +838,21 @@ const NR = (function () {
     return 120 + items.length * gap + 40;
   }
 
+  const STATE = { plastic: 0 };   // set by the app before building a course
+  function itemRow(b, s) { [-3.2, 0, 3.2].forEach(x => b.eventAt(EV.ItemBox, s, x, "item")); }
+
   // ---------------- 4.0 racing set pieces ----------------
   function piece(b, kind, theme, dir) {
     const W = TUNE.width;
     switch (kind) {
       case "sprint": {   // long straight with boost pads and orb lines
+        itemRow(b, 280);
         [60, 210, 360].forEach(s => { const p = b.eventAt(EV.JumpPad, s, 0, "boost"); p.width = 6; });
         for (let k = 0; k < 10; k++) b.eventAt(EV.Orb, 30 + k * 45, 2.6 * Math.sin(k * 0.7));
         b.straight(480); return b.cut("고속 직선 구간", ZONE.Normal, 6, theme);
       }
       case "scurve": {
+        itemRow(b, 30);
         b.trigger("hint:scurve", 0); for (let k = 0; k < 8; k++) b.eventAt(EV.Orb, 20 + k * 40, (k % 4 < 2 ? 1 : -1) * 2.8 * dir);
         b.turn(dir * 60, 85); b.turn(-dir * 120, 85); b.turn(dir * 60, 85); return b.cut("S자 커브", ZONE.Normal, 6, theme);
       }
@@ -818,6 +863,7 @@ const NR = (function () {
         b.straight(400, 6); return b.cut("점프대 구간", ZONE.Normal, 6, theme);
       }
       case "movers": {
+        itemRow(b, 20);
         b.trigger("hint:movers", 0);
         [70, 140, 210, 280].forEach((s, k) => { const m = b.eventAt(EV.Mover, s, 0, "mover"); Object.assign(m, { amp: 4.2, w: 1.6 + k * 0.25, ph: k * 1.3, width: 3.2, height: 1.4 }); b.eventAt(EV.Orb, s + 30, -2.5 * Math.sin(k)); });
         b.straight(360); b.turn(dir * 35, 150); return b.cut("움직이는 NULL 구간", ZONE.Normal, 6, theme);
@@ -847,6 +893,28 @@ const NR = (function () {
         const t = b.event(EV.Trigger, 0, "line:on", 15); t.lineAmp = 3.4; t.lineLen = 90;
         b.straight(120); b.turn(dir * 40, 160); b.straight(120); b.turn(-dir * 40, 160); b.straight(60); b.event(EV.Trigger, 0, "line:off", -12);
         return b.cut("소뇌 균형 라인", ZONE.Normal, 6, theme);
+      }
+      case "loop": {   // 360° corkscrew: needs speed on entry
+        b.trigger("hint:loop", 0); b.straight(110);
+        b.event(EV.Trigger, 0, "loop:check", 6); b.eventAt(EV.Trigger, 300, 0, "loop:done");
+        for (let k = 0; k < 6; k++) b.eventAt(EV.Orb, 60 + k * 36, 0);
+        b.straight(330); return b.cut("360° 루프 — 축삭 벽 타기", ZONE.Normal, 6, theme, { roll: { s0: 120, s1: 410, turns: dir } });
+      }
+      case "collapse": {   // axon degeneration chasing from behind
+        b.trigger("collapse:on", 10).trigger("hint:collapse", 0);
+        [90, 200, 330, 450].forEach((s, k) => { const o = b.eventAt(EV.Obstacle, s, k % 2 ? 3 : -3, "glitch"); o.width = 3.4; o.height = 1.4; });
+        [140, 270, 400].forEach((s, k) => { b.eventAt(EV.RepairOrb, s, k % 2 ? -2.6 : 2.6).index = k; });
+        for (let k = 0; k < 8; k++) b.eventAt(EV.Orb, 60 + k * 60, 0);
+        b.straight(200); b.turn(dir * 40, 170); b.straight(220); b.event(EV.Trigger, 0, "collapse:off", -5);
+        return b.cut("축삭 붕괴 탈출", ZONE.Damaged, 6, theme);
+      }
+      case "warp": {   // synapse warp portal: the synaptic transmission mini-mission, success = warp boost
+        b.trigger("hint:warp", 0); b.eventAt(EV.Trigger, 170, 0, "synapse:warp"); b.straight(260);
+        return b.cut("시냅스 워프 포털", ZONE.Synapse, 5, theme);
+      }
+      case "plastic": {
+        b.trigger("hint:plastic", 0); b.straight(220); const ap = b.cut("신경가소성 갈림길", ZONE.ForkApproach, 9, theme);
+        const lv = (STATE.plastic || 0); b.plasticSplit(ap, 440, lv >= 3, lv); return ap;
       }
       case "reflex": {   // spinal reflexes: react to the stimulus with the matching action
         b.trigger("mission:reflex", 2);
@@ -905,7 +973,7 @@ const NR = (function () {
       const gate = b.eventAt(EV.Gate, s0 + 175, 0, "ap"); gate.questionId = id; gate.laneX = laneXs(q.options.length, 6); gate.correctLane = q.answer; gate.index = g;
     });
     b.straight(60 + AP.length * GAP); b.cut("활동전위 게이트", ZONE.Normal, 9);
-    piece(b, "jumppads", null, -1);
+    piece(b, "jumppads", null, -1); piece(b, "loop", null, 1); piece(b, "plastic", null, -1);
     b.trigger("story:saltatory", 0).trigger("codex:myelin", 0).trigger("codex:ranvier", 30);
     b.straight(300); b.turn(40, 200); b.straight(300); b.turn(-50, 180, 8); b.straight(220);
     { const total = b.distance; let k = 0; for (let d = 45; d < total - 30; d += 55, k++) { const r = b.eventAt(EV.NodeRing, d - total, 3.2 * Math.sin(k * 0.9)); r.width = 2.6; r.index = k; } }
@@ -923,7 +991,7 @@ const NR = (function () {
       const gate = b.eventAt(EV.Gate, 540 - total, 0, "glia"); gate.questionId = qG.id; gate.laneX = laneXs(qG.options.length, 4); gate.correctLane = qG.answer;
     }
     b.cut("수초 손상 구간", ZONE.Damaged, 6);
-    piece(b, "movers", null, 1);
+    piece(b, "collapse", null, -1); piece(b, "movers", null, 1);
     b.trigger("codex:terminal", 0).trigger("banner:terminal", 0);
     b.straight(120); b.turn(90, 70); b.straightWith(80, 3, (i, s) => b.eventAt(EV.Orb, s, 0)); b.turn(-120, 45); b.straight(100);
     b.event(EV.Checkpoint, 0, "cp2"); b.cut("축삭종말", ZONE.Normal, 6);
@@ -950,7 +1018,7 @@ const NR = (function () {
     b.straightWith(160, 4, (i, s) => b.eventAt(EV.Orb, s, 0), 8); b.turn(60, 110); b.straight(80); b.turn(-70, 90);
     b.cut("마루엽 지구 (Parietal)", ZONE.Normal, 6, "parietal");
     gate("ch7_gate_neglect", 40, "lobe", 6); b.straight(280); b.cut("마루엽 · 공간 인식 게이트", ZONE.Normal, 9, "parietal");
-    piece(b, "movers", "parietal", 1);
+    piece(b, "movers", "parietal", 1); piece(b, "loop", "parietal", -1); piece(b, "plastic", "parietal", 1);
     b.trigger("forkq:ch7_fork_a1", 0); b.straight(300); f = b.cut("청각 정보 갈림길", ZONE.ForkApproach, 9, "parietal"); b.fork(f, bank.get("ch7_fork_a1"), 400, 160, 6);
     b.trigger("story:ch7_temporal", 0).trigger("codex:temporal", 0).trigger("codex:a1", 20);
     b.turn(-45, 160, -6); b.straightWith(140, 3, (i, s) => b.eventAt(EV.Orb, s, 2.6 * Math.sin(i * 1.3))); b.turn(80, 70); b.straight(60);
@@ -966,7 +1034,51 @@ const NR = (function () {
   }
 
   const CH9_BOSS = ["ch9_boss_cst", "ch9_boss_hemianopia", "ch9_boss_cerebellum", "ch9_boss_lmn", "ch9_boss_wernicke"];
-  function chapter9(bank) {
+  function chapter9(bank) { return TUNE.arcade ? bossArena(bank) : chapter9Classic(bank); }
+  // 4.6 NULL boss in three phases. The boss only loses HP when STAR-01 hits an exposed weak point;
+  // a correct diagnosis (gate) exposes the weak point behind it, a wrong one triggers a counterattack.
+  function bossArena(bank) {
+    const R = 170, b = new Builder(V(R, 0, 0), 0), arc = (deg, rise) => b.turn(-deg, R, rise);
+    const weak = (s, x, need, dmg, final) => { const w = b.eventAt(EV.Weak, s, x, final ? "core" : "weak"); w.need = need; w.dmg = dmg; w.final = !!final; return w; };
+    // PHASE 1 - signal disruption: lasers, moving NULL blocks, pulses; collect energy
+    b.trigger("story:ch9_intro", 1).trigger("boss:phase1", 110).trigger("codex:decussation", 60);
+    [70, 150, 230, 320, 400].forEach((s, k) => {
+      if (k % 2 === 0) { const L = b.eventAt(EV.Laser, s, 0, "laser"); Object.assign(L, { period: 1.7, on: 0.8, ph: k * 0.37 }); }
+      else { const m = b.eventAt(EV.Mover, s, 0, "mover"); Object.assign(m, { amp: 4, w: 1.9 + k * 0.2, ph: k, width: 3.4, height: 1.4 }); }
+      b.eventAt(EV.Orb, s + 35, 0); b.eventAt(EV.Orb, s + 45, (k % 2 ? 2.8 : -2.8));
+    });
+    itemRow(b, 440);
+    arc(80, 4); arc(80, 4); b.cut("PHASE 1 · 신호 교란", ZONE.Normal, 7, "boss");
+    // PHASE 2 - diagnosis exposes weak points
+    b.trigger("boss:phase2", 5);
+    CH9_BOSS.forEach((id, k) => {
+      const q = bank.get(id);
+      b.eventAt(EV.Trigger, 15, 0, "gateq:" + id);
+      const g = b.eventAt(EV.Gate, 190, 0, "boss"); g.questionId = id; g.laneX = laneXs(q.options.length, 6); g.correctLane = q.answer; g.index = k;
+      arc(75, 6); b.cut("PHASE 2 · 진단 게이트 " + (k + 1), ZONE.Normal, 9, "boss");
+      b.trigger("boss:counter:" + id, 5);
+      const wave = b.eventAt(EV.Obstacle, 45, 0, "pulse"); wave.width = 16; wave.height = 1.2;
+      weak(120, [-3, 3, 0, -2.5, 2.5][k], id, 1, false);
+      const L = b.eventAt(EV.Laser, 180, 0, "laser"); Object.assign(L, { period: 1.6, on: 0.75, ph: k * 0.3 });
+      b.eventAt(EV.Orb, 90, 0); b.eventAt(EV.Orb, 150, 0);
+      arc(80, 6); b.cut("NULL 약점 노출 구간", ZONE.Normal, 7, "boss");
+    });
+    // PHASE 3 - rapid pattern: rings, lasers, movers, jump pad, final diagnosis and the core
+    b.trigger("boss:phase3", 5);
+    { const total0 = 0; for (let k = 0; k < 8; k++) { const r = b.eventAt(EV.NodeRing, 40 + k * 32, 3 * Math.sin(k * 0.9)); r.width = 2.6; r.index = k; } }
+    [310, 370].forEach((s, k) => { const L = b.eventAt(EV.Laser, s, 0, "laser"); Object.assign(L, { period: 1.3, on: 0.65, ph: k * 0.5 }); });
+    { const m = b.eventAt(EV.Mover, 430, 0, "mover"); Object.assign(m, { amp: 4.4, w: 2.6, ph: 1, width: 3.4, height: 1.4 }); }
+    { const p = b.eventAt(EV.JumpPad, 480, 0, "jump"); p.width = 7; const o = b.eventAt(EV.Obstacle, 512, 0, "pulse"); o.width = 16; o.height = 1.2; }
+    arc(70, 3); arc(80, 3); b.cut("PHASE 3 · 최종 패턴", ZONE.Myelin, 7, "boss");
+    b.trigger("forkq:ch9_final_brownsequard", 0).trigger("codex:brown_sequard", 0); arc(70, 2);
+    const f = b.cut("최종 진단 갈림길", ZONE.ForkApproach, 9, "boss"); b.fork(f, bank.get("ch9_final_brownsequard"), 380, 140, 9);
+    b.trigger("story:ch9_final", 0).trigger("hint:core", 10);
+    for (let k = 0; k < 3; k++) { const p = b.eventAt(EV.JumpPad, 40 + k * 45, 0, "boost"); p.width = 6; }
+    weak(200, 0, "ch9_final_brownsequard", 3, true);
+    b.straight(280); b.event(EV.Finish, 0, "finish", -10); b.cut("NULL 코어 — 신경망 복구", ZONE.Normal, 6, "boss");
+    const g = b.graph; g.referenceLength = shortestLength(g); g.parTime = g.referenceLength / 41; g.bossMax = 8; return g;
+  }
+  function chapter9Classic(bank) {
     const R = 170, b = new Builder(V(R, 0, 0), 0), arc = (deg, rise) => b.turn(-deg, R, rise);
     b.trigger("story:ch9_intro", 1).trigger("codex:decussation", 40).trigger("hint:steer", 20);
     arc(60, 4); b.eventAt(EV.Orb, 20, -2); b.eventAt(EV.Orb, 60, 2); arc(50, 4); b.cut("NULL 아레나 외곽", ZONE.Normal, 7, "boss");
@@ -1011,7 +1123,7 @@ const NR = (function () {
           xs.forEach((x, i) => { const full = i === 2, o = b.eventAt(EV.Obstacle, 60 + i * 55, x, full ? "pulse" : "glitch"); o.width = full ? 16 : 3.2; o.height = 1.3; b.eventAt(EV.Orb, 85 + i * 55, -x * 0.8); });
           b.straight(360); b.turn(dir * 40, 140); b.cut(obs++ === 0 ? "NULL 교란 구간" : "NULL 교란 구간 " + obs, ZONE.Normal, 6, theme); break;
         }
-        case "sprint": case "scurve": case "jumppads": case "movers": case "lasers": case "narrow": case "dzone": case "rings": case "split": case "balance": case "reflex": piece(b, kind, theme, dir); break;
+        case "sprint": case "scurve": case "jumppads": case "movers": case "lasers": case "narrow": case "dzone": case "rings": case "split": case "balance": case "reflex": case "loop": case "collapse": case "warp": case "plastic": piece(b, kind, theme, dir); break;
         case "sort": case "cross": { const L = sortRun(b, arg, kind === "cross" ? 125 : 150); b.straight(L); b.cut(kind === "cross" ? "신경 교차 드리프트" : "포털 미션", ZONE.Normal, 9, theme); break; }
         case "excite": case "inhibit": integrationZone(b, kind, kind === "excite" ? "EPSP 가중 구간" : "IPSP 억제 구간", theme, dir); break;
         case "orbs": b.straightWith(200, 6, (i, s) => b.eventAt(EV.Orb, s, 2.6 * Math.sin(i * 1.2))); b.turn(dir * 50, 130, 5); b.cut("신호 가속 구간", ZONE.Normal, 6, theme); break;
@@ -1026,7 +1138,7 @@ const NR = (function () {
   const Q = (ch, theme, title, subtitle, goals, steps) => ({ id: "ch" + ch, chapter: ch, title, subtitle, introStory: "ch" + ch + "_intro", gateTitle: title + " 게이트", goals, boss: false, build: bank => quizCourse(bank, theme, subtitle, steps) });
   // 4.5 survival: a long run of random set pieces (difficulty ramps in the app via speedScale/energy drain)
   function survivalCourse(bank) {
-    const pool = ["sprint", "scurve", "jumppads", "movers", "lasers", "narrow", "dzone", "rings", "split", "hairpin", "obstacles", "excite"];
+    const pool = ["sprint", "scurve", "jumppads", "movers", "lasers", "narrow", "dzone", "rings", "split", "hairpin", "obstacles", "excite", "loop", "collapse"];
     const steps = ["warm"]; let last = "";
     for (let i = 0; i < 26; i++) { let k; do { k = pool[(Math.random() * pool.length) | 0]; } while (k === last); steps.push(k); last = k; }
     steps.push("finish");
@@ -1035,18 +1147,18 @@ const NR = (function () {
   const SURVIVAL = { id: "survival", chapter: 0, title: "서바이벌", subtitle: "끝없는 신경 질주", introStory: "", gateTitle: "", goals: [], boss: false, build: survivalCourse };
   const STAGES = [
     { id: "ch1", chapter: 1, title: "뉴런과 신경신호", subtitle: "뉴런 고속도로", introStory: "prologue", gateTitle: "활동전위 게이트", goals: ["뉴런의 구조", "활동전위", "도약전도", "시냅스 전달"], boss: false, build: chapter1 },
-    Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "sprint", "fork:ch2_fork_horn", "reflex", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "jumppads", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "split", "codex:reciprocal_inhibition", "inhibit", "gate:ch2_gate_reciprocal", "reflex", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
-    Q(3, "tract", "감각 오름로·운동 내림로", "신경로 고속도로", ["뒤기둥-안쪽섬유띠계", "앞가쪽계", "겉질척수로", "교차 위치"], ["story:ch3_intro", "codex:dcml", "warm", "cross:dcml", "fork:ch3_fork_dcml", "gate:ch3_gate_dcml_cross", "codex:spinothalamic", "cross:stt", "gate:ch3_gate_stt_cross", "excite", "codex:spinocerebellar", "gate:ch3_gate_scb", "scurve", "codex:cst", "cross:cst", "fork:ch3_fork_cst", "gate:ch3_gate_cst_cross", "lasers", "codex:vestibulospinal", "gate:ch3_gate_vst", "story:ch3_final", "finish"]),
-    Q(4, "brainstem", "뇌줄기", "뇌줄기 터널", ["중간뇌 구조", "다리뇌와 소뇌 연결", "숨뇌 생명 중추", "뇌줄기 뇌신경핵"], ["story:ch4_intro", "codex:midbrain", "warm", "excite", "sort:nuclei", "codex:substantia_nigra", "gate:ch4_gate_sn", "gate:ch4_gate_sc", "fork:ch4_fork_ic", "rings", "gate:ch4_gate_aqueduct", "gate:ch4_gate_cn_midbrain", "codex:pons", "movers", "fork:ch4_fork_pons", "sprint", "codex:medulla", "gate:ch4_gate_medulla", "story:ch4_final", "finish"]),
-    Q(5, "cerebellum", "소뇌", "소뇌 균형 서킷", ["소뇌의 기능", "조롱박세포", "소뇌다리", "소뇌 증상"], ["story:ch5_intro", "codex:cerebellum", "warm", "balance", "gate:ch5_gate_function", "dzone", "codex:purkinje", "inhibit", "gate:ch5_gate_purkinje", "scurve", "codex:cerebellar_peduncles", "fork:ch5_fork_mcp", "gate:ch5_gate_scp", "balance", "narrow", "gate:ch5_gate_vermis", "dzone", "gate:ch5_gate_tremor", "story:ch5_final", "finish"]),
-    Q(6, "diencephalon", "사이뇌", "사이뇌 중계 기지", ["시상 중계핵", "시상하부 항상성", "뇌하수체 조절", "솔방울샘"], ["story:ch6_intro", "codex:thalamus", "warm", "sort:relay", "fork:ch6_fork_thalamus", "gate:ch6_gate_vpl", "gate:ch6_gate_lgn", "excite", "split", "codex:hypothalamus", "fork:ch6_fork_hypothal", "lasers", "gate:ch6_gate_pituitary", "sprint", "codex:pineal", "gate:ch6_gate_pineal", "story:ch6_final", "finish"]),
+    Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "sprint", "fork:ch2_fork_horn", "reflex", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "jumppads", "loop", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "split", "warp", "plastic", "codex:reciprocal_inhibition", "inhibit", "gate:ch2_gate_reciprocal", "reflex", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
+    Q(3, "tract", "감각 오름로·운동 내림로", "신경로 고속도로", ["뒤기둥-안쪽섬유띠계", "앞가쪽계", "겉질척수로", "교차 위치"], ["story:ch3_intro", "codex:dcml", "warm", "cross:dcml", "fork:ch3_fork_dcml", "gate:ch3_gate_dcml_cross", "codex:spinothalamic", "cross:stt", "gate:ch3_gate_stt_cross", "excite", "codex:spinocerebellar", "gate:ch3_gate_scb", "scurve", "loop", "plastic", "codex:cst", "cross:cst", "fork:ch3_fork_cst", "gate:ch3_gate_cst_cross", "lasers", "warp", "codex:vestibulospinal", "gate:ch3_gate_vst", "story:ch3_final", "finish"]),
+    Q(4, "brainstem", "뇌줄기", "뇌줄기 터널", ["중간뇌 구조", "다리뇌와 소뇌 연결", "숨뇌 생명 중추", "뇌줄기 뇌신경핵"], ["story:ch4_intro", "codex:midbrain", "warm", "excite", "sort:nuclei", "codex:substantia_nigra", "gate:ch4_gate_sn", "gate:ch4_gate_sc", "fork:ch4_fork_ic", "rings", "gate:ch4_gate_aqueduct", "gate:ch4_gate_cn_midbrain", "codex:pons", "movers", "collapse", "plastic", "fork:ch4_fork_pons", "sprint", "warp", "codex:medulla", "gate:ch4_gate_medulla", "story:ch4_final", "finish"]),
+    Q(5, "cerebellum", "소뇌", "소뇌 균형 서킷", ["소뇌의 기능", "조롱박세포", "소뇌다리", "소뇌 증상"], ["story:ch5_intro", "codex:cerebellum", "warm", "balance", "gate:ch5_gate_function", "dzone", "codex:purkinje", "inhibit", "gate:ch5_gate_purkinje", "scurve", "loop", "plastic", "codex:cerebellar_peduncles", "fork:ch5_fork_mcp", "gate:ch5_gate_scp", "balance", "narrow", "warp", "gate:ch5_gate_vermis", "dzone", "gate:ch5_gate_tremor", "story:ch5_final", "finish"]),
+    Q(6, "diencephalon", "사이뇌", "사이뇌 중계 기지", ["시상 중계핵", "시상하부 항상성", "뇌하수체 조절", "솔방울샘"], ["story:ch6_intro", "codex:thalamus", "warm", "sort:relay", "fork:ch6_fork_thalamus", "gate:ch6_gate_vpl", "gate:ch6_gate_lgn", "excite", "split", "loop", "plastic", "codex:hypothalamus", "fork:ch6_fork_hypothal", "lasers", "gate:ch6_gate_pituitary", "sprint", "warp", "codex:pineal", "gate:ch6_gate_pineal", "story:ch6_final", "finish"]),
     { id: "ch7", chapter: 7, title: "대뇌", subtitle: "대뇌 도시", introStory: "ch7_intro", gateTitle: "대뇌 기능 게이트", goals: ["대뇌엽의 위치", "일차운동·감각겉질", "청각·시각겉질", "언어 영역과 실어증"], boss: false, build: chapter7 },
-    Q(8, "cranial", "12뇌신경", "12뇌신경 포털", ["눈 운동 신경", "얼굴의 신경", "감각·운동·혼합 분류", "아래 뇌신경"], ["story:ch8_intro", "codex:cn_overview", "warm", "excite", "sort:cranial", "gate:ch8_gate_sensory", "codex:cn_eye", "gate:ch8_gate_abducens", "rings", "gate:ch8_gate_trochlear", "jumppads", "codex:cn_face", "fork:ch8_fork_facial", "gate:ch8_gate_trigeminal", "narrow", "codex:cn_lower", "fork:ch8_fork_hypoglossal", "gate:ch8_gate_vagus", "gate:ch8_gate_accessory", "story:ch8_final", "finish"]),
+    Q(8, "cranial", "12뇌신경", "12뇌신경 포털", ["눈 운동 신경", "얼굴의 신경", "감각·운동·혼합 분류", "아래 뇌신경"], ["story:ch8_intro", "codex:cn_overview", "warm", "excite", "sort:cranial", "gate:ch8_gate_sensory", "codex:cn_eye", "gate:ch8_gate_abducens", "rings", "gate:ch8_gate_trochlear", "jumppads", "loop", "plastic", "codex:cn_face", "fork:ch8_fork_facial", "gate:ch8_gate_trigeminal", "narrow", "warp", "collapse", "codex:cn_lower", "fork:ch8_fork_hypoglossal", "gate:ch8_gate_vagus", "gate:ch8_gate_accessory", "story:ch8_final", "finish"]),
     { id: "ch9", chapter: 9, title: "임상 챌린지 (NULL)", subtitle: "NULL 보스 아레나", introStory: "ch9_intro", gateTitle: "NULL 진단 게이트", goals: ["병변 위치 추론", "교차와 반대쪽 증상", "위·아래운동신경세포", "척수 반쪽 손상"], boss: true, build: chapter9 },
   ];
 
   // ---------------- RunnerSim (RunnerSim.cs) ----------------
-  const SE = { Trigger: 0, GateResult: 1, ForkChosen: 2, RingHit: 3, RingMiss: 4, ObstacleHit: 5, ObstacleDodged: 6, OrbCollected: 7, RepairOrb: 8, WallHit: 9, Checkpoint: 10, Finish: 11, DriftStart: 12, DriftEnd: 13, BoostStart: 14, Jump: 15, Land: 16, EnterSegment: 17, Fire: 18, Psp: 19, Seizure: 20, MissionEnd: 21, Pad: 22, SortResult: 23, ReflexStart: 24, ReflexResult: 25, LineResult: 26, RingCombo: 27 };
+  const SE = { Trigger: 0, GateResult: 1, ForkChosen: 2, RingHit: 3, RingMiss: 4, ObstacleHit: 5, ObstacleDodged: 6, OrbCollected: 7, RepairOrb: 8, WallHit: 9, Checkpoint: 10, Finish: 11, DriftStart: 12, DriftEnd: 13, BoostStart: 14, Jump: 15, Land: 16, EnterSegment: 17, Fire: 18, Psp: 19, Seizure: 20, MissionEnd: 21, Pad: 22, SortResult: 23, ReflexStart: 24, ReflexResult: 25, LineResult: 26, RingCombo: 27, LoopResult: 28, Collapse: 29, CollapseResult: 30, ItemGet: 31, ItemUse: 32, BossHit: 33, ShieldBlock: 34 };
   const TURBO_TIME = [0, 0.5, 0.9, 1.4], TURBO_ARCADE = [0, 0.9, 1.5, 2.3];
   const VM_REST = -70, VM_THRESH = -55;
   class Sim {
@@ -1064,6 +1176,7 @@ const NR = (function () {
       this.grounded = true; this.finished = false; this.raceTime = 0; this.distance = 0; this.boostEnergy = 0.35; this.boosting = false; this.canFire = true; this.wasBoosting = false;
       this.drifting = false; this.driftDir = 0; this.driftTime = 0; this.driftCharge = 0; this.turboTimer = 0; this.penaltyTimer = 0; this.wallCooldown = 0;
       this.ringChain = 0; this.ringBest = 0; this.ringsHit = 0; this.ringsTotal = 0; this.repairCount = 0; this.coins = 0; this.wallHits = 0; this.obstacleHits = 0; this.curvature = 0; this.events.length = 0;
+      this.loopOk = 0; this.loopFail = 0; this.collapse = null; this.item = null; this.shield = 0; this.dopamine = 0; this.gateOk = {}; this.bossHp = this.graph.bossMax || 0; this.bossMax = this.graph.bossMax || 0;
       this.driftZone = false; this.reflex = null; this.line = null; this.sorts = 0; this.sortsOk = 0; this.reflexOk = 0; this.reflexN = 0; this.superCombos = 0;
       this.vm = VM_REST; this.mission = null; this.missionFires = 0; this.missionSeizure = false; this.refractory = 0; this.fires = 0; this.epsps = 0; this.ipsps = 0;
     }
@@ -1090,6 +1203,12 @@ const NR = (function () {
       else this.speed = Math.max(top, this.speed - 25 * dt);
       if (this.drifting && !TUNE.arcade) this.speed *= (1 - 0.06 * dt);
       this.stepMembrane(dt);
+      if (this.shield > 0) this.shield -= dt; if (this.dopamine > 0) this.dopamine -= dt;
+      if (inp.item && this.item) this.useItem();
+      if (this.collapse) {   // the degeneration wave behind STAR-01 (progress coordinates)
+        const C = this.collapse; C.v = Math.min(C.v + dt * 0.6, this.baseTopSpeed * this.speedScale * 1.0); C.p += C.v * dt;
+        if (C.p >= this.progress) { C.caught++; this.speed *= 0.6; this.addPenalty(1.2); this.boostEnergy = Math.max(0, this.boostEnergy - 0.2); C.p = this.progress - 45; this.emit(SE.Collapse, null, -1, false, C.caught); }
+      }
       if (this.reflex) { const R = this.reflex; if (inp.jump) R.j = true; if (inp.boost) R.b = true; if (inp.drift) R.d = true; }
       if (this.line) {   // cerebellum mission: NULL makes STAR-01 sway (ataxia); stay on the precision line
         const L = this.line; if (this.seg === L.seg) { L.total += dt; if (Math.abs(this.x - this.lineX()) < 1.7) L.inside += dt; }
@@ -1135,7 +1254,17 @@ const NR = (function () {
       this.driftPrecision = precision; this.driftCharge = Math.min(0.5, this.driftCharge + dt * 0.12 * (0.25 + 0.75 * precision));
     }
     lineX(s) { const L = this.line; if (!L) return 0; const u = ((s == null ? this.s : s) - L.s0) / L.len; return L.amp * Math.sin(u * Math.PI * 2); }
+    // 4.6 neurotransmitter items (educational analogies, see app text)
+    useItem() {
+      const it = this.item; this.item = null;
+      if (it === "glu") { if (this.refractory <= 0) this.vm += 12; this.addTurbo(1.0); }
+      else if (it === "gaba") { this.shield = 4; this.vm -= 12; }
+      else if (it === "ach") { if (this.grounded) { this.vy = 17.5; this.grounded = false; } this.addTurbo(0.6); }
+      else if (it === "dopa") { this.dopamine = 6; this.addEnergy(0.25); }
+      this.emit(SE.ItemUse, null, -1, true, 0, it);
+    }
     hitBy(e, kind) {   // shared collision response (4.0: costs speed AND energy)
+      if (this.shield > 0 && kind !== "barrier") { this.shield = 0; this.emit(SE.ShieldBlock, e, -1, true, 0, kind); return; }
       this.obstacleHits++; this.speed *= kind === "laser" ? 0.7 : 0.6; this.addPenalty(kind === "laser" ? 0.8 : 1.0); this.boostEnergy = Math.max(0, this.boostEnergy - 0.12);
       if (this.drifting) { this.drifting = false; this.driftTime = 0; this.driftCharge = 0; } this.emit(SE.ObstacleHit, e, -1, false, 0, kind);
     }
@@ -1165,6 +1294,7 @@ const NR = (function () {
       const from = this.seg; if (!from.next.length) return false;
       if (from.next.length > 1 && from.fork) {
         const lane = Sim.nearest(from.fork.laneX, this.x); this.x -= from.nextStartOffset[lane]; this.seg = from.next[lane];
+        if (from.fork.questionId) this.gateOk[from.fork.questionId] = lane === from.fork.correctLane;
         this.emit(SE.ForkChosen, null, lane, from.fork.free ? true : lane === from.fork.correctLane, from.fork.free ? 1 : 0, from.fork.questionId);
       } else { this.x += from.mergeOffset; this.seg = from.next[0]; }
       if (this.seg.zone !== ZONE.Myelin && from.zone === ZONE.Myelin) this.ringChain = 0;
@@ -1176,7 +1306,11 @@ const NR = (function () {
         if (this.own) this.own.add(e); else e.consumed = true;
         switch (e.type) {
           case EV.Trigger:
-            if (e.tag === "dzone:on") this.driftZone = true; else if (e.tag === "dzone:off") this.driftZone = false;
+            if (e.tag === "loop:check") { this.inLoop = true; const need = this.baseTopSpeed * this.speedScale * 0.72; if (this.speed < need) { this.loopFail++; this.speed *= 0.75; this.addPenalty(1.0); this.emit(SE.LoopResult, e, -1, false, 0, "slow"); } else this.loopEntry = true; }
+            else if (e.tag === "loop:done") { this.inLoop = false; if (this.loopEntry) { this.loopOk++; this.addTurbo(1.4); this.addEnergy(0.15); this.emit(SE.LoopResult, e, -1, true, 0, "ok"); } this.loopEntry = false; }
+            else if (e.tag === "collapse:on") this.collapse = { p: this.progress - 75, v: this.speed * 0.85, caught: 0 };
+            else if (e.tag === "collapse:off" && this.collapse) { const ok = this.collapse.caught === 0; if (ok) { this.addTurbo(1.6); this.addEnergy(0.3); } this.emit(SE.CollapseResult, e, -1, ok, this.collapse.caught); this.collapse = null; }
+            else if (e.tag === "dzone:on") this.driftZone = true; else if (e.tag === "dzone:off") this.driftZone = false;
             else if (e.tag === "line:on") this.line = { seg: this.seg, s0: e.s, amp: e.lineAmp || 3, len: e.lineLen || 90, inside: 0, total: 0 };
             else if (e.tag === "line:off" && this.line) { const L = this.line, ratio = L.total > 0 ? L.inside / L.total : 0, ok = ratio >= 0.6; if (ok) { this.addTurbo(2.2); this.addEnergy(0.4); } this.emit(SE.LineResult, e, -1, ok, 0, ratio.toFixed(2)); this.line = null; }
             else if (e.tag && e.tag.startsWith("reflex:")) { this.reflex = { kind: e.tag.slice(7), side: e.side || 1, j: false, b: false, d: false }; this.emit(SE.ReflexStart, e, -1, true, 0, this.reflex.kind); }
@@ -1196,7 +1330,13 @@ const NR = (function () {
             break;
           case EV.Checkpoint: this.emit(SE.Checkpoint, e); break;
           case EV.Finish: this.finished = true; this.emit(SE.Finish, e); return;
-          case EV.Gate: { const lane = Sim.nearest(e.laneX, this.x), ok = lane === e.correctLane; if (ok) { this.addTurbo(0.8); this.addEnergy(0.15); if (e.tag === "glia") this.repairCount = Math.max(this.repairCount, 3); } else this.addPenalty(1.8); this.emit(SE.GateResult, e, lane, ok); break; }
+          case EV.ItemBox: if (Math.abs(this.x - e.x) < 1.8 && this.y < 2.6 && !this.item) { const pool = ["glu", "glu", "gaba", "gaba", "ach", "dopa"]; this.item = pool[(Math.random() * pool.length) | 0]; this.emit(SE.ItemGet, e, -1, true, 0, this.item); } break;
+          case EV.Weak: if (Math.abs(this.x - e.x) < 2.4 && this.bossMax) {
+              if (e.need && !this.gateOk[e.need]) break;   // still shielded: a wrong diagnosis keeps the weak point closed
+              const dmg = e.final && !(this.boosting || this.turboTimer > 0) ? 1 : e.dmg; this.bossHp = Math.max(0, this.bossHp - dmg); this.addTurbo(0.8);
+              this.emit(SE.BossHit, e, -1, true, dmg, e.final ? "core" : "weak");
+            } break;
+          case EV.Gate: { const lane = Sim.nearest(e.laneX, this.x), ok = lane === e.correctLane; if (e.questionId) this.gateOk[e.questionId] = ok; if (ok) { this.addTurbo(0.8); this.addEnergy(0.15); if (e.tag === "glia") this.repairCount = Math.max(this.repairCount, 3); } else this.addPenalty(1.8); this.emit(SE.GateResult, e, lane, ok); break; }
           case EV.NodeRing: this.ringsTotal++; if (Math.abs(this.x - e.x) < e.width) {
               this.ringChain++; this.ringsHit++; this.ringBest = Math.max(this.ringBest, this.ringChain); this.addEnergy(0.03);
               const perfect = Math.abs(this.x - e.x) < 0.7; this.emit(SE.RingHit, e, -1, perfect, this.ringChain);
@@ -1246,10 +1386,11 @@ const NR = (function () {
     }
     think(sim) {
       const seg = sim.seg; let targetX = 0, have = false, jump = false; const look = Math.max(60, sim.speed * 2.2);
-      if (seg.fork && seg.length - sim.s < 220) { targetX = seg.fork.free ? seg.fork.laneX[this.risky ? 1 : 0] : seg.fork.laneX[this.chooseLane(seg.fork.questionId, seg.fork.correctLane, seg.fork.laneX.length)]; have = true; }
+      if (seg.fork && seg.length - sim.s < 220) { targetX = seg.fork.free ? seg.fork.laneX[seg.fork.kind === "plastic" ? (seg.fork.open ? 1 : 0) : this.risky ? 1 : 0] : seg.fork.laneX[this.chooseLane(seg.fork.questionId, seg.fork.correctLane, seg.fork.laneX.length)]; have = true; }
       let boostReq = false, holdStill = false;
       if (sim.reflex) { const R = sim.reflex; if (R.kind === "stretch") boostReq = true; else if (R.kind === "crossed") { targetX = -R.side * 5; have = true; } else if (R.kind === "recip") holdStill = true; }
       if (sim.line && !have) { targetX = sim.lineX(sim.s + sim.speed * 0.25); have = true; }
+      const useItem = !!sim.item && !sim.reflex;
       for (const e of seg.events) {
         if (have) break; if (sim.used(e) || e.s < sim.s) continue; const d = e.s - sim.s; if (d > look) break;
         if (e.type === EV.Gate) { targetX = e.laneX[this.chooseLane(e.questionId, e.correctLane, e.laneX.length)]; have = true; }
@@ -1258,6 +1399,8 @@ const NR = (function () {
         else if (e.type === EV.Orb && d < 40) { targetX = e.x; have = true; }
         else if (e.type === EV.Sort && d < 220) { targetX = e.laneX[e.correctLane]; have = true; }
         else if (e.type === EV.JumpPad && d < 70) { targetX = e.x; have = true; }
+        else if (e.type === EV.Weak && d < 90 && (!e.need || sim.gateOk[e.need])) { targetX = e.x; have = true; if (e.final) boostReq = true; }
+        else if (e.type === EV.ItemBox && d < 50 && !sim.item) { targetX = e.x; have = true; }
         else if (e.type === EV.Mover && d < 70) { const t = d / Math.max(10, sim.speed), mx = e.x + e.amp * Math.sin((sim.raceTime + t) * e.w + e.ph); targetX = clamp(mx > 0 ? mx - e.width / 2 - 2.6 : mx + e.width / 2 + 2.6, -seg.halfWidth + 1.5, seg.halfWidth - 1.5); have = true; }
         else if (e.type === EV.Laser) { const t = d / Math.max(10, sim.speed); if (d < sim.speed * 0.32 + 1 && ((sim.raceTime + t + e.ph) % e.period) < e.on + 0.15) jump = true; }
         else if (e.type === EV.Reflex && e.tag === "flex" && d < sim.speed * 0.3 + 1) jump = true;
@@ -1268,11 +1411,11 @@ const NR = (function () {
       let steer = clamp(((have ? targetX - sim.x : -sim.x * 0.5) * 2.5 - push) / Math.max(1, sm), -1, 1);
       if (!this.driftHeld && Math.abs(k) > 0.014 && sim.speed > 18) this.driftHeld = true; else if (this.driftHeld && Math.abs(k) < 0.006) this.driftHeld = false;
       if (this.driftHeld && !sim.drifting && Math.abs(steer) < 0.2) steer = sign(k) * 0.3;
-      if (holdStill) return { steer, jump: false, drift: false, boost: false };
+      if (holdStill) return { steer, jump: false, drift: false, boost: false, item: false };
       const o = this.o; this.t += 1 / 60;
       if (o.noise) steer = clamp(steer + Math.sin(this.t * 1.7) * Math.sin(this.t * 0.61 + 2) * o.noise, -1, 1);
       const drift = o.drift === false ? false : this.driftHeld, boostAt = o.boostAt == null ? 0.45 : o.boostAt;
-      return { steer, jump, drift, boost: boostReq || (sim.boostEnergy > boostAt && Math.abs(k) < (o.boostAt != null && o.boostAt < 0.3 ? 0.008 : 0.004)) };
+      return { steer, jump, drift, item: useItem, boost: boostReq || (sim.boostEnergy > boostAt && Math.abs(k) < (o.boostAt != null && o.boostAt < 0.3 ? 0.008 : 0.004)) };
     }
   }
 
@@ -1298,7 +1441,7 @@ const NR = (function () {
     }
   }
 
-  return { SURVIVAL, TUNE, VM_REST, VM_THRESH, V, add, sub, mul, len, norm, clamp, clamp01, lerp, sign, ZONE, EV, SE, STAGES, Sim, AutoPilot, Bank, Session, wrongExp, laneXs, CH9_BOSS };
+  return { STATE, SURVIVAL, TUNE, VM_REST, VM_THRESH, V, add, sub, mul, len, norm, clamp, clamp01, lerp, sign, ZONE, EV, SE, STAGES, Sim, AutoPilot, Bank, Session, wrongExp, laneXs, CH9_BOSS };
 })();
 if (typeof module !== "undefined") module.exports = NR;
 
@@ -1492,15 +1635,16 @@ window.NRW_INIT = function () { window.NRW = (function () {
   const MEMBRANE = 0x7FA8FF;
 
   function frameAt(seg, s, x = 0, y = 0) {
-    const p = M(seg.worldPos(s, x, y)), f = M(seg.tangentAt(s)), up = new THREE.Vector3(0, 1, 0);
+    const p = M(seg.worldPos(s, x, y)), f = M(seg.tangentAt(s)), up = seg.roll ? M(seg.upAt(s)) : new THREE.Vector3(0, 1, 0);
     const z = f.clone().negate(), xa = new THREE.Vector3().crossVectors(up, z).normalize(), ya = new THREE.Vector3().crossVectors(z, xa);
     return { p, q: new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, z)), f };
   }
   // 4.0: same as frameAt but writes into reusable objects (no garbage per frame)
-  const _fa = { up: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(), x: new THREE.Vector3(), y: new THREE.Vector3(), m: new THREE.Matrix4() };
+  const _fa = { u2: new THREE.Vector3(0, 1, 0), up: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(), x: new THREE.Vector3(), y: new THREE.Vector3(), m: new THREE.Matrix4() };
   function frameAtInto(seg, s, x, y, out) {
     const p = seg.worldPos(s, x, y), t = seg.tangentAt(s); out.p.set(-p.x, p.y, p.z); out.f.set(-t.x, t.y, t.z);
-    _fa.z.copy(out.f).negate(); _fa.x.crossVectors(_fa.up, _fa.z).normalize(); _fa.y.crossVectors(_fa.z, _fa.x); out.q.setFromRotationMatrix(_fa.m.makeBasis(_fa.x, _fa.y, _fa.z)); return out;
+    if (seg.roll) { const u = seg.upAt(s); _fa.u2.set(-u.x, u.y, u.z); } else _fa.u2.set(0, 1, 0); if (out.up) out.up.copy(_fa.u2);
+    _fa.z.copy(out.f).negate(); _fa.x.crossVectors(_fa.u2, _fa.z).normalize(); _fa.y.crossVectors(_fa.z, _fa.x); out.q.setFromRotationMatrix(_fa.m.makeBasis(_fa.x, _fa.y, _fa.z)); return out;
   }
   const short = (s, n = 15) => s.length > n ? s.slice(0, n - 1) + "…" : s;
   function labelTex(lines, opts = {}) {
@@ -1671,7 +1815,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
 
   function build(scene, stage, graph, bank, quality) {
     const root = new THREE.Group(); scene.add(root);
-    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forks: new Map(), nodes: [], anim: [], flashes: [], particles: null, nt: null, boss: null, bounds: new THREE.Box3(), low: quality === "low", mid: quality === "mid", psp: [], movers: [], lasers: [], sorts: [], padsList: [] };
+    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forks: new Map(), nodes: [], anim: [], flashes: [], particles: null, nt: null, boss: null, bounds: new THREE.Box3(), low: quality === "low", mid: quality === "mid", psp: [], movers: [], lasers: [], sorts: [], padsList: [], items: [], weaks: [] };
     const B = new Batch(), Z = NR.ZONE;
     for (const seg of graph.segments) {
       const col = segColor(seg), hw = seg.halfWidth, [Rw, H] = tubeRadius(hw);
@@ -1901,9 +2045,23 @@ window.NRW_INIT = function () { window.NRW = (function () {
     } else if (e.type === E.Trigger && e.tag === "dzone:on") {
       const off = seg.events.find(x => x.tag === "dzone:off"), s1 = off ? off.s : seg.length;
       for (let s = e.s + 4; s < s1; s += 9) { const f = frameAt(seg, s, 0, 0.04); const m = new THREE.Mesh(G.box, glow(0xFFB627, 0.55)); m.position.copy(f.p); m.quaternion.copy(f.q); m.scale.set(hw * 1.6, 0.04, 1.2); W.root.add(m); }
-    } else if (e.type === E.Trigger && /^hint:(jumppad|movers|lasers|narrow|dzone|rings|split|scurve)$/.test(e.tag)) {
-      const t = { jumppad: ["점프대", "날아올라 장애물을 넘어라"], movers: ["움직이는 NULL", "빈틈을 노려 피하기"], lasers: ["레이저 장벽", "빨간 빛이 켜질 때 점프!"], narrow: ["좁은 통로", "벽 충돌 주의 · 오브 일렬"], dzone: ["드리프트 충전 구간", "충전 속도 ×1.8"], rings: ["결절 링 콤보", "3·5·10연속 → 부스트"], split: ["갈래 길", "안전 vs 위험(보상 ×3)"], scurve: ["S자 커브", "리듬 타고 좌우로"] }[e.tag.slice(5)];
+    } else if (e.type === E.Trigger && /^hint:(jumppad|movers|lasers|narrow|dzone|rings|split|scurve|loop|collapse|warp|plastic|core)$/.test(e.tag)) {
+      const t = { jumppad: ["점프대", "날아올라 장애물을 넘어라"], movers: ["움직이는 NULL", "빈틈을 노려 피하기"], lasers: ["레이저 장벽", "빨간 빛이 켜질 때 점프!"], narrow: ["좁은 통로", "벽 충돌 주의 · 오브 일렬"], dzone: ["드리프트 충전 구간", "충전 속도 ×1.8"], rings: ["결절 링 콤보", "3·5·10연속 → 부스트"], split: ["갈래 길", "안전 vs 위험(보상 ×3)"], scurve: ["S자 커브", "리듬 타고 좌우로"], loop: ["360° 루프", "최고 속도로 진입!"], collapse: ["축삭 붕괴 탈출", "뒤에서 붕괴 접근 — 멈추지 마!"], warp: ["시냅스 워프 포털", "전달 순서를 완성하면 워프"], plastic: ["신경가소성 갈림길", "반복 학습으로 지름길이 열린다"], core: ["NULL 코어", "부스트 상태로 약점 돌파!"] }[e.tag.slice(5)];
       hologram(W, seg, Math.min(seg.length - 1, e.s + 30), 0, H - 2.2, labelTex(t, { w: 640, h: 200, border: "#FFB627", bg: "rgba(30,14,6,.85)" }), 7, 2.2);
+    } else if (e.type === E.ItemBox) {
+      const m = new THREE.Mesh(G.box, itemMat()); const f = frameAt(seg, e.s, e.x, NR.Sim.HOVER + 0.3); m.position.copy(f.p); m.quaternion.copy(f.q); m.scale.setScalar(1.3); W.root.add(m); W.items.push({ e, m });
+    } else if (e.type === E.Weak) {
+      const grp = new THREE.Group(), f = frameAt(seg, e.s, e.x, NR.Sim.HOVER + 0.6); grp.position.copy(f.p); grp.quaternion.copy(f.q);
+      const big = e.final ? 2.2 : 1.4;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(2.2 * big, 0.22 * big, 8, 40), glow(0xFFD34D, 0.95)); grp.add(ring);
+      const core = new THREE.Mesh(G.ico, new THREE.MeshBasicMaterial({ color: 0xFF2D55, transparent: true, opacity: 0.85 })); core.scale.setScalar(0.9 * big); grp.add(core);
+      const lab = new THREE.Mesh(new THREE.PlaneGeometry(4.5 * big / 1.4, 1.4 * big / 1.4), new THREE.MeshBasicMaterial({ map: labelTex([e.final ? "NULL 코어" : "약점"], { w: 512, h: 160, border: "#FFD34D", bg: "rgba(40,0,10,.85)", bigColor: "#FFD34D" }), transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+      lab.position.y = 3.2 * big; grp.add(lab);
+      grp.visible = !e.need; W.root.add(grp); W.weaks.push({ e, grp, ring, core });
+    } else if (e.type === E.Trigger && e.tag === "synapse:warp") {
+      const f = frameAt(seg, e.s, 0, 4.5), g = new THREE.Group(); g.position.copy(f.p); g.quaternion.copy(f.q);
+      for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(7 - i * 1.2, 0.35, 8, 64), glow([0xFF5CC8, 0x9B5CFF, 0x2EE6D6][i], 0.9)); g.add(t); W.anim.push({ o: t, spin: (i % 2 ? -1 : 1) * (0.6 + i * 0.3), axis: "z" }); }
+      W.root.add(g);
     } else if (e.type === E.Epsp || e.type === E.Ipsp) {
       const f = frameAt(seg, e.s, e.x, NR.Sim.HOVER + 0.4); W.psp.push({ e, ex: e.type === E.Epsp, p: f.p, q: f.q });
     } else if (e.type === E.Trigger && /^integ:(excite|inhibit)$/.test(e.tag)) {
@@ -1914,7 +2072,8 @@ window.NRW_INIT = function () { window.NRW = (function () {
       const m = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.17, 8, 32), glow(0x5CF6FF)); const f = frameAt(seg, e.s, e.x, NR.Sim.HOVER); m.position.copy(f.p); m.quaternion.copy(f.q); W.root.add(m); W.rings.push({ e, m, t: 0 });
     } else if (e.type === E.Obstacle) {
       const pulse = e.width >= hw, w = Math.min(e.width, hw * 2), grp = new THREE.Group(), f = frameAt(seg, e.s, e.x, 0); grp.position.copy(f.p); grp.quaternion.copy(f.q);
-      if (e.tag === "tack") { const n = Math.max(3, Math.round(w / 1.1)); for (let i = 0; i < n; i++) { const c = new THREE.Mesh(G.cone, solid(0xD8DCEF, 0.25)); c.position.set(-w / 2 + (i + 0.5) * w / n, 0.55, 0); c.scale.set(0.45, 1.1, 0.45); grp.add(c); } const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.12, 1.2), glow(0xFF4D6D, 0.7)); b.position.y = 0.06; grp.add(b); }
+      if (e.tag === "barrier") { const wall = new THREE.Mesh(new THREE.PlaneGeometry(hw * 2 + 1, H), new THREE.MeshBasicMaterial({ map: labelTex(["🔒 잠김", "같은 챕터를 정답률 80% 이상으로 3번 클리어"], { w: 768, h: 300, border: "#B98CFF", bg: "rgba(40,20,80,.8)" }), transparent: true, side: THREE.DoubleSide })); wall.position.y = H / 2; grp.add(wall); }
+      else if (e.tag === "tack") { const n = Math.max(3, Math.round(w / 1.1)); for (let i = 0; i < n; i++) { const c = new THREE.Mesh(G.cone, solid(0xD8DCEF, 0.25)); c.position.set(-w / 2 + (i + 0.5) * w / n, 0.55, 0); c.scale.set(0.45, 1.1, 0.45); grp.add(c); } const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.12, 1.2), glow(0xFF4D6D, 0.7)); b.position.y = 0.06; grp.add(b); }
       else if (pulse) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, e.height * 0.8, 0.5), glow(0xFF3355, 0.8)); m.position.y = e.height * 0.4; grp.add(m); const r = new THREE.Mesh(archTube(seg, e.s, Rw - 0.3, H - 0.3, 0.25), glow(0xFF3355, 0.6)); W.root.add(r); }
       else {
         const m = new THREE.Mesh(new THREE.BoxGeometry(e.width, e.height + 0.4, 1.6), new THREE.MeshLambertMaterial({ color: 0x14020a, emissive: 0x6a0020 })); m.position.y = (e.height + 0.4) / 2; grp.add(m);
@@ -1928,6 +2087,13 @@ window.NRW_INIT = function () { window.NRW = (function () {
     }
   }
 
+  let _itemMat = null;
+  function itemMat() {
+    if (_itemMat) return _itemMat; const c = document.createElement("canvas"); c.width = c.height = 128; const x = c.getContext("2d");
+    const g = x.createLinearGradient(0, 0, 128, 128); g.addColorStop(0, "#FF5CC8"); g.addColorStop(0.5, "#FFD34D"); g.addColorStop(1, "#2EE6D6"); x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+    x.fillStyle = "rgba(20,10,40,.55)"; x.fillRect(10, 10, 108, 108); x.fillStyle = "#fff"; x.font = "bold 76px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("🧪", 64, 68);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return (_itemMat = new THREE.MeshBasicMaterial({ map: t }));
+  }
   const padCache = {};
   function padMat(jump) {
     if (padCache[jump]) return padCache[jump];
@@ -2040,7 +2206,9 @@ window.NRW_INIT = function () { window.NRW = (function () {
         for (const L of W.lasers) { const e = L.e, ph = (rt + e.ph) % e.period, on = ph < e.on, warn = !on && ph > e.period - 0.35; L.beams.forEach(b => { b.visible = on || warn; b.material = on ? glow(0xFF2244, 1) : glow(0xFF2244, 0.25); }); L.warn.material = on ? glow(0xFF2244, 0.35) : glow(0xFF2244, 0.12); }
         // 3.0: orbs are static (matrices written once); only a collected orb is changed (see collect)
         for (const o of W.obstacles) { if (o.pulse) o.grp.children[0].material.opacity = 0.5 + 0.35 * Math.sin(t * 8); else o.grp.children[0].scale.x = 1 + (Math.random() < 0.05 ? rnd(-0.15, 0.15) : 0); }
-        for (const a of W.anim) { if (a.spin) a.o.rotation.y += dt * a.spin; if (a.flick) a.o.visible = Math.random() > 0.04; }
+        for (const it of W.items) if (it.m.visible) { it.m.rotation.y += dt * 2.2; it.m.rotation.x += dt * 1.3; }
+        for (const w of W.weaks) if (w.grp.visible) { w.ring.rotation.z += dt * 2; w.core.rotation.y += dt * 3; const k = 1 + 0.12 * Math.sin(t * 8); w.core.scale.setScalar((w.e.final ? 1.98 : 1.26) * k); }
+        for (const a of W.anim) { if (a.spin && a.axis === "z") a.o.rotation.z += dt * a.spin; else if (a.spin) a.o.rotation.y += dt * a.spin; if (a.flick) a.o.visible = Math.random() > 0.04; }
         // EPSP/IPSP clouds are static (no per-frame update)
         for (const f of W.flashes) { const k = 0.5 + 0.5 * Math.sin(t * 2.2 + f.ph); f.m.scale.setScalar(1.3 + k * 0.7); }
         for (const r of W.rings) { if (r.t > 0) { r.t -= dt; r.m.scale.setScalar(1 + (0.6 - r.t) * 2.5); if (r.t <= 0) r.m.visible = false; } else r.m.rotation.z += dt * 1.5; }
@@ -2062,6 +2230,9 @@ window.NRW_INIT = function () { window.NRW = (function () {
         }
       },
       pspCollect(e) { const p = W.psp.find(x => x.e === e); if (p && p.im) { tmp.compose(p.p, p.q, zero); p.im.setMatrixAt(p.i, tmp); p.im.instanceMatrix.needsUpdate = true; } },
+      itemTaken(e) { const it = W.items.find(x => x.e === e); if (it) it.m.visible = false; },
+      showWeak(qid) { for (const w of W.weaks) if (w.e.need === qid) w.grp.visible = true; },
+      weakHit(e) { const w = W.weaks.find(x => x.e === e); if (w) { w.grp.visible = false; } },
       collect(e) { for (const g of W.orbs) { const it = g.items.find(x => x.e === e); if (it) { it.gone = true; tmp.compose(it.p, q, zero); g.im.setMatrixAt(it.i, tmp); g.im.instanceMatrix.needsUpdate = true; return; } } },
       ringHit(e, hit) { const r = W.rings.find(x => x.e === e); if (!r) return; if (hit) { r.m.material = glow(0xFFFFFF); r.t = 0.6; for (const nd of W.nodes) if (Math.abs(nd.s - e.s) < 0.5) nd.t = 0.25; } else r.m.material = glow(0x553355, 0.5); },
       markSigns(signs, lane, correctLane) { signs.forEach((p, i) => { p.material.color.setHex(i === correctLane ? 0xB8FFD0 : i === lane ? 0xFF8A9A : 0x555577); }); },
@@ -2358,6 +2529,49 @@ window.NR_MAIN = function () {
     Snd.setLoops(sim.drifting && !showcase, sim.driftTier, boosting && !showcase && race && race.phase === "run");
   }
 
+  //================== 4.6 ITEMS / COLLAPSE / EVOLUTION ==================
+  // Neurotransmitter items are EDUCATIONAL ANALOGIES - real effects depend on receptors and circuits.
+  const ITEMS = {
+    glu: { icon: "🟢", name: "글루탐산", col: "#5CFF9D", get: "흥분성 전달물질", use: "글루탐산! 막전위 +12 mV · 가속 (흥분성 시냅스 비유)" },
+    gaba: { icon: "🔵", name: "GABA", col: "#5C9CFF", get: "억제성 전달물질", use: "GABA 보호막 4초 · 막전위 −12 mV (억제·안정화 비유)" },
+    ach: { icon: "🟡", name: "아세틸콜린", col: "#FFD34D", get: "신경근접합부 전달물질", use: "아세틸콜린! 근육 수축 슈퍼 점프 (신경근접합부 비유)" },
+    dopa: { icon: "🟣", name: "도파민", col: "#C79CFF", get: "보상 회로 관련", use: "도파민! 6초간 점수 ×2 (보상 학습 비유 — 실제 작용은 수용체·회로에 따라 달라요)" },
+  };
+  function updateItemUi() {
+    const it = race && race.sim.item, b = document.querySelector('.tb[data-k="item"]'); if (!b) return;
+    $("#item-ico").textContent = it ? ITEMS[it].icon : "·"; $("#item-name").textContent = it ? ITEMS[it].name : "아이템"; b.classList.toggle("has", !!it);
+  }
+  let collapseWall = null; const FRC = { p: new THREE.Vector3(), q: new THREE.Quaternion(), f: new THREE.Vector3() };
+  function tickCollapse() {
+    const sim = race.sim, C = sim.collapse;
+    if (!collapseWall) { collapseWall = new THREE.Mesh(new THREE.CircleGeometry(12, 40), new THREE.MeshBasicMaterial({ color: 0xFF1F4B, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); scene.add(collapseWall); }
+    if (!C) { collapseWall.visible = false; return; }
+    const gap = sim.progress - C.p, sW = sim.s - gap / (sim.seg.progScale || 1);
+    collapseWall.visible = sW > 0; if (sW > 0) { NRW.frameAtInto(sim.seg, sW, 0, 4, FRC); collapseWall.position.copy(FRC.p); collapseWall.quaternion.copy(FRC.q); collapseWall.material.opacity = 0.35 + 0.25 * Math.sin(performance.now() / 90); }
+    setStyle("#h-collapse-fill", "width", Math.max(0, Math.min(100, 100 - gap)).toFixed(0) + "%"); setText("#h-collapse-m", Math.max(0, Math.round(gap)) + "m");
+    const danger = gap < 28; if ($("#app").classList.contains("danger") !== danger) $("#app").classList.toggle("danger", danger);
+  }
+  // evolution: mastery XP (clears with >= 80% accuracy, perfect runs, rival wins, survival)
+  const FORMS = [
+    { name: "Rookie Star", need: 0, B: 0xFFD34D, S: 0xF29B38, R: 0xFFF3C4, trail: 0xFFD34D, desc: "기본 STAR-01" },
+    { name: "Spark Star", need: 2, B: 0xFFB04D, S: 0xFF5C4D, R: 0xFFE0C0, trail: 0xFF7A3D, desc: "불꽃 꼬리 · 주황 스파크" },
+    { name: "Pulse Star", need: 5, B: 0x7CF5FF, S: 0x2E8CE6, R: 0xE8FFFF, trail: 0x2EE6D6, desc: "청록 펄스 · 집중한 표정" },
+    { name: "Nova Star", need: 9, B: 0xD9A8FF, S: 0x8A4DFF, R: 0xFFF0FF, trail: 0xC79CFF, desc: "보라 노바 · 반짝이는 눈" },
+    { name: "Synapse Master", need: 14, B: 0xFFF4D6, S: 0xFFB627, R: 0xFFFFFF, trail: 0xFFFFFF, desc: "황금빛 · 모든 신경 경로의 달인" },
+  ];
+  const formLevel = () => { const xp = save.xp || 0; let l = 0; FORMS.forEach((f, i) => { if (xp >= f.need) l = i; }); return l; };
+  function applySkin() {
+    const i = Math.min(save.skin == null ? formLevel() : save.skin, formLevel()), F = FORMS[i], u = star.bodyMat.uniforms;
+    u.B.value.setHex(F.B); u.S.value.setHex(F.S); u.R.value.setHex(F.R); if (trail[0]) trail[0].material.color.setHex(F.trail); star.halo.material.color.setHex(F.trail);
+    SV.form = i;
+  }
+  function renderEvo() {
+    const lv = formLevel(), xp = save.xp || 0, next = FORMS[lv + 1];
+    $("#evo-info").textContent = `숙련 XP ${xp} · 현재 형태 ${FORMS[lv].name}` + (next ? ` · 다음 진화(${next.name})까지 ${next.need - xp} XP` : " · 최종 형태!") + "  — 정답률 80% 이상 클리어 +1, 만점 +1, 라이벌 1위 +1, 서바이벌 60초 이상 +1";
+    $("#evo-list").innerHTML = FORMS.map((F, i) => `<div class="evo${i > lv ? " locked" : ""}${(save.skin == null ? lv : save.skin) === i ? " cur" : ""}"><div class="sw" style="background:linear-gradient(90deg,#${F.B.toString(16).padStart(6, "0")},#${F.S.toString(16).padStart(6, "0")})"></div><b>${i + 1}. ${F.name}</b><small>${F.desc}<br>필요 XP ${F.need}</small>${i <= lv ? `<button data-skin="${i}">${(save.skin == null ? lv : save.skin) === i ? "사용 중" : "이 모습 사용"}</button>` : "<small>🔒 잠김</small>"}</div>`).join("");
+    $$("#evo-list [data-skin]").forEach(b => b.addEventListener("click", () => { save.skin = +b.dataset.skin; persist(); applySkin(); renderEvo(); }));
+  }
+
   //================== 4.5 RIVALS / GHOST ==================
   // Three AI racers run their OWN simulation on the same track (real driving, real overtakes).
   const RIVALS = [
@@ -2386,40 +2600,43 @@ window.NR_MAIN = function () {
 
   //================== CAMERA (ChaseCamera.cs port) ==================
   const CAM = { fwd: null, look: 0, roll: 0, kick: 0, showcase: 0, shake: 0, pos: new THREE.Vector3(), snap: true };
-  const CS = { f: new THREE.Vector3(), pos: new THREE.Vector3(), anchor: new THREE.Vector3(), side: new THREE.Vector3(), right: new THREE.Vector3(), target: new THREE.Vector3(), look: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0) };
+  const CS = { f: new THREE.Vector3(), pos: new THREE.Vector3(), anchor: new THREE.Vector3(), side: new THREE.Vector3(), right: new THREE.Vector3(), target: new THREE.Vector3(), look: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0), upT: new THREE.Vector3(0, 1, 0), upS: new THREE.Vector3(0, 1, 0), bossP: new THREE.Vector3(0, 26, 0) };
   function follow(sim, dt, running) {
     const U = sim.forward, f = CS.f.set(-U.x, U.y * 0.5, U.z).normalize();
     if (!CAM.fwd) CAM.fwd = f.clone(); if (CAM.snap) CAM.fwd.copy(f); else CAM.fwd.lerp(f, 1 - Math.pow(0.02, dt)).normalize();
-    const side = CS.side.crossVectors(CS.up, CAM.fwd).normalize(); // three: up x fwd = left-of-travel; mirror => screen right
+    const uw = sim.seg.roll ? sim.seg.upAt(sim.s) : null; CS.upT.set(uw ? -uw.x : 0, uw ? uw.y : 1, uw ? uw.z : 0);
+    CS.upS.lerp(CS.upT, 1 - Math.pow(0.002, dt)).normalize(); const UPV = CS.upS;   // smoothed "up" (rotates through the corkscrew)
+    const side = CS.side.crossVectors(UPV, CAM.fwd).normalize(); // three: up x fwd = left-of-travel; mirror => screen right
     const boosting = sim.boosting || sim.turboTimer > 0; CAM.kick += NR.clamp((boosting ? 1 : 0) - CAM.kick, -dt * 3, dt * 3);
     const want = running ? NR.clamp(sim.curvature * 110 * NR.lerp(0.4, 1, sim.speed01), -2.6, 2.6) : 0;
     CAM.look += (want - CAM.look) * (1 - Math.exp(-3 * dt)); CAM.roll += ((sim.drifting ? -sim.driftDir * 4 : 0) - CAM.roll) * (1 - Math.exp(-4 * dt));
-    const P = sim.position, pos = CS.pos.set(-P.x, P.y, P.z), anchor = CS.anchor.copy(pos); anchor.y -= Math.max(0, sim.y) * 0.5;
+    const P = sim.position, pos = CS.pos.set(-P.x, P.y, P.z), anchor = CS.anchor.copy(pos); anchor.addScaledVector(UPV, -Math.max(0, sim.y) * 0.5);
     let target, look; const bossScale = world && world.stage.boss ? 1.15 : 1;
     // corner look: Unity side vector is +right; in three the mirrored right = -side
     const right = CS.right.copy(side).negate();
     if (CAM.showcase > 0) {
       CAM.showcase -= dt; const a = NR.clamp01(CAM.showcase / 2.5);
-      target = CS.target.copy(pos).addScaledVector(CAM.fwd, 4.2 + 1.5 * a).addScaledVector(right, 1.6 * a); target.y += 0.9; look = CS.look.copy(pos); look.y += 0.2;
+      target = CS.target.copy(pos).addScaledVector(CAM.fwd, 4.2 + 1.5 * a).addScaledVector(right, 1.6 * a); target.addScaledVector(UPV, 0.9); look = CS.look.copy(pos).addScaledVector(UPV, 0.2);
       CAM.fwd.copy(f);
     } else {
       const dist = (6.4 + 1.8 * CAM.kick) * bossScale;
-      target = CS.target.copy(anchor).addScaledVector(CAM.fwd, -dist).addScaledVector(right, -CAM.look * 0.35); target.y += 2.6 * bossScale;
-      look = CS.look.copy(anchor).addScaledVector(CAM.fwd, 8.5).addScaledVector(right, CAM.look); look.y += 1.0;
+      target = CS.target.copy(anchor).addScaledVector(CAM.fwd, -dist).addScaledVector(right, -CAM.look * 0.35); target.addScaledVector(UPV, 2.6 * bossScale);
+      look = CS.look.copy(anchor).addScaledVector(CAM.fwd, 8.5).addScaledVector(right, CAM.look).addScaledVector(UPV, 1.0);
+      if (CAM.bossLook > 0) { CAM.bossLook -= dt; const k = Math.min(1, CAM.bossLook) * 0.65; look.lerp(CS.bossP, k); }
     }
     if (CAM.snap) { CAM.pos.copy(target); CAM.snap = false; } else CAM.pos.lerp(target, 1 - Math.pow(0.0006, dt));
     camera.position.copy(CAM.pos);
     if (CAM.shake > 0) { CAM.shake = Math.min(0.4, Math.max(0, CAM.shake - dt * 5)); camera.position.x += (Math.random() - 0.5) * CAM.shake; camera.position.y += (Math.random() - 0.5) * CAM.shake; }
-    camera.up.set(0, 1, 0); camera.lookAt(look);
+    camera.up.copy(UPV); camera.lookAt(look);
     if (CAM.showcase <= 0 && Math.abs(CAM.roll) > 0.01) camera.rotateZ(CAM.roll * Math.PI / 180);
     CAM.kickPunch = Math.max(0, (CAM.kickPunch || 0) - dt * 2.5); const fov = CAM.showcase > 0 ? 50 : 62 + 14 * sim.speed01 + 10 * CAM.kick + 6 * CAM.kickPunch; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov = fov; camera.updateProjectionMatrix(); }
   }
 
   //================== INPUT (RaceInput.cs port) ==================
-  const held = { left: 0, right: 0, drift: 0, boost: 0 }, keys = {}; let jumpPress = false, steerSm = 0;
+  const held = { left: 0, right: 0, drift: 0, boost: 0 }, keys = {}; let jumpPress = false, itemPress = false, steerSm = 0;
   $$(".tb").forEach(b => {
     const k = b.dataset.k, ids = new Set();
-    const down = ev => { ev.preventDefault(); ids.add(ev.pointerId); try { b.setPointerCapture(ev.pointerId); } catch (e) { } b.classList.add("down"); if (k === "jump") jumpPress = true; else held[k] = 1; };
+    const down = ev => { ev.preventDefault(); ids.add(ev.pointerId); try { b.setPointerCapture(ev.pointerId); } catch (e) { } b.classList.add("down"); if (k === "jump") jumpPress = true; else if (k === "item") itemPress = true; else held[k] = 1; };
     const up = ev => { ids.delete(ev.pointerId); if (!ids.size) { b.classList.remove("down"); if (k !== "jump") held[k] = 0; } };
     b.addEventListener("pointerdown", down); b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up); b.addEventListener("lostpointercapture", up);
     b.addEventListener("contextmenu", e => e.preventDefault());
@@ -2437,10 +2654,10 @@ window.NR_MAIN = function () {
     dz.addEventListener("pointerup", end); dz.addEventListener("pointercancel", end); dz.addEventListener("lostpointercapture", end);
   }
   function readInput(dt) {
-    let steer = 0; if (drag) { steerSm += (drag.v - steerSm) * (1 - Math.exp(-14 * dt)); const j = jumpPress; jumpPress = false; return { steer: steerSm, jump: j, drift: !!(held.drift || keys.KeyZ || keys.ArrowDown), boost: !!(held.boost || keys.ShiftLeft || keys.KeyX) }; } if (held.left || keys.ArrowLeft || keys.KeyA) steer -= 1; if (held.right || keys.ArrowRight || keys.KeyD) steer += 1;
+    let steer = 0; if (drag) { steerSm += (drag.v - steerSm) * (1 - Math.exp(-14 * dt)); const j = jumpPress; jumpPress = false; const it = itemPress || keys.KeyE; itemPress = false; return { item: it, steer: steerSm, jump: j, drift: !!(held.drift || keys.KeyZ || keys.ArrowDown), boost: !!(held.boost || keys.ShiftLeft || keys.KeyX) }; } if (held.left || keys.ArrowLeft || keys.KeyA) steer -= 1; if (held.right || keys.ArrowRight || keys.KeyD) steer += 1;
     const drift = !!(held.drift || keys.KeyZ || keys.ControlLeft || keys.ArrowDown || keys.KeyS), boost = !!(held.boost || keys.ShiftLeft || keys.KeyX);
     steer = NR.clamp(steer, -1, 1); const r = dt * (steer === 0 ? 10 : 6); steerSm += NR.clamp(steer - steerSm, -r, r);
-    const j = jumpPress; jumpPress = false; return { steer: steerSm, jump: j, drift, boost };
+    const j = jumpPress; jumpPress = false; const it = itemPress || keys.KeyE; itemPress = false; return { steer: steerSm, jump: j, drift, boost, item: it };
   }
 
   //================== UI HELPERS ==================
@@ -2552,12 +2769,14 @@ window.NR_MAIN = function () {
   function buildStage(id, mode) {
     qbank = shuffledBank();
     const stage = id === "survival" ? NR.SURVIVAL : (NR.STAGES.find(s => s.id === id) || NR.STAGES[0]); if (id !== "survival") save.lastStage = stage.id; persist();
+    NR.STATE.plastic = ((save.plastic || {})[stage.id]) || 0;   // neuroplasticity shortcut state for this chapter
     const graph = stage.build(qbank); buildWorld(stage, graph);
     const sim = new NR.Sim(graph), learn = new NR.Session(qbank), forkSegByQ = new Map();
     for (const seg of graph.segments) if (seg.fork) forkSegByQ.set(seg.fork.questionId, seg);
-    let bossMax = 0; if (stage.boss) { for (const e of graph.allEvents()) if (e.type === NR.EV.Gate && e.tag === "boss") bossMax++; for (const s of graph.segments) if (s.fork) bossMax++; }
+    let bossMax = 0; if (stage.boss && !graph.bossMax) { for (const e of graph.allEvents()) if (e.type === NR.EV.Gate && e.tag === "boss") bossMax++; for (const s of graph.segments) if (s.fork) bossMax++; }
     race = { stage, graph, sim, learn, forkSegByQ, phase: "intro", t: 0, cd: 4, timeScale: 1, pending: null, pendingLanes: null, bossMax, bossHp: bossMax, finishT: 0, auto: AUTO ? new NR.AutoPilot() : null, paused: false, lastSection: "", combo: 0, comboT: 0, maxCombo: 0, score: 0, lastOrb: -9, mode: mode || "story" };
-    setupMode(race);
+    if (graph.bossMax) { race.bossMax = graph.bossMax; race.bossHp = graph.bossMax; }
+    setupMode(race); $("#h-collapse").classList.remove("on"); $("#app").classList.remove("danger"); updateItemUi();
     $("#h-combo").classList.remove("on"); fx.hide(); $("#mission").classList.remove("on"); $("#reflex").classList.remove("on"); miEvent = null; miResT = 0;
     screen(""); show("#hud", true); show("#touch", false); show("#qpanel", false); show("#apanel", false); show("#result", false); show("#pause", false);
     $("#h-boss").classList.toggle("on", stage.boss); updateBoss();
@@ -2684,7 +2903,7 @@ window.NR_MAIN = function () {
     setStyle("#h-prog", "width", (pf * 100).toFixed(1) + "%"); setStyle("#h-star", "left", (pf * 100).toFixed(1) + "%");
     setText("#h-time", fmt(sim.raceTime)); setText("#h-score", r.learn.correct + "/" + r.learn.total);
     setStyle("#h-energy", "width", (sim.boostEnergy * 100).toFixed(0) + "%");
-    updateVm(dt); tickCombo(dt); if (r.mode !== "story") tickMode(dt);
+    updateVm(dt); tickCombo(dt); tickCollapse(); if (r.mode !== "story") tickMode(dt);
     Snd.setHum(running ? sim.speed01 : 0, running && sim.boosting);
   }
 
@@ -2720,7 +2939,7 @@ window.NR_MAIN = function () {
   const COMBO_WINDOW = 4;
   function comboAdd(n, pts, label) {
     const r = race; r.combo += n; r.comboT = COMBO_WINDOW; r.maxCombo = Math.max(r.maxCombo, r.combo);
-    const mult = comboMult(); r.score += Math.round(pts * mult);
+    const mult = comboMult(); r.score += Math.round(pts * mult * (r.sim.dopamine > 0 ? 2 : 1));
     const el = $("#h-combo"); el.classList.add("on"); setText("#h-combo-n", r.combo); setText("#h-combo-x", "×" + mult.toFixed(1) + (label ? " " + label : ""));
     el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); Snd.combo(r.combo);
   }
@@ -2788,6 +3007,11 @@ window.NR_MAIN = function () {
   function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); starCorrect(); fx.burst(star.root.position, "correct"); } else { Snd.thud(); setExpr("Wrong", 2.2); starWrong(); CAM.shake = 0.15; } }
   function bossAnswer(ok) {
     const r = race; if (!r.bossMax) return;
+    if (r.graph.bossMax) {   // 4.6: a diagnosis does not hurt NULL by itself - it exposes (or keeps shut) the weak point
+      if (ok) { toast("정확한 진단! NULL 약점 노출 — 노란 링을 통과해 공격!", "#FFD34D", 2); world.bossHit(r.bossHp, r.bossMax); }
+      else { toast("오진! 약점이 닫힌 채 NULL이 반격합니다", "#FF4D6D", 1.8); world.bossAttack(); CAM.shake = 0.2; }
+      return;
+    }
     if (ok) { r.bossHp = Math.max(0, r.bossHp - 1); updateBoss(); world.bossHit(r.bossHp, r.bossMax); toast(r.bossHp === 0 ? "NULL 보호막 붕괴!" : "정확한 진단! NULL 보호막 " + r.bossHp + "/" + r.bossMax, "#2EE6D6", 1.8); }
     else { toast("오진! NULL이 반격합니다", "#FF4D6D", 1.6); world.bossAttack(); }
   }
@@ -2801,18 +3025,21 @@ window.NR_MAIN = function () {
         feedback(e.correct); let extra = null;
         if (e.src.tag === "glia" && e.correct) { extra = "희소돌기아교세포가 수초를 재생했습니다. 전도 속도 회복!"; toast("수초 복구 완료!", "#5CFF9D"); }
         else if (e.src.tag === "ap") extra = "활동전위 단계 " + (e.src.index + 1) + "/4";
-        if (e.src.tag === "boss") bossAnswer(e.correct);
+        if (e.src.tag === "boss") bossAnswer(e.correct); if (e.correct && e.src.questionId) world.showWeak(e.src.questionId);
         if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
         showAnswer(q, e.lane, e.correct, extra, e.correct ? 7 : 11); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
       case S.ForkChosen: {
+        if (!e.tag && sim.seg.prog0 != null && race.graph.segments.find(g => g.next.includes(sim.seg) && g.fork && g.fork.kind === "plastic")) {
+          const ap = race.graph.segments.find(g => g.next.includes(sim.seg)); if (e.lane === 1) toast(ap.fork.open ? "가소성 지름길! 강화된 연결로 빠르게" : "아직 잠겨 있어요 — 반복 학습으로 강화하세요", ap.fork.open ? "#5CFF9D" : "#B98CFF", 1.8); break;
+        }
         if (!e.tag) {   // 4.0 risk/reward split (no question)
           if (e.lane === 1) { toast("위험 루트! 레이저·NULL 블록 · 오브 ×3", "#FF4D6D", 1.6); comboAdd(1, 100, "도전"); } else toast("안전 루트", "#5CFF9D", 1.2);
           break;
         }
         const q = qbank.get(e.tag); r.learn.answer(e.tag, e.lane, sim.raceTime);
         world.forkResult(e.tag, e.lane);
-        if (r.stage.boss) bossAnswer(e.correct); feedback(e.correct); if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
+        if (r.stage.boss) bossAnswer(e.correct); if (e.correct) world.showWeak(e.tag); feedback(e.correct); if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
         showAnswer(q, e.lane, e.correct, e.correct ? "정답 경로: 지름길 + 신호 에너지 보너스!" : "복습 구간에 진입했습니다. 해설을 읽으며 천천히 이동하세요.", e.correct ? 7 : 12);
         if (!e.correct) toast("복습 구간 - 속도 저하", "#FF8A3D", 2); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
@@ -2835,6 +3062,27 @@ window.NR_MAIN = function () {
       case S.Checkpoint: toast("체크포인트", "#9B5CFF", 1); break;
       case S.EnterSegment: setSection(sim.seg.zone === NR.ZONE.Review ? "복습 구간" : sim.seg.zone === NR.ZONE.Shortcut ? "지름길" : sim.seg.name); break;
       case S.Finish: finish(); break;
+      // ---------- 4.6 special courses, items, boss ----------
+      case S.LoopResult:
+        if (e.correct) { toast("360° 루프 성공! 가속", "#5CFF9D", 1.4); Snd.fire(); comboAdd(2, 250, "루프"); fx.burst(star.root.position, "drift", 3); }
+        else { toast("속도 부족 — 루프에서 미끄러졌어요 (최고 속도로 진입!)", "#FF8A3D", 1.8); Snd.driftFail(); comboBreak(); }
+        break;
+      case S.Collapse: toast("붕괴에 휘말렸어요! 속도 저하", "#FF4D6D", 1.4); Snd.hit(); CAM.shake = 0.3; starHit(); comboBreak(); break;
+      case S.CollapseResult:
+        $("#h-collapse").classList.remove("on"); $("#app").classList.remove("danger");
+        if (e.correct) { toast("붕괴 탈출 성공! 탈수초가 퍼지기 전에 신호 전달", "#5CFF9D", 2); Snd.fire(); comboAdd(2, 300, "탈출"); Voice.say("탈출 성공! 수초가 무너지면 전도가 느려지니까, 신호가 붕괴보다 빨라야 해!", { mode: "idle" }); }
+        else { toast("탈출했지만 " + e.tier + "번 휘말렸어요", "#FF8A3D", 2); }
+        break;
+      case S.ItemGet: Snd.coin(); Snd.tone("triangle", 600, 1500, 0.2, 0.2); toast(ITEMS[e.tag].icon + " " + ITEMS[e.tag].name + " 획득! — " + ITEMS[e.tag].get, "#E8D8FF", 2); world.itemTaken(e.src); updateItemUi(); break;
+      case S.ItemUse: { const I = ITEMS[e.tag]; toast(I.icon + " " + I.use, I.col, 2.2); Snd.fire(); fx.burst(star.root.position, "fire"); if (e.tag === "dopa") { NRW.U.uFire.value = 0.6; } updateItemUi(); break; }
+      case S.ShieldBlock: toast("🔵 GABA 보호막이 충돌을 막았어요!", "#5C9CFF", 1.4); Snd.chime(); break;
+      case S.BossHit: {
+        world.weakHit(e.src); race.bossHp = sim.bossHp; updateBoss(); world.bossHit(sim.bossHp, race.bossMax);
+        Snd.fire(); fx.burst(star.root.position, "fire"); CAM.shake = 0.3; NRW.U.uFire.value = 1; comboAdd(3, 400 * e.tier, "약점");
+        toast(e.tag === "core" ? (e.tier >= 3 ? "💥 NULL 코어 직격! (부스트 ×3)" : "코어 타격 (부스트 상태면 3배!)") : "NULL 약점 타격! 체력 " + sim.bossHp + "/" + race.bossMax, "#FFD34D", 1.8);
+        if (sim.bossHp === 0) { Voice.say("해냈어! NULL의 체력이 0이야! 신경망이 다시 깨어나고 있어!", { mode: "replace" }); toast("NULL 소멸! 신경망 복구!", "#5CFF9D", 3); }
+        break;
+      }
       // ---------- 4.0 racing pieces & chapter missions ----------
       case S.Pad: if (e.tag === "boost") { Snd.boostStart(); toast("부스트 패드!", "#FFD34D", 0.7); } else { Snd.tone("square", 300, 1400, 0.3, 0.2); toast("점프대!", "#2EE6D6", 0.7); SV.squashVel += 6; } comboAdd(1, 50); fx.burst(star.root.position, "land"); break;
       case S.RingCombo: {
@@ -2884,6 +3132,10 @@ window.NR_MAIN = function () {
       case "hint":
         if (arg === "corner") hint("코너 진입! 안쪽으로 조향해 벽에 부딪히지 않게 하세요.", 4);
         else if (arg === "jump") hint("NULL 교란 구간! 큰 파동은 [점프], 작은 블록은 피하세요.", 4);
+        else if (arg === "loop") hint("360° 루프! 최고 속도로 들어가야 벽을 타고 한 바퀴 돌 수 있어요. 부스트를 아껴 두세요.", 4);
+        else if (arg === "warp") hint("시냅스 워프 포털! 전달 순서를 맞히면 다음 구간으로 워프 가속.", 4);
+        else if (arg === "plastic") hint("신경가소성 갈림길! 같은 챕터를 정답률 80% 이상으로 3번 클리어하면 지름길이 열려요. (자주 쓰는 연결이 강해지는 '장기강화'의 비유)", 6);
+        else if (arg === "core") hint("NULL 코어! 부스트나 미니 터보 상태로 노란 링을 통과하면 3배 대미지.", 4);
         else if (arg === "scurve") hint("S자 커브! 리듬 타고 좌우로 — 오브 라인을 따라가요.", 3);
         else if (arg === "jumppad") hint("점프대! 가운데로 올라타면 높이 날아 장애물을 넘어요.", 3);
         else if (arg === "movers") hint("움직이는 NULL 블록! 좌우로 오가니 빈틈을 노려요.", 3);
@@ -2893,6 +3145,15 @@ window.NR_MAIN = function () {
         else if (arg === "rings") hint("말이집 구간! 결절(링)을 3·5·10연속 통과하면 부스트 — 정중앙이면 PERFECT!", 4);
         else if (arg === "split") hint("갈래 길! 왼쪽은 안전, 오른쪽은 위험하지만 오브 3배.", 4);
         else if (arg === "drift") hint("급커브! [드리프트]를 누른 채 커브 방향으로 조향 → 놓으면 미니 터보!", 6);
+        break;
+      case "loop": if (arg === "check") toast("360° 루프! 벽을 타고 한 바퀴", "#9CFFEA", 1.2); break;
+      case "collapse": if (arg === "on") { $("#h-collapse").classList.add("on"); hint("축삭 붕괴가 뒤에서 쫓아와요! 충돌하면 붙잡혀요 — 초록 복구 오브로 버티며 탈출!", 5); Voice.say("뒤에서 축삭이 무너지고 있어! 멈추지 말고 달려!", { mode: "queue" }); } break;
+      case "boss":
+        if (/^phase[123]$/.test(arg)) {
+          const P = { phase1: ["PHASE 1", "신호 교란 — 레이저와 블록을 피하며 에너지 확보"], phase2: ["PHASE 2", "진단 → 약점 노출 → 노란 링으로 공격"], phase3: ["PHASE 3", "최종 패턴 — 마지막 진단 후 부스트로 코어 돌파"] }[arg];
+          const el = $("#h-phase"); el.innerHTML = P[0] + "<small>" + P[1] + "</small>"; el.style.display = "block"; setTimeout(() => el.style.display = "none", 2600);
+          CAM.bossLook = 1.6; Snd.tone("sawtooth", 120, 60, 0.8, 0.3); Voice.say({ phase1: "NULL이 신호를 흩뜨리고 있어! 피하면서 에너지를 모으자!", phase2: "증상을 보고 정확히 진단해야 약점이 열려!", phase3: "마지막이야! 진단하고, 부스트로 코어를 뚫자!" }[arg], { mode: "queue" });
+        } else if (arg.startsWith("counter:")) { const id = arg.slice(8); if (!race.sim.gateOk[id]) { world.bossAttack(); toast("NULL 반격! 레이저 주의", "#FF4D6D", 1.4); } }
         break;
       case "mission":
         if (arg.startsWith("sort:")) { const t = { nuclei: "뇌줄기 신경핵 탐험! 지금 층에 있는 신경핵 차선으로!", relay: "시상 중계 미션! 감각 신호를 맞는 중계핵으로 보내!", cortex: "대뇌 기능 포털! 명령에 맞는 겉질 영역으로!", cranial: "12뇌신경 포털! 동작에 맞는 뇌신경으로!" }[arg.slice(5)]; hint(t, 4); Voice.say(t, { mode: "queue" }); }
@@ -2911,7 +3172,7 @@ window.NR_MAIN = function () {
       case "forkq": { const fs = r.forkSegByQ.get(arg); ask(arg, "갈림길! 정답 경로로 들어가세요" + thinkTag, fs ? fs.fork.laneX : null, fs ? { seg: fs, s: fs.length } : null); break; }
       case "gateq": { const g = findGate(arg); ask(arg, (arg === "ch1_gate_glia" ? "수초 복구 게이트" : r.stage.gateTitle) + thinkTag, g ? g.e.laneX : null, g ? { seg: g.seg, s: g.e.s } : null); break; }
       case "boss": if (arg === "attack") { world.bossAttack(); toast("NULL 반격! 파동은 점프!", "#FF4D6D", 1.4); CAM.shake = 0.2; } break;
-      case "synapse": if (arg === "minigame") openMinigame(); else if (arg === "cross") toast("신경전달물질 다리 통과!", "#FF5CC8", 1.5); break;
+      case "synapse": if (arg === "warp") openMinigame("warp"); else if (arg === "minigame") openMinigame(); else if (arg === "cross") toast("신경전달물질 다리 통과!", "#FF5CC8", 1.5); break;
     }
   }
   function finish() {
@@ -2920,11 +3181,14 @@ window.NR_MAIN = function () {
   }
 
   //================== SYNAPSE MINIGAME (GameUI.Minigame.cs) ==================
-  function openMinigame() {
-    const r = race; r.phase = "mini"; show("#touch", false); show("#qpanel", false); setExpr("Surprise", 1.5);
+  function openMinigame(kind) {
+    const r = race; r.phase = "mini"; show("#touch", false); show("#qpanel", false); setExpr("Surprise", 1.5); const warp = kind === "warp";
+    $("#mini h2").textContent = warp ? "시냅스 워프 포털" : "시냅스 게이트";
     const qo = qbank.get("ch1_syn_order"), qe = qbank.get("ch1_syn_epsp");
     const done = (success, mistakes, epsp) => { r.learn.answer(qo.id, mistakes === 0 ? qo.answer : 1, r.sim.raceTime); r.learn.answer(qe.id, epsp, r.sim.raceTime); closeMinigame(success); };
-    if (r.auto) { done(true, 0, qe.answer); return; }
+    const warpDone = ok => { show("#mini", false); r.sim.addTurbo(ok ? 3 : 0.8); r.sim.addEnergy(ok ? 0.4 : 0); CAM.kickPunch = 1.6; NRW.U.uFire.value = 1; show("#touch", !r.auto); steerSm = 0; for (const k in held) held[k] = 0;
+      toast(ok ? "🌀 시냅스 워프! 전달 성공 — 초가속" : "워프 불안정 — 약한 가속", ok ? "#FF5CC8" : "#B4AEDB", 2); if (ok) { Snd.fire(); comboAdd(3, 400, "워프"); } r.phase = "run"; };
+    if (r.auto) { if (warp) warpDone(true); else done(true, 0, qe.answer); return; }
     show("#mini", true); let next = 0, mistakes = 0;
     const order = qo.options.map((_, i) => i).sort(() => Math.random() - 0.5);
     $("#mg-prompt").textContent = qo.question; Voice.say("시냅스 게이트야! " + qo.question + " 순서대로 눌러 줘.");
@@ -2936,7 +3200,7 @@ window.NR_MAIN = function () {
       if (i === next) {
         b.classList.add("gone"); const li = $("#mg-slots").children[next]; li.textContent = (next + 1) + ". " + qo.options[i]; li.classList.add("done"); Snd.coin();
         if (next === 1) $("#mg-ca").style.opacity = 1; if (next === 2) $$("#mg-ves i").forEach(v => v.style.transform = "translateY(60px) scale(.6)");
-        next++; if (next === 5) phase2();
+        next++; if (next === 5) { if (warp) { $("#mg-fb").textContent = "전달 완료! " + (mistakes === 0 ? "완벽해요!" : "실수 " + mistakes + "회"); Snd.chime(); setTimeout(() => warpDone(mistakes <= 1), 700); } else phase2(); }
       } else { mistakes++; b.classList.remove("no"); void b.offsetWidth; b.classList.add("no"); Snd.thud(); $("#mg-fb").textContent = "순서가 달라요! 다음 단계를 다시 생각해 보세요. (실수 " + mistakes + ")"; }
     }));
     function phase2() {
@@ -2976,6 +3240,19 @@ window.NR_MAIN = function () {
     $("#r-wrong").innerHTML = wrong.length ? `<div class="grade">복습할 문제 ${wrong.length}개 (오답 노트에 저장됨)</div>` + wrong.map(q => `<div class="entry"><b>${esc(q.question)}</b><br><span class="ok">정답: ${esc(q.options[q.answer])}</span><br>${esc(q.explanation)}</div>`).join("") : `<div class="grade">모든 문제를 맞혔어요! 완벽한 신호 전달 ★</div>`;
     const idx = NR.STAGES.indexOf(r.stage); $("#result [data-act=next]").style.display = idx >= 0 && idx < NR.STAGES.length - 1 ? "" : "none";
     modeResult(r, t);
+    // 4.6 mastery: plasticity strength, XP, evolution
+    const prevForm = formLevel(); let xpGain = 0, plasticMsg = "";
+    if (r.mode !== "survival" && L.accuracy >= 0.8) {
+      xpGain++; if (L.accuracy === 1) xpGain++; if (r.mode === "rival" && r.position === 1) xpGain++;
+      const pl = save.plastic || (save.plastic = {}), before = pl[r.stage.id] || 0; pl[r.stage.id] = Math.min(3, before + 1);
+      plasticMsg = pl[r.stage.id] >= 3 ? (before < 3 ? "🧠 신경가소성 지름길 개방! 다음 주행부터 열려 있어요." : "") : `🧠 신경가소성 강화 ${pl[r.stage.id]}/3 — 3이 되면 이 챕터의 지름길이 열려요.`;
+    }
+    if (r.mode === "survival" && sim.raceTime >= 60) xpGain++;
+    save.xp = (save.xp || 0) + xpGain; persist();
+    const newForm = formLevel(), evoMsg = newForm > prevForm ? `⭐ 진화! STAR-01이 ${FORMS[newForm].name}(으)로 진화했어요!` : "";
+    if (xpGain || plasticMsg || evoMsg) $("#r-wrong").insertAdjacentHTML("afterbegin", `<div class="entry">${xpGain ? `숙련 XP +${xpGain} (총 ${save.xp})` : ""}${plasticMsg ? "<br>" + plasticMsg : ""}${evoMsg ? "<br><b>" + evoMsg + "</b>" : ""}</div>`);
+    if (evoMsg) { if (save.skin == null || save.skin === prevForm) { save.skin = newForm; persist(); } applySkin(); setTimeout(() => Voice.say("우와, 진화했어! 이제 나는 " + FORMS[newForm].name + "야!", { mode: "queue" }), 1500); }
+    if (r.graph.bossMax) { $("#r-title").textContent = sim.bossHp === 0 ? "🏆 NULL 소멸! 신경망 복구 완료" : `NULL 도주… (남은 체력 ${sim.bossHp}/${r.bossMax})`; }
     show("#hud", false); show("#result", true); Snd.play("menu"); $("#mission").classList.remove("on"); $("#reflex").classList.remove("on");
     Voice.say(acc === 100 ? "완벽해! 문제를 전부 맞혔어!" : "완주 성공! 틀린 문제는 오답 노트에서 같이 다시 보자.");
     window.__nrResult = { stage: r.stage.id, mode: r.mode, position: r.position, time: t, correct: L.correct, total: L.total, coins: sim.coins, score: r.score, maxCombo: r.maxCombo };
@@ -3080,6 +3357,7 @@ window.NR_MAIN = function () {
     const b = ev.target.closest("[data-act]"); if (!b) return; const a = b.dataset.act;
     if (a === "play") startStage(save.lastStage || "ch1");
     else if (a === "stages") { hideRacers(); show("#result", false); show("#pause", false); race = null; Voice.stop(); show("#hud", false); show("#touch", false); show("#qpanel", false); show("#apanel", false); renderStages(); screen("stages"); menuScene(); Snd.play("menu"); }
+    else if (a === "evo") { renderEvo(); screen("evo"); }
     else if (a === "story") { screen("story"); save.loreSeen = true; persist(); }
     else if (a === "codex" || a === "notes") { codexMode = a; renderCodex(); screen("codex"); }
     else if (a === "settings") { renderSettings($("#settings-list")); screen("settings"); }
@@ -3153,7 +3431,7 @@ window.NR_MAIN = function () {
   window.NR_APP = { startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
   function boot() {
     if (boot.done) return; boot.done = true;
-    setupPost(); renderStages(); menuScene(); screen(save.loreSeen || AUTO ? "title" : "story"); if (!save.loreSeen) { save.loreSeen = true; persist(); }
+    setupPost(); applySkin(); renderStages(); menuScene(); screen(save.loreSeen || AUTO ? "title" : "story"); if (!save.loreSeen) { save.loreSeen = true; persist(); }
     $("#loading").classList.add("off");
     Snd.want = "menu";
     requestAnimationFrame(frame);

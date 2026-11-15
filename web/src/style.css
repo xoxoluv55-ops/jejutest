@@ -291,6 +291,21 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 .rank .row{display:flex;justify-content:space-between;gap:8px}.rank .me{color:var(--yellow)}
 .rank .tag{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
 @media (max-height:520px){.rank{font-size:11px;padding:2px 8px;min-width:120px}.rank b{font-size:17px}.mode-tabs button{font-size:13px;padding:5px 9px}}
+/* ---------- 4.6: items, phases, collapse, evolution ---------- */
+.tb.item{background:rgba(155,92,255,.3);border-color:var(--purple)}.tb.item.has{background:rgba(255,211,77,.35);border-color:var(--yellow);animation:cue .5s infinite alternate}
+.tb.item i{font-style:normal}
+.phase{position:absolute;left:0;right:0;top:24%;text-align:center;font-family:var(--title);font-size:46px;color:#FF5C8A;text-shadow:0 0 18px rgba(255,40,90,.8),0 4px 0 #2A1640;display:none;pointer-events:none}
+.phase small{display:block;font-size:20px;color:#fff}
+.collapse{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(max(14px,env(safe-area-inset-bottom)) + 70px);display:none;align-items:center;gap:8px;font-family:var(--title);color:#FF6D8D;background:rgba(40,0,10,.45);border:2px solid #FF4D6D;border-radius:12px;padding:3px 10px;pointer-events:none}
+.collapse.on{display:flex}.collapse .cbar{width:140px;height:10px;border-radius:5px;background:rgba(255,255,255,.15);overflow:hidden}
+#h-collapse-fill{height:100%;background:linear-gradient(90deg,#FF2D55,#FFB627)}
+#app.danger::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 120px rgba(255,30,60,.55);z-index:5}
+.evo-btn{background:linear-gradient(180deg,#FF8A3D,#C2410C)}
+.evo-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(260px,100%),1fr));gap:12px;overflow:auto;touch-action:pan-y}
+.evo{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.evo .sw{height:44px;border-radius:12px}.evo b{font-family:var(--title);font-weight:400;font-size:22px}.evo small{color:var(--dim);font-size:14px;line-height:1.4}
+.evo.locked{opacity:.45}.evo.cur{border-color:var(--yellow);box-shadow:0 0 14px rgba(255,211,77,.5)}
+@media (max-height:520px){.phase{font-size:30px}.phase small{font-size:14px}.collapse{bottom:44px;font-size:12px}.collapse .cbar{width:90px}}
 /* ---------- 4.1: slimmer, see-through top boxes (same text size) ---------- */
 .qpanel,.apanel{width:auto;max-width:min(760px,66vw);padding:4px 10px 6px;background:rgba(16,12,48,.5);border-width:1.5px;border-radius:12px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .apanel.bad{background:rgba(48,12,28,.5)}

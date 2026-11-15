@@ -274,6 +274,49 @@ window.NR_MAIN = function () {
     Snd.setLoops(sim.drifting && !showcase, sim.driftTier, boosting && !showcase && race && race.phase === "run");
   }
 
+  //================== 4.6 ITEMS / COLLAPSE / EVOLUTION ==================
+  // Neurotransmitter items are EDUCATIONAL ANALOGIES - real effects depend on receptors and circuits.
+  const ITEMS = {
+    glu: { icon: "🟢", name: "글루탐산", col: "#5CFF9D", get: "흥분성 전달물질", use: "글루탐산! 막전위 +12 mV · 가속 (흥분성 시냅스 비유)" },
+    gaba: { icon: "🔵", name: "GABA", col: "#5C9CFF", get: "억제성 전달물질", use: "GABA 보호막 4초 · 막전위 −12 mV (억제·안정화 비유)" },
+    ach: { icon: "🟡", name: "아세틸콜린", col: "#FFD34D", get: "신경근접합부 전달물질", use: "아세틸콜린! 근육 수축 슈퍼 점프 (신경근접합부 비유)" },
+    dopa: { icon: "🟣", name: "도파민", col: "#C79CFF", get: "보상 회로 관련", use: "도파민! 6초간 점수 ×2 (보상 학습 비유 — 실제 작용은 수용체·회로에 따라 달라요)" },
+  };
+  function updateItemUi() {
+    const it = race && race.sim.item, b = document.querySelector('.tb[data-k="item"]'); if (!b) return;
+    $("#item-ico").textContent = it ? ITEMS[it].icon : "·"; $("#item-name").textContent = it ? ITEMS[it].name : "아이템"; b.classList.toggle("has", !!it);
+  }
+  let collapseWall = null; const FRC = { p: new THREE.Vector3(), q: new THREE.Quaternion(), f: new THREE.Vector3() };
+  function tickCollapse() {
+    const sim = race.sim, C = sim.collapse;
+    if (!collapseWall) { collapseWall = new THREE.Mesh(new THREE.CircleGeometry(12, 40), new THREE.MeshBasicMaterial({ color: 0xFF1F4B, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); scene.add(collapseWall); }
+    if (!C) { collapseWall.visible = false; return; }
+    const gap = sim.progress - C.p, sW = sim.s - gap / (sim.seg.progScale || 1);
+    collapseWall.visible = sW > 0; if (sW > 0) { NRW.frameAtInto(sim.seg, sW, 0, 4, FRC); collapseWall.position.copy(FRC.p); collapseWall.quaternion.copy(FRC.q); collapseWall.material.opacity = 0.35 + 0.25 * Math.sin(performance.now() / 90); }
+    setStyle("#h-collapse-fill", "width", Math.max(0, Math.min(100, 100 - gap)).toFixed(0) + "%"); setText("#h-collapse-m", Math.max(0, Math.round(gap)) + "m");
+    const danger = gap < 28; if ($("#app").classList.contains("danger") !== danger) $("#app").classList.toggle("danger", danger);
+  }
+  // evolution: mastery XP (clears with >= 80% accuracy, perfect runs, rival wins, survival)
+  const FORMS = [
+    { name: "Rookie Star", need: 0, B: 0xFFD34D, S: 0xF29B38, R: 0xFFF3C4, trail: 0xFFD34D, desc: "기본 STAR-01" },
+    { name: "Spark Star", need: 2, B: 0xFFB04D, S: 0xFF5C4D, R: 0xFFE0C0, trail: 0xFF7A3D, desc: "불꽃 꼬리 · 주황 스파크" },
+    { name: "Pulse Star", need: 5, B: 0x7CF5FF, S: 0x2E8CE6, R: 0xE8FFFF, trail: 0x2EE6D6, desc: "청록 펄스 · 집중한 표정" },
+    { name: "Nova Star", need: 9, B: 0xD9A8FF, S: 0x8A4DFF, R: 0xFFF0FF, trail: 0xC79CFF, desc: "보라 노바 · 반짝이는 눈" },
+    { name: "Synapse Master", need: 14, B: 0xFFF4D6, S: 0xFFB627, R: 0xFFFFFF, trail: 0xFFFFFF, desc: "황금빛 · 모든 신경 경로의 달인" },
+  ];
+  const formLevel = () => { const xp = save.xp || 0; let l = 0; FORMS.forEach((f, i) => { if (xp >= f.need) l = i; }); return l; };
+  function applySkin() {
+    const i = Math.min(save.skin == null ? formLevel() : save.skin, formLevel()), F = FORMS[i], u = star.bodyMat.uniforms;
+    u.B.value.setHex(F.B); u.S.value.setHex(F.S); u.R.value.setHex(F.R); if (trail[0]) trail[0].material.color.setHex(F.trail); star.halo.material.color.setHex(F.trail);
+    SV.form = i;
+  }
+  function renderEvo() {
+    const lv = formLevel(), xp = save.xp || 0, next = FORMS[lv + 1];
+    $("#evo-info").textContent = `숙련 XP ${xp} · 현재 형태 ${FORMS[lv].name}` + (next ? ` · 다음 진화(${next.name})까지 ${next.need - xp} XP` : " · 최종 형태!") + "  — 정답률 80% 이상 클리어 +1, 만점 +1, 라이벌 1위 +1, 서바이벌 60초 이상 +1";
+    $("#evo-list").innerHTML = FORMS.map((F, i) => `<div class="evo${i > lv ? " locked" : ""}${(save.skin == null ? lv : save.skin) === i ? " cur" : ""}"><div class="sw" style="background:linear-gradient(90deg,#${F.B.toString(16).padStart(6, "0")},#${F.S.toString(16).padStart(6, "0")})"></div><b>${i + 1}. ${F.name}</b><small>${F.desc}<br>필요 XP ${F.need}</small>${i <= lv ? `<button data-skin="${i}">${(save.skin == null ? lv : save.skin) === i ? "사용 중" : "이 모습 사용"}</button>` : "<small>🔒 잠김</small>"}</div>`).join("");
+    $$("#evo-list [data-skin]").forEach(b => b.addEventListener("click", () => { save.skin = +b.dataset.skin; persist(); applySkin(); renderEvo(); }));
+  }
+
   //================== 4.5 RIVALS / GHOST ==================
   // Three AI racers run their OWN simulation on the same track (real driving, real overtakes).
   const RIVALS = [
@@ -302,40 +345,43 @@ window.NR_MAIN = function () {
 
   //================== CAMERA (ChaseCamera.cs port) ==================
   const CAM = { fwd: null, look: 0, roll: 0, kick: 0, showcase: 0, shake: 0, pos: new THREE.Vector3(), snap: true };
-  const CS = { f: new THREE.Vector3(), pos: new THREE.Vector3(), anchor: new THREE.Vector3(), side: new THREE.Vector3(), right: new THREE.Vector3(), target: new THREE.Vector3(), look: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0) };
+  const CS = { f: new THREE.Vector3(), pos: new THREE.Vector3(), anchor: new THREE.Vector3(), side: new THREE.Vector3(), right: new THREE.Vector3(), target: new THREE.Vector3(), look: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0), upT: new THREE.Vector3(0, 1, 0), upS: new THREE.Vector3(0, 1, 0), bossP: new THREE.Vector3(0, 26, 0) };
   function follow(sim, dt, running) {
     const U = sim.forward, f = CS.f.set(-U.x, U.y * 0.5, U.z).normalize();
     if (!CAM.fwd) CAM.fwd = f.clone(); if (CAM.snap) CAM.fwd.copy(f); else CAM.fwd.lerp(f, 1 - Math.pow(0.02, dt)).normalize();
-    const side = CS.side.crossVectors(CS.up, CAM.fwd).normalize(); // three: up x fwd = left-of-travel; mirror => screen right
+    const uw = sim.seg.roll ? sim.seg.upAt(sim.s) : null; CS.upT.set(uw ? -uw.x : 0, uw ? uw.y : 1, uw ? uw.z : 0);
+    CS.upS.lerp(CS.upT, 1 - Math.pow(0.002, dt)).normalize(); const UPV = CS.upS;   // smoothed "up" (rotates through the corkscrew)
+    const side = CS.side.crossVectors(UPV, CAM.fwd).normalize(); // three: up x fwd = left-of-travel; mirror => screen right
     const boosting = sim.boosting || sim.turboTimer > 0; CAM.kick += NR.clamp((boosting ? 1 : 0) - CAM.kick, -dt * 3, dt * 3);
     const want = running ? NR.clamp(sim.curvature * 110 * NR.lerp(0.4, 1, sim.speed01), -2.6, 2.6) : 0;
     CAM.look += (want - CAM.look) * (1 - Math.exp(-3 * dt)); CAM.roll += ((sim.drifting ? -sim.driftDir * 4 : 0) - CAM.roll) * (1 - Math.exp(-4 * dt));
-    const P = sim.position, pos = CS.pos.set(-P.x, P.y, P.z), anchor = CS.anchor.copy(pos); anchor.y -= Math.max(0, sim.y) * 0.5;
+    const P = sim.position, pos = CS.pos.set(-P.x, P.y, P.z), anchor = CS.anchor.copy(pos); anchor.addScaledVector(UPV, -Math.max(0, sim.y) * 0.5);
     let target, look; const bossScale = world && world.stage.boss ? 1.15 : 1;
     // corner look: Unity side vector is +right; in three the mirrored right = -side
     const right = CS.right.copy(side).negate();
     if (CAM.showcase > 0) {
       CAM.showcase -= dt; const a = NR.clamp01(CAM.showcase / 2.5);
-      target = CS.target.copy(pos).addScaledVector(CAM.fwd, 4.2 + 1.5 * a).addScaledVector(right, 1.6 * a); target.y += 0.9; look = CS.look.copy(pos); look.y += 0.2;
+      target = CS.target.copy(pos).addScaledVector(CAM.fwd, 4.2 + 1.5 * a).addScaledVector(right, 1.6 * a); target.addScaledVector(UPV, 0.9); look = CS.look.copy(pos).addScaledVector(UPV, 0.2);
       CAM.fwd.copy(f);
     } else {
       const dist = (6.4 + 1.8 * CAM.kick) * bossScale;
-      target = CS.target.copy(anchor).addScaledVector(CAM.fwd, -dist).addScaledVector(right, -CAM.look * 0.35); target.y += 2.6 * bossScale;
-      look = CS.look.copy(anchor).addScaledVector(CAM.fwd, 8.5).addScaledVector(right, CAM.look); look.y += 1.0;
+      target = CS.target.copy(anchor).addScaledVector(CAM.fwd, -dist).addScaledVector(right, -CAM.look * 0.35); target.addScaledVector(UPV, 2.6 * bossScale);
+      look = CS.look.copy(anchor).addScaledVector(CAM.fwd, 8.5).addScaledVector(right, CAM.look).addScaledVector(UPV, 1.0);
+      if (CAM.bossLook > 0) { CAM.bossLook -= dt; const k = Math.min(1, CAM.bossLook) * 0.65; look.lerp(CS.bossP, k); }
     }
     if (CAM.snap) { CAM.pos.copy(target); CAM.snap = false; } else CAM.pos.lerp(target, 1 - Math.pow(0.0006, dt));
     camera.position.copy(CAM.pos);
     if (CAM.shake > 0) { CAM.shake = Math.min(0.4, Math.max(0, CAM.shake - dt * 5)); camera.position.x += (Math.random() - 0.5) * CAM.shake; camera.position.y += (Math.random() - 0.5) * CAM.shake; }
-    camera.up.set(0, 1, 0); camera.lookAt(look);
+    camera.up.copy(UPV); camera.lookAt(look);
     if (CAM.showcase <= 0 && Math.abs(CAM.roll) > 0.01) camera.rotateZ(CAM.roll * Math.PI / 180);
     CAM.kickPunch = Math.max(0, (CAM.kickPunch || 0) - dt * 2.5); const fov = CAM.showcase > 0 ? 50 : 62 + 14 * sim.speed01 + 10 * CAM.kick + 6 * CAM.kickPunch; if (Math.abs(camera.fov - fov) > 0.05) { camera.fov = fov; camera.updateProjectionMatrix(); }
   }
 
   //================== INPUT (RaceInput.cs port) ==================
-  const held = { left: 0, right: 0, drift: 0, boost: 0 }, keys = {}; let jumpPress = false, steerSm = 0;
+  const held = { left: 0, right: 0, drift: 0, boost: 0 }, keys = {}; let jumpPress = false, itemPress = false, steerSm = 0;
   $$(".tb").forEach(b => {
     const k = b.dataset.k, ids = new Set();
-    const down = ev => { ev.preventDefault(); ids.add(ev.pointerId); try { b.setPointerCapture(ev.pointerId); } catch (e) { } b.classList.add("down"); if (k === "jump") jumpPress = true; else held[k] = 1; };
+    const down = ev => { ev.preventDefault(); ids.add(ev.pointerId); try { b.setPointerCapture(ev.pointerId); } catch (e) { } b.classList.add("down"); if (k === "jump") jumpPress = true; else if (k === "item") itemPress = true; else held[k] = 1; };
     const up = ev => { ids.delete(ev.pointerId); if (!ids.size) { b.classList.remove("down"); if (k !== "jump") held[k] = 0; } };
     b.addEventListener("pointerdown", down); b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up); b.addEventListener("lostpointercapture", up);
     b.addEventListener("contextmenu", e => e.preventDefault());
@@ -353,10 +399,10 @@ window.NR_MAIN = function () {
     dz.addEventListener("pointerup", end); dz.addEventListener("pointercancel", end); dz.addEventListener("lostpointercapture", end);
   }
   function readInput(dt) {
-    let steer = 0; if (drag) { steerSm += (drag.v - steerSm) * (1 - Math.exp(-14 * dt)); const j = jumpPress; jumpPress = false; return { steer: steerSm, jump: j, drift: !!(held.drift || keys.KeyZ || keys.ArrowDown), boost: !!(held.boost || keys.ShiftLeft || keys.KeyX) }; } if (held.left || keys.ArrowLeft || keys.KeyA) steer -= 1; if (held.right || keys.ArrowRight || keys.KeyD) steer += 1;
+    let steer = 0; if (drag) { steerSm += (drag.v - steerSm) * (1 - Math.exp(-14 * dt)); const j = jumpPress; jumpPress = false; const it = itemPress || keys.KeyE; itemPress = false; return { item: it, steer: steerSm, jump: j, drift: !!(held.drift || keys.KeyZ || keys.ArrowDown), boost: !!(held.boost || keys.ShiftLeft || keys.KeyX) }; } if (held.left || keys.ArrowLeft || keys.KeyA) steer -= 1; if (held.right || keys.ArrowRight || keys.KeyD) steer += 1;
     const drift = !!(held.drift || keys.KeyZ || keys.ControlLeft || keys.ArrowDown || keys.KeyS), boost = !!(held.boost || keys.ShiftLeft || keys.KeyX);
     steer = NR.clamp(steer, -1, 1); const r = dt * (steer === 0 ? 10 : 6); steerSm += NR.clamp(steer - steerSm, -r, r);
-    const j = jumpPress; jumpPress = false; return { steer: steerSm, jump: j, drift, boost };
+    const j = jumpPress; jumpPress = false; const it = itemPress || keys.KeyE; itemPress = false; return { steer: steerSm, jump: j, drift, boost, item: it };
   }
 
   //================== UI HELPERS ==================
@@ -468,12 +514,14 @@ window.NR_MAIN = function () {
   function buildStage(id, mode) {
     qbank = shuffledBank();
     const stage = id === "survival" ? NR.SURVIVAL : (NR.STAGES.find(s => s.id === id) || NR.STAGES[0]); if (id !== "survival") save.lastStage = stage.id; persist();
+    NR.STATE.plastic = ((save.plastic || {})[stage.id]) || 0;   // neuroplasticity shortcut state for this chapter
     const graph = stage.build(qbank); buildWorld(stage, graph);
     const sim = new NR.Sim(graph), learn = new NR.Session(qbank), forkSegByQ = new Map();
     for (const seg of graph.segments) if (seg.fork) forkSegByQ.set(seg.fork.questionId, seg);
-    let bossMax = 0; if (stage.boss) { for (const e of graph.allEvents()) if (e.type === NR.EV.Gate && e.tag === "boss") bossMax++; for (const s of graph.segments) if (s.fork) bossMax++; }
+    let bossMax = 0; if (stage.boss && !graph.bossMax) { for (const e of graph.allEvents()) if (e.type === NR.EV.Gate && e.tag === "boss") bossMax++; for (const s of graph.segments) if (s.fork) bossMax++; }
     race = { stage, graph, sim, learn, forkSegByQ, phase: "intro", t: 0, cd: 4, timeScale: 1, pending: null, pendingLanes: null, bossMax, bossHp: bossMax, finishT: 0, auto: AUTO ? new NR.AutoPilot() : null, paused: false, lastSection: "", combo: 0, comboT: 0, maxCombo: 0, score: 0, lastOrb: -9, mode: mode || "story" };
-    setupMode(race);
+    if (graph.bossMax) { race.bossMax = graph.bossMax; race.bossHp = graph.bossMax; }
+    setupMode(race); $("#h-collapse").classList.remove("on"); $("#app").classList.remove("danger"); updateItemUi();
     $("#h-combo").classList.remove("on"); fx.hide(); $("#mission").classList.remove("on"); $("#reflex").classList.remove("on"); miEvent = null; miResT = 0;
     screen(""); show("#hud", true); show("#touch", false); show("#qpanel", false); show("#apanel", false); show("#result", false); show("#pause", false);
     $("#h-boss").classList.toggle("on", stage.boss); updateBoss();
@@ -600,7 +648,7 @@ window.NR_MAIN = function () {
     setStyle("#h-prog", "width", (pf * 100).toFixed(1) + "%"); setStyle("#h-star", "left", (pf * 100).toFixed(1) + "%");
     setText("#h-time", fmt(sim.raceTime)); setText("#h-score", r.learn.correct + "/" + r.learn.total);
     setStyle("#h-energy", "width", (sim.boostEnergy * 100).toFixed(0) + "%");
-    updateVm(dt); tickCombo(dt); if (r.mode !== "story") tickMode(dt);
+    updateVm(dt); tickCombo(dt); tickCollapse(); if (r.mode !== "story") tickMode(dt);
     Snd.setHum(running ? sim.speed01 : 0, running && sim.boosting);
   }
 
@@ -636,7 +684,7 @@ window.NR_MAIN = function () {
   const COMBO_WINDOW = 4;
   function comboAdd(n, pts, label) {
     const r = race; r.combo += n; r.comboT = COMBO_WINDOW; r.maxCombo = Math.max(r.maxCombo, r.combo);
-    const mult = comboMult(); r.score += Math.round(pts * mult);
+    const mult = comboMult(); r.score += Math.round(pts * mult * (r.sim.dopamine > 0 ? 2 : 1));
     const el = $("#h-combo"); el.classList.add("on"); setText("#h-combo-n", r.combo); setText("#h-combo-x", "×" + mult.toFixed(1) + (label ? " " + label : ""));
     el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); Snd.combo(r.combo);
   }
@@ -704,6 +752,11 @@ window.NR_MAIN = function () {
   function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); starCorrect(); fx.burst(star.root.position, "correct"); } else { Snd.thud(); setExpr("Wrong", 2.2); starWrong(); CAM.shake = 0.15; } }
   function bossAnswer(ok) {
     const r = race; if (!r.bossMax) return;
+    if (r.graph.bossMax) {   // 4.6: a diagnosis does not hurt NULL by itself - it exposes (or keeps shut) the weak point
+      if (ok) { toast("정확한 진단! NULL 약점 노출 — 노란 링을 통과해 공격!", "#FFD34D", 2); world.bossHit(r.bossHp, r.bossMax); }
+      else { toast("오진! 약점이 닫힌 채 NULL이 반격합니다", "#FF4D6D", 1.8); world.bossAttack(); CAM.shake = 0.2; }
+      return;
+    }
     if (ok) { r.bossHp = Math.max(0, r.bossHp - 1); updateBoss(); world.bossHit(r.bossHp, r.bossMax); toast(r.bossHp === 0 ? "NULL 보호막 붕괴!" : "정확한 진단! NULL 보호막 " + r.bossHp + "/" + r.bossMax, "#2EE6D6", 1.8); }
     else { toast("오진! NULL이 반격합니다", "#FF4D6D", 1.6); world.bossAttack(); }
   }
@@ -717,18 +770,21 @@ window.NR_MAIN = function () {
         feedback(e.correct); let extra = null;
         if (e.src.tag === "glia" && e.correct) { extra = "희소돌기아교세포가 수초를 재생했습니다. 전도 속도 회복!"; toast("수초 복구 완료!", "#5CFF9D"); }
         else if (e.src.tag === "ap") extra = "활동전위 단계 " + (e.src.index + 1) + "/4";
-        if (e.src.tag === "boss") bossAnswer(e.correct);
+        if (e.src.tag === "boss") bossAnswer(e.correct); if (e.correct && e.src.questionId) world.showWeak(e.src.questionId);
         if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
         showAnswer(q, e.lane, e.correct, extra, e.correct ? 7 : 11); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
       case S.ForkChosen: {
+        if (!e.tag && sim.seg.prog0 != null && race.graph.segments.find(g => g.next.includes(sim.seg) && g.fork && g.fork.kind === "plastic")) {
+          const ap = race.graph.segments.find(g => g.next.includes(sim.seg)); if (e.lane === 1) toast(ap.fork.open ? "가소성 지름길! 강화된 연결로 빠르게" : "아직 잠겨 있어요 — 반복 학습으로 강화하세요", ap.fork.open ? "#5CFF9D" : "#B98CFF", 1.8); break;
+        }
         if (!e.tag) {   // 4.0 risk/reward split (no question)
           if (e.lane === 1) { toast("위험 루트! 레이저·NULL 블록 · 오브 ×3", "#FF4D6D", 1.6); comboAdd(1, 100, "도전"); } else toast("안전 루트", "#5CFF9D", 1.2);
           break;
         }
         const q = qbank.get(e.tag); r.learn.answer(e.tag, e.lane, sim.raceTime);
         world.forkResult(e.tag, e.lane);
-        if (r.stage.boss) bossAnswer(e.correct); feedback(e.correct); if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
+        if (r.stage.boss) bossAnswer(e.correct); if (e.correct) world.showWeak(e.tag); feedback(e.correct); if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
         showAnswer(q, e.lane, e.correct, e.correct ? "정답 경로: 지름길 + 신호 에너지 보너스!" : "복습 구간에 진입했습니다. 해설을 읽으며 천천히 이동하세요.", e.correct ? 7 : 12);
         if (!e.correct) toast("복습 구간 - 속도 저하", "#FF8A3D", 2); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
@@ -751,6 +807,27 @@ window.NR_MAIN = function () {
       case S.Checkpoint: toast("체크포인트", "#9B5CFF", 1); break;
       case S.EnterSegment: setSection(sim.seg.zone === NR.ZONE.Review ? "복습 구간" : sim.seg.zone === NR.ZONE.Shortcut ? "지름길" : sim.seg.name); break;
       case S.Finish: finish(); break;
+      // ---------- 4.6 special courses, items, boss ----------
+      case S.LoopResult:
+        if (e.correct) { toast("360° 루프 성공! 가속", "#5CFF9D", 1.4); Snd.fire(); comboAdd(2, 250, "루프"); fx.burst(star.root.position, "drift", 3); }
+        else { toast("속도 부족 — 루프에서 미끄러졌어요 (최고 속도로 진입!)", "#FF8A3D", 1.8); Snd.driftFail(); comboBreak(); }
+        break;
+      case S.Collapse: toast("붕괴에 휘말렸어요! 속도 저하", "#FF4D6D", 1.4); Snd.hit(); CAM.shake = 0.3; starHit(); comboBreak(); break;
+      case S.CollapseResult:
+        $("#h-collapse").classList.remove("on"); $("#app").classList.remove("danger");
+        if (e.correct) { toast("붕괴 탈출 성공! 탈수초가 퍼지기 전에 신호 전달", "#5CFF9D", 2); Snd.fire(); comboAdd(2, 300, "탈출"); Voice.say("탈출 성공! 수초가 무너지면 전도가 느려지니까, 신호가 붕괴보다 빨라야 해!", { mode: "idle" }); }
+        else { toast("탈출했지만 " + e.tier + "번 휘말렸어요", "#FF8A3D", 2); }
+        break;
+      case S.ItemGet: Snd.coin(); Snd.tone("triangle", 600, 1500, 0.2, 0.2); toast(ITEMS[e.tag].icon + " " + ITEMS[e.tag].name + " 획득! — " + ITEMS[e.tag].get, "#E8D8FF", 2); world.itemTaken(e.src); updateItemUi(); break;
+      case S.ItemUse: { const I = ITEMS[e.tag]; toast(I.icon + " " + I.use, I.col, 2.2); Snd.fire(); fx.burst(star.root.position, "fire"); if (e.tag === "dopa") { NRW.U.uFire.value = 0.6; } updateItemUi(); break; }
+      case S.ShieldBlock: toast("🔵 GABA 보호막이 충돌을 막았어요!", "#5C9CFF", 1.4); Snd.chime(); break;
+      case S.BossHit: {
+        world.weakHit(e.src); race.bossHp = sim.bossHp; updateBoss(); world.bossHit(sim.bossHp, race.bossMax);
+        Snd.fire(); fx.burst(star.root.position, "fire"); CAM.shake = 0.3; NRW.U.uFire.value = 1; comboAdd(3, 400 * e.tier, "약점");
+        toast(e.tag === "core" ? (e.tier >= 3 ? "💥 NULL 코어 직격! (부스트 ×3)" : "코어 타격 (부스트 상태면 3배!)") : "NULL 약점 타격! 체력 " + sim.bossHp + "/" + race.bossMax, "#FFD34D", 1.8);
+        if (sim.bossHp === 0) { Voice.say("해냈어! NULL의 체력이 0이야! 신경망이 다시 깨어나고 있어!", { mode: "replace" }); toast("NULL 소멸! 신경망 복구!", "#5CFF9D", 3); }
+        break;
+      }
       // ---------- 4.0 racing pieces & chapter missions ----------
       case S.Pad: if (e.tag === "boost") { Snd.boostStart(); toast("부스트 패드!", "#FFD34D", 0.7); } else { Snd.tone("square", 300, 1400, 0.3, 0.2); toast("점프대!", "#2EE6D6", 0.7); SV.squashVel += 6; } comboAdd(1, 50); fx.burst(star.root.position, "land"); break;
       case S.RingCombo: {
@@ -800,6 +877,10 @@ window.NR_MAIN = function () {
       case "hint":
         if (arg === "corner") hint("코너 진입! 안쪽으로 조향해 벽에 부딪히지 않게 하세요.", 4);
         else if (arg === "jump") hint("NULL 교란 구간! 큰 파동은 [점프], 작은 블록은 피하세요.", 4);
+        else if (arg === "loop") hint("360° 루프! 최고 속도로 들어가야 벽을 타고 한 바퀴 돌 수 있어요. 부스트를 아껴 두세요.", 4);
+        else if (arg === "warp") hint("시냅스 워프 포털! 전달 순서를 맞히면 다음 구간으로 워프 가속.", 4);
+        else if (arg === "plastic") hint("신경가소성 갈림길! 같은 챕터를 정답률 80% 이상으로 3번 클리어하면 지름길이 열려요. (자주 쓰는 연결이 강해지는 '장기강화'의 비유)", 6);
+        else if (arg === "core") hint("NULL 코어! 부스트나 미니 터보 상태로 노란 링을 통과하면 3배 대미지.", 4);
         else if (arg === "scurve") hint("S자 커브! 리듬 타고 좌우로 — 오브 라인을 따라가요.", 3);
         else if (arg === "jumppad") hint("점프대! 가운데로 올라타면 높이 날아 장애물을 넘어요.", 3);
         else if (arg === "movers") hint("움직이는 NULL 블록! 좌우로 오가니 빈틈을 노려요.", 3);
@@ -809,6 +890,15 @@ window.NR_MAIN = function () {
         else if (arg === "rings") hint("말이집 구간! 결절(링)을 3·5·10연속 통과하면 부스트 — 정중앙이면 PERFECT!", 4);
         else if (arg === "split") hint("갈래 길! 왼쪽은 안전, 오른쪽은 위험하지만 오브 3배.", 4);
         else if (arg === "drift") hint("급커브! [드리프트]를 누른 채 커브 방향으로 조향 → 놓으면 미니 터보!", 6);
+        break;
+      case "loop": if (arg === "check") toast("360° 루프! 벽을 타고 한 바퀴", "#9CFFEA", 1.2); break;
+      case "collapse": if (arg === "on") { $("#h-collapse").classList.add("on"); hint("축삭 붕괴가 뒤에서 쫓아와요! 충돌하면 붙잡혀요 — 초록 복구 오브로 버티며 탈출!", 5); Voice.say("뒤에서 축삭이 무너지고 있어! 멈추지 말고 달려!", { mode: "queue" }); } break;
+      case "boss":
+        if (/^phase[123]$/.test(arg)) {
+          const P = { phase1: ["PHASE 1", "신호 교란 — 레이저와 블록을 피하며 에너지 확보"], phase2: ["PHASE 2", "진단 → 약점 노출 → 노란 링으로 공격"], phase3: ["PHASE 3", "최종 패턴 — 마지막 진단 후 부스트로 코어 돌파"] }[arg];
+          const el = $("#h-phase"); el.innerHTML = P[0] + "<small>" + P[1] + "</small>"; el.style.display = "block"; setTimeout(() => el.style.display = "none", 2600);
+          CAM.bossLook = 1.6; Snd.tone("sawtooth", 120, 60, 0.8, 0.3); Voice.say({ phase1: "NULL이 신호를 흩뜨리고 있어! 피하면서 에너지를 모으자!", phase2: "증상을 보고 정확히 진단해야 약점이 열려!", phase3: "마지막이야! 진단하고, 부스트로 코어를 뚫자!" }[arg], { mode: "queue" });
+        } else if (arg.startsWith("counter:")) { const id = arg.slice(8); if (!race.sim.gateOk[id]) { world.bossAttack(); toast("NULL 반격! 레이저 주의", "#FF4D6D", 1.4); } }
         break;
       case "mission":
         if (arg.startsWith("sort:")) { const t = { nuclei: "뇌줄기 신경핵 탐험! 지금 층에 있는 신경핵 차선으로!", relay: "시상 중계 미션! 감각 신호를 맞는 중계핵으로 보내!", cortex: "대뇌 기능 포털! 명령에 맞는 겉질 영역으로!", cranial: "12뇌신경 포털! 동작에 맞는 뇌신경으로!" }[arg.slice(5)]; hint(t, 4); Voice.say(t, { mode: "queue" }); }
@@ -827,7 +917,7 @@ window.NR_MAIN = function () {
       case "forkq": { const fs = r.forkSegByQ.get(arg); ask(arg, "갈림길! 정답 경로로 들어가세요" + thinkTag, fs ? fs.fork.laneX : null, fs ? { seg: fs, s: fs.length } : null); break; }
       case "gateq": { const g = findGate(arg); ask(arg, (arg === "ch1_gate_glia" ? "수초 복구 게이트" : r.stage.gateTitle) + thinkTag, g ? g.e.laneX : null, g ? { seg: g.seg, s: g.e.s } : null); break; }
       case "boss": if (arg === "attack") { world.bossAttack(); toast("NULL 반격! 파동은 점프!", "#FF4D6D", 1.4); CAM.shake = 0.2; } break;
-      case "synapse": if (arg === "minigame") openMinigame(); else if (arg === "cross") toast("신경전달물질 다리 통과!", "#FF5CC8", 1.5); break;
+      case "synapse": if (arg === "warp") openMinigame("warp"); else if (arg === "minigame") openMinigame(); else if (arg === "cross") toast("신경전달물질 다리 통과!", "#FF5CC8", 1.5); break;
     }
   }
   function finish() {
@@ -836,11 +926,14 @@ window.NR_MAIN = function () {
   }
 
   //================== SYNAPSE MINIGAME (GameUI.Minigame.cs) ==================
-  function openMinigame() {
-    const r = race; r.phase = "mini"; show("#touch", false); show("#qpanel", false); setExpr("Surprise", 1.5);
+  function openMinigame(kind) {
+    const r = race; r.phase = "mini"; show("#touch", false); show("#qpanel", false); setExpr("Surprise", 1.5); const warp = kind === "warp";
+    $("#mini h2").textContent = warp ? "시냅스 워프 포털" : "시냅스 게이트";
     const qo = qbank.get("ch1_syn_order"), qe = qbank.get("ch1_syn_epsp");
     const done = (success, mistakes, epsp) => { r.learn.answer(qo.id, mistakes === 0 ? qo.answer : 1, r.sim.raceTime); r.learn.answer(qe.id, epsp, r.sim.raceTime); closeMinigame(success); };
-    if (r.auto) { done(true, 0, qe.answer); return; }
+    const warpDone = ok => { show("#mini", false); r.sim.addTurbo(ok ? 3 : 0.8); r.sim.addEnergy(ok ? 0.4 : 0); CAM.kickPunch = 1.6; NRW.U.uFire.value = 1; show("#touch", !r.auto); steerSm = 0; for (const k in held) held[k] = 0;
+      toast(ok ? "🌀 시냅스 워프! 전달 성공 — 초가속" : "워프 불안정 — 약한 가속", ok ? "#FF5CC8" : "#B4AEDB", 2); if (ok) { Snd.fire(); comboAdd(3, 400, "워프"); } r.phase = "run"; };
+    if (r.auto) { if (warp) warpDone(true); else done(true, 0, qe.answer); return; }
     show("#mini", true); let next = 0, mistakes = 0;
     const order = qo.options.map((_, i) => i).sort(() => Math.random() - 0.5);
     $("#mg-prompt").textContent = qo.question; Voice.say("시냅스 게이트야! " + qo.question + " 순서대로 눌러 줘.");
@@ -852,7 +945,7 @@ window.NR_MAIN = function () {
       if (i === next) {
         b.classList.add("gone"); const li = $("#mg-slots").children[next]; li.textContent = (next + 1) + ". " + qo.options[i]; li.classList.add("done"); Snd.coin();
         if (next === 1) $("#mg-ca").style.opacity = 1; if (next === 2) $$("#mg-ves i").forEach(v => v.style.transform = "translateY(60px) scale(.6)");
-        next++; if (next === 5) phase2();
+        next++; if (next === 5) { if (warp) { $("#mg-fb").textContent = "전달 완료! " + (mistakes === 0 ? "완벽해요!" : "실수 " + mistakes + "회"); Snd.chime(); setTimeout(() => warpDone(mistakes <= 1), 700); } else phase2(); }
       } else { mistakes++; b.classList.remove("no"); void b.offsetWidth; b.classList.add("no"); Snd.thud(); $("#mg-fb").textContent = "순서가 달라요! 다음 단계를 다시 생각해 보세요. (실수 " + mistakes + ")"; }
     }));
     function phase2() {
@@ -892,6 +985,19 @@ window.NR_MAIN = function () {
     $("#r-wrong").innerHTML = wrong.length ? `<div class="grade">복습할 문제 ${wrong.length}개 (오답 노트에 저장됨)</div>` + wrong.map(q => `<div class="entry"><b>${esc(q.question)}</b><br><span class="ok">정답: ${esc(q.options[q.answer])}</span><br>${esc(q.explanation)}</div>`).join("") : `<div class="grade">모든 문제를 맞혔어요! 완벽한 신호 전달 ★</div>`;
     const idx = NR.STAGES.indexOf(r.stage); $("#result [data-act=next]").style.display = idx >= 0 && idx < NR.STAGES.length - 1 ? "" : "none";
     modeResult(r, t);
+    // 4.6 mastery: plasticity strength, XP, evolution
+    const prevForm = formLevel(); let xpGain = 0, plasticMsg = "";
+    if (r.mode !== "survival" && L.accuracy >= 0.8) {
+      xpGain++; if (L.accuracy === 1) xpGain++; if (r.mode === "rival" && r.position === 1) xpGain++;
+      const pl = save.plastic || (save.plastic = {}), before = pl[r.stage.id] || 0; pl[r.stage.id] = Math.min(3, before + 1);
+      plasticMsg = pl[r.stage.id] >= 3 ? (before < 3 ? "🧠 신경가소성 지름길 개방! 다음 주행부터 열려 있어요." : "") : `🧠 신경가소성 강화 ${pl[r.stage.id]}/3 — 3이 되면 이 챕터의 지름길이 열려요.`;
+    }
+    if (r.mode === "survival" && sim.raceTime >= 60) xpGain++;
+    save.xp = (save.xp || 0) + xpGain; persist();
+    const newForm = formLevel(), evoMsg = newForm > prevForm ? `⭐ 진화! STAR-01이 ${FORMS[newForm].name}(으)로 진화했어요!` : "";
+    if (xpGain || plasticMsg || evoMsg) $("#r-wrong").insertAdjacentHTML("afterbegin", `<div class="entry">${xpGain ? `숙련 XP +${xpGain} (총 ${save.xp})` : ""}${plasticMsg ? "<br>" + plasticMsg : ""}${evoMsg ? "<br><b>" + evoMsg + "</b>" : ""}</div>`);
+    if (evoMsg) { if (save.skin == null || save.skin === prevForm) { save.skin = newForm; persist(); } applySkin(); setTimeout(() => Voice.say("우와, 진화했어! 이제 나는 " + FORMS[newForm].name + "야!", { mode: "queue" }), 1500); }
+    if (r.graph.bossMax) { $("#r-title").textContent = sim.bossHp === 0 ? "🏆 NULL 소멸! 신경망 복구 완료" : `NULL 도주… (남은 체력 ${sim.bossHp}/${r.bossMax})`; }
     show("#hud", false); show("#result", true); Snd.play("menu"); $("#mission").classList.remove("on"); $("#reflex").classList.remove("on");
     Voice.say(acc === 100 ? "완벽해! 문제를 전부 맞혔어!" : "완주 성공! 틀린 문제는 오답 노트에서 같이 다시 보자.");
     window.__nrResult = { stage: r.stage.id, mode: r.mode, position: r.position, time: t, correct: L.correct, total: L.total, coins: sim.coins, score: r.score, maxCombo: r.maxCombo };
@@ -996,6 +1102,7 @@ window.NR_MAIN = function () {
     const b = ev.target.closest("[data-act]"); if (!b) return; const a = b.dataset.act;
     if (a === "play") startStage(save.lastStage || "ch1");
     else if (a === "stages") { hideRacers(); show("#result", false); show("#pause", false); race = null; Voice.stop(); show("#hud", false); show("#touch", false); show("#qpanel", false); show("#apanel", false); renderStages(); screen("stages"); menuScene(); Snd.play("menu"); }
+    else if (a === "evo") { renderEvo(); screen("evo"); }
     else if (a === "story") { screen("story"); save.loreSeen = true; persist(); }
     else if (a === "codex" || a === "notes") { codexMode = a; renderCodex(); screen("codex"); }
     else if (a === "settings") { renderSettings($("#settings-list")); screen("settings"); }
@@ -1069,7 +1176,7 @@ window.NR_MAIN = function () {
   window.NR_APP = { startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
   function boot() {
     if (boot.done) return; boot.done = true;
-    setupPost(); renderStages(); menuScene(); screen(save.loreSeen || AUTO ? "title" : "story"); if (!save.loreSeen) { save.loreSeen = true; persist(); }
+    setupPost(); applySkin(); renderStages(); menuScene(); screen(save.loreSeen || AUTO ? "title" : "story"); if (!save.loreSeen) { save.loreSeen = true; persist(); }
     $("#loading").classList.add("off");
     Snd.want = "menu";
     requestAnimationFrame(frame);

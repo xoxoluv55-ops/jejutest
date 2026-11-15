@@ -67,7 +67,7 @@ const NR = (function () {
 
   // ---------------- Track model ----------------
   const ZONE = { Normal: 0, ForkApproach: 1, Shortcut: 2, Review: 3, Myelin: 4, Damaged: 5, Synapse: 6 };
-  const EV = { Trigger: 0, Gate: 1, NodeRing: 2, Obstacle: 3, Orb: 4, RepairOrb: 5, Checkpoint: 6, Finish: 7, Epsp: 8, Ipsp: 9, JumpPad: 10, Mover: 11, Laser: 12, Sort: 13, Reflex: 14 };
+  const EV = { Trigger: 0, Gate: 1, NodeRing: 2, Obstacle: 3, Orb: 4, RepairOrb: 5, Checkpoint: 6, Finish: 7, Epsp: 8, Ipsp: 9, JumpPad: 10, Mover: 11, Laser: 12, Sort: 13, Reflex: 14, ItemBox: 15, Weak: 16 };
   // web 2.5 tuning (Unity/C# parity = { width: 1, arcade: false }): wider roads, arcade drift
   const TUNE = { width: 1.45, arcade: true, gap: 560, gateTail: 220 };   // gap/gateTail: room for STAR-01 to finish talking between questions (Unity: 320 / 0)
 
@@ -93,8 +93,12 @@ const NR = (function () {
     pointAt(s) { const [i, f] = this.idx(s); return lerpV(this.pos[i], this.pos[i + 1], f); }
     tangentAt(s) { const [i, f] = this.idx(s); return norm(lerpV(this.tan[i], this.tan[i + 1], f)); }
     curvatureAt(s) { const [i, f] = this.idx(s); return lerp(this.curv[i], this.curv[i + 1], f); }
-    rightAt(s) { const t = this.tangentAt(s); let r = V(t.z, 0, -t.x); if (r.x * r.x + r.z * r.z < 1e-6) r = V(1, 0, 0); return norm(r); }
-    worldPos(s, x, y) { return add(add(this.pointAt(s), mul(this.rightAt(s), x)), mul(UP, y)); }
+    // 4.6: optional roll around the travel direction (360° corkscrew = riding the tube walls)
+    rollAt(s) { const R = this.roll; if (!R) return 0; const u = clamp01((s - R.s0) / (R.s1 - R.s0)); return R.turns * Math.PI * 2 * u * u * (3 - 2 * u); }
+    flatRight(s) { const t = this.tangentAt(s); let r = V(t.z, 0, -t.x); if (r.x * r.x + r.z * r.z < 1e-6) r = V(1, 0, 0); return norm(r); }
+    rightAt(s) { const r = this.flatRight(s); if (!this.roll) return r; const a = this.rollAt(s); return norm(add(mul(r, Math.cos(a)), mul(UP, Math.sin(a)))); }
+    upAt(s) { if (!this.roll) return UP; const r = this.flatRight(s), a = this.rollAt(s); return norm(sub(mul(UP, Math.cos(a)), mul(r, Math.sin(a)))); }
+    worldPos(s, x, y) { if (!this.roll) return add(add(this.pointAt(s), mul(this.flatRight(s), x)), mul(UP, y)); return add(add(this.pointAt(s), mul(this.rightAt(s), x)), mul(this.upAt(s), y)); }
     sortEvents() { this.events.sort((a, b) => a.s - b.s); }
   }
 
@@ -131,8 +135,8 @@ const NR = (function () {
     trigger(tag, ahead = 0) { this.event(EV.Trigger, 0, tag, ahead); return this; }
     eventAt(type, sFromNow, x, tag = null) { const e = mkEvent(type, this.polyLen + sFromNow, x, tag); this.pending.push(e); return e; }
     straightWith(L, count, make, rise = 0) { for (let i = 0; i < count; i++) make(i, L * (i + 1) / (count + 1)); return this.straight(L, rise); }
-    cut(name, zone, hw, theme = null) {
-      const W = TUNE.width, seg = this.graph.add(name, zone, hw * W); seg.theme = theme; seg.build(this.pts.slice());
+    cut(name, zone, hw, theme = null, extra = null) {
+      const W = TUNE.width, seg = this.graph.add(name, zone, hw * W); seg.theme = theme; seg.build(this.pts.slice()); if (extra) Object.assign(seg, extra);
       const scale = this.polyLen > 1e-3 ? seg.length / this.polyLen : 1;
       for (const e of this.pending) {
         e.s = clamp(e.s * scale, 0, seg.length); seg.events.push(e);
@@ -147,13 +151,14 @@ const NR = (function () {
       this.prevSeg = seg; this.pts = [this.pos]; this.polyLen = 0; return seg;
     }
     // 4.0: risk/reward split without a question: lane 0 = safe (few orbs), lane 1 = risky (movers, lasers, many orbs)
-    split(approach, length, bulge) {
+    split(approach, length, bulge, bulge1) {
       const laneX = laneXs(2, 9 * TUNE.width); approach.fork = { questionId: null, laneX, correctLane: -1, free: true, labels: ["안전 루트", "위험 루트 · 보상 ×3"] }; approach.nextStartOffset = laneX;
       const F = this.pos, f = this.fwd, r = this.right, M = add(F, mul(f, length)), branches = [], mergeOffsets = [];
       for (let i = 0; i < 2; i++) {
         const o = laneX[i], oEnd = o * 0.3; mergeOffsets.push(oEnd);
         const bp = [add(F, mul(r, o)), add(add(F, mul(f, 20)), mul(r, o))], n = Math.ceil((length - 40) / 8);
-        for (let k = 1; k < n; k++) { const t = k / n, along = 20 + (length - 40) * t; bp.push(add(add(F, mul(f, along)), mul(r, lerp(o, oEnd, t) + sign(o) * bulge * Math.sin(Math.PI * t)))); }
+        const bg = i === 1 && bulge1 != null ? bulge1 : bulge;
+        for (let k = 1; k < n; k++) { const t = k / n, along = 20 + (length - 40) * t; bp.push(add(add(F, mul(f, along)), mul(r, lerp(o, oEnd, t) + sign(o) * bg * Math.sin(Math.PI * t)))); }
         bp.push(add(sub(M, mul(f, 20)), mul(r, oEnd))); bp.push(add(M, mul(r, oEnd)));
         const seg = this.graph.add(i ? "위험 루트" : "안전 루트", ZONE.Normal, 6 * TUNE.width); seg.theme = approach.theme; seg.build(bp); seg.risk = i === 1;
         const L = seg.length, W = TUNE.width;
@@ -165,6 +170,15 @@ const NR = (function () {
         seg.sortEvents(); approach.next.push(seg); branches.push(seg);
       }
       this.pendingMerge = branches; this.pendingMergeOffsets = mergeOffsets; this.prevSeg = null; this.pos = M; this.pts = [this.pos]; this.polyLen = 0; return branches;
+    }
+    // 4.6 neuroplasticity: lane 1 is a short path that is walled off until the player has mastered the chapter (STATE.plastic >= 3)
+    plasticSplit(approach, length, open, level) {
+      const branches = this.split(approach, length, 110, 8);
+      approach.fork.labels = ["기존 경로", open ? "가소성 지름길 (개방!)" : `가소성 지름길 (강화 ${level}/3)`]; approach.fork.kind = "plastic"; approach.fork.open = open;
+      const sc = branches[1]; sc.events = sc.events.filter(e => e.type === EV.Orb); sc.risk = false; sc.name = "가소성 지름길";
+      if (!open) { const wall = mkEvent(EV.Obstacle, 25, 0, "barrier"); wall.width = 40; wall.height = 99; sc.events.push(wall); }
+      else for (let k = 0; k < 6; k++) { const pad = mkEvent(EV.JumpPad, 40 + k * 55, 0, "boost"); pad.width = 6; sc.events.push(pad); }
+      sc.sortEvents(); return branches;
     }
     fork(approach, q, length, bulge, spacing) {
       const lanes = q.options.length, laneX = laneXs(lanes, spacing * TUNE.width);
@@ -264,16 +278,21 @@ const NR = (function () {
     return 120 + items.length * gap + 40;
   }
 
+  const STATE = { plastic: 0 };   // set by the app before building a course
+  function itemRow(b, s) { [-3.2, 0, 3.2].forEach(x => b.eventAt(EV.ItemBox, s, x, "item")); }
+
   // ---------------- 4.0 racing set pieces ----------------
   function piece(b, kind, theme, dir) {
     const W = TUNE.width;
     switch (kind) {
       case "sprint": {   // long straight with boost pads and orb lines
+        itemRow(b, 280);
         [60, 210, 360].forEach(s => { const p = b.eventAt(EV.JumpPad, s, 0, "boost"); p.width = 6; });
         for (let k = 0; k < 10; k++) b.eventAt(EV.Orb, 30 + k * 45, 2.6 * Math.sin(k * 0.7));
         b.straight(480); return b.cut("고속 직선 구간", ZONE.Normal, 6, theme);
       }
       case "scurve": {
+        itemRow(b, 30);
         b.trigger("hint:scurve", 0); for (let k = 0; k < 8; k++) b.eventAt(EV.Orb, 20 + k * 40, (k % 4 < 2 ? 1 : -1) * 2.8 * dir);
         b.turn(dir * 60, 85); b.turn(-dir * 120, 85); b.turn(dir * 60, 85); return b.cut("S자 커브", ZONE.Normal, 6, theme);
       }
@@ -284,6 +303,7 @@ const NR = (function () {
         b.straight(400, 6); return b.cut("점프대 구간", ZONE.Normal, 6, theme);
       }
       case "movers": {
+        itemRow(b, 20);
         b.trigger("hint:movers", 0);
         [70, 140, 210, 280].forEach((s, k) => { const m = b.eventAt(EV.Mover, s, 0, "mover"); Object.assign(m, { amp: 4.2, w: 1.6 + k * 0.25, ph: k * 1.3, width: 3.2, height: 1.4 }); b.eventAt(EV.Orb, s + 30, -2.5 * Math.sin(k)); });
         b.straight(360); b.turn(dir * 35, 150); return b.cut("움직이는 NULL 구간", ZONE.Normal, 6, theme);
@@ -313,6 +333,28 @@ const NR = (function () {
         const t = b.event(EV.Trigger, 0, "line:on", 15); t.lineAmp = 3.4; t.lineLen = 90;
         b.straight(120); b.turn(dir * 40, 160); b.straight(120); b.turn(-dir * 40, 160); b.straight(60); b.event(EV.Trigger, 0, "line:off", -12);
         return b.cut("소뇌 균형 라인", ZONE.Normal, 6, theme);
+      }
+      case "loop": {   // 360° corkscrew: needs speed on entry
+        b.trigger("hint:loop", 0); b.straight(110);
+        b.event(EV.Trigger, 0, "loop:check", 6); b.eventAt(EV.Trigger, 300, 0, "loop:done");
+        for (let k = 0; k < 6; k++) b.eventAt(EV.Orb, 60 + k * 36, 0);
+        b.straight(330); return b.cut("360° 루프 — 축삭 벽 타기", ZONE.Normal, 6, theme, { roll: { s0: 120, s1: 410, turns: dir } });
+      }
+      case "collapse": {   // axon degeneration chasing from behind
+        b.trigger("collapse:on", 10).trigger("hint:collapse", 0);
+        [90, 200, 330, 450].forEach((s, k) => { const o = b.eventAt(EV.Obstacle, s, k % 2 ? 3 : -3, "glitch"); o.width = 3.4; o.height = 1.4; });
+        [140, 270, 400].forEach((s, k) => { b.eventAt(EV.RepairOrb, s, k % 2 ? -2.6 : 2.6).index = k; });
+        for (let k = 0; k < 8; k++) b.eventAt(EV.Orb, 60 + k * 60, 0);
+        b.straight(200); b.turn(dir * 40, 170); b.straight(220); b.event(EV.Trigger, 0, "collapse:off", -5);
+        return b.cut("축삭 붕괴 탈출", ZONE.Damaged, 6, theme);
+      }
+      case "warp": {   // synapse warp portal: the synaptic transmission mini-mission, success = warp boost
+        b.trigger("hint:warp", 0); b.eventAt(EV.Trigger, 170, 0, "synapse:warp"); b.straight(260);
+        return b.cut("시냅스 워프 포털", ZONE.Synapse, 5, theme);
+      }
+      case "plastic": {
+        b.trigger("hint:plastic", 0); b.straight(220); const ap = b.cut("신경가소성 갈림길", ZONE.ForkApproach, 9, theme);
+        const lv = (STATE.plastic || 0); b.plasticSplit(ap, 440, lv >= 3, lv); return ap;
       }
       case "reflex": {   // spinal reflexes: react to the stimulus with the matching action
         b.trigger("mission:reflex", 2);
@@ -371,7 +413,7 @@ const NR = (function () {
       const gate = b.eventAt(EV.Gate, s0 + 175, 0, "ap"); gate.questionId = id; gate.laneX = laneXs(q.options.length, 6); gate.correctLane = q.answer; gate.index = g;
     });
     b.straight(60 + AP.length * GAP); b.cut("활동전위 게이트", ZONE.Normal, 9);
-    piece(b, "jumppads", null, -1);
+    piece(b, "jumppads", null, -1); piece(b, "loop", null, 1); piece(b, "plastic", null, -1);
     b.trigger("story:saltatory", 0).trigger("codex:myelin", 0).trigger("codex:ranvier", 30);
     b.straight(300); b.turn(40, 200); b.straight(300); b.turn(-50, 180, 8); b.straight(220);
     { const total = b.distance; let k = 0; for (let d = 45; d < total - 30; d += 55, k++) { const r = b.eventAt(EV.NodeRing, d - total, 3.2 * Math.sin(k * 0.9)); r.width = 2.6; r.index = k; } }
@@ -389,7 +431,7 @@ const NR = (function () {
       const gate = b.eventAt(EV.Gate, 540 - total, 0, "glia"); gate.questionId = qG.id; gate.laneX = laneXs(qG.options.length, 4); gate.correctLane = qG.answer;
     }
     b.cut("수초 손상 구간", ZONE.Damaged, 6);
-    piece(b, "movers", null, 1);
+    piece(b, "collapse", null, -1); piece(b, "movers", null, 1);
     b.trigger("codex:terminal", 0).trigger("banner:terminal", 0);
     b.straight(120); b.turn(90, 70); b.straightWith(80, 3, (i, s) => b.eventAt(EV.Orb, s, 0)); b.turn(-120, 45); b.straight(100);
     b.event(EV.Checkpoint, 0, "cp2"); b.cut("축삭종말", ZONE.Normal, 6);
@@ -416,7 +458,7 @@ const NR = (function () {
     b.straightWith(160, 4, (i, s) => b.eventAt(EV.Orb, s, 0), 8); b.turn(60, 110); b.straight(80); b.turn(-70, 90);
     b.cut("마루엽 지구 (Parietal)", ZONE.Normal, 6, "parietal");
     gate("ch7_gate_neglect", 40, "lobe", 6); b.straight(280); b.cut("마루엽 · 공간 인식 게이트", ZONE.Normal, 9, "parietal");
-    piece(b, "movers", "parietal", 1);
+    piece(b, "movers", "parietal", 1); piece(b, "loop", "parietal", -1); piece(b, "plastic", "parietal", 1);
     b.trigger("forkq:ch7_fork_a1", 0); b.straight(300); f = b.cut("청각 정보 갈림길", ZONE.ForkApproach, 9, "parietal"); b.fork(f, bank.get("ch7_fork_a1"), 400, 160, 6);
     b.trigger("story:ch7_temporal", 0).trigger("codex:temporal", 0).trigger("codex:a1", 20);
     b.turn(-45, 160, -6); b.straightWith(140, 3, (i, s) => b.eventAt(EV.Orb, s, 2.6 * Math.sin(i * 1.3))); b.turn(80, 70); b.straight(60);
@@ -432,7 +474,51 @@ const NR = (function () {
   }
 
   const CH9_BOSS = ["ch9_boss_cst", "ch9_boss_hemianopia", "ch9_boss_cerebellum", "ch9_boss_lmn", "ch9_boss_wernicke"];
-  function chapter9(bank) {
+  function chapter9(bank) { return TUNE.arcade ? bossArena(bank) : chapter9Classic(bank); }
+  // 4.6 NULL boss in three phases. The boss only loses HP when STAR-01 hits an exposed weak point;
+  // a correct diagnosis (gate) exposes the weak point behind it, a wrong one triggers a counterattack.
+  function bossArena(bank) {
+    const R = 170, b = new Builder(V(R, 0, 0), 0), arc = (deg, rise) => b.turn(-deg, R, rise);
+    const weak = (s, x, need, dmg, final) => { const w = b.eventAt(EV.Weak, s, x, final ? "core" : "weak"); w.need = need; w.dmg = dmg; w.final = !!final; return w; };
+    // PHASE 1 - signal disruption: lasers, moving NULL blocks, pulses; collect energy
+    b.trigger("story:ch9_intro", 1).trigger("boss:phase1", 110).trigger("codex:decussation", 60);
+    [70, 150, 230, 320, 400].forEach((s, k) => {
+      if (k % 2 === 0) { const L = b.eventAt(EV.Laser, s, 0, "laser"); Object.assign(L, { period: 1.7, on: 0.8, ph: k * 0.37 }); }
+      else { const m = b.eventAt(EV.Mover, s, 0, "mover"); Object.assign(m, { amp: 4, w: 1.9 + k * 0.2, ph: k, width: 3.4, height: 1.4 }); }
+      b.eventAt(EV.Orb, s + 35, 0); b.eventAt(EV.Orb, s + 45, (k % 2 ? 2.8 : -2.8));
+    });
+    itemRow(b, 440);
+    arc(80, 4); arc(80, 4); b.cut("PHASE 1 · 신호 교란", ZONE.Normal, 7, "boss");
+    // PHASE 2 - diagnosis exposes weak points
+    b.trigger("boss:phase2", 5);
+    CH9_BOSS.forEach((id, k) => {
+      const q = bank.get(id);
+      b.eventAt(EV.Trigger, 15, 0, "gateq:" + id);
+      const g = b.eventAt(EV.Gate, 190, 0, "boss"); g.questionId = id; g.laneX = laneXs(q.options.length, 6); g.correctLane = q.answer; g.index = k;
+      arc(75, 6); b.cut("PHASE 2 · 진단 게이트 " + (k + 1), ZONE.Normal, 9, "boss");
+      b.trigger("boss:counter:" + id, 5);
+      const wave = b.eventAt(EV.Obstacle, 45, 0, "pulse"); wave.width = 16; wave.height = 1.2;
+      weak(120, [-3, 3, 0, -2.5, 2.5][k], id, 1, false);
+      const L = b.eventAt(EV.Laser, 180, 0, "laser"); Object.assign(L, { period: 1.6, on: 0.75, ph: k * 0.3 });
+      b.eventAt(EV.Orb, 90, 0); b.eventAt(EV.Orb, 150, 0);
+      arc(80, 6); b.cut("NULL 약점 노출 구간", ZONE.Normal, 7, "boss");
+    });
+    // PHASE 3 - rapid pattern: rings, lasers, movers, jump pad, final diagnosis and the core
+    b.trigger("boss:phase3", 5);
+    { const total0 = 0; for (let k = 0; k < 8; k++) { const r = b.eventAt(EV.NodeRing, 40 + k * 32, 3 * Math.sin(k * 0.9)); r.width = 2.6; r.index = k; } }
+    [310, 370].forEach((s, k) => { const L = b.eventAt(EV.Laser, s, 0, "laser"); Object.assign(L, { period: 1.3, on: 0.65, ph: k * 0.5 }); });
+    { const m = b.eventAt(EV.Mover, 430, 0, "mover"); Object.assign(m, { amp: 4.4, w: 2.6, ph: 1, width: 3.4, height: 1.4 }); }
+    { const p = b.eventAt(EV.JumpPad, 480, 0, "jump"); p.width = 7; const o = b.eventAt(EV.Obstacle, 512, 0, "pulse"); o.width = 16; o.height = 1.2; }
+    arc(70, 3); arc(80, 3); b.cut("PHASE 3 · 최종 패턴", ZONE.Myelin, 7, "boss");
+    b.trigger("forkq:ch9_final_brownsequard", 0).trigger("codex:brown_sequard", 0); arc(70, 2);
+    const f = b.cut("최종 진단 갈림길", ZONE.ForkApproach, 9, "boss"); b.fork(f, bank.get("ch9_final_brownsequard"), 380, 140, 9);
+    b.trigger("story:ch9_final", 0).trigger("hint:core", 10);
+    for (let k = 0; k < 3; k++) { const p = b.eventAt(EV.JumpPad, 40 + k * 45, 0, "boost"); p.width = 6; }
+    weak(200, 0, "ch9_final_brownsequard", 3, true);
+    b.straight(280); b.event(EV.Finish, 0, "finish", -10); b.cut("NULL 코어 — 신경망 복구", ZONE.Normal, 6, "boss");
+    const g = b.graph; g.referenceLength = shortestLength(g); g.parTime = g.referenceLength / 41; g.bossMax = 8; return g;
+  }
+  function chapter9Classic(bank) {
     const R = 170, b = new Builder(V(R, 0, 0), 0), arc = (deg, rise) => b.turn(-deg, R, rise);
     b.trigger("story:ch9_intro", 1).trigger("codex:decussation", 40).trigger("hint:steer", 20);
     arc(60, 4); b.eventAt(EV.Orb, 20, -2); b.eventAt(EV.Orb, 60, 2); arc(50, 4); b.cut("NULL 아레나 외곽", ZONE.Normal, 7, "boss");
@@ -477,7 +563,7 @@ const NR = (function () {
           xs.forEach((x, i) => { const full = i === 2, o = b.eventAt(EV.Obstacle, 60 + i * 55, x, full ? "pulse" : "glitch"); o.width = full ? 16 : 3.2; o.height = 1.3; b.eventAt(EV.Orb, 85 + i * 55, -x * 0.8); });
           b.straight(360); b.turn(dir * 40, 140); b.cut(obs++ === 0 ? "NULL 교란 구간" : "NULL 교란 구간 " + obs, ZONE.Normal, 6, theme); break;
         }
-        case "sprint": case "scurve": case "jumppads": case "movers": case "lasers": case "narrow": case "dzone": case "rings": case "split": case "balance": case "reflex": piece(b, kind, theme, dir); break;
+        case "sprint": case "scurve": case "jumppads": case "movers": case "lasers": case "narrow": case "dzone": case "rings": case "split": case "balance": case "reflex": case "loop": case "collapse": case "warp": case "plastic": piece(b, kind, theme, dir); break;
         case "sort": case "cross": { const L = sortRun(b, arg, kind === "cross" ? 125 : 150); b.straight(L); b.cut(kind === "cross" ? "신경 교차 드리프트" : "포털 미션", ZONE.Normal, 9, theme); break; }
         case "excite": case "inhibit": integrationZone(b, kind, kind === "excite" ? "EPSP 가중 구간" : "IPSP 억제 구간", theme, dir); break;
         case "orbs": b.straightWith(200, 6, (i, s) => b.eventAt(EV.Orb, s, 2.6 * Math.sin(i * 1.2))); b.turn(dir * 50, 130, 5); b.cut("신호 가속 구간", ZONE.Normal, 6, theme); break;
@@ -492,7 +578,7 @@ const NR = (function () {
   const Q = (ch, theme, title, subtitle, goals, steps) => ({ id: "ch" + ch, chapter: ch, title, subtitle, introStory: "ch" + ch + "_intro", gateTitle: title + " 게이트", goals, boss: false, build: bank => quizCourse(bank, theme, subtitle, steps) });
   // 4.5 survival: a long run of random set pieces (difficulty ramps in the app via speedScale/energy drain)
   function survivalCourse(bank) {
-    const pool = ["sprint", "scurve", "jumppads", "movers", "lasers", "narrow", "dzone", "rings", "split", "hairpin", "obstacles", "excite"];
+    const pool = ["sprint", "scurve", "jumppads", "movers", "lasers", "narrow", "dzone", "rings", "split", "hairpin", "obstacles", "excite", "loop", "collapse"];
     const steps = ["warm"]; let last = "";
     for (let i = 0; i < 26; i++) { let k; do { k = pool[(Math.random() * pool.length) | 0]; } while (k === last); steps.push(k); last = k; }
     steps.push("finish");
@@ -501,18 +587,18 @@ const NR = (function () {
   const SURVIVAL = { id: "survival", chapter: 0, title: "서바이벌", subtitle: "끝없는 신경 질주", introStory: "", gateTitle: "", goals: [], boss: false, build: survivalCourse };
   const STAGES = [
     { id: "ch1", chapter: 1, title: "뉴런과 신경신호", subtitle: "뉴런 고속도로", introStory: "prologue", gateTitle: "활동전위 게이트", goals: ["뉴런의 구조", "활동전위", "도약전도", "시냅스 전달"], boss: false, build: chapter1 },
-    Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "sprint", "fork:ch2_fork_horn", "reflex", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "jumppads", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "split", "codex:reciprocal_inhibition", "inhibit", "gate:ch2_gate_reciprocal", "reflex", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
-    Q(3, "tract", "감각 오름로·운동 내림로", "신경로 고속도로", ["뒤기둥-안쪽섬유띠계", "앞가쪽계", "겉질척수로", "교차 위치"], ["story:ch3_intro", "codex:dcml", "warm", "cross:dcml", "fork:ch3_fork_dcml", "gate:ch3_gate_dcml_cross", "codex:spinothalamic", "cross:stt", "gate:ch3_gate_stt_cross", "excite", "codex:spinocerebellar", "gate:ch3_gate_scb", "scurve", "codex:cst", "cross:cst", "fork:ch3_fork_cst", "gate:ch3_gate_cst_cross", "lasers", "codex:vestibulospinal", "gate:ch3_gate_vst", "story:ch3_final", "finish"]),
-    Q(4, "brainstem", "뇌줄기", "뇌줄기 터널", ["중간뇌 구조", "다리뇌와 소뇌 연결", "숨뇌 생명 중추", "뇌줄기 뇌신경핵"], ["story:ch4_intro", "codex:midbrain", "warm", "excite", "sort:nuclei", "codex:substantia_nigra", "gate:ch4_gate_sn", "gate:ch4_gate_sc", "fork:ch4_fork_ic", "rings", "gate:ch4_gate_aqueduct", "gate:ch4_gate_cn_midbrain", "codex:pons", "movers", "fork:ch4_fork_pons", "sprint", "codex:medulla", "gate:ch4_gate_medulla", "story:ch4_final", "finish"]),
-    Q(5, "cerebellum", "소뇌", "소뇌 균형 서킷", ["소뇌의 기능", "조롱박세포", "소뇌다리", "소뇌 증상"], ["story:ch5_intro", "codex:cerebellum", "warm", "balance", "gate:ch5_gate_function", "dzone", "codex:purkinje", "inhibit", "gate:ch5_gate_purkinje", "scurve", "codex:cerebellar_peduncles", "fork:ch5_fork_mcp", "gate:ch5_gate_scp", "balance", "narrow", "gate:ch5_gate_vermis", "dzone", "gate:ch5_gate_tremor", "story:ch5_final", "finish"]),
-    Q(6, "diencephalon", "사이뇌", "사이뇌 중계 기지", ["시상 중계핵", "시상하부 항상성", "뇌하수체 조절", "솔방울샘"], ["story:ch6_intro", "codex:thalamus", "warm", "sort:relay", "fork:ch6_fork_thalamus", "gate:ch6_gate_vpl", "gate:ch6_gate_lgn", "excite", "split", "codex:hypothalamus", "fork:ch6_fork_hypothal", "lasers", "gate:ch6_gate_pituitary", "sprint", "codex:pineal", "gate:ch6_gate_pineal", "story:ch6_final", "finish"]),
+    Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "sprint", "fork:ch2_fork_horn", "reflex", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "jumppads", "loop", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "split", "warp", "plastic", "codex:reciprocal_inhibition", "inhibit", "gate:ch2_gate_reciprocal", "reflex", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
+    Q(3, "tract", "감각 오름로·운동 내림로", "신경로 고속도로", ["뒤기둥-안쪽섬유띠계", "앞가쪽계", "겉질척수로", "교차 위치"], ["story:ch3_intro", "codex:dcml", "warm", "cross:dcml", "fork:ch3_fork_dcml", "gate:ch3_gate_dcml_cross", "codex:spinothalamic", "cross:stt", "gate:ch3_gate_stt_cross", "excite", "codex:spinocerebellar", "gate:ch3_gate_scb", "scurve", "loop", "plastic", "codex:cst", "cross:cst", "fork:ch3_fork_cst", "gate:ch3_gate_cst_cross", "lasers", "warp", "codex:vestibulospinal", "gate:ch3_gate_vst", "story:ch3_final", "finish"]),
+    Q(4, "brainstem", "뇌줄기", "뇌줄기 터널", ["중간뇌 구조", "다리뇌와 소뇌 연결", "숨뇌 생명 중추", "뇌줄기 뇌신경핵"], ["story:ch4_intro", "codex:midbrain", "warm", "excite", "sort:nuclei", "codex:substantia_nigra", "gate:ch4_gate_sn", "gate:ch4_gate_sc", "fork:ch4_fork_ic", "rings", "gate:ch4_gate_aqueduct", "gate:ch4_gate_cn_midbrain", "codex:pons", "movers", "collapse", "plastic", "fork:ch4_fork_pons", "sprint", "warp", "codex:medulla", "gate:ch4_gate_medulla", "story:ch4_final", "finish"]),
+    Q(5, "cerebellum", "소뇌", "소뇌 균형 서킷", ["소뇌의 기능", "조롱박세포", "소뇌다리", "소뇌 증상"], ["story:ch5_intro", "codex:cerebellum", "warm", "balance", "gate:ch5_gate_function", "dzone", "codex:purkinje", "inhibit", "gate:ch5_gate_purkinje", "scurve", "loop", "plastic", "codex:cerebellar_peduncles", "fork:ch5_fork_mcp", "gate:ch5_gate_scp", "balance", "narrow", "warp", "gate:ch5_gate_vermis", "dzone", "gate:ch5_gate_tremor", "story:ch5_final", "finish"]),
+    Q(6, "diencephalon", "사이뇌", "사이뇌 중계 기지", ["시상 중계핵", "시상하부 항상성", "뇌하수체 조절", "솔방울샘"], ["story:ch6_intro", "codex:thalamus", "warm", "sort:relay", "fork:ch6_fork_thalamus", "gate:ch6_gate_vpl", "gate:ch6_gate_lgn", "excite", "split", "loop", "plastic", "codex:hypothalamus", "fork:ch6_fork_hypothal", "lasers", "gate:ch6_gate_pituitary", "sprint", "warp", "codex:pineal", "gate:ch6_gate_pineal", "story:ch6_final", "finish"]),
     { id: "ch7", chapter: 7, title: "대뇌", subtitle: "대뇌 도시", introStory: "ch7_intro", gateTitle: "대뇌 기능 게이트", goals: ["대뇌엽의 위치", "일차운동·감각겉질", "청각·시각겉질", "언어 영역과 실어증"], boss: false, build: chapter7 },
-    Q(8, "cranial", "12뇌신경", "12뇌신경 포털", ["눈 운동 신경", "얼굴의 신경", "감각·운동·혼합 분류", "아래 뇌신경"], ["story:ch8_intro", "codex:cn_overview", "warm", "excite", "sort:cranial", "gate:ch8_gate_sensory", "codex:cn_eye", "gate:ch8_gate_abducens", "rings", "gate:ch8_gate_trochlear", "jumppads", "codex:cn_face", "fork:ch8_fork_facial", "gate:ch8_gate_trigeminal", "narrow", "codex:cn_lower", "fork:ch8_fork_hypoglossal", "gate:ch8_gate_vagus", "gate:ch8_gate_accessory", "story:ch8_final", "finish"]),
+    Q(8, "cranial", "12뇌신경", "12뇌신경 포털", ["눈 운동 신경", "얼굴의 신경", "감각·운동·혼합 분류", "아래 뇌신경"], ["story:ch8_intro", "codex:cn_overview", "warm", "excite", "sort:cranial", "gate:ch8_gate_sensory", "codex:cn_eye", "gate:ch8_gate_abducens", "rings", "gate:ch8_gate_trochlear", "jumppads", "loop", "plastic", "codex:cn_face", "fork:ch8_fork_facial", "gate:ch8_gate_trigeminal", "narrow", "warp", "collapse", "codex:cn_lower", "fork:ch8_fork_hypoglossal", "gate:ch8_gate_vagus", "gate:ch8_gate_accessory", "story:ch8_final", "finish"]),
     { id: "ch9", chapter: 9, title: "임상 챌린지 (NULL)", subtitle: "NULL 보스 아레나", introStory: "ch9_intro", gateTitle: "NULL 진단 게이트", goals: ["병변 위치 추론", "교차와 반대쪽 증상", "위·아래운동신경세포", "척수 반쪽 손상"], boss: true, build: chapter9 },
   ];
 
   // ---------------- RunnerSim (RunnerSim.cs) ----------------
-  const SE = { Trigger: 0, GateResult: 1, ForkChosen: 2, RingHit: 3, RingMiss: 4, ObstacleHit: 5, ObstacleDodged: 6, OrbCollected: 7, RepairOrb: 8, WallHit: 9, Checkpoint: 10, Finish: 11, DriftStart: 12, DriftEnd: 13, BoostStart: 14, Jump: 15, Land: 16, EnterSegment: 17, Fire: 18, Psp: 19, Seizure: 20, MissionEnd: 21, Pad: 22, SortResult: 23, ReflexStart: 24, ReflexResult: 25, LineResult: 26, RingCombo: 27 };
+  const SE = { Trigger: 0, GateResult: 1, ForkChosen: 2, RingHit: 3, RingMiss: 4, ObstacleHit: 5, ObstacleDodged: 6, OrbCollected: 7, RepairOrb: 8, WallHit: 9, Checkpoint: 10, Finish: 11, DriftStart: 12, DriftEnd: 13, BoostStart: 14, Jump: 15, Land: 16, EnterSegment: 17, Fire: 18, Psp: 19, Seizure: 20, MissionEnd: 21, Pad: 22, SortResult: 23, ReflexStart: 24, ReflexResult: 25, LineResult: 26, RingCombo: 27, LoopResult: 28, Collapse: 29, CollapseResult: 30, ItemGet: 31, ItemUse: 32, BossHit: 33, ShieldBlock: 34 };
   const TURBO_TIME = [0, 0.5, 0.9, 1.4], TURBO_ARCADE = [0, 0.9, 1.5, 2.3];
   const VM_REST = -70, VM_THRESH = -55;
   class Sim {
@@ -530,6 +616,7 @@ const NR = (function () {
       this.grounded = true; this.finished = false; this.raceTime = 0; this.distance = 0; this.boostEnergy = 0.35; this.boosting = false; this.canFire = true; this.wasBoosting = false;
       this.drifting = false; this.driftDir = 0; this.driftTime = 0; this.driftCharge = 0; this.turboTimer = 0; this.penaltyTimer = 0; this.wallCooldown = 0;
       this.ringChain = 0; this.ringBest = 0; this.ringsHit = 0; this.ringsTotal = 0; this.repairCount = 0; this.coins = 0; this.wallHits = 0; this.obstacleHits = 0; this.curvature = 0; this.events.length = 0;
+      this.loopOk = 0; this.loopFail = 0; this.collapse = null; this.item = null; this.shield = 0; this.dopamine = 0; this.gateOk = {}; this.bossHp = this.graph.bossMax || 0; this.bossMax = this.graph.bossMax || 0;
       this.driftZone = false; this.reflex = null; this.line = null; this.sorts = 0; this.sortsOk = 0; this.reflexOk = 0; this.reflexN = 0; this.superCombos = 0;
       this.vm = VM_REST; this.mission = null; this.missionFires = 0; this.missionSeizure = false; this.refractory = 0; this.fires = 0; this.epsps = 0; this.ipsps = 0;
     }
@@ -556,6 +643,12 @@ const NR = (function () {
       else this.speed = Math.max(top, this.speed - 25 * dt);
       if (this.drifting && !TUNE.arcade) this.speed *= (1 - 0.06 * dt);
       this.stepMembrane(dt);
+      if (this.shield > 0) this.shield -= dt; if (this.dopamine > 0) this.dopamine -= dt;
+      if (inp.item && this.item) this.useItem();
+      if (this.collapse) {   // the degeneration wave behind STAR-01 (progress coordinates)
+        const C = this.collapse; C.v = Math.min(C.v + dt * 0.6, this.baseTopSpeed * this.speedScale * 1.0); C.p += C.v * dt;
+        if (C.p >= this.progress) { C.caught++; this.speed *= 0.6; this.addPenalty(1.2); this.boostEnergy = Math.max(0, this.boostEnergy - 0.2); C.p = this.progress - 45; this.emit(SE.Collapse, null, -1, false, C.caught); }
+      }
       if (this.reflex) { const R = this.reflex; if (inp.jump) R.j = true; if (inp.boost) R.b = true; if (inp.drift) R.d = true; }
       if (this.line) {   // cerebellum mission: NULL makes STAR-01 sway (ataxia); stay on the precision line
         const L = this.line; if (this.seg === L.seg) { L.total += dt; if (Math.abs(this.x - this.lineX()) < 1.7) L.inside += dt; }
@@ -601,7 +694,17 @@ const NR = (function () {
       this.driftPrecision = precision; this.driftCharge = Math.min(0.5, this.driftCharge + dt * 0.12 * (0.25 + 0.75 * precision));
     }
     lineX(s) { const L = this.line; if (!L) return 0; const u = ((s == null ? this.s : s) - L.s0) / L.len; return L.amp * Math.sin(u * Math.PI * 2); }
+    // 4.6 neurotransmitter items (educational analogies, see app text)
+    useItem() {
+      const it = this.item; this.item = null;
+      if (it === "glu") { if (this.refractory <= 0) this.vm += 12; this.addTurbo(1.0); }
+      else if (it === "gaba") { this.shield = 4; this.vm -= 12; }
+      else if (it === "ach") { if (this.grounded) { this.vy = 17.5; this.grounded = false; } this.addTurbo(0.6); }
+      else if (it === "dopa") { this.dopamine = 6; this.addEnergy(0.25); }
+      this.emit(SE.ItemUse, null, -1, true, 0, it);
+    }
     hitBy(e, kind) {   // shared collision response (4.0: costs speed AND energy)
+      if (this.shield > 0 && kind !== "barrier") { this.shield = 0; this.emit(SE.ShieldBlock, e, -1, true, 0, kind); return; }
       this.obstacleHits++; this.speed *= kind === "laser" ? 0.7 : 0.6; this.addPenalty(kind === "laser" ? 0.8 : 1.0); this.boostEnergy = Math.max(0, this.boostEnergy - 0.12);
       if (this.drifting) { this.drifting = false; this.driftTime = 0; this.driftCharge = 0; } this.emit(SE.ObstacleHit, e, -1, false, 0, kind);
     }
@@ -631,6 +734,7 @@ const NR = (function () {
       const from = this.seg; if (!from.next.length) return false;
       if (from.next.length > 1 && from.fork) {
         const lane = Sim.nearest(from.fork.laneX, this.x); this.x -= from.nextStartOffset[lane]; this.seg = from.next[lane];
+        if (from.fork.questionId) this.gateOk[from.fork.questionId] = lane === from.fork.correctLane;
         this.emit(SE.ForkChosen, null, lane, from.fork.free ? true : lane === from.fork.correctLane, from.fork.free ? 1 : 0, from.fork.questionId);
       } else { this.x += from.mergeOffset; this.seg = from.next[0]; }
       if (this.seg.zone !== ZONE.Myelin && from.zone === ZONE.Myelin) this.ringChain = 0;
@@ -642,7 +746,11 @@ const NR = (function () {
         if (this.own) this.own.add(e); else e.consumed = true;
         switch (e.type) {
           case EV.Trigger:
-            if (e.tag === "dzone:on") this.driftZone = true; else if (e.tag === "dzone:off") this.driftZone = false;
+            if (e.tag === "loop:check") { this.inLoop = true; const need = this.baseTopSpeed * this.speedScale * 0.72; if (this.speed < need) { this.loopFail++; this.speed *= 0.75; this.addPenalty(1.0); this.emit(SE.LoopResult, e, -1, false, 0, "slow"); } else this.loopEntry = true; }
+            else if (e.tag === "loop:done") { this.inLoop = false; if (this.loopEntry) { this.loopOk++; this.addTurbo(1.4); this.addEnergy(0.15); this.emit(SE.LoopResult, e, -1, true, 0, "ok"); } this.loopEntry = false; }
+            else if (e.tag === "collapse:on") this.collapse = { p: this.progress - 75, v: this.speed * 0.85, caught: 0 };
+            else if (e.tag === "collapse:off" && this.collapse) { const ok = this.collapse.caught === 0; if (ok) { this.addTurbo(1.6); this.addEnergy(0.3); } this.emit(SE.CollapseResult, e, -1, ok, this.collapse.caught); this.collapse = null; }
+            else if (e.tag === "dzone:on") this.driftZone = true; else if (e.tag === "dzone:off") this.driftZone = false;
             else if (e.tag === "line:on") this.line = { seg: this.seg, s0: e.s, amp: e.lineAmp || 3, len: e.lineLen || 90, inside: 0, total: 0 };
             else if (e.tag === "line:off" && this.line) { const L = this.line, ratio = L.total > 0 ? L.inside / L.total : 0, ok = ratio >= 0.6; if (ok) { this.addTurbo(2.2); this.addEnergy(0.4); } this.emit(SE.LineResult, e, -1, ok, 0, ratio.toFixed(2)); this.line = null; }
             else if (e.tag && e.tag.startsWith("reflex:")) { this.reflex = { kind: e.tag.slice(7), side: e.side || 1, j: false, b: false, d: false }; this.emit(SE.ReflexStart, e, -1, true, 0, this.reflex.kind); }
@@ -662,7 +770,13 @@ const NR = (function () {
             break;
           case EV.Checkpoint: this.emit(SE.Checkpoint, e); break;
           case EV.Finish: this.finished = true; this.emit(SE.Finish, e); return;
-          case EV.Gate: { const lane = Sim.nearest(e.laneX, this.x), ok = lane === e.correctLane; if (ok) { this.addTurbo(0.8); this.addEnergy(0.15); if (e.tag === "glia") this.repairCount = Math.max(this.repairCount, 3); } else this.addPenalty(1.8); this.emit(SE.GateResult, e, lane, ok); break; }
+          case EV.ItemBox: if (Math.abs(this.x - e.x) < 1.8 && this.y < 2.6 && !this.item) { const pool = ["glu", "glu", "gaba", "gaba", "ach", "dopa"]; this.item = pool[(Math.random() * pool.length) | 0]; this.emit(SE.ItemGet, e, -1, true, 0, this.item); } break;
+          case EV.Weak: if (Math.abs(this.x - e.x) < 2.4 && this.bossMax) {
+              if (e.need && !this.gateOk[e.need]) break;   // still shielded: a wrong diagnosis keeps the weak point closed
+              const dmg = e.final && !(this.boosting || this.turboTimer > 0) ? 1 : e.dmg; this.bossHp = Math.max(0, this.bossHp - dmg); this.addTurbo(0.8);
+              this.emit(SE.BossHit, e, -1, true, dmg, e.final ? "core" : "weak");
+            } break;
+          case EV.Gate: { const lane = Sim.nearest(e.laneX, this.x), ok = lane === e.correctLane; if (e.questionId) this.gateOk[e.questionId] = ok; if (ok) { this.addTurbo(0.8); this.addEnergy(0.15); if (e.tag === "glia") this.repairCount = Math.max(this.repairCount, 3); } else this.addPenalty(1.8); this.emit(SE.GateResult, e, lane, ok); break; }
           case EV.NodeRing: this.ringsTotal++; if (Math.abs(this.x - e.x) < e.width) {
               this.ringChain++; this.ringsHit++; this.ringBest = Math.max(this.ringBest, this.ringChain); this.addEnergy(0.03);
               const perfect = Math.abs(this.x - e.x) < 0.7; this.emit(SE.RingHit, e, -1, perfect, this.ringChain);
@@ -712,10 +826,11 @@ const NR = (function () {
     }
     think(sim) {
       const seg = sim.seg; let targetX = 0, have = false, jump = false; const look = Math.max(60, sim.speed * 2.2);
-      if (seg.fork && seg.length - sim.s < 220) { targetX = seg.fork.free ? seg.fork.laneX[this.risky ? 1 : 0] : seg.fork.laneX[this.chooseLane(seg.fork.questionId, seg.fork.correctLane, seg.fork.laneX.length)]; have = true; }
+      if (seg.fork && seg.length - sim.s < 220) { targetX = seg.fork.free ? seg.fork.laneX[seg.fork.kind === "plastic" ? (seg.fork.open ? 1 : 0) : this.risky ? 1 : 0] : seg.fork.laneX[this.chooseLane(seg.fork.questionId, seg.fork.correctLane, seg.fork.laneX.length)]; have = true; }
       let boostReq = false, holdStill = false;
       if (sim.reflex) { const R = sim.reflex; if (R.kind === "stretch") boostReq = true; else if (R.kind === "crossed") { targetX = -R.side * 5; have = true; } else if (R.kind === "recip") holdStill = true; }
       if (sim.line && !have) { targetX = sim.lineX(sim.s + sim.speed * 0.25); have = true; }
+      const useItem = !!sim.item && !sim.reflex;
       for (const e of seg.events) {
         if (have) break; if (sim.used(e) || e.s < sim.s) continue; const d = e.s - sim.s; if (d > look) break;
         if (e.type === EV.Gate) { targetX = e.laneX[this.chooseLane(e.questionId, e.correctLane, e.laneX.length)]; have = true; }
@@ -724,6 +839,8 @@ const NR = (function () {
         else if (e.type === EV.Orb && d < 40) { targetX = e.x; have = true; }
         else if (e.type === EV.Sort && d < 220) { targetX = e.laneX[e.correctLane]; have = true; }
         else if (e.type === EV.JumpPad && d < 70) { targetX = e.x; have = true; }
+        else if (e.type === EV.Weak && d < 90 && (!e.need || sim.gateOk[e.need])) { targetX = e.x; have = true; if (e.final) boostReq = true; }
+        else if (e.type === EV.ItemBox && d < 50 && !sim.item) { targetX = e.x; have = true; }
         else if (e.type === EV.Mover && d < 70) { const t = d / Math.max(10, sim.speed), mx = e.x + e.amp * Math.sin((sim.raceTime + t) * e.w + e.ph); targetX = clamp(mx > 0 ? mx - e.width / 2 - 2.6 : mx + e.width / 2 + 2.6, -seg.halfWidth + 1.5, seg.halfWidth - 1.5); have = true; }
         else if (e.type === EV.Laser) { const t = d / Math.max(10, sim.speed); if (d < sim.speed * 0.32 + 1 && ((sim.raceTime + t + e.ph) % e.period) < e.on + 0.15) jump = true; }
         else if (e.type === EV.Reflex && e.tag === "flex" && d < sim.speed * 0.3 + 1) jump = true;
@@ -734,11 +851,11 @@ const NR = (function () {
       let steer = clamp(((have ? targetX - sim.x : -sim.x * 0.5) * 2.5 - push) / Math.max(1, sm), -1, 1);
       if (!this.driftHeld && Math.abs(k) > 0.014 && sim.speed > 18) this.driftHeld = true; else if (this.driftHeld && Math.abs(k) < 0.006) this.driftHeld = false;
       if (this.driftHeld && !sim.drifting && Math.abs(steer) < 0.2) steer = sign(k) * 0.3;
-      if (holdStill) return { steer, jump: false, drift: false, boost: false };
+      if (holdStill) return { steer, jump: false, drift: false, boost: false, item: false };
       const o = this.o; this.t += 1 / 60;
       if (o.noise) steer = clamp(steer + Math.sin(this.t * 1.7) * Math.sin(this.t * 0.61 + 2) * o.noise, -1, 1);
       const drift = o.drift === false ? false : this.driftHeld, boostAt = o.boostAt == null ? 0.45 : o.boostAt;
-      return { steer, jump, drift, boost: boostReq || (sim.boostEnergy > boostAt && Math.abs(k) < (o.boostAt != null && o.boostAt < 0.3 ? 0.008 : 0.004)) };
+      return { steer, jump, drift, item: useItem, boost: boostReq || (sim.boostEnergy > boostAt && Math.abs(k) < (o.boostAt != null && o.boostAt < 0.3 ? 0.008 : 0.004)) };
     }
   }
 
@@ -764,6 +881,6 @@ const NR = (function () {
     }
   }
 
-  return { SURVIVAL, TUNE, VM_REST, VM_THRESH, V, add, sub, mul, len, norm, clamp, clamp01, lerp, sign, ZONE, EV, SE, STAGES, Sim, AutoPilot, Bank, Session, wrongExp, laneXs, CH9_BOSS };
+  return { STATE, SURVIVAL, TUNE, VM_REST, VM_THRESH, V, add, sub, mul, len, norm, clamp, clamp01, lerp, sign, ZONE, EV, SE, STAGES, Sim, AutoPilot, Bank, Session, wrongExp, laneXs, CH9_BOSS };
 })();
 if (typeof module !== "undefined") module.exports = NR;

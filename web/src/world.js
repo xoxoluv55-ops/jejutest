@@ -18,15 +18,16 @@ window.NRW_INIT = function () { window.NRW = (function () {
   const MEMBRANE = 0x7FA8FF;
 
   function frameAt(seg, s, x = 0, y = 0) {
-    const p = M(seg.worldPos(s, x, y)), f = M(seg.tangentAt(s)), up = new THREE.Vector3(0, 1, 0);
+    const p = M(seg.worldPos(s, x, y)), f = M(seg.tangentAt(s)), up = seg.roll ? M(seg.upAt(s)) : new THREE.Vector3(0, 1, 0);
     const z = f.clone().negate(), xa = new THREE.Vector3().crossVectors(up, z).normalize(), ya = new THREE.Vector3().crossVectors(z, xa);
     return { p, q: new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, z)), f };
   }
   // 4.0: same as frameAt but writes into reusable objects (no garbage per frame)
-  const _fa = { up: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(), x: new THREE.Vector3(), y: new THREE.Vector3(), m: new THREE.Matrix4() };
+  const _fa = { u2: new THREE.Vector3(0, 1, 0), up: new THREE.Vector3(0, 1, 0), z: new THREE.Vector3(), x: new THREE.Vector3(), y: new THREE.Vector3(), m: new THREE.Matrix4() };
   function frameAtInto(seg, s, x, y, out) {
     const p = seg.worldPos(s, x, y), t = seg.tangentAt(s); out.p.set(-p.x, p.y, p.z); out.f.set(-t.x, t.y, t.z);
-    _fa.z.copy(out.f).negate(); _fa.x.crossVectors(_fa.up, _fa.z).normalize(); _fa.y.crossVectors(_fa.z, _fa.x); out.q.setFromRotationMatrix(_fa.m.makeBasis(_fa.x, _fa.y, _fa.z)); return out;
+    if (seg.roll) { const u = seg.upAt(s); _fa.u2.set(-u.x, u.y, u.z); } else _fa.u2.set(0, 1, 0); if (out.up) out.up.copy(_fa.u2);
+    _fa.z.copy(out.f).negate(); _fa.x.crossVectors(_fa.u2, _fa.z).normalize(); _fa.y.crossVectors(_fa.z, _fa.x); out.q.setFromRotationMatrix(_fa.m.makeBasis(_fa.x, _fa.y, _fa.z)); return out;
   }
   const short = (s, n = 15) => s.length > n ? s.slice(0, n - 1) + "…" : s;
   function labelTex(lines, opts = {}) {
@@ -197,7 +198,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
 
   function build(scene, stage, graph, bank, quality) {
     const root = new THREE.Group(); scene.add(root);
-    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forks: new Map(), nodes: [], anim: [], flashes: [], particles: null, nt: null, boss: null, bounds: new THREE.Box3(), low: quality === "low", mid: quality === "mid", psp: [], movers: [], lasers: [], sorts: [], padsList: [] };
+    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forks: new Map(), nodes: [], anim: [], flashes: [], particles: null, nt: null, boss: null, bounds: new THREE.Box3(), low: quality === "low", mid: quality === "mid", psp: [], movers: [], lasers: [], sorts: [], padsList: [], items: [], weaks: [] };
     const B = new Batch(), Z = NR.ZONE;
     for (const seg of graph.segments) {
       const col = segColor(seg), hw = seg.halfWidth, [Rw, H] = tubeRadius(hw);
@@ -427,9 +428,23 @@ window.NRW_INIT = function () { window.NRW = (function () {
     } else if (e.type === E.Trigger && e.tag === "dzone:on") {
       const off = seg.events.find(x => x.tag === "dzone:off"), s1 = off ? off.s : seg.length;
       for (let s = e.s + 4; s < s1; s += 9) { const f = frameAt(seg, s, 0, 0.04); const m = new THREE.Mesh(G.box, glow(0xFFB627, 0.55)); m.position.copy(f.p); m.quaternion.copy(f.q); m.scale.set(hw * 1.6, 0.04, 1.2); W.root.add(m); }
-    } else if (e.type === E.Trigger && /^hint:(jumppad|movers|lasers|narrow|dzone|rings|split|scurve)$/.test(e.tag)) {
-      const t = { jumppad: ["점프대", "날아올라 장애물을 넘어라"], movers: ["움직이는 NULL", "빈틈을 노려 피하기"], lasers: ["레이저 장벽", "빨간 빛이 켜질 때 점프!"], narrow: ["좁은 통로", "벽 충돌 주의 · 오브 일렬"], dzone: ["드리프트 충전 구간", "충전 속도 ×1.8"], rings: ["결절 링 콤보", "3·5·10연속 → 부스트"], split: ["갈래 길", "안전 vs 위험(보상 ×3)"], scurve: ["S자 커브", "리듬 타고 좌우로"] }[e.tag.slice(5)];
+    } else if (e.type === E.Trigger && /^hint:(jumppad|movers|lasers|narrow|dzone|rings|split|scurve|loop|collapse|warp|plastic|core)$/.test(e.tag)) {
+      const t = { jumppad: ["점프대", "날아올라 장애물을 넘어라"], movers: ["움직이는 NULL", "빈틈을 노려 피하기"], lasers: ["레이저 장벽", "빨간 빛이 켜질 때 점프!"], narrow: ["좁은 통로", "벽 충돌 주의 · 오브 일렬"], dzone: ["드리프트 충전 구간", "충전 속도 ×1.8"], rings: ["결절 링 콤보", "3·5·10연속 → 부스트"], split: ["갈래 길", "안전 vs 위험(보상 ×3)"], scurve: ["S자 커브", "리듬 타고 좌우로"], loop: ["360° 루프", "최고 속도로 진입!"], collapse: ["축삭 붕괴 탈출", "뒤에서 붕괴 접근 — 멈추지 마!"], warp: ["시냅스 워프 포털", "전달 순서를 완성하면 워프"], plastic: ["신경가소성 갈림길", "반복 학습으로 지름길이 열린다"], core: ["NULL 코어", "부스트 상태로 약점 돌파!"] }[e.tag.slice(5)];
       hologram(W, seg, Math.min(seg.length - 1, e.s + 30), 0, H - 2.2, labelTex(t, { w: 640, h: 200, border: "#FFB627", bg: "rgba(30,14,6,.85)" }), 7, 2.2);
+    } else if (e.type === E.ItemBox) {
+      const m = new THREE.Mesh(G.box, itemMat()); const f = frameAt(seg, e.s, e.x, NR.Sim.HOVER + 0.3); m.position.copy(f.p); m.quaternion.copy(f.q); m.scale.setScalar(1.3); W.root.add(m); W.items.push({ e, m });
+    } else if (e.type === E.Weak) {
+      const grp = new THREE.Group(), f = frameAt(seg, e.s, e.x, NR.Sim.HOVER + 0.6); grp.position.copy(f.p); grp.quaternion.copy(f.q);
+      const big = e.final ? 2.2 : 1.4;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(2.2 * big, 0.22 * big, 8, 40), glow(0xFFD34D, 0.95)); grp.add(ring);
+      const core = new THREE.Mesh(G.ico, new THREE.MeshBasicMaterial({ color: 0xFF2D55, transparent: true, opacity: 0.85 })); core.scale.setScalar(0.9 * big); grp.add(core);
+      const lab = new THREE.Mesh(new THREE.PlaneGeometry(4.5 * big / 1.4, 1.4 * big / 1.4), new THREE.MeshBasicMaterial({ map: labelTex([e.final ? "NULL 코어" : "약점"], { w: 512, h: 160, border: "#FFD34D", bg: "rgba(40,0,10,.85)", bigColor: "#FFD34D" }), transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+      lab.position.y = 3.2 * big; grp.add(lab);
+      grp.visible = !e.need; W.root.add(grp); W.weaks.push({ e, grp, ring, core });
+    } else if (e.type === E.Trigger && e.tag === "synapse:warp") {
+      const f = frameAt(seg, e.s, 0, 4.5), g = new THREE.Group(); g.position.copy(f.p); g.quaternion.copy(f.q);
+      for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(7 - i * 1.2, 0.35, 8, 64), glow([0xFF5CC8, 0x9B5CFF, 0x2EE6D6][i], 0.9)); g.add(t); W.anim.push({ o: t, spin: (i % 2 ? -1 : 1) * (0.6 + i * 0.3), axis: "z" }); }
+      W.root.add(g);
     } else if (e.type === E.Epsp || e.type === E.Ipsp) {
       const f = frameAt(seg, e.s, e.x, NR.Sim.HOVER + 0.4); W.psp.push({ e, ex: e.type === E.Epsp, p: f.p, q: f.q });
     } else if (e.type === E.Trigger && /^integ:(excite|inhibit)$/.test(e.tag)) {
@@ -440,7 +455,8 @@ window.NRW_INIT = function () { window.NRW = (function () {
       const m = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.17, 8, 32), glow(0x5CF6FF)); const f = frameAt(seg, e.s, e.x, NR.Sim.HOVER); m.position.copy(f.p); m.quaternion.copy(f.q); W.root.add(m); W.rings.push({ e, m, t: 0 });
     } else if (e.type === E.Obstacle) {
       const pulse = e.width >= hw, w = Math.min(e.width, hw * 2), grp = new THREE.Group(), f = frameAt(seg, e.s, e.x, 0); grp.position.copy(f.p); grp.quaternion.copy(f.q);
-      if (e.tag === "tack") { const n = Math.max(3, Math.round(w / 1.1)); for (let i = 0; i < n; i++) { const c = new THREE.Mesh(G.cone, solid(0xD8DCEF, 0.25)); c.position.set(-w / 2 + (i + 0.5) * w / n, 0.55, 0); c.scale.set(0.45, 1.1, 0.45); grp.add(c); } const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.12, 1.2), glow(0xFF4D6D, 0.7)); b.position.y = 0.06; grp.add(b); }
+      if (e.tag === "barrier") { const wall = new THREE.Mesh(new THREE.PlaneGeometry(hw * 2 + 1, H), new THREE.MeshBasicMaterial({ map: labelTex(["🔒 잠김", "같은 챕터를 정답률 80% 이상으로 3번 클리어"], { w: 768, h: 300, border: "#B98CFF", bg: "rgba(40,20,80,.8)" }), transparent: true, side: THREE.DoubleSide })); wall.position.y = H / 2; grp.add(wall); }
+      else if (e.tag === "tack") { const n = Math.max(3, Math.round(w / 1.1)); for (let i = 0; i < n; i++) { const c = new THREE.Mesh(G.cone, solid(0xD8DCEF, 0.25)); c.position.set(-w / 2 + (i + 0.5) * w / n, 0.55, 0); c.scale.set(0.45, 1.1, 0.45); grp.add(c); } const b = new THREE.Mesh(new THREE.BoxGeometry(w, 0.12, 1.2), glow(0xFF4D6D, 0.7)); b.position.y = 0.06; grp.add(b); }
       else if (pulse) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, e.height * 0.8, 0.5), glow(0xFF3355, 0.8)); m.position.y = e.height * 0.4; grp.add(m); const r = new THREE.Mesh(archTube(seg, e.s, Rw - 0.3, H - 0.3, 0.25), glow(0xFF3355, 0.6)); W.root.add(r); }
       else {
         const m = new THREE.Mesh(new THREE.BoxGeometry(e.width, e.height + 0.4, 1.6), new THREE.MeshLambertMaterial({ color: 0x14020a, emissive: 0x6a0020 })); m.position.y = (e.height + 0.4) / 2; grp.add(m);
@@ -454,6 +470,13 @@ window.NRW_INIT = function () { window.NRW = (function () {
     }
   }
 
+  let _itemMat = null;
+  function itemMat() {
+    if (_itemMat) return _itemMat; const c = document.createElement("canvas"); c.width = c.height = 128; const x = c.getContext("2d");
+    const g = x.createLinearGradient(0, 0, 128, 128); g.addColorStop(0, "#FF5CC8"); g.addColorStop(0.5, "#FFD34D"); g.addColorStop(1, "#2EE6D6"); x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+    x.fillStyle = "rgba(20,10,40,.55)"; x.fillRect(10, 10, 108, 108); x.fillStyle = "#fff"; x.font = "bold 76px sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("🧪", 64, 68);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return (_itemMat = new THREE.MeshBasicMaterial({ map: t }));
+  }
   const padCache = {};
   function padMat(jump) {
     if (padCache[jump]) return padCache[jump];
@@ -566,7 +589,9 @@ window.NRW_INIT = function () { window.NRW = (function () {
         for (const L of W.lasers) { const e = L.e, ph = (rt + e.ph) % e.period, on = ph < e.on, warn = !on && ph > e.period - 0.35; L.beams.forEach(b => { b.visible = on || warn; b.material = on ? glow(0xFF2244, 1) : glow(0xFF2244, 0.25); }); L.warn.material = on ? glow(0xFF2244, 0.35) : glow(0xFF2244, 0.12); }
         // 3.0: orbs are static (matrices written once); only a collected orb is changed (see collect)
         for (const o of W.obstacles) { if (o.pulse) o.grp.children[0].material.opacity = 0.5 + 0.35 * Math.sin(t * 8); else o.grp.children[0].scale.x = 1 + (Math.random() < 0.05 ? rnd(-0.15, 0.15) : 0); }
-        for (const a of W.anim) { if (a.spin) a.o.rotation.y += dt * a.spin; if (a.flick) a.o.visible = Math.random() > 0.04; }
+        for (const it of W.items) if (it.m.visible) { it.m.rotation.y += dt * 2.2; it.m.rotation.x += dt * 1.3; }
+        for (const w of W.weaks) if (w.grp.visible) { w.ring.rotation.z += dt * 2; w.core.rotation.y += dt * 3; const k = 1 + 0.12 * Math.sin(t * 8); w.core.scale.setScalar((w.e.final ? 1.98 : 1.26) * k); }
+        for (const a of W.anim) { if (a.spin && a.axis === "z") a.o.rotation.z += dt * a.spin; else if (a.spin) a.o.rotation.y += dt * a.spin; if (a.flick) a.o.visible = Math.random() > 0.04; }
         // EPSP/IPSP clouds are static (no per-frame update)
         for (const f of W.flashes) { const k = 0.5 + 0.5 * Math.sin(t * 2.2 + f.ph); f.m.scale.setScalar(1.3 + k * 0.7); }
         for (const r of W.rings) { if (r.t > 0) { r.t -= dt; r.m.scale.setScalar(1 + (0.6 - r.t) * 2.5); if (r.t <= 0) r.m.visible = false; } else r.m.rotation.z += dt * 1.5; }
@@ -588,6 +613,9 @@ window.NRW_INIT = function () { window.NRW = (function () {
         }
       },
       pspCollect(e) { const p = W.psp.find(x => x.e === e); if (p && p.im) { tmp.compose(p.p, p.q, zero); p.im.setMatrixAt(p.i, tmp); p.im.instanceMatrix.needsUpdate = true; } },
+      itemTaken(e) { const it = W.items.find(x => x.e === e); if (it) it.m.visible = false; },
+      showWeak(qid) { for (const w of W.weaks) if (w.e.need === qid) w.grp.visible = true; },
+      weakHit(e) { const w = W.weaks.find(x => x.e === e); if (w) { w.grp.visible = false; } },
       collect(e) { for (const g of W.orbs) { const it = g.items.find(x => x.e === e); if (it) { it.gone = true; tmp.compose(it.p, q, zero); g.im.setMatrixAt(it.i, tmp); g.im.instanceMatrix.needsUpdate = true; return; } } },
       ringHit(e, hit) { const r = W.rings.find(x => x.e === e); if (!r) return; if (hit) { r.m.material = glow(0xFFFFFF); r.t = 0.6; for (const nd of W.nodes) if (Math.abs(nd.s - e.s) < 0.5) nd.t = 0.25; } else r.m.material = glow(0x553355, 0.5); },
       markSigns(signs, lane, correctLane) { signs.forEach((p, i) => { p.material.color.setHex(i === correctLane ? 0xB8FFD0 : i === lane ? 0xFF8A9A : 0x555577); }); },

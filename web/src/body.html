@@ -10,6 +10,7 @@
         <button class="big primary" data-act="play">▶ 게임 시작</button>
         <button class="big" data-act="stages">스테이지 선택</button>
         <button class="big story-btn" data-act="story">📖 STAR-01 이야기</button>
+        <button class="big evo-btn" data-act="evo">⭐ STAR-01 진화 · 스킨</button>
         <div class="row2">
           <button data-act="codex">📘 신경 도감</button>
           <button data-act="notes">📝 오답 노트</button>
@@ -25,6 +26,13 @@
     <header><button class="back" data-act="title">◀</button><h2>스테이지 선택</h2><div id="mode-tabs" class="tabs mode-tabs"></div></header>
     <div id="mode-desc" class="mode-desc"></div>
     <div id="stage-grid" class="stage-grid"></div>
+  </section>
+
+  <!-- EVOLUTION / SKINS -->
+  <section id="scr-evo" class="screen panel-screen">
+    <header><button class="back" data-act="title">◀</button><h2>STAR-01 진화</h2></header>
+    <div id="evo-info" class="mode-desc"></div>
+    <div id="evo-list" class="evo-list"></div>
   </section>
 
   <!-- FULL STORY -->
@@ -79,7 +87,7 @@
         <div class="prog"><div id="h-prog"></div><span id="h-star">★</span></div>
         <div id="h-rank" class="rank"></div>
       </div>
-      <div id="h-boss" class="boss"><span>NULL 보호막</span><div class="bar"><div id="h-boss-fill"></div></div></div>
+      <div id="h-boss" class="boss"><span>NULL 체력</span><div class="bar"><div id="h-boss-fill"></div></div></div>
       <div class="hud-right">
         <div class="stat"><small>시간</small><b id="h-time">0:00.0</b></div>
         <div class="stat"><small>정답</small><b id="h-score">0/0</b></div>
@@ -92,6 +100,8 @@
     <div id="h-toast" class="toast"></div>
     <div id="h-hint" class="hint"></div>
     <div id="h-story" class="story"><b></b><span></span></div>
+    <div id="h-phase" class="phase"></div>
+    <div id="h-collapse" class="collapse"><span>붕괴 접근</span><div class="cbar"><div id="h-collapse-fill"></div></div><b id="h-collapse-m">-</b></div>
     <div id="h-slow" class="slow">생각 시간 · 슬로모션</div>
     <div id="h-lane" class="lanepill"></div>
     <div id="h-combo" class="combo"><b id="h-combo-n">0</b><span>COMBO</span><i id="h-combo-x">×1</i><div class="combo-t"><div id="h-combo-t"></div></div></div>
@@ -123,6 +133,7 @@
     <div class="pad right">
       <button class="tb act drift" data-k="drift"><i>↯</i>드리프트</button>
       <button class="tb act boost" data-k="boost"><i>⚡</i>부스트</button>
+      <button class="tb act item" data-k="item"><i id="item-ico">·</i><span id="item-name">아이템</span></button>
       <button class="tb act jump" data-k="jump"><i>⤒</i>점프</button>
     </div>
   </section>
