@@ -182,6 +182,8 @@ h2{font-family:var(--title);font-weight:400;margin:0}
   .qpanel,.apanel{top:70px;padding:10px 14px}.q-text{font-size:20px}.opt{font-size:16px}.a-text{font-size:17px}
   .d-text{font-size:20px}
 }
+.set select{font-size:16px;padding:8px 10px;border-radius:12px;background:var(--card);color:var(--text);border:2px solid var(--line);max-width:260px;font-family:var(--body)}
+.voice-set{grid-column:1/-1}.voice-set small{max-width:560px}
 
 </style>
 <div id="app">
@@ -332,7 +334,6 @@ h2{font-family:var(--title);font-weight:400;margin:0}
   <div id="loading" class="loading">NERVE RUNNER 불러오는 중…</div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>window.NR_CONTENT={"questions":[{"id":"ch1_fork_hillock","chapter":1,"topic":"뉴런 구조","difficulty":"Rookie","objective":"활동전위가 시작되는 방아쇠 영역(축삭둔덕·축삭 시작분절)을 안다.","question":"활동전위가 처음 발생하는 '방아쇠 영역'은 어디일까요?","options":["축삭둔덕 (축삭 시작 부위)","가지돌기"],"answer":0,"explanation":"축삭둔덕과 축삭 시작분절에는 전압개폐 Na+ 통로가 밀집해 있어 가장 먼저 역치에 도달합니다. 가지돌기·세포체에서 가중된 국소전위가 이곳에서 역치를 넘으면 활동전위가 시작됩니다.","wrongExplanations":["","가지돌기는 시냅스 입력을 받아 국소(등급)전위를 만드는 곳입니다. 전압개폐 Na+ 통로 밀도가 낮아 보통 활동전위의 시작점이 아닙니다."],"structures":["hillock","dendrite","soma"],"branch":"fork:axon_hillock","reference":"신경해부생리학 - 뉴런의 구조와 기능 (축삭둔덕, 방아쇠 영역)"},{"id":"ch1_ap_1","chapter":1,"topic":"활동전위","difficulty":"Rookie","objective":"역치 도달 후 탈분극이 Na+ 유입으로 일어남을 안다.","question":"휴지막전위(약 -70mV)의 뉴런이 역치(약 -55mV)에 도달했습니다. 다음 단계는?","options":["재분극: K+ 유출","탈분극: Na+ 유입","과분극: K+ 계속 유출"],"answer":1,"explanation":"역치에 도달하면 전압개폐 Na+ 통로가 열려 Na+가 세포 안으로 빠르게 유입되고, 막전위가 +30mV 부근까지 상승합니다(탈분극).","wrongExplanations":["재분극은 정점 이후 K+ 유출로 막전위가 다시 낮아지는 단계입니다. 아직 탈분극이 일어나지 않았어요.","","과분극은 재분극 뒤에 오는 마지막 단계입니다."],"structures":["ap"],"branch":"gate:ap_1","reference":"활동전위의 단계 (휴지막전위 → 역치 → 탈분극 → 재분극 → 과분극)"},{"id":"ch1_ap_2","chapter":1,"topic":"활동전위","difficulty":"Rookie","objective":"정점 이후 재분극이 K+ 유출로 일어남을 안다.","question":"막전위가 +30mV 정점에 도달했습니다. 다음 단계는?","options":["탈분극: Na+ 유입 지속","과분극","재분극: K+ 유출"],"answer":2,"explanation":"정점에서 Na+ 통로는 불활성화되고, 늦게 열리는 전압개폐 K+ 통로를 통해 K+가 밖으로 나가면서 막전위가 다시 낮아집니다(재분극).","wrongExplanations":["정점에서는 Na+ 통로가 불활성화되어 Na+ 유입이 멈춥니다.","과분극은 재분극이 지나쳐서 생기는 단계로, 재분극 다음에 옵니다.",""],"structures":["ap"],"branch":"gate:ap_2","reference":"활동전위 - 재분극과 전압개폐 K+ 통로"},{"id":"ch1_ap_3","chapter":1,"topic":"활동전위","difficulty":"Normal","objective":"과분극(후과분극)과 불응기의 관계를 안다.","question":"재분극 후 막전위가 휴지막전위보다 더 낮아지는 단계는?","options":["과분극 (후과분극)","탈분극","역치 전위"],"answer":0,"explanation":"전압개폐 K+ 통로가 천천히 닫히기 때문에 K+ 유출이 잠시 더 이어져 막전위가 -70mV보다 낮아집니다. 이 시기는 상대 불응기에 해당해 새 활동전위가 일어나기 어렵습니다.","wrongExplanations":["","탈분극은 막전위가 올라가는 단계입니다.","역치 전위는 활동전위가 시작되는 기준값(약 -55mV)이지 하나의 단계가 아닙니다."],"structures":["ap"],"branch":"gate:ap_3","reference":"활동전위 - 과분극과 불응기"},{"id":"ch1_ap_4","chapter":1,"topic":"활동전위","difficulty":"Normal","objective":"Na+-K+ 펌프가 이온 농도 기울기를 유지함을 안다.","question":"활동전위가 지나간 뒤, 세포 안팎의 Na+·K+ 농도 기울기를 장기적으로 유지하는 것은?","options":["전압개폐 Ca2+ 통로","리간드개폐 이온통로","Na+-K+ 펌프 (3Na+ 밖, 2K+ 안)"],"answer":2,"explanation":"Na+-K+ ATPase는 ATP를 사용해 Na+ 3개를 밖으로, K+ 2개를 안으로 운반하여 농도 기울기를 유지합니다. 한 번의 재분극 자체는 K+ 유출로 일어나고, 펌프는 기울기를 장기적으로 유지합니다.","wrongExplanations":["전압개폐 Ca2+ 통로는 축삭종말에서 전달물질 방출을 일으킵니다.","리간드개폐 통로는 신경전달물질 결합으로 열리는 시냅스후막의 통로입니다.",""],"structures":["na_k_pump","ap"],"branch":"gate:ap_4","reference":"휴지막전위와 Na+-K+ ATPase"},{"id":"ch1_fork_saltatory","chapter":1,"topic":"도약전도","difficulty":"Normal","objective":"도약전도에서 활동전위가 랑비에 결절에서 재생성됨을 안다.","question":"말이집(수초) 축삭에서 활동전위가 '새로 생성'되는 곳은?","options":["수초로 덮인 마디사이","랑비에 결절","축삭종말에서만"],"answer":1,"explanation":"수초는 절연체 역할을 하여 마디사이에서는 전류가 빠르게 수동 전도되고, 전압개폐 Na+ 통로가 밀집한 랑비에 결절에서 활동전위가 다시 생성됩니다. 신호가 순간이동하는 것이 아니라 결절마다 재생성되며 '도약하듯' 전도되어 속도가 빨라집니다.","wrongExplanations":["마디사이는 수초로 절연되어 있고 Na+ 통로가 적어 활동전위가 생성되지 않습니다.","","활동전위는 축삭을 따라 결절마다 재생성되며 전파됩니다. 축삭종말은 신경전달물질을 방출하는 곳입니다."],"structures":["ranvier","myelin","axon"],"branch":"fork:saltatory","reference":"도약전도(saltatory conduction)와 랑비에 결절"},{"id":"ch1_gate_glia","chapter":1,"topic":"신경아교세포","difficulty":"Normal","objective":"CNS와 PNS의 수초 형성 세포를 구별한다.","question":"중추신경계(CNS)에서 축삭의 수초를 형성하는 세포는?","options":["슈반세포","희소돌기아교세포","별아교세포"],"answer":1,"explanation":"중추신경계의 수초는 희소돌기아교세포가 만들며, 세포 하나가 여러 축삭에 수초를 형성할 수 있습니다. 말초신경계에서는 슈반세포가 수초를 만듭니다. 다발경화증은 중추신경계의 대표적인 탈수초 질환입니다.","wrongExplanations":["슈반세포는 말초신경계(PNS)의 수초를 형성합니다.","","별아교세포는 혈액뇌장벽 유지, 이온·신경전달물질 환경 조절을 담당하며 수초를 만들지 않습니다."],"structures":["oligodendrocyte","schwann","demyelination"],"branch":"gate:glia","reference":"신경아교세포 - 희소돌기아교세포, 슈반세포"},{"id":"ch1_syn_order","chapter":1,"topic":"시냅스","difficulty":"Normal","objective":"화학적 시냅스 전달의 순서를 안다.","question":"화학적 시냅스 전달 순서대로 터치하세요!","options":["활동전위가 축삭종말에 도달","전압개폐 Ca2+ 통로 열림, Ca2+ 유입","시냅스 소포 융합, 신경전달물질 방출","전달물질이 시냅스틈새로 확산","시냅스후막 수용체 결합, 이온통로 열림"],"answer":0,"explanation":"축삭종말이 탈분극되면 전압개폐 Ca2+ 통로가 열리고, 유입된 Ca2+가 소포의 세포외배출을 일으켜 신경전달물질이 방출됩니다. 전달물질은 시냅스틈새를 확산해 시냅스후막 수용체에 결합하고, 이온통로가 열려 시냅스후전위가 생깁니다.","wrongExplanations":[],"structures":["synapse","terminal","postsynaptic"],"branch":"minigame:synapse_order","reference":"화학적 시냅스 전달 과정"},{"id":"ch1_syn_epsp","chapter":1,"topic":"시냅스","difficulty":"Expert","objective":"EPSP와 IPSP를 이온 이동으로 구별한다.","question":"흥분성 전달물질 글루탐산이 수용체에 결합해 Na+가 유입되었습니다. 시냅스후막에 생기는 전위는?","options":["EPSP (흥분성 시냅스후전위)","IPSP (억제성 시냅스후전위)"],"answer":0,"explanation":"양이온(Na+) 유입은 시냅스후막을 탈분극시켜 역치에 가까워지게 하는 EPSP를 만듭니다. 반대로 GABA·글라이신이 Cl- 유입이나 K+ 유출을 일으키면 과분극성 IPSP가 됩니다.","wrongExplanations":["","IPSP는 Cl- 유입이나 K+ 유출로 막을 과분극시킬 때 생깁니다. Na+ 유입은 탈분극입니다."],"structures":["epsp_ipsp","postsynaptic"],"branch":"minigame:synapse_epsp","reference":"시냅스후전위 - EPSP와 IPSP"},{"id":"ch2_fork_horn","chapter":2,"topic":"척수 구조","difficulty":"Rookie","objective":"척수 회색질의 앞뿔·뒤뿔 기능을 구별한다.","question":"근육으로 명령을 보내는 운동신경세포의 세포체가 모여 있는 척수 회색질은?","options":["앞뿔","뒤뿔"],"answer":0,"explanation":"척수 회색질의 앞뿔에는 아래운동신경세포(알파운동신경세포)의 세포체가 있습니다. 뒤뿔은 감각 정보를 받는 곳입니다.","wrongExplanations":["","뒤뿔은 뒤뿌리로 들어온 감각 정보를 받아 중계하는 곳입니다."],"structures":["ventral_horn","dorsal_root_ganglion"],"branch":"ch2_fork_horn","reference":"척수의 단면 구조"},{"id":"ch2_gate_drg","chapter":2,"topic":"척수 구조","difficulty":"Normal","objective":"감각신경세포 세포체의 위치를 안다.","question":"몸의 감각을 전달하는 1차 감각신경세포의 세포체가 모여 있는 곳은?","options":["가쪽뿔","앞뿔","뒤뿌리신경절"],"answer":2,"explanation":"1차 감각신경세포는 척수 밖 뒤뿌리신경절에 세포체가 있습니다. 한 가지는 말초로, 다른 가지는 뒤뿌리를 통해 척수로 들어갑니다.","wrongExplanations":["가쪽뿔(가슴·위허리 분절)은 교감신경의 신경절이전신경세포가 있는 곳입니다.","앞뿔은 운동신경세포의 세포체가 있는 곳입니다.",""],"structures":["dorsal_root_ganglion"],"branch":"ch2_gate_drg","reference":"척수신경과 뒤뿌리신경절"},{"id":"ch2_gate_spindle","chapter":2,"topic":"척수반사","difficulty":"Normal","objective":"신장반사의 수용기를 안다.","question":"무릎힘줄을 두드려 넙다리네갈래근이 갑자기 늘어날 때, 늘어남을 감지하는 수용기는?","options":["골지힘줄기관","자유신경종말","근육방추"],"answer":2,"explanation":"근육방추는 근육의 길이 변화(늘어남)를 감지하며, 신장반사(무릎반사)의 수용기입니다.","wrongExplanations":["골지힘줄기관은 힘줄에 걸리는 장력을 감지합니다.","자유신경종말은 주로 통증과 온도를 감지합니다.",""],"structures":["stretch_reflex"],"branch":"ch2_gate_spindle","reference":"신장반사 - 근육방추"},{"id":"ch2_gate_monosyn","chapter":2,"topic":"척수반사","difficulty":"Normal","objective":"무릎반사가 단일시냅스 반사임을 안다.","question":"무릎반사(신장반사)는 척수에서 몇 개의 시냅스를 거칠까요?","options":["시냅스를 거치지 않는다","3개 이상 (다시냅스 반사)","1개 (단일시냅스 반사)"],"answer":2,"explanation":"근육방추의 감각신경이 척수 앞뿔의 운동신경세포에 직접 시냅스하는 단일시냅스 반사입니다. 그래서 매우 빠릅니다.","wrongExplanations":["반사궁에는 반드시 감각신경과 운동신경 사이의 시냅스가 있습니다.","굽힘반사처럼 사이신경세포를 거치는 반사는 다시냅스 반사입니다. 무릎반사는 아닙니다.",""],"structures":["stretch_reflex","reflex_arc"],"branch":"ch2_gate_monosyn","reference":"단일시냅스 반사"},{"id":"ch2_fork_arc","chapter":2,"topic":"척수반사","difficulty":"Rookie","objective":"반사궁의 순서를 안다.","question":"반사궁의 올바른 순서는?","options":["수용기 → 운동신경 → 척수 → 감각신경 → 효과기","수용기 → 감각신경 → 척수 → 운동신경 → 효과기"],"answer":1,"explanation":"반사궁은 수용기 → 감각(들)신경 → 척수의 중추(사이신경세포) → 운동(날)신경 → 효과기(근육·샘) 순서입니다.","wrongExplanations":["감각신경과 운동신경의 순서가 바뀌었습니다. 정보는 감각신경을 따라 척수로 들어가고, 운동신경을 따라 나옵니다.",""],"structures":["reflex_arc"],"branch":"ch2_fork_arc","reference":"반사궁의 구성"},{"id":"ch2_gate_reciprocal","chapter":2,"topic":"척수반사","difficulty":"Expert","objective":"상호억제를 이해한다.","question":"신장반사 때 수축하는 근육의 반대편 길항근이 이완되도록 하는 기전은?","options":["탈수초","상호억제 (억제성 사이신경세포)","시냅스 소포 고갈"],"answer":1,"explanation":"근육방추 감각신경은 억제성 사이신경세포를 통해 길항근의 운동신경세포를 억제합니다. 이 상호억제 덕분에 동작이 부드러워집니다.","wrongExplanations":["탈수초는 전도 장애이지 정상 반사 기전이 아닙니다.","","소포 고갈은 반복 자극에 따른 피로 현상으로, 상호억제와 다릅니다."],"structures":["reciprocal_inhibition"],"branch":"ch2_gate_reciprocal","reference":"상호억제"},{"id":"ch2_gate_flexor","chapter":2,"topic":"척수반사","difficulty":"Normal","objective":"굽힘반사와 교차폄반사를 안다.","question":"압정을 밟으면 그 다리는 굽히고 반대쪽 다리는 펴서 몸을 지탱한다. 이 반사는?","options":["굽힘반사 + 교차폄반사","신장반사","골지힘줄반사"],"answer":0,"explanation":"통증 자극은 다시냅스 경로로 같은 쪽 굽힘근을 수축시키고(굽힘반사), 척수 반대편으로 건너가 반대쪽 폄근을 수축시킵니다(교차폄반사).","wrongExplanations":["","신장반사는 근육이 늘어날 때 같은 근육이 수축하는 반사입니다.","골지힘줄반사는 장력이 클 때 근육을 이완시키는 반사입니다."],"structures":["flexor_reflex"],"branch":"ch2_gate_flexor","reference":"굽힘반사와 교차폄반사"},{"id":"ch3_fork_dcml","chapter":3,"topic":"감각 오름로","difficulty":"Rookie","objective":"뒤기둥-안쪽섬유띠계가 전달하는 감각을 안다.","question":"미세한 촉각·진동·위치감각(고유감각)을 대뇌로 전달하는 경로는?","options":["앞가쪽계 (척수시상로)","뒤기둥-안쪽섬유띠계"],"answer":1,"explanation":"뒤기둥-안쪽섬유띠계는 미세촉각, 진동감각, 의식적 고유감각을 전달합니다.","wrongExplanations":["앞가쪽계는 통증, 온도, 거친 촉각을 전달합니다.",""],"structures":["dcml","spinothalamic"],"branch":"ch3_fork_dcml","reference":"감각 오름로"},{"id":"ch3_gate_dcml_cross","chapter":3,"topic":"감각 오름로","difficulty":"Normal","objective":"뒤기둥-안쪽섬유띠계의 교차 위치를 안다.","question":"뒤기둥-안쪽섬유띠계의 2차 신경섬유가 반대쪽으로 교차하는 곳은?","options":["척수에 들어온 직후","중간뇌","숨뇌 (속활꼴섬유 → 안쪽섬유띠)"],"answer":2,"explanation":"1차 신경은 같은 쪽 뒤기둥을 따라 올라가 숨뇌의 널판핵·쐐기핵에서 시냅스합니다. 2차 신경은 속활꼴섬유로 교차해 안쪽섬유띠를 이룹니다.","wrongExplanations":["척수에서 곧바로 교차하는 것은 앞가쪽계입니다.","중간뇌가 아니라 숨뇌에서 교차합니다.",""],"structures":["dcml"],"branch":"ch3_gate_dcml_cross","reference":"뒤기둥-안쪽섬유띠계의 교차"},{"id":"ch3_gate_stt_cross","chapter":3,"topic":"감각 오름로","difficulty":"Normal","objective":"앞가쪽계의 교차 위치를 안다.","question":"통증·온도감각을 전달하는 앞가쪽계(척수시상로)가 교차하는 곳은?","options":["척수 (들어온 높이 근처, 앞흰질맞교차)","시상","숨뇌"],"answer":0,"explanation":"통증·온도 신경은 뒤뿔에서 시냅스한 뒤 곧 앞흰질맞교차를 지나 반대쪽에서 올라갑니다. 그래서 척수 반쪽 손상 때 반대쪽 통증·온도감각이 사라집니다.","wrongExplanations":["","시상은 중계 장소이지 교차 위치가 아닙니다.","숨뇌에서 교차하는 것은 뒤기둥-안쪽섬유띠계입니다."],"structures":["spinothalamic"],"branch":"ch3_gate_stt_cross","reference":"앞가쪽계의 교차"},{"id":"ch3_gate_scb","chapter":3,"topic":"감각 오름로","difficulty":"Normal","objective":"척수소뇌로의 기능을 안다.","question":"의식되지 않는 고유감각을 소뇌로 보내 자세와 움직임을 조절하게 하는 경로는?","options":["척수소뇌로","겉질척수로","그물척수로"],"answer":0,"explanation":"척수소뇌로는 근육·관절의 고유감각 정보를 의식에 도달하지 않은 채 소뇌로 보냅니다.","wrongExplanations":["","겉질척수로는 내려가는 운동 경로입니다.","그물척수로는 자세·근긴장을 조절하는 내림로입니다."],"structures":["spinocerebellar"],"branch":"ch3_gate_scb","reference":"척수소뇌로"},{"id":"ch3_fork_cst","chapter":3,"topic":"운동 내림로","difficulty":"Rookie","objective":"수의운동의 주된 내림로를 안다.","question":"손가락을 섬세하게 움직이는 수의운동 명령을 척수로 전달하는 주된 경로는?","options":["겉질척수로","앞가쪽계"],"answer":0,"explanation":"겉질척수로는 일차운동겉질에서 시작해 척수 앞뿔의 운동신경세포로 수의운동 명령을 전달합니다.","wrongExplanations":["","앞가쪽계는 감각(통증·온도)을 올려 보내는 오름로입니다."],"structures":["cst"],"branch":"ch3_fork_cst","reference":"겉질척수로"},{"id":"ch3_gate_cst_cross","chapter":3,"topic":"운동 내림로","difficulty":"Normal","objective":"가쪽겉질척수로의 교차 위치를 안다.","question":"가쪽겉질척수로 섬유가 대부분 반대쪽으로 교차하는 곳은?","options":["숨뇌 피라미드 교차","척수의 각 분절","시상"],"answer":0,"explanation":"겉질척수로 섬유의 대부분(약 85~90%)이 숨뇌 아래쪽 피라미드 교차에서 반대쪽으로 넘어가 가쪽겉질척수로가 됩니다.","wrongExplanations":["","앞겉질척수로 일부만 척수 분절에서 교차합니다.","시상은 운동 내림로의 교차 위치가 아닙니다."],"structures":["cst"],"branch":"ch3_gate_cst_cross","reference":"피라미드 교차"},{"id":"ch3_gate_vst","chapter":3,"topic":"운동 내림로","difficulty":"Expert","objective":"안뜰척수로의 기능을 안다.","question":"몸이 기울어질 때 안뜰신경핵에서 척수로 내려가 폄근을 조절해 균형을 잡게 하는 경로는?","options":["겉질숨뇌로","척수시상로","안뜰척수로"],"answer":2,"explanation":"안뜰척수로는 안뜰신경핵에서 시작해 주로 폄근(항중력근)을 촉진하여 자세와 균형을 유지합니다.","wrongExplanations":["겉질숨뇌로는 뇌신경 운동핵으로 가는 경로입니다.","척수시상로는 감각 오름로입니다.",""],"structures":["vestibulospinal"],"branch":"ch3_gate_vst","reference":"안뜰척수로"},{"id":"ch4_gate_sn","chapter":4,"topic":"중간뇌","difficulty":"Normal","objective":"흑색질과 파킨슨병을 연결한다.","question":"도파민 신경세포가 많아 손상되면 파킨슨병과 관련되는 중간뇌 구조는?","options":["올리브","흑색질","위둔덕"],"answer":1,"explanation":"중간뇌의 흑색질(치밀부)에는 도파민 신경세포가 있으며, 바닥핵으로 투사합니다. 이 세포가 소실되면 파킨슨병이 생깁니다.","wrongExplanations":["올리브는 숨뇌에 있으며 소뇌와 연결됩니다.","","위둔덕은 시각 반사에 관여합니다."],"structures":["substantia_nigra","midbrain"],"branch":"ch4_gate_sn","reference":"중간뇌 - 흑색질"},{"id":"ch4_gate_sc","chapter":4,"topic":"중간뇌","difficulty":"Normal","objective":"위둔덕의 기능을 안다.","question":"갑자기 나타난 물체 쪽으로 눈과 머리를 돌리는 시각 반사에 관여하는 중간뇌 구조는?","options":["적색핵","아래둔덕","위둔덕"],"answer":2,"explanation":"중간뇌 덮개의 위둔덕은 시각 정보를 받아 눈·머리의 반사적 방향 전환에 관여합니다.","wrongExplanations":["적색핵은 운동 협응과 관련된 핵입니다.","아래둔덕은 청각 경로의 중계 장소입니다.",""],"structures":["midbrain"],"branch":"ch4_gate_sc","reference":"중간뇌 덮개 - 위둔덕"},{"id":"ch4_fork_ic","chapter":4,"topic":"중간뇌","difficulty":"Rookie","objective":"아래둔덕의 기능을 안다.","question":"청각 정보가 시상(안쪽무릎체)으로 가기 전에 중계되는 중간뇌 구조는?","options":["아래둔덕","위둔덕"],"answer":0,"explanation":"아래둔덕은 청각 경로의 중요한 중계 장소로, 이후 안쪽무릎체를 거쳐 청각겉질로 갑니다.","wrongExplanations":["","위둔덕은 시각 반사에 관여합니다."],"structures":["midbrain"],"branch":"ch4_fork_ic","reference":"중간뇌 덮개 - 아래둔덕"},{"id":"ch4_gate_aqueduct","chapter":4,"topic":"중간뇌","difficulty":"Normal","objective":"중뇌수도관의 위치를 안다.","question":"셋째뇌실과 넷째뇌실을 잇는 중간뇌의 좁은 통로는?","options":["척수 중심관","중뇌수도관","뇌실사이구멍"],"answer":1,"explanation":"중뇌수도관(대뇌수도관)은 중간뇌를 지나 셋째뇌실과 넷째뇌실을 연결합니다. 막히면 폐쇄성 수두증이 생길 수 있습니다.","wrongExplanations":["중심관은 척수 안의 통로입니다.","","뇌실사이구멍은 가쪽뇌실과 셋째뇌실을 연결합니다."],"structures":["midbrain"],"branch":"ch4_gate_aqueduct","reference":"뇌실계통"},{"id":"ch4_gate_cn_midbrain","chapter":4,"topic":"중간뇌","difficulty":"Normal","objective":"중간뇌에 있는 뇌신경핵을 안다.","question":"중간뇌에 운동핵이 있는 뇌신경은?","options":["III 눈돌림신경과 IV 도르래신경","VII 얼굴신경과 VIII 속귀신경","IX 혀인두신경과 X 미주신경"],"answer":0,"explanation":"중간뇌에는 눈돌림신경(III)과 도르래신경(IV)의 핵이 있습니다. V~VIII은 주로 다리뇌, IX~XII는 주로 숨뇌와 관련됩니다.","wrongExplanations":["","VII·VIII 신경핵은 주로 다리뇌(다리뇌-숨뇌 경계)에 있습니다.","IX·X 신경핵은 숨뇌에 있습니다."],"structures":["midbrain"],"branch":"ch4_gate_cn_midbrain","reference":"뇌줄기와 뇌신경핵"},{"id":"ch4_fork_pons","chapter":4,"topic":"다리뇌","difficulty":"Rookie","objective":"다리뇌와 소뇌의 연결을 안다.","question":"가장 굵은 소뇌다리(중간소뇌다리)로 소뇌와 연결되는 뇌줄기 부분은?","options":["숨뇌","다리뇌"],"answer":1,"explanation":"다리뇌의 다리뇌핵에서 나온 섬유가 중간소뇌다리를 이루어 반대쪽 소뇌로 갑니다. 대뇌겉질의 정보를 소뇌로 전달하는 중요한 통로입니다.","wrongExplanations":["숨뇌는 주로 아래소뇌다리로 소뇌와 연결됩니다.",""],"structures":["pons"],"branch":"ch4_fork_pons","reference":"다리뇌와 중간소뇌다리"},{"id":"ch4_gate_medulla","chapter":4,"topic":"숨뇌","difficulty":"Rookie","objective":"숨뇌의 생명 중추를 안다.","question":"호흡과 심장 박동·혈압을 조절하는 생명 중추가 있는 곳은?","options":["숨뇌","중간뇌 덮개","소뇌 벌레"],"answer":0,"explanation":"숨뇌에는 호흡 중추와 심혈관 중추가 있어 생명 유지에 필수적입니다.","wrongExplanations":["","중간뇌 덮개는 시각·청각 반사에 관여합니다.","소뇌 벌레는 몸통의 균형에 관여합니다."],"structures":["medulla"],"branch":"ch4_gate_medulla","reference":"숨뇌의 기능"},{"id":"ch5_gate_function","chapter":5,"topic":"소뇌 기능","difficulty":"Rookie","objective":"소뇌의 주된 기능을 안다.","question":"소뇌의 주된 기능은?","options":["시각 정보의 인식","수의운동 명령의 시작","운동 협응·균형·운동학습"],"answer":2,"explanation":"소뇌는 움직임의 정확도와 타이밍을 조절하고, 균형과 자세를 유지하며, 운동학습에 관여합니다.","wrongExplanations":["시각 인식은 뒤통수엽 시각겉질의 기능입니다.","수의운동 명령은 주로 일차운동겉질에서 시작됩니다.",""],"structures":["cerebellum"],"branch":"ch5_gate_function","reference":"소뇌의 기능"},{"id":"ch5_gate_purkinje","chapter":5,"topic":"소뇌 구조","difficulty":"Normal","objective":"조롱박세포의 역할을 안다.","question":"소뇌겉질의 유일한 출력 신경세포이며 억제성(GABA)인 세포는?","options":["조롱박세포 (푸르키녜세포)","과립세포","별세포"],"answer":0,"explanation":"조롱박세포는 소뇌겉질의 유일한 출력세포로, GABA를 사용해 소뇌핵을 억제합니다.","wrongExplanations":["","과립세포는 흥분성이며 평행섬유를 통해 조롱박세포에 입력합니다.","별세포는 겉질 안의 억제성 사이신경세포입니다."],"structures":["purkinje"],"branch":"ch5_gate_purkinje","reference":"소뇌겉질의 세포"},{"id":"ch5_fork_mcp","chapter":5,"topic":"소뇌 구조","difficulty":"Normal","objective":"중간소뇌다리를 안다.","question":"다리뇌에서 오는 입력이 지나는, 가장 굵은 소뇌다리는?","options":["중간소뇌다리","위소뇌다리"],"answer":0,"explanation":"중간소뇌다리는 다리뇌핵에서 오는 섬유로 이루어진 가장 굵은 소뇌다리이며 입력 전용입니다.","wrongExplanations":["","위소뇌다리는 주로 소뇌의 출력이 나가는 통로입니다."],"structures":["cerebellar_peduncles"],"branch":"ch5_fork_mcp","reference":"소뇌다리"},{"id":"ch5_gate_scp","chapter":5,"topic":"소뇌 구조","difficulty":"Normal","objective":"위소뇌다리를 안다.","question":"소뇌핵에서 나온 출력이 주로 지나 중간뇌·시상으로 가는 소뇌다리는?","options":["위소뇌다리","중간소뇌다리","아래소뇌다리"],"answer":0,"explanation":"소뇌의 출력은 주로 위소뇌다리를 지나 적색핵과 시상으로 갑니다.","wrongExplanations":["","중간소뇌다리는 입력 전용입니다.","아래소뇌다리는 척수·숨뇌에서 오는 입력이 주로 지납니다."],"structures":["cerebellar_peduncles"],"branch":"ch5_gate_scp","reference":"소뇌다리"},{"id":"ch5_gate_vermis","chapter":5,"topic":"소뇌 증상","difficulty":"Expert","objective":"소뇌 벌레 손상 증상을 안다.","question":"소뇌 벌레(충부)가 손상되면 주로 나타나는 증상은?","options":["몸통 운동실조 (다리를 넓게 벌린 보행)","반대쪽 편마비","실어증"],"answer":0,"explanation":"소뇌 벌레는 몸통의 균형과 자세를 조절합니다. 손상되면 다리를 넓게 벌리고 비틀거리는 몸통 운동실조가 나타납니다.","wrongExplanations":["","편마비는 겉질척수로 손상의 증상입니다.","실어증은 대뇌 언어 영역의 손상으로 생깁니다."],"structures":["cerebellum"],"branch":"ch5_gate_vermis","reference":"소뇌 증후군"},{"id":"ch5_gate_tremor","chapter":5,"topic":"소뇌 증상","difficulty":"Normal","objective":"의도떨림을 안다.","question":"손을 목표로 뻗을 때 목표에 가까워질수록 떨림이 심해지는 소뇌 징후는?","options":["안정떨림","의도떨림","무도증"],"answer":1,"explanation":"의도떨림은 움직이는 동안, 특히 목표에 가까워질 때 심해지는 떨림으로 소뇌 병변의 특징입니다.","wrongExplanations":["안정떨림은 쉬고 있을 때 나타나며 파킨슨병의 특징입니다.","","무도증은 불규칙한 춤추는 듯한 움직임으로 바닥핵 질환(헌팅턴병 등)과 관련됩니다."],"structures":["cerebellum"],"branch":"ch5_gate_tremor","reference":"소뇌 징후"},{"id":"ch6_fork_thalamus","chapter":6,"topic":"사이뇌","difficulty":"Rookie","objective":"시상의 감각 중계 기능을 안다.","question":"후각을 제외한 대부분의 감각 정보를 대뇌겉질로 중계하는 곳은?","options":["시상","시상하부"],"answer":0,"explanation":"시상은 후각을 제외한 감각 정보와 운동 회로 정보를 대뇌겉질로 중계하는 관문입니다.","wrongExplanations":["","시상하부는 항상성과 내분비·자율신경을 조절합니다."],"structures":["thalamus"],"branch":"ch6_fork_thalamus","reference":"시상의 기능"},{"id":"ch6_gate_vpl","chapter":6,"topic":"사이뇌","difficulty":"Normal","objective":"몸감각을 중계하는 시상핵을 안다.","question":"몸(목 아래)의 촉각·통증 정보가 중계되는 시상핵은?","options":["가쪽무릎체","배쪽뒤가쪽핵 (VPL)","안쪽무릎체"],"answer":1,"explanation":"몸의 감각은 시상의 배쪽뒤가쪽핵(VPL)에서, 얼굴의 감각은 배쪽뒤안쪽핵(VPM)에서 중계되어 일차몸감각겉질로 갑니다.","wrongExplanations":["가쪽무릎체는 시각 정보를 중계합니다.","","안쪽무릎체는 청각 정보를 중계합니다."],"structures":["thalamus"],"branch":"ch6_gate_vpl","reference":"시상핵"},{"id":"ch6_gate_lgn","chapter":6,"topic":"사이뇌","difficulty":"Normal","objective":"시각을 중계하는 시상핵을 안다.","question":"시각로의 정보가 시각겉질로 가기 전에 중계되는 시상핵은?","options":["가쪽무릎체","배쪽앞핵","안쪽무릎체"],"answer":0,"explanation":"시각 정보는 시상의 가쪽무릎체에서 중계되어 시각부챗살을 따라 일차시각겉질로 갑니다.","wrongExplanations":["","배쪽앞핵은 바닥핵·운동 회로와 관련됩니다.","안쪽무릎체는 청각을 중계합니다."],"structures":["thalamus"],"branch":"ch6_gate_lgn","reference":"시상핵"},{"id":"ch6_fork_hypothal","chapter":6,"topic":"사이뇌","difficulty":"Rookie","objective":"시상하부의 항상성 기능을 안다.","question":"체온, 배고픔, 갈증 등 항상성을 조절하는 곳은?","options":["시상하부","시상"],"answer":0,"explanation":"시상하부는 체온, 섭식, 수분 균형, 일주기 리듬 등 항상성을 조절하고 자율신경계와 내분비계를 통제합니다.","wrongExplanations":["","시상은 감각 정보를 중계하는 관문입니다."],"structures":["hypothalamus"],"branch":"ch6_fork_hypothal","reference":"시상하부의 기능"},{"id":"ch6_gate_pituitary","chapter":6,"topic":"사이뇌","difficulty":"Normal","objective":"시상하부-뇌하수체 연결을 안다.","question":"시상하부와 깔때기로 연결되어 호르몬 분비를 조절받는 내분비샘은?","options":["부신","뇌하수체","이자"],"answer":1,"explanation":"시상하부는 깔때기(누두)로 연결된 뇌하수체를 통해 여러 내분비샘의 호르몬 분비를 조절합니다.","wrongExplanations":["부신은 뇌하수체 호르몬(ACTH) 등의 영향을 받지만 시상하부와 직접 연결되지 않습니다.","","이자는 혈당 등에 의해 주로 조절됩니다."],"structures":["hypothalamus"],"branch":"ch6_gate_pituitary","reference":"시상하부-뇌하수체 축"},{"id":"ch6_gate_pineal","chapter":6,"topic":"사이뇌","difficulty":"Normal","objective":"솔방울샘의 기능을 안다.","question":"멜라토닌을 분비해 일주기 리듬에 관여하는 사이뇌 구조는?","options":["시각교차","솔방울샘","유두체"],"answer":1,"explanation":"솔방울샘(송과체)은 어두울 때 멜라토닌을 분비하여 수면-각성 같은 일주기 리듬에 관여합니다.","wrongExplanations":["시각교차는 시신경 섬유가 교차하는 곳입니다.","","유두체는 기억 회로(파페츠 회로)와 관련됩니다."],"structures":["pineal"],"branch":"ch6_gate_pineal","reference":"시상상부 - 솔방울샘"},{"id":"ch7_gate_m1","chapter":7,"topic":"대뇌엽 기능","difficulty":"Normal","objective":"일차운동겉질의 위치를 안다.","question":"수의운동 명령을 내보내는 일차운동겉질(중심앞이랑)은 어디에 있을까요?","options":["이마엽 중심앞이랑","마루엽 중심뒤이랑","뒤통수엽 새발톱고랑"],"answer":0,"explanation":"중심고랑 바로 앞의 중심앞이랑(이마엽)이 일차운동겉질입니다. 여기서 시작한 겉질척수로가 숨뇌 피라미드에서 교차해 반대쪽 몸을 움직입니다.","wrongExplanations":["","중심뒤이랑은 중심고랑 뒤의 일차몸감각겉질(마루엽)입니다.","새발톱고랑 주변은 일차시각겉질(뒤통수엽)입니다."],"structures":["frontal","m1"],"branch":"gate:frontal_m1","reference":"대뇌겉질 기능 영역 - 중심앞이랑"},{"id":"ch7_gate_broca","chapter":7,"topic":"언어 영역","difficulty":"Normal","objective":"브로카 영역과 표현실어증을 연결한다.","question":"왼쪽 대뇌 손상 후 말은 알아듣지만 말이 느리고 더듬거린다(표현실어증). 손상 부위는?","options":["브로카 영역 (왼쪽 아래이마이랑)","베르니케 영역 (왼쪽 위관자이랑)","일차시각겉질"],"answer":0,"explanation":"브로카 영역은 대부분 왼쪽 이마엽 아래이마이랑에 있으며 말의 산출을 담당합니다. 손상되면 이해는 비교적 보존되지만 비유창한 표현실어증이 생깁니다.","wrongExplanations":["","베르니케 영역 손상은 말은 유창하지만 이해가 어려운 수용실어증을 일으킵니다.","일차시각겉질 손상은 시야 결손을 일으키며 실어증과 관련이 없습니다."],"structures":["broca","frontal"],"branch":"gate:frontal_broca","reference":"언어 영역 - 브로카 실어증"},{"id":"ch7_fork_s1","chapter":7,"topic":"대뇌엽 기능","difficulty":"Normal","objective":"일차몸감각겉질의 위치를 안다.","question":"피부의 촉각·통증 정보가 시상을 거쳐 도착하는 일차몸감각겉질(중심뒤이랑)은?","options":["이마엽","마루엽","뒤통수엽"],"answer":1,"explanation":"중심고랑 바로 뒤의 중심뒤이랑(마루엽)이 일차몸감각겉질입니다. 몸 감각 정보는 시상의 배쪽뒤핵(VPL/VPM)을 거쳐 이곳에 도착합니다.","wrongExplanations":["이마엽의 중심앞이랑은 운동겉질입니다. 감각이 아니라 운동 명령을 내보냅니다.","","뒤통수엽은 시각 정보를 처리합니다."],"structures":["parietal","s1"],"branch":"fork:to_parietal","reference":"대뇌겉질 기능 영역 - 중심뒤이랑"},{"id":"ch7_gate_neglect","chapter":7,"topic":"대뇌엽 기능","difficulty":"Expert","objective":"마루엽과 공간 주의(반쪽무시)를 연결한다.","question":"환자가 접시의 왼쪽 음식만 남기고, 왼쪽 공간을 무시한다(반쪽무시). 가장 흔한 손상 부위는?","options":["오른쪽 마루엽","왼쪽 이마엽","왼쪽 뒤통수엽"],"answer":0,"explanation":"공간 주의는 주로 오른쪽 마루엽이 담당합니다. 오른쪽 마루엽이 손상되면 반대쪽(왼쪽) 공간을 무시하는 반쪽무시가 흔히 나타납니다.","wrongExplanations":["","왼쪽 이마엽 손상은 오른쪽 운동 약화나 표현실어증과 관련됩니다.","뒤통수엽 손상은 시야 결손을 일으키지만, 무시와는 다릅니다."],"structures":["parietal"],"branch":"gate:parietal_neglect","reference":"마루엽 증후군 - 반쪽무시"},{"id":"ch7_fork_a1","chapter":7,"topic":"대뇌엽 기능","difficulty":"Normal","objective":"일차청각겉질의 위치를 안다.","question":"소리 정보가 처음 도착하는 일차청각겉질은 어디에 있을까요?","options":["관자엽 가로관자이랑","뒤통수엽","마루엽"],"answer":0,"explanation":"일차청각겉질은 관자엽 위쪽의 가로관자이랑(헤쉴이랑)에 있습니다. 청각 정보는 시상의 안쪽무릎체를 거쳐 이곳에 도착합니다.","wrongExplanations":["","뒤통수엽은 시각을 담당합니다.","마루엽은 몸감각과 공간 정보를 담당합니다."],"structures":["temporal","a1"],"branch":"fork:to_temporal","reference":"대뇌겉질 기능 영역 - 청각겉질"},{"id":"ch7_gate_wernicke","chapter":7,"topic":"언어 영역","difficulty":"Normal","objective":"베르니케 영역과 수용실어증을 연결한다.","question":"말은 유창하지만 엉뚱한 단어가 섞이고, 남의 말을 이해하지 못한다(수용실어증). 손상 부위는?","options":["브로카 영역","베르니케 영역 (왼쪽 위관자이랑 뒤쪽)","일차운동겉질"],"answer":1,"explanation":"베르니케 영역은 대부분 왼쪽 위관자이랑 뒤쪽에 있으며 언어 이해를 담당합니다. 손상되면 유창하지만 의미가 맞지 않는 말과 이해 장애가 나타납니다.","wrongExplanations":["브로카 영역 손상은 이해는 비교적 보존되고 말이 비유창해집니다.","","일차운동겉질 손상은 반대쪽 몸의 운동 약화를 일으킵니다."],"structures":["wernicke","temporal"],"branch":"gate:temporal_wernicke","reference":"언어 영역 - 베르니케 실어증"},{"id":"ch7_gate_hippocampus","chapter":7,"topic":"대뇌엽 기능","difficulty":"Normal","objective":"해마와 기억 형성을 연결한다.","question":"새로운 사실과 사건을 기억으로 만드는(서술기억 형성) 데 중요한 해마는 어디에 있을까요?","options":["안쪽 관자엽","마루엽 위쪽","이마엽 앞쪽"],"answer":0,"explanation":"해마는 안쪽 관자엽에 있으며 새로운 서술기억 형성에 중요합니다. 양쪽 해마가 손상되면 새로운 기억을 만들지 못하는 앞으로가는기억상실이 생길 수 있습니다.","wrongExplanations":["","마루엽 위쪽은 몸감각 통합과 공간 처리에 관여합니다.","이마엽 앞쪽은 계획, 판단 같은 실행기능을 담당합니다."],"structures":["hippocampus","temporal"],"branch":"gate:temporal_hippocampus","reference":"변연계 - 해마와 기억"},{"id":"ch7_fork_v1","chapter":7,"topic":"대뇌엽 기능","difficulty":"Rookie","objective":"일차시각겉질의 위치를 안다.","question":"시각 정보가 도착하는 일차시각겉질은 어디의 새발톱고랑 주변에 있을까요?","options":["뒤통수엽","관자엽"],"answer":0,"explanation":"일차시각겉질은 뒤통수엽 안쪽면의 새발톱고랑 주변에 있습니다. 시각 정보는 시상의 가쪽무릎체에서 시각부챗살을 따라 이곳에 도착합니다.","wrongExplanations":["","관자엽은 청각과 언어 이해, 기억에 관여합니다. 일차시각겉질은 뒤통수엽에 있습니다."],"structures":["occipital","v1"],"branch":"fork:to_occipital","reference":"대뇌겉질 기능 영역 - 시각겉질"},{"id":"ch8_gate_abducens","chapter":8,"topic":"뇌신경","difficulty":"Normal","objective":"눈 운동 신경 지배를 안다.","question":"눈알을 바깥쪽으로 돌리는 가쪽곧은근을 지배하는 신경은?","options":["VI 갓돌림신경","III 눈돌림신경","IV 도르래신경"],"answer":0,"explanation":"가쪽곧은근은 VI 갓돌림신경이 지배합니다(LR6). 손상되면 눈이 바깥으로 돌아가지 않아 복시가 생깁니다.","wrongExplanations":["","눈돌림신경은 대부분의 바깥눈근육과 위눈꺼풀올림근을 지배합니다.","도르래신경은 위빗근만 지배합니다."],"structures":["cn_eye"],"branch":"ch8_gate_abducens","reference":"바깥눈근육의 신경 지배"},{"id":"ch8_gate_trochlear","chapter":8,"topic":"뇌신경","difficulty":"Normal","objective":"도르래신경의 지배 근육을 안다.","question":"위빗근을 지배하는 신경은?","options":["IV 도르래신경","III 눈돌림신경","VI 갓돌림신경"],"answer":0,"explanation":"위빗근은 IV 도르래신경이 지배합니다(SO4). 도르래신경은 뇌줄기 뒤쪽에서 나오는 유일한 뇌신경입니다.","wrongExplanations":["","눈돌림신경은 위빗근과 가쪽곧은근을 제외한 바깥눈근육을 지배합니다.","갓돌림신경은 가쪽곧은근을 지배합니다."],"structures":["cn_eye"],"branch":"ch8_gate_trochlear","reference":"바깥눈근육의 신경 지배"},{"id":"ch8_fork_facial","chapter":8,"topic":"뇌신경","difficulty":"Rookie","objective":"얼굴신경의 기능을 안다.","question":"얼굴 표정근을 움직이는 운동신경은?","options":["VII 얼굴신경","V 삼차신경"],"answer":0,"explanation":"얼굴 표정근은 VII 얼굴신경이 지배합니다. 손상되면 같은 쪽 얼굴 전체가 마비될 수 있습니다(벨마비).","wrongExplanations":["","삼차신경은 얼굴의 감각과 씹기근육을 담당합니다."],"structures":["cn_face"],"branch":"ch8_fork_facial","reference":"얼굴신경"},{"id":"ch8_gate_trigeminal","chapter":8,"topic":"뇌신경","difficulty":"Normal","objective":"삼차신경의 기능을 안다.","question":"얼굴 피부의 감각을 담당하고 씹기근육을 지배하는 혼합신경은?","options":["VII 얼굴신경","V 삼차신경","XII 혀밑신경"],"answer":1,"explanation":"삼차신경은 세 가지(눈·위턱·아래턱신경)로 얼굴 감각을 담당하고, 아래턱신경으로 씹기근육을 지배합니다.","wrongExplanations":["얼굴신경은 표정근과 혀 앞 2/3의 미각 등을 담당합니다.","","혀밑신경은 혀 근육을 지배합니다."],"structures":["cn_face"],"branch":"ch8_gate_trigeminal","reference":"삼차신경"},{"id":"ch8_gate_sensory","chapter":8,"topic":"뇌신경","difficulty":"Normal","objective":"순수 감각 뇌신경을 안다.","question":"순수한 감각신경으로만 이루어진 뇌신경 묶음은?","options":["III 눈돌림 · IV 도르래 · VI 갓돌림","I 후각 · II 시각 · VIII 속귀","V 삼차 · VII 얼굴 · IX 혀인두"],"answer":1,"explanation":"후각신경(I), 시각신경(II), 속귀신경(VIII)은 감각신경입니다.","wrongExplanations":["III·IV·VI는 눈 운동을 담당하는 운동신경입니다.","","V·VII·IX는 감각과 운동이 섞인 혼합신경입니다."],"structures":["cn_overview"],"branch":"ch8_gate_sensory","reference":"뇌신경 분류"},{"id":"ch8_fork_hypoglossal","chapter":8,"topic":"뇌신경","difficulty":"Expert","objective":"혀밑신경 손상 징후를 안다.","question":"혀를 내밀면 한쪽으로 치우친다. 손상된 신경은?","options":["XII 혀밑신경","IX 혀인두신경"],"answer":0,"explanation":"혀밑신경이 손상되면 같은 쪽 혀근육이 약해져서, 혀를 내밀 때 손상된 쪽으로 치우칩니다.","wrongExplanations":["","혀인두신경은 혀 뒤 1/3의 감각·미각과 인두를 담당하며 혀 운동을 지배하지 않습니다."],"structures":["cn_lower"],"branch":"ch8_fork_hypoglossal","reference":"혀밑신경"},{"id":"ch8_gate_vagus","chapter":8,"topic":"뇌신경","difficulty":"Normal","objective":"미주신경의 부교감 기능을 안다.","question":"가슴과 배의 내장에 부교감신경을 보내는 뇌신경은?","options":["X 미주신경","XI 더부신경","IX 혀인두신경"],"answer":0,"explanation":"미주신경은 심장, 폐, 대부분의 소화관에 부교감신경을 보내고, 인두·후두 근육도 지배합니다.","wrongExplanations":["","더부신경은 목빗근과 등세모근을 지배합니다.","혀인두신경의 부교감 섬유는 귀밑샘으로 갑니다."],"structures":["cn_lower"],"branch":"ch8_gate_vagus","reference":"미주신경"},{"id":"ch8_gate_accessory","chapter":8,"topic":"뇌신경","difficulty":"Normal","objective":"더부신경의 지배 근육을 안다.","question":"어깨를 으쓱하는 등세모근과 고개를 돌리는 목빗근을 지배하는 신경은?","options":["XII 혀밑신경","X 미주신경","XI 더부신경"],"answer":2,"explanation":"더부신경(XI)은 목빗근과 등세모근을 지배합니다.","wrongExplanations":["혀밑신경은 혀 근육을 지배합니다.","미주신경은 인두·후두 근육과 내장을 담당합니다.",""],"structures":["cn_lower"],"branch":"ch8_gate_accessory","reference":"더부신경"},{"id":"ch9_boss_cst","chapter":9,"topic":"병변 위치 추론","difficulty":"Master","objective":"겉질척수로 교차를 이용해 병변 쪽을 추론한다.","question":"NULL 진단 1: 갑자기 오른쪽 팔·다리의 힘이 빠지고 오른쪽 얼굴 아래쪽이 마비되었다. 병변으로 가장 알맞은 곳은?","options":["왼쪽 대뇌 (내림 운동로)","오른쪽 대뇌","오른쪽 소뇌"],"answer":0,"explanation":"겉질척수로는 숨뇌의 피라미드 교차에서 반대쪽으로 넘어갑니다. 그래서 교차보다 위(대뇌)의 병변은 반대쪽 몸을 마비시킵니다. 얼굴 아래쪽만 마비되는 것은 위운동신경세포(겉질숨뇌로) 손상의 특징입니다.","wrongExplanations":["","오른쪽 대뇌 병변은 왼쪽 몸의 마비를 일으킵니다.","소뇌 병변은 마비보다 같은 쪽의 협응 장애(운동실조)를 일으킵니다."],"structures":["decussation","umn_lmn"],"branch":"gate:boss_1","reference":"겉질척수로와 피라미드 교차"},{"id":"ch9_boss_hemianopia","chapter":9,"topic":"병변 위치 추론","difficulty":"Master","objective":"동측반맹의 병변 위치를 추론한다.","question":"NULL 진단 2: 양쪽 눈 모두 왼쪽 시야 절반이 보이지 않는다(왼쪽 동측반맹). 병변은?","options":["오른쪽 뒤통수엽 (시각교차 뒤 오른쪽 경로)","왼쪽 뒤통수엽","시각교차 중앙"],"answer":0,"explanation":"시각교차 뒤에서는 각 시각로가 반대쪽 시야를 담당합니다. 그래서 오른쪽 시각로·시각부챗살·뒤통수엽이 손상되면 양쪽 눈의 왼쪽 시야가 사라집니다(왼쪽 동측반맹).","wrongExplanations":["","왼쪽 뒤통수엽 손상은 오른쪽 동측반맹을 일으킵니다.","시각교차 중앙 손상은 양쪽 바깥쪽 시야가 사라지는 양귀쪽반맹(양이측반맹)을 일으킵니다."],"structures":["hemianopia","occipital"],"branch":"gate:boss_2","reference":"시각 경로 병변"},{"id":"ch9_boss_cerebellum","chapter":9,"topic":"병변 위치 추론","difficulty":"Master","objective":"소뇌 병변이 같은 쪽 증상을 일으킴을 안다.","question":"NULL 진단 3: 걸음이 비틀거리고, 오른손 손가락-코 검사에서 목표를 지나친다(겨냥이상). 병변은?","options":["오른쪽 소뇌반구","왼쪽 소뇌반구","왼쪽 이마엽"],"answer":0,"explanation":"소뇌의 출력은 두 번 교차하기 때문에 소뇌반구 병변은 같은 쪽 팔다리의 협응 장애를 일으킵니다. 그래서 오른손 겨냥이상은 오른쪽 소뇌반구 병변을 시사합니다.","wrongExplanations":["","왼쪽 소뇌반구 병변은 왼쪽 팔다리의 운동실조를 일으킵니다.","이마엽 병변은 협응 장애보다 반대쪽 근력 약화를 주로 일으킵니다."],"structures":["cerebellum_sign"],"branch":"gate:boss_3","reference":"소뇌 증상 - 같은 쪽 운동실조"},{"id":"ch9_boss_lmn","chapter":9,"topic":"병변 위치 추론","difficulty":"Master","objective":"위·아래운동신경세포 병변을 구별한다.","question":"NULL 진단 4: 다리 근육이 위축되고 근육다발수축이 보이며, 무릎반사가 사라졌다. 어느 쪽 병변일까?","options":["아래운동신경세포 (척수 앞뿔·말초신경)","위운동신경세포 (대뇌 겉질척수로)","소뇌"],"answer":0,"explanation":"근위축, 근육다발수축, 반사 감소·소실, 근긴장 저하는 아래운동신경세포 병변의 특징입니다. 위운동신경세포 병변은 반사 항진, 강직, 바빈스키 징후를 보입니다.","wrongExplanations":["","위운동신경세포 병변은 반사가 오히려 증가(항진)합니다.","소뇌 병변은 근위축 없이 협응 장애를 일으킵니다."],"structures":["umn_lmn"],"branch":"gate:boss_4","reference":"위운동신경세포 vs 아래운동신경세포"},{"id":"ch9_boss_wernicke","chapter":9,"topic":"병변 위치 추론","difficulty":"Master","objective":"실어증 유형으로 병변을 추론한다.","question":"NULL 진단 5: 말은 유창하지만 엉뚱한 단어가 섞이고, 질문을 이해하지 못한다. 병변은?","options":["왼쪽 관자엽 (베르니케 영역)","왼쪽 이마엽 (브로카 영역)","오른쪽 뒤통수엽"],"answer":0,"explanation":"유창하지만 이해가 안 되는 수용실어증은 언어 우세 반구(대부분 왼쪽) 위관자이랑 뒤쪽의 베르니케 영역 병변을 시사합니다.","wrongExplanations":["","브로카 영역 병변은 이해는 비교적 보존되고 말이 비유창합니다.","오른쪽 뒤통수엽 병변은 왼쪽 동측반맹을 일으킵니다."],"structures":["wernicke"],"branch":"gate:boss_5","reference":"실어증의 병변 위치"},{"id":"ch9_final_brownsequard","chapter":9,"topic":"병변 위치 추론","difficulty":"Master","objective":"척수 반쪽 손상의 감각 해리를 설명한다.","question":"최종 진단: 손상 부위 아래로 같은 쪽 진동·위치감각과 운동이 사라지고, 반대쪽 통증·온도감각이 사라졌다. 진단은?","options":["척수 반쪽 손상 (브라운-세카르 증후군)","소뇌 경색"],"answer":0,"explanation":"뒤기둥-안쪽섬유띠계(진동·위치감각)와 겉질척수로는 척수에서 아직 교차하지 않아 같은 쪽 증상이 생깁니다. 앞가쪽계(통증·온도)는 척수에 들어온 직후 교차하므로 반대쪽 증상이 생깁니다.","wrongExplanations":["","소뇌 경색은 협응 장애와 어지럼을 일으키며, 이런 감각 해리를 만들지 않습니다."],"structures":["brown_sequard","decussation"],"branch":"fork:boss_final","reference":"척수 반쪽 손상 (Brown-Séquard)"}],"codex":[{"id":"dendrite","name":"가지돌기","english":"Dendrite","category":"뉴런 구조","chapter":1,"description":"다른 뉴런에서 오는 신호를 받는 나뭇가지 모양의 돌기. 시냅스 입력으로 국소(등급)전위가 생깁니다.","gameLink":"출발 구간 '가지돌기' - 워밍업 코너"},{"id":"soma","name":"세포체","english":"Cell body (Soma)","category":"뉴런 구조","chapter":1,"description":"핵과 세포소기관이 있는 뉴런의 중심. 여러 가지돌기에서 들어온 국소전위가 이곳에서 합쳐집니다(가중).","gameLink":"S자 코너 구간 '세포체'"},{"id":"hillock","name":"축삭둔덕","english":"Axon hillock","category":"뉴런 구조","chapter":1,"description":"세포체에서 축삭이 시작되는 부위. 시작분절과 함께 전압개폐 Na+ 통로가 밀집한 방아쇠 영역입니다.","gameLink":"첫 번째 갈림길"},{"id":"ap","name":"활동전위","english":"Action potential","category":"신경 생리","chapter":1,"description":"휴지막전위(약 -70mV) → 역치(약 -55mV) → 탈분극(Na+ 유입) → 재분극(K+ 유출) → 과분극 순서로 일어나는 '전부 아니면 전무' 신호.","gameLink":"활동전위 게이트 4연속"},{"id":"na_k_pump","name":"Na+-K+ 펌프","english":"Na+/K+ ATPase","category":"신경 생리","chapter":1,"description":"ATP를 사용해 Na+ 3개를 밖으로, K+ 2개를 안으로 운반하여 이온 농도 기울기를 유지합니다.","gameLink":"활동전위 게이트 4"},{"id":"axon","name":"축삭","english":"Axon","category":"뉴런 구조","chapter":1,"description":"활동전위를 세포체에서 멀리 축삭종말까지 전달하는 긴 돌기.","gameLink":"말이집 축삭 터널"},{"id":"myelin","name":"수초 (말이집)","english":"Myelin sheath","category":"뉴런 구조","chapter":1,"description":"축삭을 감싸는 절연성 지질막. 전류 누출을 줄여 전도 속도를 크게 높입니다.","gameLink":"도약전도 터널의 금빛 관(감긴 막 무늬) - 실제 마디사이는 약 0.2~2mm"},{"id":"ranvier","name":"랑비에 결절","english":"Node of Ranvier","category":"뉴런 구조","chapter":1,"description":"수초 사이의 짧은 노출 부위. 전압개폐 Na+ 통로가 밀집해 활동전위가 이곳에서 재생성됩니다(도약전도).","gameLink":"도약전도 터널의 청록 띠(Na+ 통로) - 링을 연속 통과하면 가속. 게임에서는 실제(약 1μm)보다 크게 표현"},{"id":"demyelination","name":"탈수초","english":"Demyelination","category":"임상","chapter":1,"description":"수초가 손상되어 전도가 느려지거나 차단되는 상태. 중추신경계의 대표 질환은 다발경화증입니다.","gameLink":"NULL 손상 구간 - 속도 저하, 복구 미션"},{"id":"oligodendrocyte","name":"희소돌기아교세포","english":"Oligodendrocyte","category":"신경아교세포","chapter":1,"description":"중추신경계(CNS)에서 수초를 만드는 세포. 하나의 세포가 여러 축삭에 수초를 형성합니다.","gameLink":"복구 게이트"},{"id":"schwann","name":"슈반세포","english":"Schwann cell","category":"신경아교세포","chapter":1,"description":"말초신경계(PNS)에서 수초를 만드는 세포. 하나의 세포가 축삭 한 마디를 감쌉니다.","gameLink":"복구 게이트 (오답 선택지)"},{"id":"terminal","name":"축삭종말","english":"Axon terminal","category":"뉴런 구조","chapter":1,"description":"축삭 끝의 부푼 부위. 시냅스 소포에 신경전달물질을 저장하고 있습니다.","gameLink":"급커브 '축삭종말' 구간"},{"id":"synapse","name":"시냅스","english":"Synapse","category":"시냅스","chapter":1,"description":"시냅스전막, 시냅스틈새, 시냅스후막으로 이루어진 뉴런 사이의 연결부. 화학적 시냅스에서는 Ca2+ 유입이 전달물질 방출을 일으킵니다.","gameLink":"시냅스 미니게임"},{"id":"postsynaptic","name":"시냅스후막","english":"Postsynaptic membrane","category":"시냅스","chapter":1,"description":"신경전달물질 수용체가 있는 다음 뉴런의 막. 수용체 결합으로 이온통로가 열립니다.","gameLink":"최종 질주 구간"},{"id":"epsp_ipsp","name":"EPSP / IPSP","english":"Excitatory / Inhibitory PSP","category":"시냅스","chapter":1,"description":"EPSP는 양이온 유입에 의한 탈분극성 전위, IPSP는 Cl- 유입·K+ 유출에 의한 과분극성 전위입니다.","gameLink":"시냅스 미니게임 2단계"},{"id":"ventral_horn","name":"앞뿔","english":"Ventral horn","category":"척수","chapter":2,"description":"척수 회색질 앞쪽. 아래운동신경세포의 세포체가 있으며 앞뿌리로 운동 명령을 내보냅니다.","gameLink":"앞뿔/뒤뿔 갈림길"},{"id":"dorsal_root_ganglion","name":"뒤뿌리신경절","english":"Dorsal root ganglion","category":"척수","chapter":2,"description":"1차 감각신경세포의 세포체가 모인 척수 밖의 신경절.","gameLink":"감각신경 게이트"},{"id":"reflex_arc","name":"반사궁","english":"Reflex arc","category":"척수반사","chapter":2,"description":"수용기 → 감각신경 → 척수 → 운동신경 → 효과기로 이어지는 반사 경로.","gameLink":"반사궁 숏컷 갈림길"},{"id":"stretch_reflex","name":"신장반사","english":"Stretch reflex","category":"척수반사","chapter":2,"description":"근육방추가 늘어남을 감지하면 같은 근육이 수축하는 단일시냅스 반사. 무릎반사가 대표적입니다.","gameLink":"근육방추 게이트"},{"id":"reciprocal_inhibition","name":"상호억제","english":"Reciprocal inhibition","category":"척수반사","chapter":2,"description":"억제성 사이신경세포가 길항근을 억제해 동작을 부드럽게 만드는 기전.","gameLink":"상호억제 게이트"},{"id":"flexor_reflex","name":"굽힘·교차폄반사","english":"Flexor / crossed extensor reflex","category":"척수반사","chapter":2,"description":"통증 자극에 같은 쪽은 굽히고 반대쪽은 펴는 다시냅스 반사.","gameLink":"압정 게이트"},{"id":"dcml","name":"뒤기둥-안쪽섬유띠계","english":"Dorsal column–medial lemniscus","category":"감각 오름로","chapter":3,"description":"미세촉각·진동·의식적 고유감각. 숨뇌에서 교차해 시상 VPL을 거쳐 일차몸감각겉질로 갑니다.","gameLink":"뒤기둥 갈림길"},{"id":"spinothalamic","name":"앞가쪽계 (척수시상로)","english":"Anterolateral system","category":"감각 오름로","chapter":3,"description":"통증·온도·거친 촉각. 척수에서 바로 교차해 시상으로 올라갑니다.","gameLink":"앞가쪽계 게이트"},{"id":"spinocerebellar","name":"척수소뇌로","english":"Spinocerebellar tract","category":"감각 오름로","chapter":3,"description":"의식되지 않는 고유감각을 소뇌로 전달합니다.","gameLink":"척수소뇌로 게이트"},{"id":"cst","name":"겉질척수로","english":"Corticospinal tract","category":"운동 내림로","chapter":3,"description":"일차운동겉질 → 속섬유막 → 대뇌다리 → 피라미드 교차 → 척수 앞뿔. 수의운동의 주된 경로입니다.","gameLink":"겉질척수로 갈림길"},{"id":"vestibulospinal","name":"안뜰척수로","english":"Vestibulospinal tract","category":"운동 내림로","chapter":3,"description":"안뜰신경핵에서 시작해 폄근을 촉진하여 균형과 자세를 유지합니다.","gameLink":"안뜰척수로 게이트"},{"id":"midbrain","name":"중간뇌","english":"Midbrain","category":"뇌줄기","chapter":4,"description":"위·아래둔덕, 흑색질, 적색핵, 대뇌다리, 중뇌수도관, III·IV 뇌신경핵이 있습니다.","gameLink":"중간뇌 게이트"},{"id":"substantia_nigra","name":"흑색질","english":"Substantia nigra","category":"뇌줄기","chapter":4,"description":"도파민 신경세포가 있으며 바닥핵 회로에 관여합니다. 소실되면 파킨슨병이 생깁니다.","gameLink":"흑색질 게이트"},{"id":"pons","name":"다리뇌","english":"Pons","category":"뇌줄기","chapter":4,"description":"중간소뇌다리로 소뇌와 연결되며 V~VII 뇌신경핵 등이 있습니다.","gameLink":"다리뇌 갈림길"},{"id":"medulla","name":"숨뇌","english":"Medulla oblongata","category":"뇌줄기","chapter":4,"description":"호흡·심혈관 중추, 피라미드 교차, 올리브, IX~XII 뇌신경핵이 있습니다.","gameLink":"숨뇌 게이트"},{"id":"cerebellum","name":"소뇌","english":"Cerebellum","category":"소뇌","chapter":5,"description":"운동 협응, 균형, 운동학습을 담당합니다. 반구 병변은 같은 쪽 증상을 일으킵니다.","gameLink":"소뇌 게이트"},{"id":"purkinje","name":"조롱박세포","english":"Purkinje cell","category":"소뇌","chapter":5,"description":"소뇌겉질의 유일한 출력세포(억제성, GABA).","gameLink":"조롱박세포 게이트"},{"id":"cerebellar_peduncles","name":"소뇌다리","english":"Cerebellar peduncles","category":"소뇌","chapter":5,"description":"위(주로 출력)·중간(다리뇌 입력)·아래(척수·숨뇌 입력) 소뇌다리.","gameLink":"소뇌다리 갈림길"},{"id":"thalamus","name":"시상","english":"Thalamus","category":"사이뇌","chapter":6,"description":"후각을 제외한 감각의 중계소. VPL(몸감각), VPM(얼굴감각), 가쪽무릎체(시각), 안쪽무릎체(청각).","gameLink":"시상 갈림길"},{"id":"hypothalamus","name":"시상하부","english":"Hypothalamus","category":"사이뇌","chapter":6,"description":"체온·섭식·수분·일주기 등 항상성, 자율신경과 뇌하수체 조절.","gameLink":"시상하부 갈림길"},{"id":"pineal","name":"솔방울샘","english":"Pineal gland","category":"사이뇌","chapter":6,"description":"멜라토닌을 분비해 일주기 리듬에 관여합니다.","gameLink":"솔방울샘 게이트"},{"id":"frontal","name":"이마엽","english":"Frontal lobe","category":"대뇌","chapter":7,"description":"중심고랑 앞쪽. 운동 계획·실행(일차운동겉질), 말의 산출(브로카 영역), 판단과 실행기능을 담당합니다.","gameLink":"대뇌 도시 - 주황 이마엽 지구"},{"id":"parietal","name":"마루엽","english":"Parietal lobe","category":"대뇌","chapter":7,"description":"중심고랑 뒤쪽 위. 몸감각(일차몸감각겉질)과 공간 인식·주의를 담당합니다. 오른쪽 마루엽 손상은 반쪽무시를 일으킵니다.","gameLink":"대뇌 도시 - 청록 마루엽 지구"},{"id":"temporal","name":"관자엽","english":"Temporal lobe","category":"대뇌","chapter":7,"description":"가쪽고랑 아래. 청각(일차청각겉질), 언어 이해(베르니케 영역), 안쪽의 해마를 통한 기억 형성을 담당합니다.","gameLink":"대뇌 도시 - 보라 관자엽 지구"},{"id":"occipital","name":"뒤통수엽","english":"Occipital lobe","category":"대뇌","chapter":7,"description":"대뇌 뒤쪽. 새발톱고랑 주변의 일차시각겉질에서 시각 정보를 처리합니다.","gameLink":"대뇌 도시 - 파랑 뒤통수엽 지구"},{"id":"m1","name":"일차운동겉질","english":"Primary motor cortex","category":"대뇌","chapter":7,"description":"이마엽 중심앞이랑. 겉질척수로의 출발점이며 반대쪽 몸의 수의운동을 일으킵니다.","gameLink":"이마엽 게이트"},{"id":"s1","name":"일차몸감각겉질","english":"Primary somatosensory cortex","category":"대뇌","chapter":7,"description":"마루엽 중심뒤이랑. 시상(VPL/VPM)을 거친 반대쪽 몸의 감각이 도착합니다.","gameLink":"감각 정보 갈림길"},{"id":"a1","name":"일차청각겉질","english":"Primary auditory cortex","category":"대뇌","chapter":7,"description":"관자엽 가로관자이랑(헤쉴이랑). 안쪽무릎체를 거친 청각 정보가 도착합니다.","gameLink":"청각 정보 갈림길"},{"id":"v1","name":"일차시각겉질","english":"Primary visual cortex","category":"대뇌","chapter":7,"description":"뒤통수엽 새발톱고랑 주변. 가쪽무릎체에서 시각부챗살을 따라 시각 정보가 도착합니다.","gameLink":"시각 정보 갈림길"},{"id":"broca","name":"브로카 영역","english":"Broca's area","category":"언어","chapter":7,"description":"대부분 왼쪽 아래이마이랑. 말의 산출을 담당하며, 손상되면 비유창한 표현실어증이 생깁니다.","gameLink":"이마엽 게이트"},{"id":"wernicke","name":"베르니케 영역","english":"Wernicke's area","category":"언어","chapter":7,"description":"대부분 왼쪽 위관자이랑 뒤쪽. 언어 이해를 담당하며, 손상되면 유창하지만 이해가 어려운 수용실어증이 생깁니다.","gameLink":"관자엽 게이트"},{"id":"hippocampus","name":"해마","english":"Hippocampus","category":"변연계","chapter":7,"description":"안쪽 관자엽. 새로운 서술기억 형성에 중요합니다.","gameLink":"관자엽 게이트"},{"id":"cn_overview","name":"12뇌신경","english":"12 cranial nerves","category":"뇌신경","chapter":8,"description":"I 후각 II 시각 III 눈돌림 IV 도르래 V 삼차 VI 갓돌림 VII 얼굴 VIII 속귀 IX 혀인두 X 미주 XI 더부 XII 혀밑. 감각(I·II·VIII), 운동(III·IV·VI·XI·XII), 혼합(V·VII·IX·X).","gameLink":"뇌신경 포털"},{"id":"cn_eye","name":"눈 운동 신경","english":"III · IV · VI","category":"뇌신경","chapter":8,"description":"LR6 SO4 - 가쪽곧은근은 VI, 위빗근은 IV, 나머지는 III이 지배합니다.","gameLink":"눈 운동 게이트"},{"id":"cn_face","name":"얼굴의 신경","english":"V · VII","category":"뇌신경","chapter":8,"description":"V 삼차신경: 얼굴 감각·씹기근육. VII 얼굴신경: 표정근·미각(혀 앞 2/3).","gameLink":"얼굴신경 갈림길"},{"id":"cn_lower","name":"아래 뇌신경","english":"IX · X · XI · XII","category":"뇌신경","chapter":8,"description":"IX 혀인두, X 미주(내장 부교감), XI 더부(목빗근·등세모근), XII 혀밑(혀 운동).","gameLink":"아래 뇌신경 게이트"},{"id":"decussation","name":"피라미드 교차","english":"Pyramidal decussation","category":"신경로","chapter":9,"description":"숨뇌 아래쪽에서 겉질척수로 섬유의 대부분(약 85~90%)이 반대쪽으로 교차해 가쪽겉질척수로가 됩니다. 그래서 대뇌 병변은 반대쪽 마비를 일으킵니다.","gameLink":"NULL 진단 게이트 1"},{"id":"hemianopia","name":"동측반맹","english":"Homonymous hemianopia","category":"임상","chapter":9,"description":"시각교차 뒤 한쪽 시각 경로가 손상되면 양쪽 눈의 반대쪽 시야 절반이 사라집니다.","gameLink":"NULL 진단 게이트 2"},{"id":"cerebellum_sign","name":"소뇌 징후","english":"Cerebellar signs","category":"임상","chapter":9,"description":"겨냥이상, 의도떨림, 운동실조 보행. 소뇌반구 병변은 같은 쪽에 증상이 나타납니다.","gameLink":"NULL 진단 게이트 3"},{"id":"umn_lmn","name":"위·아래운동신경세포 병변","english":"UMN vs LMN lesion","category":"임상","chapter":9,"description":"위운동신경세포 병변은 반사 항진·강직·바빈스키 징후, 아래운동신경세포 병변은 근위축·근육다발수축·반사 소실을 보입니다.","gameLink":"NULL 진단 게이트 4"},{"id":"brown_sequard","name":"브라운-세카르 증후군","english":"Brown-Séquard syndrome","category":"임상","chapter":9,"description":"척수 반쪽 손상. 손상 아래로 같은 쪽 운동·진동·위치감각이 소실되고, 반대쪽 통증·온도감각이 소실됩니다.","gameLink":"최종 진단 갈림길"}],"story":{"prologue":[{"speaker":"SYSTEM","text":"2089년. NEURAL NETWORK SYSTEM 가동 중... 경고! 오류 코드 NULL 침입."},{"speaker":"SYSTEM","text":"감각·운동 정보 전달 경로 손상. 마지막 정상 신경정보 STAR-01을 활성화합니다."},{"speaker":"STAR-01","text":"나는 신호야! 뉴런 고속도로를 달려서 첫 번째 경로를 복구할게!"}],"ap":[{"speaker":"STAR-01","text":"여기는 축삭 시작분절! 게이트마다 활동전위의 '다음 단계' 차선으로 들어가자."}],"saltatory":[{"speaker":"SYSTEM","text":"말이집 축삭 진입. 랑비에 결절 링을 연속 통과하면 활동전위가 결절마다 재생성되어 가속합니다."},{"speaker":"SYSTEM","text":"금빛 관 = 축삭을 감싼 수초(절연), 청록 띠 = Na+ 통로가 모인 랑비에 결절. 실제 결절은 약 1μm로 아주 짧지만 게임에서는 크게 표현했어요."}],"damage":[{"speaker":"SYSTEM","text":"경고: 수초 손상(탈수초) 구간! 전도 속도 저하. NULL 블록은 피하거나 점프하세요."},{"speaker":"STAR-01","text":"초록 복구 오브를 모으고, 마지막 게이트에서 수초를 되살리자!"}],"final":[{"speaker":"STAR-01","text":"시냅스후 뉴런으로 신호 전달 성공! 결승선까지 전력 질주!"}],"ch2_intro":[{"speaker":"SYSTEM","text":"척수 구간 진입. NULL이 반사 회로를 끊어 놓았습니다."},{"speaker":"STAR-01","text":"반사궁을 순서대로 이어서 빠른 회로를 복구하자!"}],"ch2_final":[{"speaker":"STAR-01","text":"반사 회로 복구 완료! 결승선까지!"}],"ch3_intro":[{"speaker":"SYSTEM","text":"신경로 고속도로 진입. 감각은 위로, 운동 명령은 아래로!"},{"speaker":"STAR-01","text":"교차 위치를 정확히 알아야 길을 잃지 않아!"}],"ch3_final":[{"speaker":"STAR-01","text":"오름로·내림로 정비 완료!"}],"ch4_intro":[{"speaker":"SYSTEM","text":"뇌줄기 터널 진입. 중간뇌·다리뇌·숨뇌가 생명과 신호를 지킵니다."},{"speaker":"STAR-01","text":"생명 중추를 NULL로부터 지키자!"}],"ch4_final":[{"speaker":"STAR-01","text":"뇌줄기 회로 안정화! 결승으로!"}],"ch5_intro":[{"speaker":"SYSTEM","text":"소뇌 균형 서킷 진입. 급커브가 많습니다!"},{"speaker":"STAR-01","text":"드리프트로 균형을 잡으면서 협응 회로를 복구하자!"}],"ch5_final":[{"speaker":"STAR-01","text":"균형 회로 복구! 마지막 질주!"}],"ch6_intro":[{"speaker":"SYSTEM","text":"사이뇌 중계 기지 진입. 감각 신호를 올바른 중계소로 보내세요."},{"speaker":"STAR-01","text":"시상은 관문, 시상하부는 항상성! 헷갈리지 말자."}],"ch6_final":[{"speaker":"STAR-01","text":"중계 기지 정상화! 결승으로!"}],"ch7_intro":[{"speaker":"SYSTEM","text":"대뇌 도시 진입. NULL이 정보를 엉뚱한 엽으로 보내고 있습니다!"},{"speaker":"STAR-01","text":"정보마다 올바른 대뇌엽으로 배달하자. 이마엽부터 출발!"}],"ch7_parietal":[{"speaker":"SYSTEM","text":"마루엽 지구: 몸감각과 공간 인식의 도시입니다."}],"ch7_temporal":[{"speaker":"SYSTEM","text":"관자엽 지구: 청각, 언어 이해, 기억의 도시입니다."}],"ch7_occipital":[{"speaker":"STAR-01","text":"뒤통수엽 지구 도착! 시각 정보 배달 완료, 결승선까지 질주!"}],"ch8_intro":[{"speaker":"SYSTEM","text":"12뇌신경 포털 진입. 번호와 기능이 맞는 포털로 들어가세요."},{"speaker":"STAR-01","text":"I부터 XII까지, 정확한 포털로 신호를 보내자!"}],"ch8_final":[{"speaker":"STAR-01","text":"뇌신경 포털 전부 연결! 결승으로!"}],"ch9_intro":[{"speaker":"SYSTEM","text":"경고: 오류 개체 NULL 발견. 신경망 중심부가 교란되고 있습니다."},{"speaker":"SYSTEM","text":"증상을 보고 병변 위치가 맞는 차선으로 들어가면 NULL의 보호막에 타격을 줍니다."},{"speaker":"STAR-01","text":"진단으로 NULL을 멈추자! 반격 파동은 점프로 피할게!"}],"ch9_final":[{"speaker":"STAR-01","text":"정확한 진단으로 탈출로가 열렸어! 신경망 복구까지 전력 질주!"}]}};</script>
 <script>
 // NERVE RUNNER (web) - game rules ported 1:1 from the Unity project's pure-C# Core
@@ -489,14 +490,14 @@ const NR = (function () {
         const n = Math.ceil((length - 40) / 8);
         for (let k = 1; k < n; k++) {
           const t = k / n, along = 20 + (length - 40) * t; let lat = lerp(o, oEnd, t), y = 0;
-          if (!correct) { const env = Math.sin(Math.PI * t); if (Math.abs(o) > 0.01) lat += sign(o) * bulge * env; else { y = bulge * 0.22 * env; lat += bulge * 0.18 * Math.sin(2 * Math.PI * t) * env; } }
+          { const env = Math.sin(Math.PI * t) * (correct ? 0.35 : 1); if (Math.abs(o) > 0.01) lat += sign(o) * bulge * env; else { y = bulge * 0.32 * env; lat += bulge * 0.30 * Math.sin(2 * Math.PI * t) * env; } }
           bp.push(add(add(add(F, mul(f, along)), mul(r, lat)), mul(UP, y)));
         }
         bp.push(add(sub(M, mul(f, 20)), mul(r, oEnd))); bp.push(add(M, mul(r, oEnd)));
         const seg = this.graph.add((correct ? "Shortcut_" : "Review_") + q.id + "_" + i, correct ? ZONE.Shortcut : ZONE.Review, 5);
         seg.build(bp);
         seg.events.push(mkEvent(EV.Trigger, 4, 0, (correct ? "forkok:" : "review:") + q.id));
-        if (correct) for (let k = 1; k <= 5; k++) seg.events.push(mkEvent(EV.Orb, seg.length * k / 6.5, 0));
+        for (let k = 0; k < 5; k++) seg.events.push(mkEvent(EV.Orb, 30 + k * 32, 0));
         seg.sortEvents(); approach.next.push(seg); branches.push(seg);
       }
       this.pendingMerge = branches; this.pendingMergeOffsets = mergeOffsets; this.prevSeg = null;
@@ -835,7 +836,10 @@ function tearP(tip,r){const l=[tip];const c=[tip[0],tip[1]-r*1.6];for(let i=1;i<
 // ToonRim shader port
 function toonMat(base,shade,rim,rimPow,emis){return new THREE.ShaderMaterial({uniforms:{B:{value:new THREE.Color(base)},S:{value:new THREE.Color(shade)},R:{value:new THREE.Color(rim)},P:{value:rimPow},E:{value:new THREE.Color(emis)},L:{value:new THREE.Vector3(0.4,0.8,0.5).normalize()}},
  vertexShader:`varying vec3 n;varying vec3 vw;void main(){n=normalize(mat3(modelMatrix)*normal);vec4 w=modelMatrix*vec4(position,1.);vw=normalize(cameraPosition-w.xyz);gl_Position=projectionMatrix*viewMatrix*w;}`,
- fragmentShader:`uniform vec3 B,S,R,E,L;uniform float P;varying vec3 n;varying vec3 vw;void main(){vec3 N=normalize(n);float ndl=dot(N,L)*.5+.5;float ramp=smoothstep(.38,.62,ndl);vec3 c=mix(S,B,ramp)+B*.12;vec3 h=normalize(L+vw);float sp=pow(max(dot(N,h),0.),60.);c+=smoothstep(.45,.55,sp)*.55;c+=pow(1.-max(dot(N,vw),0.),P)*R;c+=E;gl_FragColor=vec4(c,1.);}`});}
+ fragmentShader:`uniform vec3 B,S,R,E,L;uniform float P;varying vec3 n;varying vec3 vw;void main(){vec3 N=normalize(n);float ndl=dot(N,L)*.5+.5;float ramp=smoothstep(.38,.62,ndl);vec3 c=mix(S,B,ramp)+B*.12;vec3 h=normalize(L+vw);float sp=pow(max(dot(N,h),0.),60.);c+=smoothstep(.45,.55,sp)*.55;c+=pow(1.-max(dot(N,vw),0.),P)*R;c+=E;gl_FragColor=vec4(c,1.);
+gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
+#include <colorspace_fragment>
+}`});}
 let _glowTex=null;function glowTex(){if(_glowTex)return _glowTex;const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');const g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.4,'rgba(255,255,255,.35)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return(_glowTex=new THREE.CanvasTexture(c));}
 function addMat(color,op){return new THREE.MeshBasicMaterial({color,map:glowTex(),transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});}
 let _sphG=null;function sph(p,s,mat){const m=new THREE.Mesh(_sphG||(_sphG=new THREE.SphereGeometry(0.5,24,16)),mat);m.position.set(...p);m.scale.set(...s);return m;}
@@ -880,18 +884,508 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
 
 </script>
 <script>
+// NERVE RUNNER web - the world: STAR-01 rides INSIDE the nervous system.
+//  * every road is the inside of an axon: a translucent membrane tube with ion channels; the
+//    membrane lights up (depolarises) around STAR-01 = the action potential travelling with you
+//  * myelin sheath wraps with nodes of Ranvier, a soma chamber with nucleus / ER / mitochondria,
+//    dendrites with spines, an axon terminal full of vesicles, a synaptic cleft with receptors
+//  * outside the tube: a bundle of neighbouring fibres carrying their own signals, glia,
+//    capillaries and a distant network of neurons; chapter themes change the scenery
+//  * all branches of a fork look identical (no colour / orb / shape hint of the answer)
+"use strict";
+// created after three.js (ES module) has loaded
+window.NRW_INIT = function () { window.NRW = (function () {
+  const M = v => new THREE.Vector3(-v.x, v.y, v.z);       // Unity (left-handed) -> three: mirror X
+  const C = h => new THREE.Color(h);
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const U = { uTime: { value: 0 }, uStar: { value: new THREE.Vector3(0, -999, 0) }, fogColor: { value: C(0x0A0724) }, fogNear: { value: 40 }, fogFar: { value: 340 } };
+  const LANE = [0x2EE6D6, 0xFF5CC8, 0xFFD34D, 0x8CFF6B];
+  const THEME = { spinal: 0x6CFF8A, tract: 0xFF6FD0, brainstem: 0xFF8A4D, cerebellum: 0xFF9AD8, diencephalon: 0x8CA8FF, cranial: 0xFFD34D, frontal: 0x5C9CFF, parietal: 0x5CFF9D, temporal: 0xFFB627, occipital: 0xFF6FD0, boss: 0xFF4DA6 };
+  const MEMBRANE = 0x7FA8FF;
+
+  function frameAt(seg, s, x = 0, y = 0) {
+    const p = M(seg.worldPos(s, x, y)), f = M(seg.tangentAt(s)), up = new THREE.Vector3(0, 1, 0);
+    const z = f.clone().negate(), xa = new THREE.Vector3().crossVectors(up, z).normalize(), ya = new THREE.Vector3().crossVectors(z, xa);
+    return { p, q: new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, z)), f };
+  }
+  const short = (s, n = 15) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+  function labelTex(lines, opts = {}) {
+    const W = opts.w || 512, H = opts.h || 256, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
+    x.fillStyle = opts.bg || "rgba(14,10,44,0.86)"; x.beginPath(); if (x.roundRect) x.roundRect(6, 6, W - 12, H - 12, 40); else x.rect(6, 6, W - 12, H - 12); x.fill();
+    x.lineWidth = 10; x.strokeStyle = opts.border || "#FF5CC8"; x.stroke();
+    x.textAlign = "center"; x.textBaseline = "middle"; let y = opts.big ? H * 0.36 : H / 2 - (lines.length - 1) * 30;
+    lines.forEach((l, i) => {
+      const big = opts.big && i === 0; x.fillStyle = big ? (opts.bigColor || "#2EE6D6") : "#F2F0FF";
+      let size = big ? 120 : 52; const font = s => `${big ? "" : "bold "}${s}px Jua, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif`; x.font = font(size);
+      while (x.measureText(l).width > W - 50 && size > 22) { size -= 2; x.font = font(size); }
+      x.fillText(l, W / 2, y); y += big ? H * 0.38 : 62;
+    });
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
+  }
+
+  //================== SHADERS ==================
+  const FOG_V = `varying float vD;`, FOG_F = `uniform vec3 fogColor;uniform float fogNear,fogFar;varying float vD;`;
+  const VS = `varying vec2 vUv;varying vec3 vW;varying vec3 vN;${FOG_V}
+    void main(){vUv=uv;vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vN=normalize(mat3(modelMatrix)*normal);vec4 mv=viewMatrix*w;vD=-mv.z;gl_Position=projectionMatrix*mv;}`;
+  const shader = (uniforms, frag, o = {}) => new THREE.ShaderMaterial(Object.assign({ uniforms: Object.assign({}, U, uniforms), vertexShader: VS, fragmentShader: frag, transparent: !!o.transparent, depthWrite: !o.transparent, side: o.side || THREE.DoubleSide, blending: o.additive ? THREE.AdditiveBlending : THREE.NormalBlending }));
+
+  // axon membrane (inside view): lipid bilayer shimmer, ion-channel dots, AP glow around STAR-01
+  const MEMB_F = `uniform vec3 uCol,uStar;uniform float uTime,uAlpha;varying vec2 vUv;varying vec3 vW;varying vec3 vN;${FOG_F}
+    float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
+    void main(){vec3 V=normalize(cameraPosition-vW);float fr=pow(1.-abs(dot(normalize(vN),V)),2.2);
+     float u=vUv.x,v=vUv.y;float lip=.5+.5*sin(v*1.7+sin(u*37.)*.8);
+     vec2 g=vec2(u*30.,v/3.2);vec2 f=fract(g)-.5;float ch=smoothstep(.2,.05,length(f))*step(.62,h(floor(g)));
+     float d=length(vW-uStar);float ap=exp(-d*.12);
+     float wave=smoothstep(.965,1.,fract(v/55.-uTime*.7));
+     vec3 c=uCol*(.10+.42*fr+.07*lip)+vec3(.35,1.,.95)*ch*(.25+1.8*ap)+vec3(1.,.82,.38)*ap*(.3+.4*fr)+uCol*wave*.35;
+     float a=clamp(uAlpha+.55*fr+.35*ap+ch*.35,0.,1.);float fg=smoothstep(fogNear,fogFar,vD);
+     gl_FragColor=vec4(mix(c,fogColor,fg),a*(1.-fg*.6));
+     gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
+#include <colorspace_fragment>
+    }`;
+  // floor = cytoplasm with microtubule tracks and vesicles riding them (axonal transport)
+  const FLOOR_F = `uniform vec3 uCol,uStar;uniform float uTime;varying vec2 vUv;varying vec3 vW;${FOG_F}
+    void main(){float u=vUv.x,v=vUv.y,au=abs(u);vec3 c=vec3(.035,.03,.09)+uCol*.035;
+     for(int i=0;i<4;i++){float k=-.66+float(i)*.44;float line=smoothstep(.035,.0,abs(u-k));
+      float ves=step(.93,fract(v/9.+uTime*(.8+.3*float(i))+float(i)*.37));c+=uCol*line*(.22+ves*1.6);}
+     c+=uCol*smoothstep(.86,1.,au)*1.1;
+     c+=vec3(.8,.85,1.)*step(au,.02)*step(fract(v/10.),.4)*.18;
+     float d=length(vW-uStar);c+=vec3(1.,.8,.35)*exp(-d*.22)*.2;
+     float fg=smoothstep(fogNear,fogFar,vD);gl_FragColor=vec4(mix(c,fogColor,fg),1.);
+     gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
+#include <colorspace_fragment>
+    }`;
+  // myelin: glossy cream wraps (spiral lamellae)
+  const MYELIN_F = `uniform vec3 uCol,uStar;uniform float uTime,uDamaged;varying vec2 vUv;varying vec3 vW;varying vec3 vN;${FOG_F}
+    void main(){vec3 N=normalize(vN),V=normalize(cameraPosition-vW);float fr=pow(1.-abs(dot(N,V)),2.);
+     float lam=.5+.5*sin((vUv.x*6.2832+vUv.y*.35)*9.);
+     vec3 base=mix(vec3(1.,.9,.66),vec3(.92,.7,.42),lam*.6);
+     if(uDamaged>.5){base=mix(vec3(.55,.18,.25),vec3(.25,.06,.12),lam);base*=.6+.4*step(.5,fract(sin(floor(vUv.y/4.)*91.7)*437.1+uTime*.9));}
+     float ndl=abs(dot(N,normalize(vec3(.3,.9,.2))))*.5+.5;float d=length(vW-uStar);
+     vec3 c=base*(.13+.2*ndl)+uCol*fr*.22+vec3(1.,.85,.4)*exp(-d*.15)*.2;
+     float fg=smoothstep(fogNear,fogFar,vD);gl_FragColor=vec4(mix(c,fogColor,fg),(uDamaged>.5?.7:.82)*(1.-fg*.5));
+     gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
+#include <colorspace_fragment>
+    }`;
+  // neighbouring fibres in the nerve bundle, each carrying travelling impulses
+  const FIBER_F = `uniform vec3 uCol;uniform float uTime,uSpeed,uMy;varying vec2 vUv;varying vec3 vW;varying vec3 vN;${FOG_F}
+    void main(){vec3 V=normalize(cameraPosition-vW);float fr=pow(1.-abs(dot(normalize(vN),V)),1.6);
+     float p=smoothstep(.9,1.,fract(vUv.y/48.-uTime*uSpeed));float band=uMy>.5?step(.1,fract(vUv.y/13.)):1.;
+     vec3 base=mix(uCol*.32,vec3(.95,.88,.74)*.5,uMy*band);
+     vec3 c=base*(.45+.9*fr)+uCol*p*2.2+(uMy>.5?(1.-band)*uCol*1.4:vec3(0.));
+     float fg=smoothstep(fogNear,fogFar*1.3,vD);gl_FragColor=vec4(mix(c,fogColor,fg),1.);
+     gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
+#include <colorspace_fragment>
+    }`;
+  const CONN_F = `uniform vec3 uCol;uniform float uTime;varying vec2 vUv;varying vec3 vW;varying vec3 vN;${FOG_F}
+    void main(){float p=smoothstep(.88,1.,fract(vUv.x*3.-uTime*.35+vUv.y*.0));vec3 c=uCol*(.18+p*2.4);
+     float fg=smoothstep(fogNear*3.,fogFar*3.,vD);gl_FragColor=vec4(mix(c,fogColor,fg*.8),1.);
+     gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
+#include <colorspace_fragment>
+    }`;
+  // a big thin membrane shell (soma chamber, synapse walls)
+  const SHELL_F = `uniform vec3 uCol,uStar;uniform float uTime;varying vec2 vUv;varying vec3 vW;varying vec3 vN;${FOG_F}
+    void main(){vec3 V=normalize(cameraPosition-vW);float fr=pow(1.-abs(dot(normalize(vN),V)),2.);
+     float cells=smoothstep(.45,.5,abs(sin(vUv.x*70.)*sin(vUv.y*40.)));
+     vec3 c=uCol*(.12+.7*fr+.15*cells);float fg=smoothstep(fogNear*1.5,fogFar*1.6,vD);
+     gl_FragColor=vec4(mix(c,fogColor,fg),clamp(.08+.6*fr+.08*cells,0.,1.));
+     gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
+#include <colorspace_fragment>
+    }`;
+  const matCache = new Map();
+  const cached = (key, make) => { if (!matCache.has(key)) matCache.set(key, make()); return matCache.get(key); };
+  const membraneMat = col => cached("memb" + col, () => shader({ uCol: { value: C(col) }, uAlpha: { value: 0.07 } }, MEMB_F, { transparent: true }));
+  const floorMat = col => cached("floor" + col, () => shader({ uCol: { value: C(col) } }, FLOOR_F));
+  const myelinMat = (col, dmg) => cached("my" + col + dmg, () => shader({ uCol: { value: C(col) }, uDamaged: { value: dmg ? 1 : 0 } }, MYELIN_F, { transparent: true }));
+  const fiberMat = (col, my, speed) => cached("fib" + col + my + speed, () => shader({ uCol: { value: C(col) }, uMy: { value: my ? 1 : 0 }, uSpeed: { value: speed } }, FIBER_F));
+  const connMat = col => cached("conn" + col, () => shader({ uCol: { value: C(col) } }, CONN_F));
+  const shellMat = col => cached("shell" + col, () => shader({ uCol: { value: C(col) } }, SHELL_F, { transparent: true }));
+  const glow = (col, op = 0.9) => cached("glow" + col + op, () => new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+  const solid = (col, em = 0.3) => cached("sol" + col + em, () => new THREE.MeshLambertMaterial({ color: col, emissive: col, emissiveIntensity: em }));
+  const clear = (col, op, em = 0.4) => cached("clr" + col + op + em, () => new THREE.MeshLambertMaterial({ color: col, emissive: col, emissiveIntensity: em, transparent: true, opacity: op, depthWrite: false, side: THREE.DoubleSide }));
+
+  //================== GEOMETRY HELPERS ==================
+  // sweep a cross-section ring (array of [x,y] in road-local metres) along a segment
+  function sweep(seg, s0, s1, step, ring, opts = {}) {
+    const n = ring.length, pos = [], uv = [], idx = []; let rows = 0;
+    for (let s = s0; ; s = Math.min(s1, s + step)) {
+      const k = opts.scale ? opts.scale(s) : 1;
+      for (let i = 0; i < n; i++) { const p = M(seg.worldPos(s, ring[i][0] * k + (opts.ox || 0), ring[i][1] * k + (opts.oy || 0))); pos.push(p.x, p.y, p.z); uv.push(opts.u ? opts.u[i] : i / (n - 1), s + (opts.vOff || 0)); }
+      if (rows > 0) for (let i = 0; i < n - 1; i++) { const a = (rows - 1) * n + i, b = rows * n + i; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+      rows++; if (s >= s1) break;
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g;
+  }
+  const archRing = (Rw, H, n = 20) => { const r = []; for (let i = 0; i <= n; i++) { const t = (-0.07 + 1.14 * i / n) * Math.PI; r.push([Math.cos(t) * Rw, Math.sin(t) * H]); } return r; };
+  const circleRing = (r, n = 7) => { const a = []; for (let i = 0; i <= n; i++) { const t = i / n * Math.PI * 2; a.push([Math.cos(t) * r, Math.sin(t) * r]); } return a; };
+  const tubeRadius = hw => [hw + 1.6, hw * 0.85 + 3.6];   // [half-width, height] of the membrane arch
+
+  // static geometry batching (one draw call per material)
+  function merge(list) {
+    let nv = 0, ni = 0; const hasUv = list.every(g => g.attributes.uv);
+    for (const g of list) { nv += g.attributes.position.count; ni += g.index ? g.index.count : g.attributes.position.count; }
+    const P = new Float32Array(nv * 3), N = new Float32Array(nv * 3), T = hasUv ? new Float32Array(nv * 2) : null, I = new Uint32Array(ni); let ov = 0, oi = 0;
+    for (const g of list) {
+      const c = g.attributes.position.count; P.set(g.attributes.position.array, ov * 3);
+      if (!g.attributes.normal) g.computeVertexNormals(); N.set(g.attributes.normal.array, ov * 3); if (T) T.set(g.attributes.uv.array, ov * 2);
+      if (g.index) { const a = g.index.array; for (let i = 0; i < a.length; i++) I[oi + i] = a[i] + ov; oi += a.length; } else { for (let i = 0; i < c; i++) I[oi + i] = ov + i; oi += c; }
+      ov += c; g.dispose();
+    }
+    const m = new THREE.BufferGeometry(); m.setAttribute("position", new THREE.BufferAttribute(P, 3)); m.setAttribute("normal", new THREE.BufferAttribute(N, 3)); if (T) m.setAttribute("uv", new THREE.BufferAttribute(T, 2)); m.setIndex(new THREE.BufferAttribute(I, 1)); return m;
+  }
+  class Batch {
+    constructor() { this.m = new Map(); }
+    add(mat, geo, matrix) { let b = this.m.get(mat); if (!b) this.m.set(mat, b = []); const g = geo.clone(); if (matrix) g.applyMatrix4(matrix); b.push(g); }
+    flush(root) { for (const [mat, list] of this.m) { const mesh = new THREE.Mesh(merge(list), mat); mesh.frustumCulled = false; root.add(mesh); } this.m.clear(); }
+  }
+  const G = {
+    ico: new THREE.IcosahedronGeometry(1, 2), ico1: new THREE.IcosahedronGeometry(1, 1), cyl: new THREE.CylinderGeometry(0.55, 1, 1, 6, 1, true), cylS: new THREE.CylinderGeometry(1, 1, 1, 6, 1, true),
+    cap: new THREE.CapsuleGeometry(1, 2.4, 4, 8), box: new THREE.BoxGeometry(1, 1, 1), tor: new THREE.TorusGeometry(1, 0.08, 6, 28),
+  };
+  const UPV = new THREE.Vector3(0, 1, 0);
+  const mtx = (p, q, s) => new THREE.Matrix4().compose(p, q || new THREE.Quaternion(), s instanceof THREE.Vector3 ? s : new THREE.Vector3(s, s, s));
+  // tapered cylinder from a to b
+  function limb(B, mat, a, b, r) { const d = b.clone().sub(a), L = d.length(); if (L < 1e-3) return; B.add(mat, G.cyl, mtx(a.clone().add(b).multiplyScalar(0.5), new THREE.Quaternion().setFromUnitVectors(UPV, d.normalize()), new THREE.Vector3(r, L, r))); }
+  function dendrite(B, mat, p, dir, len, r, depth) {
+    const e = p.clone().addScaledVector(dir, len); limb(B, mat, p, e, r);
+    if (depth > 0) for (let k = 0; k < 2; k++) { const nd = dir.clone().add(new THREE.Vector3().randomDirection().multiplyScalar(0.75)).normalize(); dendrite(B, mat, e, nd, len * 0.68, r * 0.62, depth - 1); }
+  }
+  function neuron(B, p, r, col, o = {}) {
+    B.add(solid(col, 0.35), G.ico, mtx(p, new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd(0, 3), rnd(0, 3), 0)), new THREE.Vector3(r, r * rnd(0.8, 1.1), r * rnd(0.85, 1.15))));
+    const dm = solid(col, 0.18), nd = o.dendrites || 6;
+    for (let k = 0; k < nd; k++) { const dir = new THREE.Vector3().randomDirection(); if (o.apical && k === 0) dir.set(0, 1, 0); dendrite(B, dm, p.clone().addScaledVector(dir, r * 0.8), dir, r * rnd(2.2, 3.4) * (o.apical && k === 0 ? 2 : 1), r * 0.3, o.depth == null ? 2 : o.depth); }
+    if (o.axon) limb(B, dm, p, p.clone().addScaledVector(o.axon, r * 14), r * 0.14);
+  }
+
+  //================== BUILD ==================
+  function segColor(seg) {
+    const Z = NR.ZONE;
+    if (seg.zone === Z.Myelin) return 0xFFB627; if (seg.zone === Z.Damaged) return 0xFF4D6D; if (seg.zone === Z.Synapse) return 0xC07CFF;
+    const base = THEME[seg.theme] || MEMBRANE;
+    return base;   // approach, shortcut and review all share the theme colour: no hint
+  }
+  const isSoma = seg => /세포체|Soma/.test(seg.name), isDendrite = seg => /가지돌기|Dendrite/.test(seg.name), isTerminal = seg => /축삭종말|시냅스전 막/.test(seg.name);
+
+  function build(scene, stage, graph, bank, quality) {
+    const root = new THREE.Group(); scene.add(root);
+    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forks: new Map(), nodes: [], anim: [], flashes: [], particles: null, nt: null, boss: null, bounds: new THREE.Box3(), low: quality === "low" };
+    const B = new Batch(), Z = NR.ZONE;
+    for (const seg of graph.segments) {
+      const col = segColor(seg), hw = seg.halfWidth, [Rw, H] = tubeRadius(hw);
+      const floor = sweep(seg, 0, seg.length, 2, [[-hw, 0.01], [hw, 0.01]], { u: [-1, 1] });
+      const fm = new THREE.Mesh(floor, floorMat(col)); root.add(fm); floor.computeBoundingBox(); W.bounds.union(floor.boundingBox);
+      if (seg.zone === Z.Myelin || seg.zone === Z.Damaged) buildMyelin(W, B, seg, col);
+      else if (seg.zone === Z.Synapse) buildCleft(W, B, seg);
+      else if (!isSoma(seg)) root.add(new THREE.Mesh(sweep(seg, 0, seg.length, 3, archRing(Rw, H)), membraneMat(col)));
+      // edge light strips (the membrane meets the floor)
+      for (const side of [-1, 1]) B.add(glow(col, 0.75), sweep(seg, 0, seg.length, 4, [[side * (hw + 0.05), 0.02], [side * (hw + 0.05), 0.45]]));
+      if (isSoma(seg)) buildSoma(W, B, seg);
+      if (isDendrite(seg)) buildDendrites(W, B, seg, Rw, H);
+      if (isTerminal(seg)) buildVesicles(W, B, seg, Rw, H);
+      buildBundle(W, B, seg, Rw, H, stage);
+      if (seg.fork) buildForkPortals(W, B, seg, bank);
+      for (const e of seg.events) buildEvent(W, B, seg, e, bank);
+    }
+    buildOrbs(W); buildBackdrop(W, B, stage); buildThemeDecor(W, B, stage);
+    if (graph.segments.some(s => s.theme === "boss")) buildBoss(W);
+    B.flush(root); buildParticles(W);
+    return Object.assign(W, api(W));
+  }
+
+  function buildMyelin(W, B, seg, col) {
+    const dmg = seg.zone === NR.ZONE.Damaged, hw = seg.halfWidth, [Rw, H] = tubeRadius(hw);
+    const nodesS = seg.events.filter(e => e.type === NR.EV.NodeRing).map(e => e.s);
+    const cuts = nodesS.length ? nodesS : (() => { const a = []; for (let s = 45; s < seg.length - 20; s += 55) a.push(s); return a; })();
+    // bare axon membrane everywhere (visible in the node gaps)
+    W.root.add(new THREE.Mesh(sweep(seg, 0, seg.length, 3, archRing(Rw - 0.3, H - 0.3)), membraneMat(dmg ? 0xFF6D8D : 0x5CE6FF)));
+    let prev = 0, k = 0;
+    for (const sN of cuts.concat([seg.length])) {
+      const a = prev + 3.2, b = sN - 3.2; prev = sN; k++;
+      if (b - a > 6) {
+        const ring = dmg ? archRing(Rw + 0.4, H + 0.4).filter((_, i) => (i + k) % 7 > 1) : archRing(Rw + 0.4, H + 0.4);
+        // lamellae: a sheath is several wraps -> two layers, the outer one a bit fatter and bulging in the middle
+        const bulge = s => 1 + 0.08 * Math.sin(Math.PI * (s - a) / (b - a));
+        W.root.add(new THREE.Mesh(sweep(seg, a, b, 2, ring, { scale: bulge }), myelinMat(col, dmg)));
+        if (!W.low) B.add(myelinMat(col, dmg), sweep(seg, a + 1.5, b - 1.5, 3, archRing(Rw + 1.6, H + 1.4, 14), { scale: bulge }));
+        if (dmg && k % 2) for (let j = 0; j < 4; j++) { const f = frameAt(seg, rnd(a, b), rnd(-1, 1) * (Rw + 2), rnd(1, H)); B.add(solid(0x8a2840, 0.3), G.ico1, mtx(f.p, null, new THREE.Vector3(rnd(0.6, 1.6), rnd(0.3, 0.6), rnd(0.8, 2)))); }
+      }
+      if (sN < seg.length - 3) {   // node of Ranvier: ring of voltage-gated Na+ channels
+        const n = 22, chans = new THREE.InstancedMesh(G.cap, new THREE.MeshBasicMaterial({ color: dmg ? 0xFF6D8D : 0x2EE6D6 }), n);
+        for (let i = 0; i < n; i++) { const t = (-0.07 + 1.14 * i / (n - 1)) * Math.PI, f = frameAt(seg, sN, Math.cos(t) * (Rw - 0.2), Math.sin(t) * (H - 0.2)); chans.setMatrixAt(i, mtx(f.p, f.q, 0.32)); }
+        W.root.add(chans); W.nodes.push({ s: sN, seg, m: chans, t: 0 });
+      }
+    }
+    // oligodendrocytes outside, reaching for the sheaths
+    if (!dmg) for (let i = 0; i < 4; i++) {
+      const s = rnd(30, seg.length - 30), side = i % 2 ? 1 : -1, f = frameAt(seg, s, side * (Rw + 14), H + 6);
+      neuron(B, f.p, 2.2, 0x5E8FB0, { dendrites: 5, depth: 1 });
+    }
+  }
+
+  function buildCleft(W, B, seg) {
+    const hw = seg.halfWidth, len = seg.length;
+    for (const [s, col, rec] of [[0.5, 0xC07CFF, false], [len - 0.5, 0x6FA8FF, true]]) {
+      const f = frameAt(seg, s, 0, 4), ring = new THREE.Mesh(new THREE.RingGeometry(9, 80, 64, 3), shellMat(col)); ring.position.copy(f.p); ring.quaternion.copy(f.q); W.root.add(ring);
+      // receptors (post) or docked vesicles (pre) around the opening
+      for (let i = 0; i < 30; i++) {
+        const a = rnd(0, Math.PI * 2), r = rnd(12, 40), p = new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0).applyQuaternion(f.q).add(f.p);
+        if (rec) B.add(solid(0x2EE6D6, 0.7), G.cap, mtx(p, f.q.clone().multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2)), new THREE.Vector3(0.45, 0.9, 0.45)));
+        else B.add(solid(0xFF7AD0, 0.6), G.ico1, mtx(p, null, 0.9));
+      }
+    }
+    // neurotransmitter cloud crossing the cleft
+    const n = W.low ? 120 : 320, pos = new Float32Array(n * 3), seeds = [];
+    for (let i = 0; i < n; i++) seeds.push({ s: rnd(0, len), x: rnd(-14, 14), y: rnd(-6, 14), v: rnd(6, 14) });
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const pts = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xFF7AD0, size: 0.32, map: dotTex(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    pts.frustumCulled = false; W.root.add(pts); W.nt = { seg, seeds, g, len };
+  }
+
+  function buildSoma(W, B, seg) {
+    const mid = seg.length / 2, f = frameAt(seg, mid, 0, 6), road = [];
+    for (let s = 0; s <= seg.length; s += 6) road.push(M(seg.worldPos(s, 0, 0)));
+    const R = Math.min(260, Math.max(70, ...road.map(p => p.distanceTo(f.p))) + 18);
+    const clearOf = (p, r) => road.every(q => q.distanceTo(p) > r);
+    const spot = (r, prefer) => { for (const [ds, x, y] of prefer) { const c = frameAt(seg, NR.clamp(mid + ds, 0, seg.length), x, y); if (clearOf(c.p, r)) return c; } return frameAt(seg, mid, 60, 30); };
+    const shell = new THREE.Mesh(new THREE.SphereGeometry(R, 48, 32), shellMat(0xB18CFF)); shell.position.copy(f.p); W.root.add(shell);
+    // nucleus with nucleolus and nuclear pores
+    const nf = spot(44, [[0, 48, 16], [0, -48, 16], [40, 52, 16], [-40, -52, 16], [0, 64, 22], [0, -64, 22]]), nuc = new THREE.Mesh(G.ico, clear(0x9B5CFF, 0.5, 0.5)); nuc.scale.setScalar(17); nuc.position.copy(nf.p); W.root.add(nuc);
+    const nl = new THREE.Mesh(G.ico, solid(0xFF7AD0, 0.9)); nl.scale.setScalar(5.5); nl.position.copy(nf.p).add(new THREE.Vector3(3, 2, 0)); W.root.add(nl);
+    for (let i = 0; i < 60; i++) { const d = new THREE.Vector3().randomDirection(); B.add(glow(0xE0C8FF, 0.9), G.ico1, mtx(nf.p.clone().addScaledVector(d, 17.1), null, 0.45)); }
+    W.anim.push({ o: nuc, spin: 0.05 });
+    // rough ER sheets wrapping the nucleus, Golgi stacks, mitochondria
+    for (let i = 0; i < 7; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(19.5 + i * 1.6, 0.3, 6, 48, rnd(2, 3.6)), solid(0xFF8FC8, 0.45)); t.position.copy(nf.p); t.rotation.set(rnd(0, 3), rnd(0, 3), rnd(0, 3)); W.root.add(t); }
+    const gf = spot(14, [[25, -32, 10], [-25, 32, 10], [60, -30, 12], [-60, 30, 12]]);
+    for (let i = 0; i < 6; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(7 - i * 0.6, 0.5, 6, 30, 2.2), solid(0xFFD34D, 0.5)); t.position.copy(gf.p).add(new THREE.Vector3(0, i * 1.3, 0)); t.rotation.set(Math.PI / 2, 0, 0.6); W.root.add(t); }
+    for (let i = 0; i < 26; i++) {
+      const s = rnd(5, seg.length - 5), side = Math.random() < 0.5 ? -1 : 1, p = frameAt(seg, s, side * rnd(seg.halfWidth + 6, 45), rnd(-4, 30)).p;
+      if (!clearOf(p, seg.halfWidth + 3)) continue;
+      B.add(solid(0xFF9A4D, 0.45), G.cap, mtx(p, new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd(0, 3), rnd(0, 3), rnd(0, 3))), new THREE.Vector3(1.3, 1.3, 1.3)));
+    }
+  }
+
+  function buildDendrites(W, B, seg, Rw, H) {
+    const dm = solid(0x5A7FC8, 0.2);
+    for (let s = 10; s < seg.length; s += 3.5) {   // spines on the outside of the membrane
+      const t = rnd(0.05, 0.95) * Math.PI, f = frameAt(seg, s, Math.cos(t) * Rw, Math.sin(t) * H), out = f.p.clone().sub(frameAt(seg, s, 0, H * 0.3).p).normalize();
+      const tip = f.p.clone().addScaledVector(out, rnd(1.2, 2.4)); limb(B, dm, f.p, tip, 0.18); B.add(solid(0x8FA8E0, 0.35), G.ico1, mtx(tip, null, rnd(0.45, 0.7)));
+    }
+    for (let i = 0; i < 9; i++) {   // side dendrites with incoming synapses (EPSPs flow into the trunk)
+      const s = rnd(20, seg.length - 20), side = i % 2 ? 1 : -1, a = frameAt(seg, s, side * Rw, rnd(2, H)).p, dir = new THREE.Vector3(-side * 0 + rnd(-0.3, 0.3), rnd(-0.1, 0.6), 0);
+      const away = frameAt(seg, s, side * (Rw + 10), 0).p.sub(frameAt(seg, s, 0, 0).p).normalize(); dir.add(away).normalize();
+      dendrite(B, dm, a, dir, rnd(14, 22), 1.4, 2);
+      const tip = a.clone().addScaledVector(dir, 20); const b = new THREE.Mesh(G.ico, solid(0xFF7AD0, 0.9)); b.scale.setScalar(1.6); b.position.copy(tip); W.root.add(b); W.flashes.push({ m: b, ph: rnd(0, 6) });
+    }
+  }
+
+  function buildVesicles(W, B, seg, Rw, H) {
+    for (let i = 0; i < (W.low ? 50 : 140); i++) {
+      const s = rnd(0, seg.length), t = rnd(0.1, 0.9) * Math.PI, k = rnd(0.72, 0.95), p = frameAt(seg, s, Math.cos(t) * Rw * k, Math.sin(t) * H * k).p;
+      B.add(solid(0xFF7AD0, 0.55), G.ico1, mtx(p, null, rnd(0.35, 0.6)));
+    }
+    for (let i = 0; i < 6; i++) { const p = frameAt(seg, rnd(0, seg.length), (i % 2 ? 1 : -1) * Rw * 0.7, H * 0.6).p; B.add(solid(0xFF9A4D, 0.45), G.cap, mtx(p, new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd(0, 3), rnd(0, 3), 0)), 0.9)); }
+  }
+
+  // the nerve: neighbouring fibres, glia and capillaries around the road
+  function buildBundle(W, B, seg, Rw, H, stage) {
+    if (seg.zone === NR.ZONE.Synapse || isSoma(seg)) return;
+    const theme = THEME[seg.theme] || MEMBRANE, myel = /spinal|tract|cranial/.test(seg.theme || "") || seg.zone === NR.ZONE.Myelin;
+    const n = W.low ? 3 : (seg.zone === NR.ZONE.Review || seg.zone === NR.ZONE.Shortcut ? 3 : 7);
+    for (let i = 0; i < n; i++) {
+      const side = i % 2 ? 1 : -1, ox = side * (Rw + rnd(5, 26)), oy = rnd(-8, H + 18), r = rnd(0.8, 2.6);
+      const col = seg.theme === "tract" ? (i % 2 ? 0x5C9CFF : 0xFF5C7A) : i % 3 === 0 ? 0xFFD34D : theme;
+      const sp = seg.theme === "tract" ? (i % 2 ? 0.6 : -0.6) : rnd(0.3, 0.9);
+      B.add(fiberMat(col, myel && i % 2 === 0, +sp.toFixed(1)), sweep(seg, 0, seg.length, 6, circleRing(r), { ox, oy, vOff: rnd(0, 100) }));
+    }
+    if (!W.low && seg.length > 60) for (let s = rnd(20, 60); s < seg.length - 10; s += rnd(70, 140)) {
+      const side = Math.random() < 0.5 ? -1 : 1, p = frameAt(seg, s, side * (Rw + rnd(8, 20)), rnd(2, H + 10)).p;
+      neuron(B, p, rnd(1.2, 2), 0x3F9C86, { dendrites: 7, depth: 1 });          // astrocyte
+      if (Math.random() < 0.5) B.add(fiberMat(0xFF4D5A, false, 1.2), sweep(seg, Math.max(0, s - 40), Math.min(seg.length, s + 40), 6, circleRing(0.7, 6), { ox: side * (Rw + rnd(3, 6)), oy: -2 + rnd(0, 4) }));   // capillary
+    }
+  }
+
+  function laneStrips(W, B, seg, s0, s1, laneX) {
+    laneX.forEach((lx, i) => {
+      B.add(glow(LANE[i % 4], 0.5), sweep(seg, Math.max(0, s0), s1, 3, [[lx - 0.7, 0.03], [lx + 0.7, 0.03]]));
+      for (let s = Math.max(0, s0) + 6; s < s1 - 4; s += 14) { const f = frameAt(seg, s, lx, 0.05); B.add(glow(LANE[i % 4], 0.85), G.box, mtx(f.p, f.q, new THREE.Vector3(1.6, 0.05, 0.5))); }
+    });
+    for (let i = 0; i < laneX.length - 1; i++) { const m = (laneX[i] + laneX[i + 1]) / 2; B.add(glow(0xffffff, 0.35), sweep(seg, Math.max(0, s0), s1, 3, [[m - 0.08, 0.04], [m + 0.08, 0.04]])); }
+  }
+  function archTube(seg, s, Rw, H, r) {
+    const pts = archRing(Rw, H, 24).map(([x, y]) => M(seg.worldPos(s, x, y)));
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 48, r, 6, false);
+  }
+  function hologram(W, seg, s, x, y, tex, w, h) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+    const f = frameAt(seg, s, x, y); m.position.copy(f.p); m.quaternion.copy(f.q); W.root.add(m); return m;
+  }
+  const LETTER = i => String.fromCharCode(65 + i), HEXS = c => "#" + c.toString(16).padStart(6, "0");
+
+  function buildForkPortals(W, B, seg, bank) {
+    const q = bank.get(seg.fork.questionId), lx = seg.fork.laneX, signs = [];
+    laneStrips(W, B, seg, seg.length - 150, seg.length, lx);
+    lx.forEach((x, i) => {   // identical portal for every branch: no hint which one is the shortcut
+      const sp = Math.abs(lx[1] - lx[0]) / 2 - 0.3, pts = []; for (let k = 0; k <= 16; k++) { const t = Math.PI * k / 16; pts.push(M(seg.worldPos(seg.length - 2, x + Math.cos(t) * sp, Math.sin(t) * 6.5))); }
+      B.add(glow(LANE[i % 4], 0.95), new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, 0.28, 6, false));
+      signs.push(hologram(W, seg, seg.length - 3, x, 8.4, labelTex([LETTER(i), short(q.options[i])], { big: true, border: HEXS(LANE[i % 4]), bigColor: HEXS(LANE[i % 4]) }), Math.min(5.6, sp * 2), 2.8));
+    });
+    W.forks.set(seg.fork.questionId, { seg, signs });
+  }
+
+  function buildEvent(W, B, seg, e, bank) {
+    const E = NR.EV, hw = seg.halfWidth, [Rw, H] = tubeRadius(hw);
+    if (e.type === E.Gate) {   // voltage-gated channel ring with an answer hologram per lane
+      const q = bank.get(e.questionId), boss = e.tag === "boss", gc = boss ? 0xFF4DA6 : e.tag === "glia" ? 0x5CFF9D : 0xB98CFF;
+      W.root.add(new THREE.Mesh(archTube(seg, e.s, Rw - 0.4, H - 0.4, 0.45), glow(gc, 0.95)));
+      const n = 26, sub = new THREE.InstancedMesh(G.cap, solid(gc, 0.6), n);
+      for (let i = 0; i < n; i++) { const t = (-0.07 + 1.14 * i / (n - 1)) * Math.PI, f = frameAt(seg, e.s + 0.6, Math.cos(t) * (Rw - 0.4), Math.sin(t) * (H - 0.4)); sub.setMatrixAt(i, mtx(f.p, f.q, 0.5)); }
+      W.root.add(sub); laneStrips(W, B, seg, e.s - 110, e.s, e.laneX);
+      const w = Math.min(5.6, Math.abs(e.laneX[1] - e.laneX[0]) * 0.92);
+      const signs = e.laneX.map((lx, i) => hologram(W, seg, e.s - 0.5, lx, 4.6, labelTex([LETTER(i), short(q ? q.options[i] : "")], { big: true, border: HEXS(LANE[i % 4]), bigColor: HEXS(LANE[i % 4]) }), w, w * 0.5));
+      W.gates.push({ e, signs });
+    } else if (e.type === E.NodeRing) {
+      const m = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.17, 8, 32), glow(0x5CF6FF)); const f = frameAt(seg, e.s, e.x, NR.Sim.HOVER); m.position.copy(f.p); m.quaternion.copy(f.q); W.root.add(m); W.rings.push({ e, m, t: 0 });
+    } else if (e.type === E.Obstacle) {
+      const pulse = e.width >= hw, w = Math.min(e.width, hw * 2), grp = new THREE.Group(), f = frameAt(seg, e.s, e.x, 0); grp.position.copy(f.p); grp.quaternion.copy(f.q);
+      if (pulse) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, e.height * 0.8, 0.5), glow(0xFF3355, 0.8)); m.position.y = e.height * 0.4; grp.add(m); const r = new THREE.Mesh(archTube(seg, e.s, Rw - 0.3, H - 0.3, 0.25), glow(0xFF3355, 0.6)); W.root.add(r); }
+      else {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(e.width, e.height + 0.4, 1.6), new THREE.MeshLambertMaterial({ color: 0x14020a, emissive: 0x6a0020 })); m.position.y = (e.height + 0.4) / 2; grp.add(m);
+        m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: 0xFF4D6D })));
+        const tag = hologram(W, seg, e.s - 0.9, e.x, e.height + 1.6, labelTex(["NULL"], { w: 256, h: 96, border: "#FF4D6D", bg: "rgba(40,0,10,.85)" }), 2.4, 0.9); W.anim.push({ o: tag, flick: 1 });
+      }
+      W.root.add(grp); W.obstacles.push({ e, grp, pulse });
+    } else if (e.type === E.Finish || e.type === E.Checkpoint) {
+      const fin = e.type === E.Finish; W.root.add(new THREE.Mesh(archTube(seg, e.s, Rw - 0.5, H - 0.5, fin ? 0.7 : 0.35), glow(fin ? 0xFFD34D : 0xB98CFF)));
+      if (fin) hologram(W, seg, e.s - 0.5, 0, H - 2.4, labelTex(["GOAL"], { w: 512, h: 160, border: "#FFD34D", bg: "rgba(40,20,70,.92)", bigColor: "#FFD34D" }), 7, 2.2);
+    }
+  }
+
+  function buildOrbs(W) {
+    const list = []; for (const seg of W.graph.segments) for (const e of seg.events) if (e.type === NR.EV.Orb || e.type === NR.EV.RepairOrb) list.push({ seg, e });
+    const mk = (filter, geo, mat, sc) => {
+      const items = list.filter(filter); if (!items.length) return;
+      const im = new THREE.InstancedMesh(geo, mat, items.length); im.frustumCulled = false; W.root.add(im);
+      items.forEach((it, i) => { it.p = M(it.seg.worldPos(it.e.s, it.e.x, NR.Sim.HOVER + 0.2)); it.i = i; });
+      W.orbs.push({ im, items, sc });
+    };
+    mk(it => it.e.type === NR.EV.Orb, new THREE.OctahedronGeometry(0.55), new THREE.MeshBasicMaterial({ color: 0xFFE27A }), 1);
+    mk(it => it.e.type === NR.EV.RepairOrb, new THREE.IcosahedronGeometry(0.8, 1), new THREE.MeshBasicMaterial({ color: 0x7CFFB0 }), 1);
+  }
+
+  // distant connectome: neurons wired together with impulses running along the axons
+  function buildBackdrop(W, B, stage) {
+    const b = W.bounds, c = new THREE.Vector3(), size = new THREE.Vector3(); b.getCenter(c); b.getSize(size);
+    const R = Math.max(size.x, size.z) * 0.5 + 260, n = W.low ? 14 : 34, somas = [], pal = [0x6FA8FF, 0xB98CFF, 0xFF7AD0, 0x5CE6FF];
+    const tint = THEME[(W.graph.segments.find(s => s.theme) || {}).theme]; if (tint) pal[0] = tint;
+    for (let i = 0; i < n; i++) {
+      const a = rnd(0, Math.PI * 2), r = R * rnd(0.75, 1.15), p = new THREE.Vector3(c.x + Math.cos(a) * r, rnd(-80, 160), c.z + Math.sin(a) * r);
+      const col = pal[i % pal.length]; neuron(B, p, rnd(5, 10), col, { dendrites: 7 }); somas.push({ p, col });
+    }
+    if (!W.low) for (let i = 0; i < somas.length; i++) {
+      const a = somas[i], bb = somas[(i + 1 + ((Math.random() * 4) | 0)) % somas.length], mid = a.p.clone().lerp(bb.p, 0.5).add(new THREE.Vector3(rnd(-60, 60), rnd(-40, 80), rnd(-60, 60)));
+      B.add(connMat(a.col), new THREE.TubeGeometry(new THREE.CatmullRomCurve3([a.p, mid, bb.p]), 40, 1.1, 5, false));
+    }
+    const m = W.low ? 600 : 1500, pos = new Float32Array(m * 3);
+    for (let i = 0; i < m; i++) { const a = rnd(0, Math.PI * 2), r = R * rnd(0.3, 1.6); pos.set([c.x + Math.cos(a) * r, rnd(-150, 300), c.z + Math.sin(a) * r], i * 3); }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    W.root.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9C8CFF, size: 1.6, transparent: true, opacity: 0.6, fog: false, depthWrite: false, blending: THREE.AdditiveBlending })));
+  }
+
+  // chapter scenery outside the bundle
+  function buildThemeDecor(W, B, stage) {
+    const segs = W.graph.segments.filter(s => s.zone !== NR.ZONE.Review && s.zone !== NR.ZONE.Shortcut && s.length > 80);
+    const each = (k, fn) => { for (let i = 0; i < k; i++) { const seg = segs[(Math.random() * segs.length) | 0]; const [Rw, H] = tubeRadius(seg.halfWidth); fn(seg, rnd(10, seg.length - 10), Math.random() < 0.5 ? -1 : 1, Rw, H); } };
+    const k = W.low ? 0.4 : 1;
+    if (stage.id === "ch5") each(26 * k, (seg, s, side, Rw, H) => {   // Purkinje cells: flat fan-shaped dendritic trees
+      const base = frameAt(seg, s, side * (Rw + rnd(30, 60)), -10), plane = base.f.clone();
+      B.add(solid(0xFF9AD8, 0.5), G.ico, mtx(base.p, null, 3));
+      const grow = (p, d, L, r, dep) => { const e = p.clone().addScaledVector(d, L); limb(B, solid(0xFF9AD8, 0.25), p, e, r); if (dep > 0) for (const t of [-0.5, 0.5]) { const nd = d.clone().applyAxisAngle(plane, t + rnd(-0.2, 0.2)); grow(e, nd, L * 0.75, r * 0.7, dep - 1); } };
+      grow(base.p, new THREE.Vector3(0, 1, 0), 10, 1, 4);
+    });
+    if (stage.id === "ch2" || stage.id === "ch4" || stage.id === "ch6") each(18 * k, (seg, s, side, Rw) => neuron(B, frameAt(seg, s, side * (Rw + rnd(25, 60)), rnd(-15, 25)).p, rnd(3, 5), THEME[seg.theme] || MEMBRANE, { dendrites: 8, axon: new THREE.Vector3(0, -1, 0) }));
+    if (stage.id === "ch4" || stage.id === "ch6") each(10 * k, (seg, s, side, Rw) => { const p = frameAt(seg, s, side * (Rw + rnd(30, 70)), rnd(0, 30)).p; for (let i = 0; i < 9; i++) B.add(solid(THEME[seg.theme], 0.6), G.ico, mtx(p.clone().add(new THREE.Vector3().randomDirection().multiplyScalar(rnd(2, 9))), null, rnd(1.2, 2.5))); });
+    if (stage.id === "ch7") each(40 * k, (seg, s, side, Rw) => {   // cortex: pyramidal neurons with apical dendrites
+      const p = frameAt(seg, s, side * (Rw + rnd(20, 55)), rnd(-20, 10)).p; neuron(B, p, rnd(2.5, 4), THEME[seg.theme] || MEMBRANE, { dendrites: 4, apical: true, axon: new THREE.Vector3(0, -1, 0) });
+    });
+    if (stage.id === "ch8") each(14 * k, (seg, s, side, Rw, H) => {   // cranial nerve roots leaving the brainstem
+      const a = frameAt(seg, s, side * (Rw + 8), rnd(0, H)).p, d = frameAt(seg, s, side * (Rw + 90), rnd(-30, 40)).p;
+      B.add(fiberMat(0xFFD34D, true, 0.7), new THREE.TubeGeometry(new THREE.CatmullRomCurve3([a, a.clone().lerp(d, 0.5).add(new THREE.Vector3(0, rnd(-20, 20), 0)), d]), 30, rnd(1.2, 2.2), 6, false));
+    });
+  }
+
+  function buildBoss(W) {
+    const g = new THREE.Group(); g.position.set(0, 26, 0); W.root.add(g);
+    const core = new THREE.Mesh(G.ico, new THREE.MeshBasicMaterial({ color: 0x12000a })); core.scale.setScalar(22); g.add(core);
+    const wire = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.IcosahedronGeometry(27, 1)), new THREE.LineBasicMaterial({ color: 0xFF2D55 })); g.add(wire);
+    const rings = [0, 1, 2].map(i => { const r = new THREE.Mesh(new THREE.TorusGeometry(36 + i * 6, 0.6, 6, 80), glow(0xFF4DA6, 0.9)); r.rotation.set(rnd(0, 3), rnd(0, 3), 0); g.add(r); return r; });
+    const shield = new THREE.Mesh(new THREE.SphereGeometry(48, 40, 24), new THREE.MeshBasicMaterial({ color: 0xFF4DA6, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); g.add(shield);
+    const label = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex(["NULL"], { w: 512, h: 160, border: "#FF2D55", bg: "rgba(30,0,10,.9)" }), depthWrite: false })); label.scale.set(30, 9.4, 1); label.position.y = 58; g.add(label);
+    W.boss = { g, core, wire, rings, shield, flash: 0, atk: 0 };
+  }
+
+  let _dot = null;
+  function dotTex() { if (_dot) return _dot; const c = document.createElement("canvas"); c.width = c.height = 32; const x = c.getContext("2d"), g = x.createRadialGradient(16, 16, 0, 16, 16, 16); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.5, "rgba(255,255,255,.5)"); g.addColorStop(1, "rgba(255,255,255,0)"); x.fillStyle = g; x.fillRect(0, 0, 32, 32); return (_dot = new THREE.CanvasTexture(c)); }
+  function buildParticles(W) {   // Na+ (gold) and K+ (violet) ions drifting inside the axon around STAR-01
+    const n = W.low ? 90 : 240, pos = new Float32Array(n * 3), col = new Float32Array(n * 3), seeds = [];
+    for (let i = 0; i < n; i++) { const k = i % 2 ? C(0xFFD34D) : C(0xB98CFF); col.set([k.r, k.g, k.b], i * 3); seeds.push({ seg: null, s: 0, x: 0, y: 0, ds: 0 }); }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    const p = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.16, map: dotTex(), alphaTest: 0.01, vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending })); p.frustumCulled = false; W.root.add(p);
+    W.particles = { g, seeds, n };
+  }
+
+  //================== RUNTIME ==================
+  function api(W) {
+    const tmp = new THREE.Matrix4(), q = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), zero = new THREE.Vector3();
+    return {
+      update(dt, t, sim) {
+        for (const g of W.orbs) { q.setFromEuler(new THREE.Euler(0, t * 2.5, 0.4)); for (const it of g.items) { tmp.compose(it.p, q, it.gone ? zero : one); g.im.setMatrixAt(it.i, tmp); } g.im.instanceMatrix.needsUpdate = true; }
+        for (const o of W.obstacles) { if (o.pulse) o.grp.children[0].material.opacity = 0.5 + 0.35 * Math.sin(t * 8); else o.grp.children[0].scale.x = 1 + (Math.random() < 0.05 ? rnd(-0.15, 0.15) : 0); }
+        for (const a of W.anim) { if (a.spin) a.o.rotation.y += dt * a.spin; if (a.flick) a.o.visible = Math.random() > 0.04; }
+        for (const f of W.flashes) { const k = 0.5 + 0.5 * Math.sin(t * 2.2 + f.ph); f.m.scale.setScalar(1.3 + k * 0.7); }
+        for (const r of W.rings) { if (r.t > 0) { r.t -= dt; r.m.scale.setScalar(1 + (0.6 - r.t) * 2.5); if (r.t <= 0) r.m.visible = false; } else r.m.rotation.z += dt * 1.5; }
+        for (const nd of W.nodes) if (nd.t > 0) { nd.t -= dt; nd.m.material.color.setHex(nd.t > 0 ? 0xFFFFFF : 0x2EE6D6); }
+        if (W.nt) { const { seg, seeds, g, len } = W.nt, a = g.attributes.position.array; seeds.forEach((p, i) => { p.s += p.v * dt; if (p.s > len) p.s -= len; const v = M(seg.worldPos(p.s, p.x + Math.sin(t + i) * 0.5, p.y)); a[i * 3] = v.x; a[i * 3 + 1] = v.y; a[i * 3 + 2] = v.z; }); g.attributes.position.needsUpdate = true; }
+        if (W.boss) { const b = W.boss; b.wire.rotation.y += dt * 0.4; b.wire.rotation.x += dt * 0.17; b.rings.forEach((r, i) => { r.rotation.x += dt * (0.3 + i * 0.2); r.rotation.y += dt * 0.2; }); if (b.flash > 0) { b.flash -= dt; b.core.material.color.setHex(b.flash > 0 ? 0xFFFFFF : 0x12000a); } if (b.atk > 0) { b.atk -= dt; b.shield.scale.setScalar(1 + (1 - b.atk) * 0.6); if (b.atk <= 0) b.shield.scale.setScalar(1); } }
+        if (sim && W.particles) {
+          const P = W.particles, a = P.g.attributes.position.array;
+          P.seeds.forEach((p, i) => {
+            if (!p.seg || p.seg !== sim.seg || p.s < sim.s - 8 || p.s > sim.s + 70) { const hw = sim.seg.halfWidth, [Rw, H] = tubeRadius(hw); p.seg = sim.seg; p.s = sim.s + rnd(-5, 70); p.x = rnd(-Rw, Rw) * 0.85; p.y = rnd(0.3, H * 0.8); p.ds = rnd(-1.5, 1.5); }
+            p.s += p.ds * dt; const v = M(p.seg.worldPos(Math.min(p.s, p.seg.length), p.x + Math.sin(t * 0.7 + i) * 0.3, p.y)); a[i * 3] = v.x; a[i * 3 + 1] = v.y; a[i * 3 + 2] = v.z;
+          });
+          P.g.attributes.position.needsUpdate = true;
+        }
+      },
+      collect(e) { for (const g of W.orbs) { const it = g.items.find(x => x.e === e); if (it) { it.gone = true; return; } } },
+      ringHit(e, hit) { const r = W.rings.find(x => x.e === e); if (!r) return; if (hit) { r.m.material = glow(0xFFFFFF); r.t = 0.6; for (const nd of W.nodes) if (Math.abs(nd.s - e.s) < 0.5) nd.t = 0.25; } else r.m.material = glow(0x553355, 0.5); },
+      markSigns(signs, lane, correctLane) { signs.forEach((p, i) => { p.material.color.setHex(i === correctLane ? 0xB8FFD0 : i === lane ? 0xFF8A9A : 0x555577); }); },
+      gateResult(e, lane) { const g = W.gates.find(x => x.e === e); if (g) this.markSigns(g.signs, lane, e.correctLane); },
+      forkResult(qid, lane) { const f = W.forks.get(qid); if (f) this.markSigns(f.signs, lane, f.seg.fork.correctLane); },
+      bossHit(hp, max) { if (!W.boss) return; W.boss.flash = 0.25; W.boss.shield.material.opacity = 0.04 + 0.12 * hp / Math.max(1, max); },
+      bossAttack() { if (W.boss) W.boss.atk = 1; },
+      dispose(scene) {
+        scene.remove(W.root);
+        W.root.traverse(o => { if (o.geometry && !Object.values(G).includes(o.geometry)) o.geometry.dispose(); if (o.material && o.material.map) o.material.map.dispose(); });
+      },
+    };
+  }
+
+  return { M, frameAt, labelTex, U, LANE, build, tubeRadius, HEXS };
+})(); };
+
+</script>
+<script>
 // NERVE RUNNER - web/iPad edition. Same rules and content as the Unity project (core.js is a 1:1 port
 // of the pure-C# Core); this file is the view: three.js world, STAR-01, DOM UI, touch, WebAudio music,
 // speechSynthesis voice, slow-motion thinking time and localStorage saves.
 "use strict";
-(function () {
+window.NR_MAIN = function () {
   const C = window.NR_CONTENT, $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
   const bank = new NR.Bank(C.questions), codexById = new Map(C.codex.map(c => [c.id, c]));
   const HASH = location.hash || "", AUTO = /auto/.test(HASH), WARP = (HASH.match(/warp=(\d+)/) || [])[1] | 0 || 1;
 
   //================== SAVE ==================
   const SAVE_KEY = "nerverunner_web_v1";
-  const save = Object.assign({ voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
+  const save = Object.assign({ voiceRate: 1.05, voicePitch: 1.12, voiceURI: "", voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } };
 
   //================== AUDIO (NRMusic.cs port + simple SFX) ==================
@@ -972,31 +1466,63 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
     setHum(v, boost) { if (this.humGain) { this.humGain.gain.setTargetAtTime(v * 0.09, this.ctx.currentTime, 0.1); this.hum.frequency.setTargetAtTime(60 + v * 90 + (boost ? 40 : 0), this.ctx.currentTime, 0.1); } },
   };
 
-  //================== VOICE (StarVoice.cs port: device ko-KR speech) ==================
+  //================== VOICE: device Korean TTS, best voice first, natural phrasing, queued ==================
+  // Instagram-style neural voices need a cloud TTS service; here we use the best voice installed on
+  // the device (iPad: "유나/Yuna (프리미엄·향상됨)" etc.) and speak in short natural sentences.
   const Voice = {
-    ok: "speechSynthesis" in window, voice: null, until: 0, star: false,
-    pick() { if (!this.ok) return; const vs = speechSynthesis.getVoices(); this.voice = vs.find(v => /^ko/i.test(v.lang) && /yuna|유나|sora|google/i.test(v.name)) || vs.find(v => /^ko/i.test(v.lang)) || null; },
+    ok: "speechSynthesis" in window, list: [], voice: null, q: [], cur: null, star: true, timer: 0,
+    rank(v) {
+      const n = v.name; let s = 0;
+      if (/premium|프리미엄/i.test(n)) s += 60; if (/enhanced|향상|고품질|neural|natural|online/i.test(n)) s += 45; if (/google/i.test(n)) s += 30;
+      if (/yuna|유나/i.test(n)) s += 12; if (/sora|소라|jian|지안|suhyun|수현|minsu|민수|heami|sunhi|선희/i.test(n)) s += 8;
+      if (/compact|eloquence|grandma|grandpa|rocko|shelley|sandy|reed|flo|eddy|할머니|할아버지/i.test(n)) s -= 40; return s;
+    },
+    pick() {
+      if (!this.ok) return; this.list = speechSynthesis.getVoices().filter(v => /^ko/i.test(v.lang)).sort((a, b) => this.rank(b) - this.rank(a));
+      this.voice = this.list.find(v => v.voiceURI === save.voiceURI) || this.list[0] || null;
+    },
     unlock() { if (!this.ok || this.unlocked) return; this.unlocked = true; try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) { } },
     clean(t) {
-      let s = String(t).replace(/<[^>]+>/g, "");
-      [["Na+-K+", "나트륨 칼륨"], ["3Na+", "나트륨 이온 3개"], ["2K+", "칼륨 이온 2개"], ["Na+", "나트륨 이온"], ["K+", "칼륨 이온"], ["Ca2+", "칼슘 이온"], ["Cl-", "염화 이온"], ["-70mV", "마이너스 70 밀리볼트"], ["-55mV", "마이너스 55 밀리볼트"], ["+30mV", "플러스 30 밀리볼트"], ["mV", " 밀리볼트"], ["μm", " 마이크로미터"], ["mm", " 밀리미터"], ["→", ", "], ["·", ", "], ["/", ", "], ["~", "에서 "], ["(", ", "], [")", ", "], ["\n", ". "]].forEach(([a, b]) => { s = s.split(a).join(b); });
+      let s = String(t).replace(/<[^>]+>/g, "").replace(/\s*\([A-Za-z0-9 ,.'\-+/&]+\)/g, "");
+      [["STAR-01", "스타 제로원"], ["NULL", "널"], ["Na+-K+", "나트륨 칼륨"], ["3Na+", "나트륨 이온 세 개"], ["2K+", "칼륨 이온 두 개"], ["Na+", "나트륨 이온"], ["K+", "칼륨 이온"], ["Ca2+", "칼슘 이온"], ["Cl-", "염소 이온"], ["-70mV", "마이너스 70 밀리볼트"], ["-55mV", "마이너스 55 밀리볼트"], ["+30mV", "플러스 30 밀리볼트"], ["mV", " 밀리볼트"], ["μm", " 마이크로미터"], ["mm", " 밀리미터"], ["→", ", 그다음 "], ["·", ", "], ["/", ", "], ["~", "에서 "], ["(", ", "], [")", ", "], ["\n", ". "], ["...", ". "], ["…", ". "]].forEach(([a, b]) => { s = s.split(a).join(b); });
       const R = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
       s = s.replace(/(^|[^A-Za-z])(XII|XI|X|IX|VIII|VII|VI|V|IV|III|II|I)(?=\s?[가-힣])/g, (m, p, r) => p + (R.indexOf(r) + 1) + "번 ");
-      return s.replace(/\s+/g, " ").trim();
+      return s.replace(/\s*,\s*([,.!?])/g, "$1").replace(/\s+/g, " ").trim();
     },
-    say(text, isStar = true) {
-      if (!save.voiceOn || !text) return; const s = this.clean(text); if (!s) return;
-      this.star = isStar; this.until = performance.now() / 1000 + Math.min(14, Math.max(0.8, 0.4 + s.length * 0.09));
+    chunks(s) {   // short sentences sound far more natural than one long utterance (and iOS cuts long ones)
+      const out = []; for (let part of s.match(/[^.!?。]+[.!?。]?/g) || [s]) { part = part.trim(); if (!part) continue;
+        while (part.length > 110) { const k = part.lastIndexOf(",", 100); const cut = k > 30 ? k + 1 : 100; out.push(part.slice(0, cut)); part = part.slice(cut).trim(); }
+        if (part) out.push(part); }
+      return out;
+    },
+    // mode: "replace" (stop what is being said), "queue" (after it), "idle" (only if silent)
+    say(text, o = {}) {
+      if (!save.voiceOn || !text) return false; const mode = o.mode || "replace";
+      if (mode === "idle" && this.talking) return false;
+      if (mode === "replace") this.stop();
+      for (const c of this.chunks(this.clean(text))) this.q.push({ text: c, star: o.star !== false, tag: o.tag || null });
+      if (!this.cur) this.next(); return true;
+    },
+    next() {
+      clearTimeout(this.timer); const c = this.q.shift(); this.cur = c || null; if (!c) return;
+      this.star = c.star; const est = 0.6 + c.text.length * 0.2 / (save.voiceRate || 1); c.end = performance.now() / 1000 + est;
+      const done = () => { if (this.cur === c) { this.cur = null; setTimeout(() => { if (!this.cur) this.next(); }, 140); } };
+      this.timer = setTimeout(done, (est + 2.5) * 1000);     // fallback: some engines never fire onend
       if (!this.ok) return;
       try {
-        speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(s); u.lang = "ko-KR"; if (this.voice) u.voice = this.voice;
-        u.rate = 1.08; u.pitch = isStar ? 1.45 : 1.0; u.onend = () => { this.until = 0; }; speechSynthesis.speak(u);
+        const u = new SpeechSynthesisUtterance(c.text); u.lang = "ko-KR"; if (this.voice) u.voice = this.voice;
+        u.rate = save.voiceRate || 1.05; u.pitch = c.star ? (save.voicePitch || 1.12) : 0.95; u.onend = done; u.onerror = done; speechSynthesis.speak(u);
       } catch (e) { }
     },
-    stop() { this.until = 0; if (this.ok) try { speechSynthesis.cancel(); } catch (e) { } },
-    get talking() { return performance.now() / 1000 < this.until; },
+    stop() { this.q.length = 0; this.cur = null; clearTimeout(this.timer); if (this.ok) try { speechSynthesis.cancel(); } catch (e) { } },
+    get talking() { return !!this.cur || this.q.length > 0; },
+    has(tag) { return (this.cur && this.cur.tag === tag) || this.q.some(c => c.tag === tag); },
+    remaining(tag) { const now = performance.now() / 1000; let t = this.cur && (!tag || this.cur.tag === tag) ? Math.max(0, this.cur.end - now) : 0; for (const c of this.q) if (!tag || c.tag === tag) t += 0.6 + c.text.length * 0.2 / (save.voiceRate || 1); return t; },
   };
   if (Voice.ok) { Voice.pick(); speechSynthesis.onvoiceschanged = () => Voice.pick(); }
+  const pickOne = a => a[(Math.random() * a.length) | 0];
+  const hasBatchim = w => { const c = w.trim().replace(/[^가-힣]+$/, "").slice(-1).charCodeAt(0); return c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0; };
+  const optSpeech = o => Voice.clean(o).replace(/[,.\s]+$/, "");
   const firstTouch = () => { Snd.unlock(); Voice.unlock(); };
   window.addEventListener("pointerdown", firstTouch, { capture: true });
   window.addEventListener("keydown", firstTouch, { capture: true });
@@ -1005,220 +1531,28 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
   const canvas = $("#gl"), dprCap = () => save.quality === "low" ? 1 : save.quality === "high" ? 2 : Math.min(devicePixelRatio || 1, 1.6);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(dprCap());
-  const scene = new THREE.Scene(), BG = new THREE.Color(0x0B0A24);
-  scene.background = BG; scene.fog = new THREE.Fog(0x0B0A24, 70, 380);
+  const scene = new THREE.Scene(), BG = new THREE.Color(0x0A0724);
+  scene.background = BG; scene.fog = new THREE.Fog(0x0A0724, 40, 340);
   const camera = new THREE.PerspectiveCamera(62, 1, 0.2, 1400);
   scene.add(new THREE.HemisphereLight(0xC9B8FF, 0x2A1640, 1.4));
   const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(-0.4, 0.8, -0.5); scene.add(sun);
+  let composer = null;
   function resize() {
     const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h;
+    if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h); }
     camera.updateProjectionMatrix(); $("#rotate").classList.toggle("need", h > w);
   }
   addEventListener("resize", resize); resize();
 
-  // Unity (left-handed) -> three (right-handed): mirror X
-  const M = v => new THREE.Vector3(-v.x, v.y, v.z);
-  const col = h => new THREE.Color(h);
-  const ZCOL = { 0: 0x37D8FF, 1: 0xFF5CC8, 2: 0x5CFF9D, 3: 0xFF8A3D, 4: 0xFFB627, 5: 0xFF4D6D, 6: 0x9B5CFF };
-  const THEME = { spinal: 0x6CFF8A, tract: 0xFF5CC8, brainstem: 0xFF7A3D, cerebellum: 0xFF8FD0, diencephalon: 0x7C9CFF, cranial: 0xFFD34D, frontal: 0x4D8DFF, parietal: 0x5CFF9D, temporal: 0xFFB627, occipital: 0xFF5CC8, boss: 0xFF4DA6 };
-  const segColor = seg => seg.zone === NR.ZONE.Normal && THEME[seg.theme] ? THEME[seg.theme] : ZCOL[seg.zone];
-
-  const fogU = { fogColor: { value: BG }, fogNear: { value: 70 }, fogFar: { value: 380 } };
-  const roadMat = new THREE.ShaderMaterial({
-    uniforms: Object.assign({ uTime: { value: 0 } }, fogU), side: THREE.DoubleSide,
-    vertexShader: `attribute vec3 color;varying vec2 vUv;varying vec3 vCol;varying float vD;void main(){vUv=uv;vCol=color;vec4 mv=modelViewMatrix*vec4(position,1.);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
-    fragmentShader: `uniform float uTime;uniform vec3 fogColor;uniform float fogNear,fogFar;varying vec2 vUv;varying vec3 vCol;varying float vD;
-      void main(){float u=abs(vUv.x);vec3 c=vec3(.07,.055,.17)+vCol*.05;
-       float edge=smoothstep(.84,.98,u);c+=vCol*edge*1.25;
-       float dash=step(u,.025)*step(fract(vUv.y/9.),.5);c+=vec3(.9,.9,1.)*dash*.35;
-       float pulse=smoothstep(.85,1.,fract(vUv.y/24.-uTime*.6));c+=vCol*pulse*(1.-u)*.22;
-       float hex=smoothstep(.93,1.,abs(sin(vUv.y*.5+vUv.x*3.))*abs(sin(vUv.x*9.)));c+=vCol*hex*.10;
-       float f=smoothstep(fogNear,fogFar,vD);gl_FragColor=vec4(mix(c,fogColor,f),1.);}`,
-  });
-  const glowMat = (c, op = 0.85) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: true });
-
-  //================== LABEL TEXTURES ==================
-  function labelTex(lines, opts = {}) {
-    const W = opts.w || 512, H = opts.h || 256, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
-    x.fillStyle = opts.bg || "rgba(20,15,56,0.92)"; const r = 36; x.beginPath(); x.roundRect ? x.roundRect(6, 6, W - 12, H - 12, r) : x.rect(6, 6, W - 12, H - 12); x.fill();
-    x.lineWidth = 10; x.strokeStyle = opts.border || "#FF5CC8"; x.stroke();
-    x.textAlign = "center"; x.textBaseline = "middle"; let y = opts.big ? H * 0.36 : H / 2 - (lines.length - 1) * 30;
-    lines.forEach((l, i) => {
-      const big = opts.big && i === 0; x.fillStyle = big ? (opts.bigColor || "#2EE6D6") : "#F2F0FF";
-      let size = big ? 120 : 52; x.font = `${big ? "" : "bold "}${size}px Jua, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif`;
-      while (x.measureText(l).width > W - 50 && size > 22) { size -= 2; x.font = `bold ${size}px Jua, "Apple SD Gothic Neo", sans-serif`; }
-      x.fillText(l, W / 2, y); y += big ? H * 0.38 : 62;
-    });
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
-  }
-  const short = (s, n = 16) => s.length > n ? s.slice(0, n - 1) + "…" : s;
-
-  //================== WORLD ==================
+  const { M, frameAt, LANE, HEXS } = NRW; const LETTER = i => String.fromCharCode(65 + i);
   let world = null;
-  function disposeWorld() {
-    if (!world) return; scene.remove(world.root);
-    world.root.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material !== roadMat) { (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m.map) m.map.dispose(); m.dispose(); }); } });
-    world = null;
-  }
+  function buildWorld(stage, graph) { if (world) world.dispose(scene); world = NRW.build(scene, stage, graph, bank, save.quality); return world; }
 
-  function ribbon(seg, s0, s1, step, fn) { // fn(s) -> [left vec3 (unity), right vec3]; returns BufferGeometry with uv(u=-1..1, v=s)
-    const pos = [], uv = [], idx = []; let k = 0;
-    for (let s = s0; ; s = Math.min(s1, s + step)) {
-      const [a, b] = fn(s), A = M(a), B = M(b); pos.push(A.x, A.y, A.z, B.x, B.y, B.z); uv.push(-1, s, 1, s);
-      if (k > 0) { const i = k * 2; idx.push(i - 2, i - 1, i, i - 1, i + 1, i); } k++;
-      if (s >= s1) break;
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); return g;
-  }
-  function paint(g, c) { const n = g.attributes.position.count, a = new Float32Array(n * 3), cc = col(c); for (let i = 0; i < n; i++) { a[i * 3] = cc.r; a[i * 3 + 1] = cc.g; a[i * 3 + 2] = cc.b; } g.setAttribute("color", new THREE.BufferAttribute(a, 3)); return g; }
-
-  function frameAt(seg, s, x = 0, y = 0) { // three-space position + quaternion facing along the road
-    const p = M(seg.worldPos(s, x, y)), f = M(seg.tangentAt(s)), up = new THREE.Vector3(0, 1, 0);
-    const z = f.clone().negate(), xa = new THREE.Vector3().crossVectors(up, z).normalize(), ya = new THREE.Vector3().crossVectors(z, xa);
-    const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, z)); return { p, q, f };
-  }
-
-  function buildWorld(stage, graph) {
-    disposeWorld();
-    const root = new THREE.Group(); scene.add(root);
-    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forkSigns: new Map(), animated: [], bounds: new THREE.Box3() };
-    const geomByCol = new Map();
-    for (const seg of graph.segments) {
-      const c = segColor(seg), hw = seg.halfWidth, yo = (seg.zone === NR.ZONE.Review || seg.zone === NR.ZONE.Shortcut) ? 0.02 * (seg.id % 4) : 0;
-      const road = paint(ribbon(seg, 0, seg.length, 2, s => [seg.worldPos(s, -hw, yo), seg.worldPos(s, hw, yo)]), c);
-      const m = new THREE.Mesh(road, roadMat); root.add(m); road.computeBoundingBox(); W.bounds.union(road.boundingBox);
-      for (const side of [-1, 1]) {
-        const rail = ribbon(seg, 0, seg.length, 3, s => [seg.worldPos(s, side * (hw + 0.1), yo), seg.worldPos(s, side * (hw + 0.1), yo + 0.55)]);
-        if (!geomByCol.has(c)) geomByCol.set(c, []); geomByCol.get(c).push(rail);
-      }
-      if (seg.zone === NR.ZONE.Myelin || seg.zone === NR.ZONE.Damaged) buildSheath(W, seg);
-      if (seg.zone === NR.ZONE.Synapse) buildCleft(W, seg);
-      if (seg.fork) buildForkSigns(W, seg);
-      for (const e of seg.events) buildEvent(W, seg, e);
-    }
-    for (const [c, list] of geomByCol) for (const g of list) root.add(new THREE.Mesh(g, glowMat(c, 0.9)));
-    buildOrbs(W); buildBackdrop(W, stage);
-    world = W; return W;
-  }
-
-  function buildSheath(W, seg) {
-    const hw = seg.halfWidth, R = hw + 1.4, dmg = seg.zone === NR.ZONE.Damaged;
-    const nodes = seg.events.filter(e => e.type === NR.EV.NodeRing).map(e => e.s);
-    const cuts = nodes.length ? nodes : (() => { const a = []; for (let s = 40; s < seg.length - 20; s += 55) a.push(s); return a; })();
-    const sheathMat = new THREE.MeshLambertMaterial({ color: dmg ? 0x8a3048 : 0xFFD98A, emissive: dmg ? 0x300010 : 0x5a3a08, transparent: true, opacity: dmg ? 0.5 : 0.42, side: THREE.DoubleSide, depthWrite: false });
-    const nodeMat = glowMat(dmg ? 0xFF4D6D : 0x2EE6D6, 0.9);
-    let prev = 2, k = 0;
-    for (const sN of cuts.concat([seg.length - 2])) {
-      const a = prev + 3.5, b = sN - 3.5; prev = sN; k++;
-      if (b - a > 6) {
-        const A0 = dmg ? (k % 3) * 0.6 : 0, A1 = dmg ? Math.PI - ((k + 1) % 3) * 0.6 : Math.PI; const n = 16, pos = [], idx = []; let rows = 0;
-        for (let s = a; ; s = Math.min(b, s + 3)) {
-          for (let i = 0; i <= n; i++) { const t = A0 + (A1 - A0) * i / n, v = M(seg.worldPos(s, -Math.cos(t) * R, Math.sin(t) * R * 0.9 - 0.3)); pos.push(v.x, v.y, v.z); }
-          if (rows > 0) for (let i = 0; i < n; i++) { const r0 = (rows - 1) * (n + 1) + i, r1 = rows * (n + 1) + i; idx.push(r0, r1, r0 + 1, r0 + 1, r1, r1 + 1); }
-          rows++; if (s >= b) break;
-        }
-        const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
-        W.root.add(new THREE.Mesh(g, sheathMat));
-      }
-      if (sN < seg.length - 3) { // node of Ranvier: glowing band around the bare axon
-        const fr = frameAt(seg, sN, 0, -0.3), ring = new THREE.Mesh(new THREE.TorusGeometry(R, 0.18, 6, 40, Math.PI), nodeMat);
-        ring.position.copy(fr.p); ring.quaternion.copy(fr.q); W.root.add(ring);
-      }
-    }
-  }
-  function buildCleft(W, seg) {
-    const g = new THREE.BufferGeometry(), n = 260, p = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { const v = M(seg.worldPos(Math.random() * seg.length, (Math.random() * 2 - 1) * 10, Math.random() * 7 - 1)); p.set([v.x, v.y, v.z], i * 3); }
-    g.setAttribute("position", new THREE.BufferAttribute(p, 3));
-    W.root.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xFF5CC8, size: 0.5, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false })));
-  }
-
-  function panel(tex, w, h) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, fog: false })); return m; }
-  function placeFacing(obj, seg, s, x, y) { const fr = frameAt(seg, s, x, y); obj.position.copy(fr.p); obj.quaternion.copy(fr.q); return obj; }
-  const LETTER = i => String.fromCharCode(65 + i);
-
-  function buildForkSigns(W, seg) {
-    const q = bank.get(seg.fork.questionId), signs = [];
-    seg.fork.laneX.forEach((lx, i) => {
-      const tex = labelTex([LETTER(i), short(q.options[i], 14)], { big: true, border: "#FF5CC8" });
-      const p = panel(tex, 4.6, 2.3); placeFacing(p, seg, seg.length - 18, lx, 4.2); W.root.add(p); signs.push(p);
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 0.15), glowMat(0xFF5CC8)); placeFacing(post, seg, seg.length - 18, lx, 1.5); W.root.add(post);
-    });
-    // lane dividers on the last 140 m
-    const lx = seg.fork.laneX; for (let i = 0; i < lx.length - 1; i++) {
-      const mid = (lx[i] + lx[i + 1]) / 2, g = ribbon(seg, Math.max(0, seg.length - 140), seg.length, 3, s => [seg.worldPos(s, mid - 0.12, 0.03), seg.worldPos(s, mid + 0.12, 0.03)]);
-      W.root.add(new THREE.Mesh(g, glowMat(0xFF5CC8, 0.8)));
-    }
-    W.forkSigns.set(seg.fork.questionId, { seg, signs, q });
-  }
-
-  function buildEvent(W, seg, e) {
-    const E = NR.EV;
-    if (e.type === E.Gate) {
-      const q = bank.get(e.questionId), boss = e.tag === "boss", gc = boss ? 0xFF4DA6 : e.tag === "glia" ? 0x5CFF9D : 0x9B5CFF;
-      const hw = seg.halfWidth, grp = new THREE.Group(), mat = glowMat(gc);
-      const post = (x) => { const m = new THREE.Mesh(new THREE.BoxGeometry(0.4, 6, 0.4), mat); m.position.set(x, 3, 0); grp.add(m); };
-      post(-(hw + 0.3)); post(hw + 0.3); const beam = new THREE.Mesh(new THREE.BoxGeometry(2 * hw + 1, 0.4, 0.4), mat); beam.position.y = 6; grp.add(beam);
-      placeFacing(grp, seg, e.s, 0, 0); W.root.add(grp);
-      const signs = [];
-      e.laneX.forEach((lx, i) => {
-        const p = panel(labelTex([LETTER(i), short(q ? q.options[i] : "", 14)], { big: true, border: boss ? "#FF4DA6" : "#9B5CFF" }), Math.min(5.4, Math.abs(e.laneX[1] - e.laneX[0]) * 0.92), 2.6);
-        placeFacing(p, seg, e.s - 0.4, lx, 4.2); W.root.add(p); signs.push(p);
-      });
-      for (let i = 0; i < e.laneX.length - 1; i++) {
-        const mid = (e.laneX[i] + e.laneX[i + 1]) / 2, g = ribbon(seg, Math.max(0, e.s - 90), e.s, 3, s => [seg.worldPos(s, mid - 0.12, 0.03), seg.worldPos(s, mid + 0.12, 0.03)]);
-        W.root.add(new THREE.Mesh(g, glowMat(gc, 0.8)));
-      }
-      W.gates.push({ e, signs, grp });
-    } else if (e.type === E.NodeRing) {
-      const m = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.16, 8, 32), glowMat(0x2EE6D6)); placeFacing(m, seg, e.s, e.x, NR.Sim.HOVER); W.root.add(m); W.rings.push({ e, m });
-    } else if (e.type === E.Obstacle) {
-      const pulse = e.width >= seg.halfWidth, w = Math.min(e.width, seg.halfWidth * 2);
-      const m = pulse ? new THREE.Mesh(new THREE.BoxGeometry(w, e.height * 0.8, 0.5), glowMat(0xFF4D6D, 0.75))
-        : new THREE.Mesh(new THREE.BoxGeometry(e.width, e.height + 0.4, 1.4), new THREE.MeshLambertMaterial({ color: 0x3a0a20, emissive: 0xC0204a }));
-      placeFacing(m, seg, e.s, e.x, pulse ? e.height * 0.4 : (e.height + 0.4) / 2); W.root.add(m); W.obstacles.push({ e, m, pulse });
-      if (!pulse) { const w2 = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: 0xFF9AB0 })); m.add(w2); }
-    } else if (e.type === E.Finish || e.type === E.Checkpoint) {
-      const fin = e.type === E.Finish, hw = seg.halfWidth, grp = new THREE.Group(), mat = glowMat(fin ? 0xFFD34D : 0x9B5CFF);
-      for (const x of [-(hw + 0.3), hw + 0.3]) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 7, 0.5), mat); m.position.set(x, 3.5, 0); grp.add(m); }
-      const top = fin ? panel(labelTex(["GOAL"], { w: 512, h: 128, border: "#FFD34D", bg: "rgba(40,20,70,.95)" }), 2 * hw + 1, 2) : new THREE.Mesh(new THREE.BoxGeometry(2 * hw + 1, 0.4, 0.4), mat);
-      top.position.y = 7; grp.add(top); placeFacing(grp, seg, e.s, 0, 0); W.root.add(grp);
-    }
-  }
-
-  function buildOrbs(W) {
-    const list = []; for (const seg of W.graph.segments) for (const e of seg.events) if (e.type === NR.EV.Orb || e.type === NR.EV.RepairOrb) list.push({ seg, e });
-    const mk = (filter, geo, color) => {
-      const items = list.filter(filter); if (!items.length) return;
-      const im = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color }), items.length); W.root.add(im);
-      items.forEach((it, i) => { it.p = M(it.seg.worldPos(it.e.s, it.e.x, NR.Sim.HOVER + 0.2)); it.i = i; it.im = im; });
-      W.orbs.push({ im, items });
-    };
-    mk(it => it.e.type === NR.EV.Orb, new THREE.OctahedronGeometry(0.5), 0xFFE27A);
-    mk(it => it.e.type === NR.EV.RepairOrb, new THREE.IcosahedronGeometry(0.75), 0x5CFF9D);
-  }
-
-  function buildBackdrop(W, stage) {
-    const b = W.bounds, c = new THREE.Vector3(), size = new THREE.Vector3(); b.getCenter(c); b.getSize(size);
-    const R = Math.max(size.x, size.z) * 0.6 + 400;
-    const n = 1400, pos = new Float32Array(n * 3), cols = new Float32Array(n * 3), pal = [0x2EE6D6, 0x9B5CFF, 0xFF5CC8, 0xFFD34D, 0x4D8DFF].map(col);
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2, r = R * (0.35 + 0.65 * Math.sqrt(Math.random())), y = -60 + Math.random() * 260;
-      pos.set([c.x + Math.cos(a) * r, y, c.z + Math.sin(a) * r], i * 3); const k = pal[i % pal.length]; cols.set([k.r, k.g, k.b], i * 3);
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.BufferAttribute(cols, 3));
-    W.root.add(new THREE.Points(g, new THREE.PointsMaterial({ size: 2.2, vertexColors: true, transparent: true, opacity: 0.8, fog: false, depthWrite: false, blending: THREE.AdditiveBlending })));
-    // floating neurons (soma + dendrite spokes) along the course, tinted by stage
-    const tint = THEME[(W.graph.segments.find(s => s.theme) || {}).theme] || 0x9B5CFF, somaMat = new THREE.MeshLambertMaterial({ color: tint, emissive: tint, emissiveIntensity: 0.35 }), dendMat = glowMat(tint, 0.35);
-    const somaGeo = new THREE.SphereGeometry(1, 12, 10), dendGeo = new THREE.CylinderGeometry(0.12, 0.3, 1, 5);
-    const segs = W.graph.segments;
-    for (let i = 0; i < 46; i++) {
-      const seg = segs[(Math.random() * segs.length) | 0], s = Math.random() * seg.length, side = Math.random() < 0.5 ? -1 : 1;
-      const p = M(seg.worldPos(s, side * (seg.halfWidth + 18 + Math.random() * 60), -20 + Math.random() * 50)), r = 2 + Math.random() * 3.5;
-      const grp = new THREE.Group(); grp.position.copy(p); const so = new THREE.Mesh(somaGeo, somaMat); so.scale.setScalar(r); grp.add(so);
-      for (let k = 0; k < 6; k++) { const d = new THREE.Mesh(dendGeo, dendMat), L = r * (2.5 + Math.random() * 3); d.scale.set(r * 0.6, L, r * 0.6); const dir = new THREE.Vector3().randomDirection(); d.position.copy(dir.clone().multiplyScalar(L / 2 + r * 0.6)); d.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir); grp.add(d); }
-      W.root.add(grp); W.animated.push(grp);
-    }
+  // bloom post-processing (skipped on "가볍게")
+  function setupPost() {
+    const PP = window.THREE_PP; composer = null; if (!PP || save.quality === "low") return;
+    try { composer = new PP.EffectComposer(renderer); composer.addPass(new PP.RenderPass(scene, camera)); composer.addPass(new PP.UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.6, 0.4, 0.86)); composer.addPass(new PP.OutputPass()); } catch (e) { composer = null; }
+    resize();
   }
 
   //================== STAR ==================
@@ -1315,7 +1649,7 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
   function screen(name) { $$(".screen").forEach(s => s.classList.toggle("on", s.id === "scr-" + name)); }
   let toastT = 0, hintT = 0, answerT = 0, storyT = 0; const storyQ = [];
   function toast(text, color = "#F2F0FF", sec = 1.6) { const t = $("#h-toast"); t.textContent = text; t.style.color = color; t.style.opacity = 1; toastT = sec; }
-  function hint(text, sec = 5) { if (!save.showHints) return; const h = $("#h-hint"); h.textContent = text; h.style.display = "block"; hintT = sec; if (!$("#qpanel").classList.contains("on") && !$("#apanel").classList.contains("on")) Voice.say(text, true); }
+  function hint(text, sec = 5) { if (!save.showHints) return; const h = $("#h-hint"); h.textContent = text; h.style.display = "block"; hintT = sec; Voice.say(text, { mode: "idle" }); }
   function countdown(t) { $("#h-count").textContent = t; }
   function fmt(t) { const m = Math.floor(t / 60), s = t - m * 60; return m + ":" + (s < 10 ? "0" : "") + s.toFixed(1); }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -1327,20 +1661,31 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
     if (!dialogLines || dialogIdx >= dialogLines.length) { Voice.stop(); show("#dialog", false); const d = dialogDone; dialogDone = null; if (d) d(); return; }
     const l = dialogLines[dialogIdx]; $("#d-speaker").textContent = l.speaker; $("#d-text").textContent = l.text; $("#d-face").textContent = l.speaker === "STAR-01" ? "★" : l.speaker === "NULL" ? "⚠" : "◆";
     $("#d-face").style.color = l.speaker === "NULL" ? "#FF4D6D" : "#FFD34D";
-    Voice.say(l.text, l.speaker === "STAR-01");
+    Voice.say(l.text, { star: l.speaker === "STAR-01" });
     if (AUTO) setTimeout(() => { if (dialogLines === l_ref) nextDialog(); }, 150);
     const l_ref = dialogLines;
   }
   $("#dialog").addEventListener("pointerup", () => nextDialog());
 
   function questionLanes(q, n) { return n === 2 ? ["◀ 왼쪽", "오른쪽 ▶"] : n === 3 ? ["◀ 왼쪽", "가운데", "오른쪽 ▶"] : Array.from({ length: n }, (_, i) => "차선 " + (i + 1)); }
+  const LANE_WORD = n => n === 2 ? ["왼쪽", "오른쪽"] : n === 3 ? ["왼쪽", "가운데", "오른쪽"] : Array.from({ length: n }, (_, i) => (i + 1) + "번");
+  function questionSpeech(q) {
+    const w = LANE_WORD(q.options.length);
+    return pickOne(["자, 문제!", "문제 나간다!", "이번 문제야.", "잘 들어 봐!"]) + " " + q.question + " " +
+      q.options.map((o, i) => w[i] + (hasBatchim(w[i]) ? "은 " : "는 ") + optSpeech(o)).join(", ") + ". " + pickOne(["어느 쪽일까?", "골라 봐!", "어디로 갈래?", "정답 쪽으로 가 보자!"]);
+  }
+  function answerSpeech(q, chosen, correct) {
+    const ans = optSpeech(q.options[q.answer]), wrong = correct ? "" : NR.wrongExp(q, chosen);
+    if (correct) return pickOne(["딩동댕! 맞았어!", "정답! 잘했어!", "맞아, 역시!", "좋아, 정답이야!"]) + " " + q.explanation;
+    return pickOne(["앗, 아깝다!", "아쉽다!", "음, 이건 틀렸어."]) + " 정답은 " + ans + (hasBatchim(ans) ? "이야. " : "야. ") + (wrong ? wrong + " " : "") + pickOne(["정리해 줄게.", "다시 보자.", "기억해 둬!"]) + " " + q.explanation;
+  }
   function showQuestion(q, title) {
     if (!q) return; show("#apanel", false); answerT = 0;
     $("#q-title").textContent = title; $("#q-tag").textContent = "[" + q.topic + " · " + q.difficulty + "]"; $("#q-text").textContent = q.question;
     const lanes = questionLanes(q, q.options.length);
-    $("#q-opts").innerHTML = q.options.map((o, i) => `<div class="opt" data-i="${i}"><span class="lane">${lanes[i]}</span><span class="k">${LETTER(i)}</span>${esc(o)}</div>`).join("");
+    $("#q-opts").innerHTML = q.options.map((o, i) => `<div class="opt" data-i="${i}" style="border-left:8px solid ${HEXS(LANE[i % 4])}"><span class="lane">${lanes[i]}</span><span class="k" style="color:${HEXS(LANE[i % 4])}">${LETTER(i)}</span>${esc(o)}</div>`).join("");
     show("#qpanel", true);
-    Voice.say(q.question + " " + q.options.map((o, i) => LETTER(i) + ". " + o + ".").join(" "), true);
+    Voice.say(questionSpeech(q), { tag: "q" });
   }
   function showAnswer(q, chosen, correct, extra, sec) {
     show("#qpanel", false); if (!q) return; const p = $("#apanel");
@@ -1348,24 +1693,28 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
     const wrong = correct ? "" : NR.wrongExp(q, chosen); $("#a-wrong").textContent = wrong; $("#a-wrong").style.display = wrong ? "block" : "none";
     $("#a-text").textContent = q.explanation; $("#a-extra").textContent = extra || "";
     show("#apanel", true); answerT = sec;
-    Voice.say((correct ? "정답이야! " : "아쉬워! 정답은 " + q.options[q.answer] + "이야. " + wrong + " ") + q.explanation, true);
+    Voice.say(answerSpeech(q, chosen, correct), { tag: "exp" });   // explanation is never cut off by the next question (it waits)
   }
   $("#a-close").addEventListener("pointerup", () => { show("#apanel", false); answerT = 0; Voice.stop(); });
 
+  let storyWait = 0;
   function tickUi(dt) {
+    Snd.setDuck(Voice.talking ? 0.4 : 1);
     if (toastT > 0) { toastT -= dt; if (toastT <= 0.4) $("#h-toast").style.opacity = Math.max(0, toastT / 0.4); }
     if (hintT > 0) { hintT -= dt; if (hintT <= 0) $("#h-hint").style.display = "none"; }
-    if (answerT > 0) { answerT -= dt; if (answerT <= 0) show("#apanel", false); }
+    // the answer panel stays until its time is up AND STAR-01 has finished explaining
+    if (answerT > 0) answerT -= dt; else if ($("#apanel").classList.contains("on") && !Voice.has("exp")) show("#apanel", false);
     if (storyT > 0) storyT -= dt;
     if (storyT <= 0) {
       const box = $("#h-story");
       if (storyQ.length) {
-        const l = storyQ.shift(); box.querySelector("b").textContent = l.speaker; box.querySelector("span").textContent = l.text; box.style.display = "block"; $("#h-hint").style.display = "none";
-        const voice = save.voiceOn && !$("#qpanel").classList.contains("on"); if (voice) Voice.say(l.text, l.speaker === "STAR-01");
+        // story lines wait for STAR-01 to finish talking (max 12 s), then are read aloud
+        storyWait += dt; if (save.voiceOn && Voice.talking && storyWait < 12) return;
+        storyWait = 0; const l = storyQ.shift(); box.querySelector("b").textContent = l.speaker; box.querySelector("span").textContent = l.text; box.style.display = "block"; $("#h-hint").style.display = "none";
+        const voice = Voice.say(l.text, { mode: "idle", star: l.speaker === "STAR-01" });
         storyT = NR.clamp(1.6 + l.text.length * (voice ? 0.1 : 0.07), 3.5, 9);
       } else box.style.display = "none";
     }
-    Snd.setDuck(Voice.talking ? 0.45 : 1);
   }
 
   //================== RACE ==================
@@ -1390,7 +1739,15 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
   }
   function setSection(n) { if (race && race.lastSection === n) return; if (race) race.lastSection = n; $("#h-section").textContent = n; }
   function updateBoss() { if (!race || !race.bossMax) return; $("#h-boss-fill").style.width = (100 * race.bossHp / race.bossMax) + "%"; }
-  function findGate(qid) { for (const seg of race.graph.segments) for (const e of seg.events) if (e.type === NR.EV.Gate && e.questionId === qid) return e.laneX; return null; }
+  function findGate(qid) { for (const seg of race.graph.segments) for (const e of seg.events) if (e.type === NR.EV.Gate && e.questionId === qid) return { seg, e }; return null; }
+  // a new question waits until STAR-01 has finished the previous explanation; the race slows down
+  // just enough that there is still time to read the question before the gate / fork
+  function ask(id, title, lanes, decision) {
+    const r = race; r.pending = id; r.pendingLanes = lanes; r.decision = decision; r.queued = null;
+    if (!r.auto && save.voiceOn && Voice.has("exp")) { r.queued = { id, title }; return; }
+    showQuestion(bank.get(id), title); Snd.beep();
+  }
+  function distToDecision() { const r = race, d = r.decision; if (!d || d.seg !== r.sim.seg) return 999; return Math.max(0, d.s - r.sim.s); }
 
   function pauseRace() { if (!race || race.phase !== "run") return; race.paused = true; Voice.stop(); renderSettings($("#pause-settings"), true); show("#pause", true); }
   function resumeRace() { if (!race) return; race.paused = false; show("#pause", false); }
@@ -1406,9 +1763,15 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
     } else if (r.phase === "run") {
       r.t += dt; if (r.t > 0.8 && r.t < 1.2) countdown("");
       const inp = r.auto ? r.auto.think(sim) : readInput(dt);
-      const wantSlow = r.pending && !r.auto ? NR.clamp(save.thinkSlow, 0.2, 1) : 1;
+      if (r.queued && (!Voice.has("exp") || distToDecision() < 60)) { const qd = r.queued; r.queued = null; showQuestion(bank.get(qd.id), qd.title); Snd.beep(); }
+      let wantSlow = 1;
+      if (r.pending && !r.auto) {
+        const base = NR.clamp(save.thinkSlow, 0.2, 1), D = distToDecision(), v = Math.max(12, sim.speed);
+        const need = r.queued ? Voice.remaining("exp") + 9 : save.voiceOn ? Voice.remaining("q") + 2.5 : 0;   // seconds of talking/reading still needed
+        wantSlow = need > 0 && D < 900 ? NR.clamp(D / (v * need), 0.12, base) : base;
+      }
       r.timeScale += NR.clamp(wantSlow - r.timeScale, -dt * 2.5, dt * 2.5);
-      $("#h-slow").style.display = r.timeScale < 0.97 && !$("#qpanel").classList.contains("on") ? "block" : "none";
+      $("#h-slow").style.display = r.timeScale < 0.97 && !$("#qpanel").classList.contains("on") ? "block" : "none"; $("#h-slow").textContent = r.queued ? "해설 듣는 중 · 슬로모션" : "생각 시간 · 슬로모션";
       let sdt = dt * r.timeScale * (r.auto ? WARP : 1);
       const n = Math.max(1, Math.ceil(sdt / (1 / 120) - 1e-4)), h = sdt / n;
       for (let i = 0; i < n && r.phase === "run"; i++) { sim.step(inp, h); inp.jump = false; handleEvents(); }
@@ -1429,11 +1792,10 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
 
   function handleEvents() { const sim = race.sim; for (const e of sim.events) handle(e); sim.events.length = 0; }
   function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); SV.spinVel = 540; } else { Snd.thud(); setExpr("Wrong", 2.2); CAM.shake = 0.5; } }
-  function markSigns(signs, lane, correctLane) { signs.forEach((p, i) => p.material.color.setHex(i === correctLane ? 0xB8FFD0 : i === lane ? 0xFF8A9A : 0x666688)); }
   function bossAnswer(ok) {
     const r = race; if (!r.bossMax) return;
-    if (ok) { r.bossHp = Math.max(0, r.bossHp - 1); updateBoss(); toast(r.bossHp === 0 ? "NULL 보호막 붕괴!" : "정확한 진단! NULL 보호막 " + r.bossHp + "/" + r.bossMax, "#2EE6D6", 1.8); }
-    else toast("오진! NULL이 반격합니다", "#FF4D6D", 1.6);
+    if (ok) { r.bossHp = Math.max(0, r.bossHp - 1); updateBoss(); world.bossHit(r.bossHp, r.bossMax); toast(r.bossHp === 0 ? "NULL 보호막 붕괴!" : "정확한 진단! NULL 보호막 " + r.bossHp + "/" + r.bossMax, "#2EE6D6", 1.8); }
+    else { toast("오진! NULL이 반격합니다", "#FF4D6D", 1.6); world.bossAttack(); }
   }
   function handle(e) {
     const r = race, sim = r.sim, S = NR.SE;
@@ -1441,25 +1803,25 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
       case S.Trigger: trigger(e.tag); break;
       case S.GateResult: {
         const q = bank.get(e.src.questionId); r.learn.answer(e.src.questionId, e.lane, sim.raceTime);
-        const g = world.gates.find(g => g.e === e.src); if (g) markSigns(g.signs, e.lane, e.src.correctLane);
+        world.gateResult(e.src, e.lane);
         feedback(e.correct); let extra = null;
         if (e.src.tag === "glia" && e.correct) { extra = "희소돌기아교세포가 수초를 재생했습니다. 전도 속도 회복!"; toast("수초 복구 완료!", "#5CFF9D"); }
         else if (e.src.tag === "ap") extra = "활동전위 단계 " + (e.src.index + 1) + "/4";
         if (e.src.tag === "boss") bossAnswer(e.correct);
-        showAnswer(q, e.lane, e.correct, extra, e.correct ? 7 : 11); r.pending = null; r.pendingLanes = null; break;
+        showAnswer(q, e.lane, e.correct, extra, e.correct ? 7 : 11); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
       case S.ForkChosen: {
         const q = bank.get(e.tag); r.learn.answer(e.tag, e.lane, sim.raceTime);
-        const fs = world.forkSigns.get(e.tag); if (fs) markSigns(fs.signs, e.lane, fs.seg.fork.correctLane);
+        world.forkResult(e.tag, e.lane);
         if (r.stage.boss) bossAnswer(e.correct); feedback(e.correct);
         showAnswer(q, e.lane, e.correct, e.correct ? "정답 경로: 지름길 + 신호 에너지 보너스!" : "복습 구간에 진입했습니다. 해설을 읽으며 천천히 이동하세요.", e.correct ? 7 : 12);
-        if (!e.correct) toast("복습 구간 - 속도 저하", "#FF8A3D", 2); r.pending = null; r.pendingLanes = null; break;
+        if (!e.correct) toast("복습 구간 - 속도 저하", "#FF8A3D", 2); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
-      case S.RingHit: { const ri = world.rings.find(x => x.e === e.src); if (ri) { ri.m.material = glowMat(0xffffff); ri.hit = 1; } Snd.coin(); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
-      case S.RingMiss: { const ri = world.rings.find(x => x.e === e.src); if (ri) ri.m.material = glowMat(0x553355, 0.5); if (sim.ringsTotal > 1) toast("결절을 놓쳤어요 - 연속 끊김", "#B4AEDB", 0.9); break; }
+      case S.RingHit: { world.ringHit(e.src, true); Snd.coin(); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
+      case S.RingMiss: { world.ringHit(e.src, false); if (sim.ringsTotal > 1) toast("결절을 놓쳤어요 - 연속 끊김", "#B4AEDB", 0.9); break; }
       case S.ObstacleHit: CAM.shake = 0.9; SV.shake = 0.4; setExpr("Hurt", 1.2); Snd.thud(); toast("NULL 충돌! 전도 지연", "#FF4D6D", 1.2); break;
       case S.OrbCollected: case S.RepairOrb: {
-        for (const grp of world.orbs) { const it = grp.items.find(x => x.e === e.src); if (it) { it.gone = true; break; } }
+        world.collect(e.src);
         if (e.type === S.OrbCollected) Snd.coin(); else { Snd.chime(); setExpr("Joy", 1); toast("수초 복구 " + sim.repairCount + "/3", "#5CFF9D", 1.4); } break;
       }
       case S.WallHit: CAM.shake = 0.35; Snd.thud(); setExpr("Surprise", 0.6); break;
@@ -1483,15 +1845,15 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
         break;
       case "banner": toast(arg === "soma" ? "세포체 - 입력 신호의 가중(통합)" : "축삭종말 접근 - 시냅스 소포 준비", "#2EE6D6", 2.2); break;
       case "codex": r.learn.codexSeen.add(arg); { const ce = codexById.get(arg); if (ce && !save.codexUnlocked.includes(arg)) toast("신경 도감 등록: " + ce.name, "#2EE6D6", 1.8); } break;
-      case "forkq": r.pending = arg; r.pendingLanes = r.forkSegByQ.get(arg) ? r.forkSegByQ.get(arg).fork.laneX : null; showQuestion(bank.get(arg), "갈림길! 정답 경로로 들어가세요" + thinkTag); Snd.beep(); break;
-      case "gateq": r.pending = arg; r.pendingLanes = findGate(arg); showQuestion(bank.get(arg), (arg === "ch1_gate_glia" ? "수초 복구 게이트" : r.stage.gateTitle) + thinkTag); Snd.beep(); break;
-      case "boss": if (arg === "attack") { toast("NULL 반격! 파동은 점프!", "#FF4D6D", 1.4); CAM.shake = 0.4; } break;
+      case "forkq": { const fs = r.forkSegByQ.get(arg); ask(arg, "갈림길! 정답 경로로 들어가세요" + thinkTag, fs ? fs.fork.laneX : null, fs ? { seg: fs, s: fs.length } : null); break; }
+      case "gateq": { const g = findGate(arg); ask(arg, (arg === "ch1_gate_glia" ? "수초 복구 게이트" : r.stage.gateTitle) + thinkTag, g ? g.e.laneX : null, g ? { seg: g.seg, s: g.e.s } : null); break; }
+      case "boss": if (arg === "attack") { world.bossAttack(); toast("NULL 반격! 파동은 점프!", "#FF4D6D", 1.4); CAM.shake = 0.4; } break;
       case "synapse": if (arg === "minigame") openMinigame(); else if (arg === "cross") toast("신경전달물질 다리 통과!", "#FF5CC8", 1.5); break;
     }
   }
   function finish() {
     const r = race; r.phase = "finish"; r.finishT = 0; show("#touch", false); show("#qpanel", false); countdown("GOAL!"); Snd.chime();
-    setBase("Victory"); setExpr("Victory", 99); SV.victory = true; CAM.showcase = 3.2; Voice.say("골인! 신경 신호 전달 성공!", true);
+    setBase("Victory"); setExpr("Victory", 99); SV.victory = true; CAM.showcase = 3.2; Voice.say(pickOne(["골인! 신호 전달 성공!", "도착! 우리가 해냈어!", "골인! 신경 신호 무사히 도착!"]));
   }
 
   //================== SYNAPSE MINIGAME (GameUI.Minigame.cs) ==================
@@ -1502,7 +1864,7 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
     if (r.auto) { done(true, 0, qe.answer); return; }
     show("#mini", true); let next = 0, mistakes = 0;
     const order = qo.options.map((_, i) => i).sort(() => Math.random() - 0.5);
-    $("#mg-prompt").textContent = qo.question; Voice.say(qo.question, true);
+    $("#mg-prompt").textContent = qo.question; Voice.say("시냅스 게이트야! " + qo.question + " 순서대로 눌러 줘.");
     $("#mg-slots").innerHTML = qo.options.map((_, i) => `<li>${i + 1}. ?</li>`).join("");
     $("#mg-ves").innerHTML = "<i></i>".repeat(7); $("#mg-ca").style.opacity = 0.3; $("#mg-fb").textContent = "";
     const btns = $("#mg-btns"); btns.innerHTML = order.map(i => `<button data-i="${i}">${esc(qo.options[i])}</button>`).join("");
@@ -1517,11 +1879,11 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
     function phase2() {
       $("#mg-fb").textContent = "전달 순서 완성! " + (mistakes === 0 ? "완벽해요!" : "실수 " + mistakes + "회"); Snd.chime();
       setTimeout(() => {
-        $("#mg-prompt").textContent = qe.question; Voice.say(qe.question + " " + qe.options.map((o, i) => LETTER(i) + ". " + o).join(". "), true);
+        $("#mg-prompt").textContent = qe.question; Voice.say("좋아, 마지막 문제! " + qe.question + " " + qe.options.map(o => optSpeech(o)).join(", 아니면 ") + "?");
         btns.innerHTML = qe.options.map((o, i) => `<button data-i="${i}"><b>${LETTER(i)}</b>. ${esc(o)}</button>`).join("");
         btns.querySelectorAll("button").forEach(b => b.addEventListener("pointerup", () => {
           const ch = +b.dataset.i, ok = ch === qe.answer, success = mistakes <= 1 && ok;
-          $("#mg-fb").textContent = (ok ? "정답! " : "오답… 정답은 " + qe.options[qe.answer] + ". ") + qe.explanation; Voice.say((ok ? "정답이야! " : "아쉬워! ") + qe.explanation, true);
+          $("#mg-fb").textContent = (ok ? "정답! " : "오답… 정답은 " + qe.options[qe.answer] + ". ") + qe.explanation; Voice.say((ok ? "딩동댕! " : "아깝다! ") + qe.explanation);
           btns.innerHTML = `<button class="primary" id="mg-go">${success ? "시냅스 연결 성공! 계속 달리기 ▶" : "계속 달리기 ▶"}</button>`;
           $("#mg-go").addEventListener("pointerup", () => { show("#mini", false); done(success, mistakes, ch); });
         }));
@@ -1549,7 +1911,7 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
     $("#r-wrong").innerHTML = wrong.length ? `<div class="grade">복습할 문제 ${wrong.length}개 (오답 노트에 저장됨)</div>` + wrong.map(q => `<div class="entry"><b>${esc(q.question)}</b><br><span class="ok">정답: ${esc(q.options[q.answer])}</span><br>${esc(q.explanation)}</div>`).join("") : `<div class="grade">모든 문제를 맞혔어요! 완벽한 신호 전달 ★</div>`;
     const idx = NR.STAGES.indexOf(r.stage); $("#result [data-act=next]").style.display = idx < NR.STAGES.length - 1 ? "" : "none";
     show("#hud", false); show("#result", true); Snd.play("menu");
-    Voice.say(acc === 100 ? "완벽해! 모든 문제를 맞혔어!" : "완주했어! 틀린 문제는 오답 노트에서 다시 보자!", true);
+    Voice.say(acc === 100 ? "완벽해! 문제를 전부 맞혔어!" : "완주 성공! 틀린 문제는 오답 노트에서 같이 다시 보자.");
     window.__nrResult = { stage: r.stage.id, time: t, correct: L.correct, total: L.total, coins: sim.coins };
   }
 
@@ -1588,21 +1950,30 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
   function renderSettings(el, compact) {
     const rows = [
       ["별 음성 안내", "STAR-01이 문제·해설을 읽어 줘요" + (Voice.ok ? "" : " (이 브라우저는 미지원)"), "voiceOn", [[true, "켜기"], [false, "끄기"]]],
+      ["목소리 톤", "", "voicePitch", [[1.0, "차분하게"], [1.12, "밝게"], [1.28, "귀엽게"]]],
+      ["말 속도", "", "voiceRate", [[0.95, "천천히"], [1.05, "보통"], [1.18, "빠르게"]]],
       ["배경 음악", "", "musicOn", [[true, "켜기"], [false, "끄기"]]],
       ["효과음", "", "sfxOn", [[true, "켜기"], [false, "끄기"]]],
       ["문제 생각 시간", "문제가 뜨면 레이스가 느려져요 (기록 손해 없음)", "thinkSlow", [[0.25, "아주 느리게"], [0.4, "느리게"], [0.6, "조금"], [1, "끄기"]]],
       ["도움말 힌트", "", "showHints", [[true, "켜기"], [false, "끄기"]]],
       ["그래픽 품질", "버벅이면 '가볍게'", "quality", [["low", "가볍게"], ["auto", "자동"], ["high", "선명"]]],
     ];
-    el.innerHTML = rows.map(([t, d, k, opts]) => `<div class="set"><div>${t}${d ? `<small>${d}</small>` : ""}</div><div class="opts">${opts.map(([v, l]) => `<button data-k="${k}" data-v='${JSON.stringify(v)}' class="${save[k] === v ? "on" : ""}">${l}</button>`).join("")}</div></div>`).join("") + (compact ? "" : `<div class="set"><div>기록 초기화<small>최고 기록·도감·오답 노트를 지워요</small></div><div class="opts"><button data-reset="1">초기화</button></div></div>`);
+    el.innerHTML = rows.map(([t, d, k, opts]) => `<div class="set"><div>${t}${d ? `<small>${d}</small>` : ""}</div><div class="opts">${opts.map(([v, l]) => `<button data-k="${k}" data-v='${JSON.stringify(v)}' class="${save[k] === v ? "on" : ""}">${l}</button>`).join("")}</div></div>`).join("") + (compact ? "" : voiceRow()) + (compact ? "" : `<div class="set"><div>기록 초기화<small>최고 기록·도감·오답 노트를 지워요</small></div><div class="opts"><button data-reset="1">초기화</button></div></div>`);
     el.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => {
       const k = b.dataset.k, v = JSON.parse(b.dataset.v); save[k] = v; persist();
       if (k === "musicOn") Snd.setMusic(v); if (k === "sfxOn" && Snd.sfx) Snd.sfx.gain.value = v ? 0.5 : 0;
-      if (k === "quality") renderer.setPixelRatio(dprCap()), resize();
-      if (k === "voiceOn" && v) Voice.say("안녕! 내가 읽어 줄게!", true); if (k === "voiceOn" && !v) Voice.stop();
+      if (k === "quality") { renderer.setPixelRatio(dprCap()); setupPost(); resize(); if (!race) { if (world) world.dispose(scene); world = null; menuScene(); } }
+      if ((k === "voiceOn" && v) || k === "voicePitch" || k === "voiceRate") Voice.say("안녕! 나는 스타 제로원이야. 이렇게 읽어 줄게!"); if (k === "voiceOn" && !v) Voice.stop();
       renderSettings(el, compact);
     }));
+    const vs = el.querySelector("#voice-sel"); if (vs) vs.addEventListener("change", () => { save.voiceURI = vs.value; persist(); Voice.pick(); Voice.say("안녕! 이 목소리 어때?"); });
+    const vp = el.querySelector("#voice-try"); if (vp) vp.addEventListener("click", () => Voice.say("안녕! 나는 스타 제로원! 같이 신경계를 달려 보자!"));
     const rs = el.querySelector("[data-reset]"); if (rs) rs.addEventListener("click", () => { if (confirm("기록을 모두 지울까요?")) { save.best = {}; save.wrongNotes = []; save.codexUnlocked = []; persist(); renderSettings(el, compact); } });
+  }
+  function voiceRow() {
+    Voice.pick(); const L = Voice.list;
+    const opts = L.length ? L.map(v => `<option value="${esc(v.voiceURI)}"${Voice.voice && v.voiceURI === Voice.voice.voiceURI ? " selected" : ""}>${esc(v.name)}</option>`).join("") : `<option>한국어 음성을 찾지 못했어요</option>`;
+    return `<div class="set voice-set"><div>STAR-01 목소리<small>iPad에서 더 자연스러운 목소리: 설정 › 손쉬운 사용 › 읽기 및 말하기 › 음성 › 한국어 › '유나(프리미엄)' 또는 '향상됨' 음성을 내려받은 뒤 여기서 고르세요.</small></div><div class="opts"><select id="voice-sel">${opts}</select><button id="voice-try">▶ 들어보기</button></div></div>`;
   }
   function goTitle() { race = null; Voice.stop(); show("#hud", false); show("#touch", false); show("#result", false); show("#pause", false); show("#qpanel", false); show("#apanel", false); show("#mini", false); show("#dialog", false); screen("title"); menuScene(); Snd.play("menu"); }
   document.addEventListener("click", ev => {
@@ -1643,27 +2014,37 @@ function buildStar(){const root=new THREE.Group(),body=new THREE.Group();root.ad
   let last = performance.now(), tAll = 0;
   function frame(now) {
     requestAnimationFrame(frame);
-    const dt = Math.min(0.1, (now - last) / 1000); last = now; tAll += dt; roadMat.uniforms.uTime.value = tAll;
+    const dt = Math.min(0.1, (now - last) / 1000); last = now; tAll += dt; NRW.U.uTime.value = tAll;
     if (race) tickRace(dt); else tickMenu(dt);
-    if (world) {
-      for (const g of world.orbs) { const m4 = new THREE.Matrix4(), q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, tAll * 2.5, 0.4)), one = new THREE.Vector3(1, 1, 1), zero = new THREE.Vector3(0, 0, 0); for (const it of g.items) { m4.compose(it.p, q, it.gone ? zero : one); g.im.setMatrixAt(it.i, m4); } g.im.instanceMatrix.needsUpdate = true; }
-      for (const o of world.obstacles) if (o.pulse) o.m.material.opacity = 0.5 + 0.35 * Math.sin(tAll * 8);
-      for (const a of world.animated) a.rotation.y += dt * 0.1;
-    }
-    renderer.render(scene, camera);
+    NRW.U.uStar.value.copy(star.root.position);
+    if (world) world.update(dt, tAll, race ? race.sim : null);
+    if (composer) composer.render(); else renderer.render(scene, camera);
   }
 
   // boot
-  window.NR_APP = { startStage, get race() { return race; }, save };
+  window.NR_APP = { startStage, get race() { return race; }, save, cam: CAM };
   function boot() {
     if (boot.done) return; boot.done = true;
-    renderStages(); menuScene(); screen("title");
+    setupPost(); renderStages(); menuScene(); screen("title");
     $("#loading").classList.add("off");
     Snd.want = "menu";
     requestAnimationFrame(frame);
     const m = HASH.match(/stage=(ch\d)/); if (AUTO || m) setTimeout(() => startStage(m ? m[1] : "ch1"), 300);
   }
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(boot); setTimeout(boot, 2500);
-})();
+};
 
 </script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+window.THREE = THREE;
+window.THREE_PP = { EffectComposer, RenderPass, UnrealBloomPass, OutputPass };
+window.NRW_INIT();
+window.NR_MAIN();
+</script>
+<script>setTimeout(function(){if(!window.THREE){var l=document.getElementById("loading");if(l)l.textContent="3D 엔진을 불러오지 못했어요. 인터넷 연결을 확인하고 새로고침해 주세요.";}},15000);</script>

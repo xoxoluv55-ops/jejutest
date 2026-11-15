@@ -2,14 +2,14 @@
 // of the pure-C# Core); this file is the view: three.js world, STAR-01, DOM UI, touch, WebAudio music,
 // speechSynthesis voice, slow-motion thinking time and localStorage saves.
 "use strict";
-(function () {
+window.NR_MAIN = function () {
   const C = window.NR_CONTENT, $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
   const bank = new NR.Bank(C.questions), codexById = new Map(C.codex.map(c => [c.id, c]));
   const HASH = location.hash || "", AUTO = /auto/.test(HASH), WARP = (HASH.match(/warp=(\d+)/) || [])[1] | 0 || 1;
 
   //================== SAVE ==================
   const SAVE_KEY = "nerverunner_web_v1";
-  const save = Object.assign({ voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
+  const save = Object.assign({ voiceRate: 1.05, voicePitch: 1.12, voiceURI: "", voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } };
 
   //================== AUDIO (NRMusic.cs port + simple SFX) ==================
@@ -90,31 +90,63 @@
     setHum(v, boost) { if (this.humGain) { this.humGain.gain.setTargetAtTime(v * 0.09, this.ctx.currentTime, 0.1); this.hum.frequency.setTargetAtTime(60 + v * 90 + (boost ? 40 : 0), this.ctx.currentTime, 0.1); } },
   };
 
-  //================== VOICE (StarVoice.cs port: device ko-KR speech) ==================
+  //================== VOICE: device Korean TTS, best voice first, natural phrasing, queued ==================
+  // Instagram-style neural voices need a cloud TTS service; here we use the best voice installed on
+  // the device (iPad: "유나/Yuna (프리미엄·향상됨)" etc.) and speak in short natural sentences.
   const Voice = {
-    ok: "speechSynthesis" in window, voice: null, until: 0, star: false,
-    pick() { if (!this.ok) return; const vs = speechSynthesis.getVoices(); this.voice = vs.find(v => /^ko/i.test(v.lang) && /yuna|유나|sora|google/i.test(v.name)) || vs.find(v => /^ko/i.test(v.lang)) || null; },
+    ok: "speechSynthesis" in window, list: [], voice: null, q: [], cur: null, star: true, timer: 0,
+    rank(v) {
+      const n = v.name; let s = 0;
+      if (/premium|프리미엄/i.test(n)) s += 60; if (/enhanced|향상|고품질|neural|natural|online/i.test(n)) s += 45; if (/google/i.test(n)) s += 30;
+      if (/yuna|유나/i.test(n)) s += 12; if (/sora|소라|jian|지안|suhyun|수현|minsu|민수|heami|sunhi|선희/i.test(n)) s += 8;
+      if (/compact|eloquence|grandma|grandpa|rocko|shelley|sandy|reed|flo|eddy|할머니|할아버지/i.test(n)) s -= 40; return s;
+    },
+    pick() {
+      if (!this.ok) return; this.list = speechSynthesis.getVoices().filter(v => /^ko/i.test(v.lang)).sort((a, b) => this.rank(b) - this.rank(a));
+      this.voice = this.list.find(v => v.voiceURI === save.voiceURI) || this.list[0] || null;
+    },
     unlock() { if (!this.ok || this.unlocked) return; this.unlocked = true; try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) { } },
     clean(t) {
-      let s = String(t).replace(/<[^>]+>/g, "");
-      [["Na+-K+", "나트륨 칼륨"], ["3Na+", "나트륨 이온 3개"], ["2K+", "칼륨 이온 2개"], ["Na+", "나트륨 이온"], ["K+", "칼륨 이온"], ["Ca2+", "칼슘 이온"], ["Cl-", "염화 이온"], ["-70mV", "마이너스 70 밀리볼트"], ["-55mV", "마이너스 55 밀리볼트"], ["+30mV", "플러스 30 밀리볼트"], ["mV", " 밀리볼트"], ["μm", " 마이크로미터"], ["mm", " 밀리미터"], ["→", ", "], ["·", ", "], ["/", ", "], ["~", "에서 "], ["(", ", "], [")", ", "], ["\n", ". "]].forEach(([a, b]) => { s = s.split(a).join(b); });
+      let s = String(t).replace(/<[^>]+>/g, "").replace(/\s*\([A-Za-z0-9 ,.'\-+/&]+\)/g, "");
+      [["STAR-01", "스타 제로원"], ["NULL", "널"], ["Na+-K+", "나트륨 칼륨"], ["3Na+", "나트륨 이온 세 개"], ["2K+", "칼륨 이온 두 개"], ["Na+", "나트륨 이온"], ["K+", "칼륨 이온"], ["Ca2+", "칼슘 이온"], ["Cl-", "염소 이온"], ["-70mV", "마이너스 70 밀리볼트"], ["-55mV", "마이너스 55 밀리볼트"], ["+30mV", "플러스 30 밀리볼트"], ["mV", " 밀리볼트"], ["μm", " 마이크로미터"], ["mm", " 밀리미터"], ["→", ", 그다음 "], ["·", ", "], ["/", ", "], ["~", "에서 "], ["(", ", "], [")", ", "], ["\n", ". "], ["...", ". "], ["…", ". "]].forEach(([a, b]) => { s = s.split(a).join(b); });
       const R = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
       s = s.replace(/(^|[^A-Za-z])(XII|XI|X|IX|VIII|VII|VI|V|IV|III|II|I)(?=\s?[가-힣])/g, (m, p, r) => p + (R.indexOf(r) + 1) + "번 ");
-      return s.replace(/\s+/g, " ").trim();
+      return s.replace(/\s*,\s*([,.!?])/g, "$1").replace(/\s+/g, " ").trim();
     },
-    say(text, isStar = true) {
-      if (!save.voiceOn || !text) return; const s = this.clean(text); if (!s) return;
-      this.star = isStar; this.until = performance.now() / 1000 + Math.min(14, Math.max(0.8, 0.4 + s.length * 0.09));
+    chunks(s) {   // short sentences sound far more natural than one long utterance (and iOS cuts long ones)
+      const out = []; for (let part of s.match(/[^.!?。]+[.!?。]?/g) || [s]) { part = part.trim(); if (!part) continue;
+        while (part.length > 110) { const k = part.lastIndexOf(",", 100); const cut = k > 30 ? k + 1 : 100; out.push(part.slice(0, cut)); part = part.slice(cut).trim(); }
+        if (part) out.push(part); }
+      return out;
+    },
+    // mode: "replace" (stop what is being said), "queue" (after it), "idle" (only if silent)
+    say(text, o = {}) {
+      if (!save.voiceOn || !text) return false; const mode = o.mode || "replace";
+      if (mode === "idle" && this.talking) return false;
+      if (mode === "replace") this.stop();
+      for (const c of this.chunks(this.clean(text))) this.q.push({ text: c, star: o.star !== false, tag: o.tag || null });
+      if (!this.cur) this.next(); return true;
+    },
+    next() {
+      clearTimeout(this.timer); const c = this.q.shift(); this.cur = c || null; if (!c) return;
+      this.star = c.star; const est = 0.6 + c.text.length * 0.2 / (save.voiceRate || 1); c.end = performance.now() / 1000 + est;
+      const done = () => { if (this.cur === c) { this.cur = null; setTimeout(() => { if (!this.cur) this.next(); }, 140); } };
+      this.timer = setTimeout(done, (est + 2.5) * 1000);     // fallback: some engines never fire onend
       if (!this.ok) return;
       try {
-        speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(s); u.lang = "ko-KR"; if (this.voice) u.voice = this.voice;
-        u.rate = 1.08; u.pitch = isStar ? 1.45 : 1.0; u.onend = () => { this.until = 0; }; speechSynthesis.speak(u);
+        const u = new SpeechSynthesisUtterance(c.text); u.lang = "ko-KR"; if (this.voice) u.voice = this.voice;
+        u.rate = save.voiceRate || 1.05; u.pitch = c.star ? (save.voicePitch || 1.12) : 0.95; u.onend = done; u.onerror = done; speechSynthesis.speak(u);
       } catch (e) { }
     },
-    stop() { this.until = 0; if (this.ok) try { speechSynthesis.cancel(); } catch (e) { } },
-    get talking() { return performance.now() / 1000 < this.until; },
+    stop() { this.q.length = 0; this.cur = null; clearTimeout(this.timer); if (this.ok) try { speechSynthesis.cancel(); } catch (e) { } },
+    get talking() { return !!this.cur || this.q.length > 0; },
+    has(tag) { return (this.cur && this.cur.tag === tag) || this.q.some(c => c.tag === tag); },
+    remaining(tag) { const now = performance.now() / 1000; let t = this.cur && (!tag || this.cur.tag === tag) ? Math.max(0, this.cur.end - now) : 0; for (const c of this.q) if (!tag || c.tag === tag) t += 0.6 + c.text.length * 0.2 / (save.voiceRate || 1); return t; },
   };
   if (Voice.ok) { Voice.pick(); speechSynthesis.onvoiceschanged = () => Voice.pick(); }
+  const pickOne = a => a[(Math.random() * a.length) | 0];
+  const hasBatchim = w => { const c = w.trim().replace(/[^가-힣]+$/, "").slice(-1).charCodeAt(0); return c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0; };
+  const optSpeech = o => Voice.clean(o).replace(/[,.\s]+$/, "");
   const firstTouch = () => { Snd.unlock(); Voice.unlock(); };
   window.addEventListener("pointerdown", firstTouch, { capture: true });
   window.addEventListener("keydown", firstTouch, { capture: true });
@@ -123,220 +155,28 @@
   const canvas = $("#gl"), dprCap = () => save.quality === "low" ? 1 : save.quality === "high" ? 2 : Math.min(devicePixelRatio || 1, 1.6);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(dprCap());
-  const scene = new THREE.Scene(), BG = new THREE.Color(0x0B0A24);
-  scene.background = BG; scene.fog = new THREE.Fog(0x0B0A24, 70, 380);
+  const scene = new THREE.Scene(), BG = new THREE.Color(0x0A0724);
+  scene.background = BG; scene.fog = new THREE.Fog(0x0A0724, 40, 340);
   const camera = new THREE.PerspectiveCamera(62, 1, 0.2, 1400);
   scene.add(new THREE.HemisphereLight(0xC9B8FF, 0x2A1640, 1.4));
   const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(-0.4, 0.8, -0.5); scene.add(sun);
+  let composer = null;
   function resize() {
     const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h;
+    if (composer) { composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h); }
     camera.updateProjectionMatrix(); $("#rotate").classList.toggle("need", h > w);
   }
   addEventListener("resize", resize); resize();
 
-  // Unity (left-handed) -> three (right-handed): mirror X
-  const M = v => new THREE.Vector3(-v.x, v.y, v.z);
-  const col = h => new THREE.Color(h);
-  const ZCOL = { 0: 0x37D8FF, 1: 0xFF5CC8, 2: 0x5CFF9D, 3: 0xFF8A3D, 4: 0xFFB627, 5: 0xFF4D6D, 6: 0x9B5CFF };
-  const THEME = { spinal: 0x6CFF8A, tract: 0xFF5CC8, brainstem: 0xFF7A3D, cerebellum: 0xFF8FD0, diencephalon: 0x7C9CFF, cranial: 0xFFD34D, frontal: 0x4D8DFF, parietal: 0x5CFF9D, temporal: 0xFFB627, occipital: 0xFF5CC8, boss: 0xFF4DA6 };
-  const segColor = seg => seg.zone === NR.ZONE.Normal && THEME[seg.theme] ? THEME[seg.theme] : ZCOL[seg.zone];
-
-  const fogU = { fogColor: { value: BG }, fogNear: { value: 70 }, fogFar: { value: 380 } };
-  const roadMat = new THREE.ShaderMaterial({
-    uniforms: Object.assign({ uTime: { value: 0 } }, fogU), side: THREE.DoubleSide,
-    vertexShader: `attribute vec3 color;varying vec2 vUv;varying vec3 vCol;varying float vD;void main(){vUv=uv;vCol=color;vec4 mv=modelViewMatrix*vec4(position,1.);vD=-mv.z;gl_Position=projectionMatrix*mv;}`,
-    fragmentShader: `uniform float uTime;uniform vec3 fogColor;uniform float fogNear,fogFar;varying vec2 vUv;varying vec3 vCol;varying float vD;
-      void main(){float u=abs(vUv.x);vec3 c=vec3(.07,.055,.17)+vCol*.05;
-       float edge=smoothstep(.84,.98,u);c+=vCol*edge*1.25;
-       float dash=step(u,.025)*step(fract(vUv.y/9.),.5);c+=vec3(.9,.9,1.)*dash*.35;
-       float pulse=smoothstep(.85,1.,fract(vUv.y/24.-uTime*.6));c+=vCol*pulse*(1.-u)*.22;
-       float hex=smoothstep(.93,1.,abs(sin(vUv.y*.5+vUv.x*3.))*abs(sin(vUv.x*9.)));c+=vCol*hex*.10;
-       float f=smoothstep(fogNear,fogFar,vD);gl_FragColor=vec4(mix(c,fogColor,f),1.);}`,
-  });
-  const glowMat = (c, op = 0.85) => new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: true });
-
-  //================== LABEL TEXTURES ==================
-  function labelTex(lines, opts = {}) {
-    const W = opts.w || 512, H = opts.h || 256, c = document.createElement("canvas"); c.width = W; c.height = H; const x = c.getContext("2d");
-    x.fillStyle = opts.bg || "rgba(20,15,56,0.92)"; const r = 36; x.beginPath(); x.roundRect ? x.roundRect(6, 6, W - 12, H - 12, r) : x.rect(6, 6, W - 12, H - 12); x.fill();
-    x.lineWidth = 10; x.strokeStyle = opts.border || "#FF5CC8"; x.stroke();
-    x.textAlign = "center"; x.textBaseline = "middle"; let y = opts.big ? H * 0.36 : H / 2 - (lines.length - 1) * 30;
-    lines.forEach((l, i) => {
-      const big = opts.big && i === 0; x.fillStyle = big ? (opts.bigColor || "#2EE6D6") : "#F2F0FF";
-      let size = big ? 120 : 52; x.font = `${big ? "" : "bold "}${size}px Jua, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif`;
-      while (x.measureText(l).width > W - 50 && size > 22) { size -= 2; x.font = `bold ${size}px Jua, "Apple SD Gothic Neo", sans-serif`; }
-      x.fillText(l, W / 2, y); y += big ? H * 0.38 : 62;
-    });
-    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
-  }
-  const short = (s, n = 16) => s.length > n ? s.slice(0, n - 1) + "…" : s;
-
-  //================== WORLD ==================
+  const { M, frameAt, LANE, HEXS } = NRW; const LETTER = i => String.fromCharCode(65 + i);
   let world = null;
-  function disposeWorld() {
-    if (!world) return; scene.remove(world.root);
-    world.root.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material !== roadMat) { (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m.map) m.map.dispose(); m.dispose(); }); } });
-    world = null;
-  }
+  function buildWorld(stage, graph) { if (world) world.dispose(scene); world = NRW.build(scene, stage, graph, bank, save.quality); return world; }
 
-  function ribbon(seg, s0, s1, step, fn) { // fn(s) -> [left vec3 (unity), right vec3]; returns BufferGeometry with uv(u=-1..1, v=s)
-    const pos = [], uv = [], idx = []; let k = 0;
-    for (let s = s0; ; s = Math.min(s1, s + step)) {
-      const [a, b] = fn(s), A = M(a), B = M(b); pos.push(A.x, A.y, A.z, B.x, B.y, B.z); uv.push(-1, s, 1, s);
-      if (k > 0) { const i = k * 2; idx.push(i - 2, i - 1, i, i - 1, i + 1, i); } k++;
-      if (s >= s1) break;
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); return g;
-  }
-  function paint(g, c) { const n = g.attributes.position.count, a = new Float32Array(n * 3), cc = col(c); for (let i = 0; i < n; i++) { a[i * 3] = cc.r; a[i * 3 + 1] = cc.g; a[i * 3 + 2] = cc.b; } g.setAttribute("color", new THREE.BufferAttribute(a, 3)); return g; }
-
-  function frameAt(seg, s, x = 0, y = 0) { // three-space position + quaternion facing along the road
-    const p = M(seg.worldPos(s, x, y)), f = M(seg.tangentAt(s)), up = new THREE.Vector3(0, 1, 0);
-    const z = f.clone().negate(), xa = new THREE.Vector3().crossVectors(up, z).normalize(), ya = new THREE.Vector3().crossVectors(z, xa);
-    const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(xa, ya, z)); return { p, q, f };
-  }
-
-  function buildWorld(stage, graph) {
-    disposeWorld();
-    const root = new THREE.Group(); scene.add(root);
-    const W = { root, graph, stage, orbs: [], rings: [], obstacles: [], gates: [], forkSigns: new Map(), animated: [], bounds: new THREE.Box3() };
-    const geomByCol = new Map();
-    for (const seg of graph.segments) {
-      const c = segColor(seg), hw = seg.halfWidth, yo = (seg.zone === NR.ZONE.Review || seg.zone === NR.ZONE.Shortcut) ? 0.02 * (seg.id % 4) : 0;
-      const road = paint(ribbon(seg, 0, seg.length, 2, s => [seg.worldPos(s, -hw, yo), seg.worldPos(s, hw, yo)]), c);
-      const m = new THREE.Mesh(road, roadMat); root.add(m); road.computeBoundingBox(); W.bounds.union(road.boundingBox);
-      for (const side of [-1, 1]) {
-        const rail = ribbon(seg, 0, seg.length, 3, s => [seg.worldPos(s, side * (hw + 0.1), yo), seg.worldPos(s, side * (hw + 0.1), yo + 0.55)]);
-        if (!geomByCol.has(c)) geomByCol.set(c, []); geomByCol.get(c).push(rail);
-      }
-      if (seg.zone === NR.ZONE.Myelin || seg.zone === NR.ZONE.Damaged) buildSheath(W, seg);
-      if (seg.zone === NR.ZONE.Synapse) buildCleft(W, seg);
-      if (seg.fork) buildForkSigns(W, seg);
-      for (const e of seg.events) buildEvent(W, seg, e);
-    }
-    for (const [c, list] of geomByCol) for (const g of list) root.add(new THREE.Mesh(g, glowMat(c, 0.9)));
-    buildOrbs(W); buildBackdrop(W, stage);
-    world = W; return W;
-  }
-
-  function buildSheath(W, seg) {
-    const hw = seg.halfWidth, R = hw + 1.4, dmg = seg.zone === NR.ZONE.Damaged;
-    const nodes = seg.events.filter(e => e.type === NR.EV.NodeRing).map(e => e.s);
-    const cuts = nodes.length ? nodes : (() => { const a = []; for (let s = 40; s < seg.length - 20; s += 55) a.push(s); return a; })();
-    const sheathMat = new THREE.MeshLambertMaterial({ color: dmg ? 0x8a3048 : 0xFFD98A, emissive: dmg ? 0x300010 : 0x5a3a08, transparent: true, opacity: dmg ? 0.5 : 0.42, side: THREE.DoubleSide, depthWrite: false });
-    const nodeMat = glowMat(dmg ? 0xFF4D6D : 0x2EE6D6, 0.9);
-    let prev = 2, k = 0;
-    for (const sN of cuts.concat([seg.length - 2])) {
-      const a = prev + 3.5, b = sN - 3.5; prev = sN; k++;
-      if (b - a > 6) {
-        const A0 = dmg ? (k % 3) * 0.6 : 0, A1 = dmg ? Math.PI - ((k + 1) % 3) * 0.6 : Math.PI; const n = 16, pos = [], idx = []; let rows = 0;
-        for (let s = a; ; s = Math.min(b, s + 3)) {
-          for (let i = 0; i <= n; i++) { const t = A0 + (A1 - A0) * i / n, v = M(seg.worldPos(s, -Math.cos(t) * R, Math.sin(t) * R * 0.9 - 0.3)); pos.push(v.x, v.y, v.z); }
-          if (rows > 0) for (let i = 0; i < n; i++) { const r0 = (rows - 1) * (n + 1) + i, r1 = rows * (n + 1) + i; idx.push(r0, r1, r0 + 1, r0 + 1, r1, r1 + 1); }
-          rows++; if (s >= b) break;
-        }
-        const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
-        W.root.add(new THREE.Mesh(g, sheathMat));
-      }
-      if (sN < seg.length - 3) { // node of Ranvier: glowing band around the bare axon
-        const fr = frameAt(seg, sN, 0, -0.3), ring = new THREE.Mesh(new THREE.TorusGeometry(R, 0.18, 6, 40, Math.PI), nodeMat);
-        ring.position.copy(fr.p); ring.quaternion.copy(fr.q); W.root.add(ring);
-      }
-    }
-  }
-  function buildCleft(W, seg) {
-    const g = new THREE.BufferGeometry(), n = 260, p = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { const v = M(seg.worldPos(Math.random() * seg.length, (Math.random() * 2 - 1) * 10, Math.random() * 7 - 1)); p.set([v.x, v.y, v.z], i * 3); }
-    g.setAttribute("position", new THREE.BufferAttribute(p, 3));
-    W.root.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0xFF5CC8, size: 0.5, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false })));
-  }
-
-  function panel(tex, w, h) { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, fog: false })); return m; }
-  function placeFacing(obj, seg, s, x, y) { const fr = frameAt(seg, s, x, y); obj.position.copy(fr.p); obj.quaternion.copy(fr.q); return obj; }
-  const LETTER = i => String.fromCharCode(65 + i);
-
-  function buildForkSigns(W, seg) {
-    const q = bank.get(seg.fork.questionId), signs = [];
-    seg.fork.laneX.forEach((lx, i) => {
-      const tex = labelTex([LETTER(i), short(q.options[i], 14)], { big: true, border: "#FF5CC8" });
-      const p = panel(tex, 4.6, 2.3); placeFacing(p, seg, seg.length - 18, lx, 4.2); W.root.add(p); signs.push(p);
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.15, 3.2, 0.15), glowMat(0xFF5CC8)); placeFacing(post, seg, seg.length - 18, lx, 1.5); W.root.add(post);
-    });
-    // lane dividers on the last 140 m
-    const lx = seg.fork.laneX; for (let i = 0; i < lx.length - 1; i++) {
-      const mid = (lx[i] + lx[i + 1]) / 2, g = ribbon(seg, Math.max(0, seg.length - 140), seg.length, 3, s => [seg.worldPos(s, mid - 0.12, 0.03), seg.worldPos(s, mid + 0.12, 0.03)]);
-      W.root.add(new THREE.Mesh(g, glowMat(0xFF5CC8, 0.8)));
-    }
-    W.forkSigns.set(seg.fork.questionId, { seg, signs, q });
-  }
-
-  function buildEvent(W, seg, e) {
-    const E = NR.EV;
-    if (e.type === E.Gate) {
-      const q = bank.get(e.questionId), boss = e.tag === "boss", gc = boss ? 0xFF4DA6 : e.tag === "glia" ? 0x5CFF9D : 0x9B5CFF;
-      const hw = seg.halfWidth, grp = new THREE.Group(), mat = glowMat(gc);
-      const post = (x) => { const m = new THREE.Mesh(new THREE.BoxGeometry(0.4, 6, 0.4), mat); m.position.set(x, 3, 0); grp.add(m); };
-      post(-(hw + 0.3)); post(hw + 0.3); const beam = new THREE.Mesh(new THREE.BoxGeometry(2 * hw + 1, 0.4, 0.4), mat); beam.position.y = 6; grp.add(beam);
-      placeFacing(grp, seg, e.s, 0, 0); W.root.add(grp);
-      const signs = [];
-      e.laneX.forEach((lx, i) => {
-        const p = panel(labelTex([LETTER(i), short(q ? q.options[i] : "", 14)], { big: true, border: boss ? "#FF4DA6" : "#9B5CFF" }), Math.min(5.4, Math.abs(e.laneX[1] - e.laneX[0]) * 0.92), 2.6);
-        placeFacing(p, seg, e.s - 0.4, lx, 4.2); W.root.add(p); signs.push(p);
-      });
-      for (let i = 0; i < e.laneX.length - 1; i++) {
-        const mid = (e.laneX[i] + e.laneX[i + 1]) / 2, g = ribbon(seg, Math.max(0, e.s - 90), e.s, 3, s => [seg.worldPos(s, mid - 0.12, 0.03), seg.worldPos(s, mid + 0.12, 0.03)]);
-        W.root.add(new THREE.Mesh(g, glowMat(gc, 0.8)));
-      }
-      W.gates.push({ e, signs, grp });
-    } else if (e.type === E.NodeRing) {
-      const m = new THREE.Mesh(new THREE.TorusGeometry(1.7, 0.16, 8, 32), glowMat(0x2EE6D6)); placeFacing(m, seg, e.s, e.x, NR.Sim.HOVER); W.root.add(m); W.rings.push({ e, m });
-    } else if (e.type === E.Obstacle) {
-      const pulse = e.width >= seg.halfWidth, w = Math.min(e.width, seg.halfWidth * 2);
-      const m = pulse ? new THREE.Mesh(new THREE.BoxGeometry(w, e.height * 0.8, 0.5), glowMat(0xFF4D6D, 0.75))
-        : new THREE.Mesh(new THREE.BoxGeometry(e.width, e.height + 0.4, 1.4), new THREE.MeshLambertMaterial({ color: 0x3a0a20, emissive: 0xC0204a }));
-      placeFacing(m, seg, e.s, e.x, pulse ? e.height * 0.4 : (e.height + 0.4) / 2); W.root.add(m); W.obstacles.push({ e, m, pulse });
-      if (!pulse) { const w2 = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), new THREE.LineBasicMaterial({ color: 0xFF9AB0 })); m.add(w2); }
-    } else if (e.type === E.Finish || e.type === E.Checkpoint) {
-      const fin = e.type === E.Finish, hw = seg.halfWidth, grp = new THREE.Group(), mat = glowMat(fin ? 0xFFD34D : 0x9B5CFF);
-      for (const x of [-(hw + 0.3), hw + 0.3]) { const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 7, 0.5), mat); m.position.set(x, 3.5, 0); grp.add(m); }
-      const top = fin ? panel(labelTex(["GOAL"], { w: 512, h: 128, border: "#FFD34D", bg: "rgba(40,20,70,.95)" }), 2 * hw + 1, 2) : new THREE.Mesh(new THREE.BoxGeometry(2 * hw + 1, 0.4, 0.4), mat);
-      top.position.y = 7; grp.add(top); placeFacing(grp, seg, e.s, 0, 0); W.root.add(grp);
-    }
-  }
-
-  function buildOrbs(W) {
-    const list = []; for (const seg of W.graph.segments) for (const e of seg.events) if (e.type === NR.EV.Orb || e.type === NR.EV.RepairOrb) list.push({ seg, e });
-    const mk = (filter, geo, color) => {
-      const items = list.filter(filter); if (!items.length) return;
-      const im = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color }), items.length); W.root.add(im);
-      items.forEach((it, i) => { it.p = M(it.seg.worldPos(it.e.s, it.e.x, NR.Sim.HOVER + 0.2)); it.i = i; it.im = im; });
-      W.orbs.push({ im, items });
-    };
-    mk(it => it.e.type === NR.EV.Orb, new THREE.OctahedronGeometry(0.5), 0xFFE27A);
-    mk(it => it.e.type === NR.EV.RepairOrb, new THREE.IcosahedronGeometry(0.75), 0x5CFF9D);
-  }
-
-  function buildBackdrop(W, stage) {
-    const b = W.bounds, c = new THREE.Vector3(), size = new THREE.Vector3(); b.getCenter(c); b.getSize(size);
-    const R = Math.max(size.x, size.z) * 0.6 + 400;
-    const n = 1400, pos = new Float32Array(n * 3), cols = new Float32Array(n * 3), pal = [0x2EE6D6, 0x9B5CFF, 0xFF5CC8, 0xFFD34D, 0x4D8DFF].map(col);
-    for (let i = 0; i < n; i++) {
-      const a = Math.random() * Math.PI * 2, r = R * (0.35 + 0.65 * Math.sqrt(Math.random())), y = -60 + Math.random() * 260;
-      pos.set([c.x + Math.cos(a) * r, y, c.z + Math.sin(a) * r], i * 3); const k = pal[i % pal.length]; cols.set([k.r, k.g, k.b], i * 3);
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("color", new THREE.BufferAttribute(cols, 3));
-    W.root.add(new THREE.Points(g, new THREE.PointsMaterial({ size: 2.2, vertexColors: true, transparent: true, opacity: 0.8, fog: false, depthWrite: false, blending: THREE.AdditiveBlending })));
-    // floating neurons (soma + dendrite spokes) along the course, tinted by stage
-    const tint = THEME[(W.graph.segments.find(s => s.theme) || {}).theme] || 0x9B5CFF, somaMat = new THREE.MeshLambertMaterial({ color: tint, emissive: tint, emissiveIntensity: 0.35 }), dendMat = glowMat(tint, 0.35);
-    const somaGeo = new THREE.SphereGeometry(1, 12, 10), dendGeo = new THREE.CylinderGeometry(0.12, 0.3, 1, 5);
-    const segs = W.graph.segments;
-    for (let i = 0; i < 46; i++) {
-      const seg = segs[(Math.random() * segs.length) | 0], s = Math.random() * seg.length, side = Math.random() < 0.5 ? -1 : 1;
-      const p = M(seg.worldPos(s, side * (seg.halfWidth + 18 + Math.random() * 60), -20 + Math.random() * 50)), r = 2 + Math.random() * 3.5;
-      const grp = new THREE.Group(); grp.position.copy(p); const so = new THREE.Mesh(somaGeo, somaMat); so.scale.setScalar(r); grp.add(so);
-      for (let k = 0; k < 6; k++) { const d = new THREE.Mesh(dendGeo, dendMat), L = r * (2.5 + Math.random() * 3); d.scale.set(r * 0.6, L, r * 0.6); const dir = new THREE.Vector3().randomDirection(); d.position.copy(dir.clone().multiplyScalar(L / 2 + r * 0.6)); d.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir); grp.add(d); }
-      W.root.add(grp); W.animated.push(grp);
-    }
+  // bloom post-processing (skipped on "가볍게")
+  function setupPost() {
+    const PP = window.THREE_PP; composer = null; if (!PP || save.quality === "low") return;
+    try { composer = new PP.EffectComposer(renderer); composer.addPass(new PP.RenderPass(scene, camera)); composer.addPass(new PP.UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.6, 0.4, 0.86)); composer.addPass(new PP.OutputPass()); } catch (e) { composer = null; }
+    resize();
   }
 
   //================== STAR ==================
@@ -433,7 +273,7 @@
   function screen(name) { $$(".screen").forEach(s => s.classList.toggle("on", s.id === "scr-" + name)); }
   let toastT = 0, hintT = 0, answerT = 0, storyT = 0; const storyQ = [];
   function toast(text, color = "#F2F0FF", sec = 1.6) { const t = $("#h-toast"); t.textContent = text; t.style.color = color; t.style.opacity = 1; toastT = sec; }
-  function hint(text, sec = 5) { if (!save.showHints) return; const h = $("#h-hint"); h.textContent = text; h.style.display = "block"; hintT = sec; if (!$("#qpanel").classList.contains("on") && !$("#apanel").classList.contains("on")) Voice.say(text, true); }
+  function hint(text, sec = 5) { if (!save.showHints) return; const h = $("#h-hint"); h.textContent = text; h.style.display = "block"; hintT = sec; Voice.say(text, { mode: "idle" }); }
   function countdown(t) { $("#h-count").textContent = t; }
   function fmt(t) { const m = Math.floor(t / 60), s = t - m * 60; return m + ":" + (s < 10 ? "0" : "") + s.toFixed(1); }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -445,20 +285,31 @@
     if (!dialogLines || dialogIdx >= dialogLines.length) { Voice.stop(); show("#dialog", false); const d = dialogDone; dialogDone = null; if (d) d(); return; }
     const l = dialogLines[dialogIdx]; $("#d-speaker").textContent = l.speaker; $("#d-text").textContent = l.text; $("#d-face").textContent = l.speaker === "STAR-01" ? "★" : l.speaker === "NULL" ? "⚠" : "◆";
     $("#d-face").style.color = l.speaker === "NULL" ? "#FF4D6D" : "#FFD34D";
-    Voice.say(l.text, l.speaker === "STAR-01");
+    Voice.say(l.text, { star: l.speaker === "STAR-01" });
     if (AUTO) setTimeout(() => { if (dialogLines === l_ref) nextDialog(); }, 150);
     const l_ref = dialogLines;
   }
   $("#dialog").addEventListener("pointerup", () => nextDialog());
 
   function questionLanes(q, n) { return n === 2 ? ["◀ 왼쪽", "오른쪽 ▶"] : n === 3 ? ["◀ 왼쪽", "가운데", "오른쪽 ▶"] : Array.from({ length: n }, (_, i) => "차선 " + (i + 1)); }
+  const LANE_WORD = n => n === 2 ? ["왼쪽", "오른쪽"] : n === 3 ? ["왼쪽", "가운데", "오른쪽"] : Array.from({ length: n }, (_, i) => (i + 1) + "번");
+  function questionSpeech(q) {
+    const w = LANE_WORD(q.options.length);
+    return pickOne(["자, 문제!", "문제 나간다!", "이번 문제야.", "잘 들어 봐!"]) + " " + q.question + " " +
+      q.options.map((o, i) => w[i] + (hasBatchim(w[i]) ? "은 " : "는 ") + optSpeech(o)).join(", ") + ". " + pickOne(["어느 쪽일까?", "골라 봐!", "어디로 갈래?", "정답 쪽으로 가 보자!"]);
+  }
+  function answerSpeech(q, chosen, correct) {
+    const ans = optSpeech(q.options[q.answer]), wrong = correct ? "" : NR.wrongExp(q, chosen);
+    if (correct) return pickOne(["딩동댕! 맞았어!", "정답! 잘했어!", "맞아, 역시!", "좋아, 정답이야!"]) + " " + q.explanation;
+    return pickOne(["앗, 아깝다!", "아쉽다!", "음, 이건 틀렸어."]) + " 정답은 " + ans + (hasBatchim(ans) ? "이야. " : "야. ") + (wrong ? wrong + " " : "") + pickOne(["정리해 줄게.", "다시 보자.", "기억해 둬!"]) + " " + q.explanation;
+  }
   function showQuestion(q, title) {
     if (!q) return; show("#apanel", false); answerT = 0;
     $("#q-title").textContent = title; $("#q-tag").textContent = "[" + q.topic + " · " + q.difficulty + "]"; $("#q-text").textContent = q.question;
     const lanes = questionLanes(q, q.options.length);
-    $("#q-opts").innerHTML = q.options.map((o, i) => `<div class="opt" data-i="${i}"><span class="lane">${lanes[i]}</span><span class="k">${LETTER(i)}</span>${esc(o)}</div>`).join("");
+    $("#q-opts").innerHTML = q.options.map((o, i) => `<div class="opt" data-i="${i}" style="border-left:8px solid ${HEXS(LANE[i % 4])}"><span class="lane">${lanes[i]}</span><span class="k" style="color:${HEXS(LANE[i % 4])}">${LETTER(i)}</span>${esc(o)}</div>`).join("");
     show("#qpanel", true);
-    Voice.say(q.question + " " + q.options.map((o, i) => LETTER(i) + ". " + o + ".").join(" "), true);
+    Voice.say(questionSpeech(q), { tag: "q" });
   }
   function showAnswer(q, chosen, correct, extra, sec) {
     show("#qpanel", false); if (!q) return; const p = $("#apanel");
@@ -466,24 +317,28 @@
     const wrong = correct ? "" : NR.wrongExp(q, chosen); $("#a-wrong").textContent = wrong; $("#a-wrong").style.display = wrong ? "block" : "none";
     $("#a-text").textContent = q.explanation; $("#a-extra").textContent = extra || "";
     show("#apanel", true); answerT = sec;
-    Voice.say((correct ? "정답이야! " : "아쉬워! 정답은 " + q.options[q.answer] + "이야. " + wrong + " ") + q.explanation, true);
+    Voice.say(answerSpeech(q, chosen, correct), { tag: "exp" });   // explanation is never cut off by the next question (it waits)
   }
   $("#a-close").addEventListener("pointerup", () => { show("#apanel", false); answerT = 0; Voice.stop(); });
 
+  let storyWait = 0;
   function tickUi(dt) {
+    Snd.setDuck(Voice.talking ? 0.4 : 1);
     if (toastT > 0) { toastT -= dt; if (toastT <= 0.4) $("#h-toast").style.opacity = Math.max(0, toastT / 0.4); }
     if (hintT > 0) { hintT -= dt; if (hintT <= 0) $("#h-hint").style.display = "none"; }
-    if (answerT > 0) { answerT -= dt; if (answerT <= 0) show("#apanel", false); }
+    // the answer panel stays until its time is up AND STAR-01 has finished explaining
+    if (answerT > 0) answerT -= dt; else if ($("#apanel").classList.contains("on") && !Voice.has("exp")) show("#apanel", false);
     if (storyT > 0) storyT -= dt;
     if (storyT <= 0) {
       const box = $("#h-story");
       if (storyQ.length) {
-        const l = storyQ.shift(); box.querySelector("b").textContent = l.speaker; box.querySelector("span").textContent = l.text; box.style.display = "block"; $("#h-hint").style.display = "none";
-        const voice = save.voiceOn && !$("#qpanel").classList.contains("on"); if (voice) Voice.say(l.text, l.speaker === "STAR-01");
+        // story lines wait for STAR-01 to finish talking (max 12 s), then are read aloud
+        storyWait += dt; if (save.voiceOn && Voice.talking && storyWait < 12) return;
+        storyWait = 0; const l = storyQ.shift(); box.querySelector("b").textContent = l.speaker; box.querySelector("span").textContent = l.text; box.style.display = "block"; $("#h-hint").style.display = "none";
+        const voice = Voice.say(l.text, { mode: "idle", star: l.speaker === "STAR-01" });
         storyT = NR.clamp(1.6 + l.text.length * (voice ? 0.1 : 0.07), 3.5, 9);
       } else box.style.display = "none";
     }
-    Snd.setDuck(Voice.talking ? 0.45 : 1);
   }
 
   //================== RACE ==================
@@ -508,7 +363,15 @@
   }
   function setSection(n) { if (race && race.lastSection === n) return; if (race) race.lastSection = n; $("#h-section").textContent = n; }
   function updateBoss() { if (!race || !race.bossMax) return; $("#h-boss-fill").style.width = (100 * race.bossHp / race.bossMax) + "%"; }
-  function findGate(qid) { for (const seg of race.graph.segments) for (const e of seg.events) if (e.type === NR.EV.Gate && e.questionId === qid) return e.laneX; return null; }
+  function findGate(qid) { for (const seg of race.graph.segments) for (const e of seg.events) if (e.type === NR.EV.Gate && e.questionId === qid) return { seg, e }; return null; }
+  // a new question waits until STAR-01 has finished the previous explanation; the race slows down
+  // just enough that there is still time to read the question before the gate / fork
+  function ask(id, title, lanes, decision) {
+    const r = race; r.pending = id; r.pendingLanes = lanes; r.decision = decision; r.queued = null;
+    if (!r.auto && save.voiceOn && Voice.has("exp")) { r.queued = { id, title }; return; }
+    showQuestion(bank.get(id), title); Snd.beep();
+  }
+  function distToDecision() { const r = race, d = r.decision; if (!d || d.seg !== r.sim.seg) return 999; return Math.max(0, d.s - r.sim.s); }
 
   function pauseRace() { if (!race || race.phase !== "run") return; race.paused = true; Voice.stop(); renderSettings($("#pause-settings"), true); show("#pause", true); }
   function resumeRace() { if (!race) return; race.paused = false; show("#pause", false); }
@@ -524,9 +387,15 @@
     } else if (r.phase === "run") {
       r.t += dt; if (r.t > 0.8 && r.t < 1.2) countdown("");
       const inp = r.auto ? r.auto.think(sim) : readInput(dt);
-      const wantSlow = r.pending && !r.auto ? NR.clamp(save.thinkSlow, 0.2, 1) : 1;
+      if (r.queued && (!Voice.has("exp") || distToDecision() < 60)) { const qd = r.queued; r.queued = null; showQuestion(bank.get(qd.id), qd.title); Snd.beep(); }
+      let wantSlow = 1;
+      if (r.pending && !r.auto) {
+        const base = NR.clamp(save.thinkSlow, 0.2, 1), D = distToDecision(), v = Math.max(12, sim.speed);
+        const need = r.queued ? Voice.remaining("exp") + 9 : save.voiceOn ? Voice.remaining("q") + 2.5 : 0;   // seconds of talking/reading still needed
+        wantSlow = need > 0 && D < 900 ? NR.clamp(D / (v * need), 0.12, base) : base;
+      }
       r.timeScale += NR.clamp(wantSlow - r.timeScale, -dt * 2.5, dt * 2.5);
-      $("#h-slow").style.display = r.timeScale < 0.97 && !$("#qpanel").classList.contains("on") ? "block" : "none";
+      $("#h-slow").style.display = r.timeScale < 0.97 && !$("#qpanel").classList.contains("on") ? "block" : "none"; $("#h-slow").textContent = r.queued ? "해설 듣는 중 · 슬로모션" : "생각 시간 · 슬로모션";
       let sdt = dt * r.timeScale * (r.auto ? WARP : 1);
       const n = Math.max(1, Math.ceil(sdt / (1 / 120) - 1e-4)), h = sdt / n;
       for (let i = 0; i < n && r.phase === "run"; i++) { sim.step(inp, h); inp.jump = false; handleEvents(); }
@@ -547,11 +416,10 @@
 
   function handleEvents() { const sim = race.sim; for (const e of sim.events) handle(e); sim.events.length = 0; }
   function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); SV.spinVel = 540; } else { Snd.thud(); setExpr("Wrong", 2.2); CAM.shake = 0.5; } }
-  function markSigns(signs, lane, correctLane) { signs.forEach((p, i) => p.material.color.setHex(i === correctLane ? 0xB8FFD0 : i === lane ? 0xFF8A9A : 0x666688)); }
   function bossAnswer(ok) {
     const r = race; if (!r.bossMax) return;
-    if (ok) { r.bossHp = Math.max(0, r.bossHp - 1); updateBoss(); toast(r.bossHp === 0 ? "NULL 보호막 붕괴!" : "정확한 진단! NULL 보호막 " + r.bossHp + "/" + r.bossMax, "#2EE6D6", 1.8); }
-    else toast("오진! NULL이 반격합니다", "#FF4D6D", 1.6);
+    if (ok) { r.bossHp = Math.max(0, r.bossHp - 1); updateBoss(); world.bossHit(r.bossHp, r.bossMax); toast(r.bossHp === 0 ? "NULL 보호막 붕괴!" : "정확한 진단! NULL 보호막 " + r.bossHp + "/" + r.bossMax, "#2EE6D6", 1.8); }
+    else { toast("오진! NULL이 반격합니다", "#FF4D6D", 1.6); world.bossAttack(); }
   }
   function handle(e) {
     const r = race, sim = r.sim, S = NR.SE;
@@ -559,25 +427,25 @@
       case S.Trigger: trigger(e.tag); break;
       case S.GateResult: {
         const q = bank.get(e.src.questionId); r.learn.answer(e.src.questionId, e.lane, sim.raceTime);
-        const g = world.gates.find(g => g.e === e.src); if (g) markSigns(g.signs, e.lane, e.src.correctLane);
+        world.gateResult(e.src, e.lane);
         feedback(e.correct); let extra = null;
         if (e.src.tag === "glia" && e.correct) { extra = "희소돌기아교세포가 수초를 재생했습니다. 전도 속도 회복!"; toast("수초 복구 완료!", "#5CFF9D"); }
         else if (e.src.tag === "ap") extra = "활동전위 단계 " + (e.src.index + 1) + "/4";
         if (e.src.tag === "boss") bossAnswer(e.correct);
-        showAnswer(q, e.lane, e.correct, extra, e.correct ? 7 : 11); r.pending = null; r.pendingLanes = null; break;
+        showAnswer(q, e.lane, e.correct, extra, e.correct ? 7 : 11); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
       case S.ForkChosen: {
         const q = bank.get(e.tag); r.learn.answer(e.tag, e.lane, sim.raceTime);
-        const fs = world.forkSigns.get(e.tag); if (fs) markSigns(fs.signs, e.lane, fs.seg.fork.correctLane);
+        world.forkResult(e.tag, e.lane);
         if (r.stage.boss) bossAnswer(e.correct); feedback(e.correct);
         showAnswer(q, e.lane, e.correct, e.correct ? "정답 경로: 지름길 + 신호 에너지 보너스!" : "복습 구간에 진입했습니다. 해설을 읽으며 천천히 이동하세요.", e.correct ? 7 : 12);
-        if (!e.correct) toast("복습 구간 - 속도 저하", "#FF8A3D", 2); r.pending = null; r.pendingLanes = null; break;
+        if (!e.correct) toast("복습 구간 - 속도 저하", "#FF8A3D", 2); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
-      case S.RingHit: { const ri = world.rings.find(x => x.e === e.src); if (ri) { ri.m.material = glowMat(0xffffff); ri.hit = 1; } Snd.coin(); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
-      case S.RingMiss: { const ri = world.rings.find(x => x.e === e.src); if (ri) ri.m.material = glowMat(0x553355, 0.5); if (sim.ringsTotal > 1) toast("결절을 놓쳤어요 - 연속 끊김", "#B4AEDB", 0.9); break; }
+      case S.RingHit: { world.ringHit(e.src, true); Snd.coin(); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
+      case S.RingMiss: { world.ringHit(e.src, false); if (sim.ringsTotal > 1) toast("결절을 놓쳤어요 - 연속 끊김", "#B4AEDB", 0.9); break; }
       case S.ObstacleHit: CAM.shake = 0.9; SV.shake = 0.4; setExpr("Hurt", 1.2); Snd.thud(); toast("NULL 충돌! 전도 지연", "#FF4D6D", 1.2); break;
       case S.OrbCollected: case S.RepairOrb: {
-        for (const grp of world.orbs) { const it = grp.items.find(x => x.e === e.src); if (it) { it.gone = true; break; } }
+        world.collect(e.src);
         if (e.type === S.OrbCollected) Snd.coin(); else { Snd.chime(); setExpr("Joy", 1); toast("수초 복구 " + sim.repairCount + "/3", "#5CFF9D", 1.4); } break;
       }
       case S.WallHit: CAM.shake = 0.35; Snd.thud(); setExpr("Surprise", 0.6); break;
@@ -601,15 +469,15 @@
         break;
       case "banner": toast(arg === "soma" ? "세포체 - 입력 신호의 가중(통합)" : "축삭종말 접근 - 시냅스 소포 준비", "#2EE6D6", 2.2); break;
       case "codex": r.learn.codexSeen.add(arg); { const ce = codexById.get(arg); if (ce && !save.codexUnlocked.includes(arg)) toast("신경 도감 등록: " + ce.name, "#2EE6D6", 1.8); } break;
-      case "forkq": r.pending = arg; r.pendingLanes = r.forkSegByQ.get(arg) ? r.forkSegByQ.get(arg).fork.laneX : null; showQuestion(bank.get(arg), "갈림길! 정답 경로로 들어가세요" + thinkTag); Snd.beep(); break;
-      case "gateq": r.pending = arg; r.pendingLanes = findGate(arg); showQuestion(bank.get(arg), (arg === "ch1_gate_glia" ? "수초 복구 게이트" : r.stage.gateTitle) + thinkTag); Snd.beep(); break;
-      case "boss": if (arg === "attack") { toast("NULL 반격! 파동은 점프!", "#FF4D6D", 1.4); CAM.shake = 0.4; } break;
+      case "forkq": { const fs = r.forkSegByQ.get(arg); ask(arg, "갈림길! 정답 경로로 들어가세요" + thinkTag, fs ? fs.fork.laneX : null, fs ? { seg: fs, s: fs.length } : null); break; }
+      case "gateq": { const g = findGate(arg); ask(arg, (arg === "ch1_gate_glia" ? "수초 복구 게이트" : r.stage.gateTitle) + thinkTag, g ? g.e.laneX : null, g ? { seg: g.seg, s: g.e.s } : null); break; }
+      case "boss": if (arg === "attack") { world.bossAttack(); toast("NULL 반격! 파동은 점프!", "#FF4D6D", 1.4); CAM.shake = 0.4; } break;
       case "synapse": if (arg === "minigame") openMinigame(); else if (arg === "cross") toast("신경전달물질 다리 통과!", "#FF5CC8", 1.5); break;
     }
   }
   function finish() {
     const r = race; r.phase = "finish"; r.finishT = 0; show("#touch", false); show("#qpanel", false); countdown("GOAL!"); Snd.chime();
-    setBase("Victory"); setExpr("Victory", 99); SV.victory = true; CAM.showcase = 3.2; Voice.say("골인! 신경 신호 전달 성공!", true);
+    setBase("Victory"); setExpr("Victory", 99); SV.victory = true; CAM.showcase = 3.2; Voice.say(pickOne(["골인! 신호 전달 성공!", "도착! 우리가 해냈어!", "골인! 신경 신호 무사히 도착!"]));
   }
 
   //================== SYNAPSE MINIGAME (GameUI.Minigame.cs) ==================
@@ -620,7 +488,7 @@
     if (r.auto) { done(true, 0, qe.answer); return; }
     show("#mini", true); let next = 0, mistakes = 0;
     const order = qo.options.map((_, i) => i).sort(() => Math.random() - 0.5);
-    $("#mg-prompt").textContent = qo.question; Voice.say(qo.question, true);
+    $("#mg-prompt").textContent = qo.question; Voice.say("시냅스 게이트야! " + qo.question + " 순서대로 눌러 줘.");
     $("#mg-slots").innerHTML = qo.options.map((_, i) => `<li>${i + 1}. ?</li>`).join("");
     $("#mg-ves").innerHTML = "<i></i>".repeat(7); $("#mg-ca").style.opacity = 0.3; $("#mg-fb").textContent = "";
     const btns = $("#mg-btns"); btns.innerHTML = order.map(i => `<button data-i="${i}">${esc(qo.options[i])}</button>`).join("");
@@ -635,11 +503,11 @@
     function phase2() {
       $("#mg-fb").textContent = "전달 순서 완성! " + (mistakes === 0 ? "완벽해요!" : "실수 " + mistakes + "회"); Snd.chime();
       setTimeout(() => {
-        $("#mg-prompt").textContent = qe.question; Voice.say(qe.question + " " + qe.options.map((o, i) => LETTER(i) + ". " + o).join(". "), true);
+        $("#mg-prompt").textContent = qe.question; Voice.say("좋아, 마지막 문제! " + qe.question + " " + qe.options.map(o => optSpeech(o)).join(", 아니면 ") + "?");
         btns.innerHTML = qe.options.map((o, i) => `<button data-i="${i}"><b>${LETTER(i)}</b>. ${esc(o)}</button>`).join("");
         btns.querySelectorAll("button").forEach(b => b.addEventListener("pointerup", () => {
           const ch = +b.dataset.i, ok = ch === qe.answer, success = mistakes <= 1 && ok;
-          $("#mg-fb").textContent = (ok ? "정답! " : "오답… 정답은 " + qe.options[qe.answer] + ". ") + qe.explanation; Voice.say((ok ? "정답이야! " : "아쉬워! ") + qe.explanation, true);
+          $("#mg-fb").textContent = (ok ? "정답! " : "오답… 정답은 " + qe.options[qe.answer] + ". ") + qe.explanation; Voice.say((ok ? "딩동댕! " : "아깝다! ") + qe.explanation);
           btns.innerHTML = `<button class="primary" id="mg-go">${success ? "시냅스 연결 성공! 계속 달리기 ▶" : "계속 달리기 ▶"}</button>`;
           $("#mg-go").addEventListener("pointerup", () => { show("#mini", false); done(success, mistakes, ch); });
         }));
@@ -667,7 +535,7 @@
     $("#r-wrong").innerHTML = wrong.length ? `<div class="grade">복습할 문제 ${wrong.length}개 (오답 노트에 저장됨)</div>` + wrong.map(q => `<div class="entry"><b>${esc(q.question)}</b><br><span class="ok">정답: ${esc(q.options[q.answer])}</span><br>${esc(q.explanation)}</div>`).join("") : `<div class="grade">모든 문제를 맞혔어요! 완벽한 신호 전달 ★</div>`;
     const idx = NR.STAGES.indexOf(r.stage); $("#result [data-act=next]").style.display = idx < NR.STAGES.length - 1 ? "" : "none";
     show("#hud", false); show("#result", true); Snd.play("menu");
-    Voice.say(acc === 100 ? "완벽해! 모든 문제를 맞혔어!" : "완주했어! 틀린 문제는 오답 노트에서 다시 보자!", true);
+    Voice.say(acc === 100 ? "완벽해! 문제를 전부 맞혔어!" : "완주 성공! 틀린 문제는 오답 노트에서 같이 다시 보자.");
     window.__nrResult = { stage: r.stage.id, time: t, correct: L.correct, total: L.total, coins: sim.coins };
   }
 
@@ -706,21 +574,30 @@
   function renderSettings(el, compact) {
     const rows = [
       ["별 음성 안내", "STAR-01이 문제·해설을 읽어 줘요" + (Voice.ok ? "" : " (이 브라우저는 미지원)"), "voiceOn", [[true, "켜기"], [false, "끄기"]]],
+      ["목소리 톤", "", "voicePitch", [[1.0, "차분하게"], [1.12, "밝게"], [1.28, "귀엽게"]]],
+      ["말 속도", "", "voiceRate", [[0.95, "천천히"], [1.05, "보통"], [1.18, "빠르게"]]],
       ["배경 음악", "", "musicOn", [[true, "켜기"], [false, "끄기"]]],
       ["효과음", "", "sfxOn", [[true, "켜기"], [false, "끄기"]]],
       ["문제 생각 시간", "문제가 뜨면 레이스가 느려져요 (기록 손해 없음)", "thinkSlow", [[0.25, "아주 느리게"], [0.4, "느리게"], [0.6, "조금"], [1, "끄기"]]],
       ["도움말 힌트", "", "showHints", [[true, "켜기"], [false, "끄기"]]],
       ["그래픽 품질", "버벅이면 '가볍게'", "quality", [["low", "가볍게"], ["auto", "자동"], ["high", "선명"]]],
     ];
-    el.innerHTML = rows.map(([t, d, k, opts]) => `<div class="set"><div>${t}${d ? `<small>${d}</small>` : ""}</div><div class="opts">${opts.map(([v, l]) => `<button data-k="${k}" data-v='${JSON.stringify(v)}' class="${save[k] === v ? "on" : ""}">${l}</button>`).join("")}</div></div>`).join("") + (compact ? "" : `<div class="set"><div>기록 초기화<small>최고 기록·도감·오답 노트를 지워요</small></div><div class="opts"><button data-reset="1">초기화</button></div></div>`);
+    el.innerHTML = rows.map(([t, d, k, opts]) => `<div class="set"><div>${t}${d ? `<small>${d}</small>` : ""}</div><div class="opts">${opts.map(([v, l]) => `<button data-k="${k}" data-v='${JSON.stringify(v)}' class="${save[k] === v ? "on" : ""}">${l}</button>`).join("")}</div></div>`).join("") + (compact ? "" : voiceRow()) + (compact ? "" : `<div class="set"><div>기록 초기화<small>최고 기록·도감·오답 노트를 지워요</small></div><div class="opts"><button data-reset="1">초기화</button></div></div>`);
     el.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => {
       const k = b.dataset.k, v = JSON.parse(b.dataset.v); save[k] = v; persist();
       if (k === "musicOn") Snd.setMusic(v); if (k === "sfxOn" && Snd.sfx) Snd.sfx.gain.value = v ? 0.5 : 0;
-      if (k === "quality") renderer.setPixelRatio(dprCap()), resize();
-      if (k === "voiceOn" && v) Voice.say("안녕! 내가 읽어 줄게!", true); if (k === "voiceOn" && !v) Voice.stop();
+      if (k === "quality") { renderer.setPixelRatio(dprCap()); setupPost(); resize(); if (!race) { if (world) world.dispose(scene); world = null; menuScene(); } }
+      if ((k === "voiceOn" && v) || k === "voicePitch" || k === "voiceRate") Voice.say("안녕! 나는 스타 제로원이야. 이렇게 읽어 줄게!"); if (k === "voiceOn" && !v) Voice.stop();
       renderSettings(el, compact);
     }));
+    const vs = el.querySelector("#voice-sel"); if (vs) vs.addEventListener("change", () => { save.voiceURI = vs.value; persist(); Voice.pick(); Voice.say("안녕! 이 목소리 어때?"); });
+    const vp = el.querySelector("#voice-try"); if (vp) vp.addEventListener("click", () => Voice.say("안녕! 나는 스타 제로원! 같이 신경계를 달려 보자!"));
     const rs = el.querySelector("[data-reset]"); if (rs) rs.addEventListener("click", () => { if (confirm("기록을 모두 지울까요?")) { save.best = {}; save.wrongNotes = []; save.codexUnlocked = []; persist(); renderSettings(el, compact); } });
+  }
+  function voiceRow() {
+    Voice.pick(); const L = Voice.list;
+    const opts = L.length ? L.map(v => `<option value="${esc(v.voiceURI)}"${Voice.voice && v.voiceURI === Voice.voice.voiceURI ? " selected" : ""}>${esc(v.name)}</option>`).join("") : `<option>한국어 음성을 찾지 못했어요</option>`;
+    return `<div class="set voice-set"><div>STAR-01 목소리<small>iPad에서 더 자연스러운 목소리: 설정 › 손쉬운 사용 › 읽기 및 말하기 › 음성 › 한국어 › '유나(프리미엄)' 또는 '향상됨' 음성을 내려받은 뒤 여기서 고르세요.</small></div><div class="opts"><select id="voice-sel">${opts}</select><button id="voice-try">▶ 들어보기</button></div></div>`;
   }
   function goTitle() { race = null; Voice.stop(); show("#hud", false); show("#touch", false); show("#result", false); show("#pause", false); show("#qpanel", false); show("#apanel", false); show("#mini", false); show("#dialog", false); screen("title"); menuScene(); Snd.play("menu"); }
   document.addEventListener("click", ev => {
@@ -761,25 +638,22 @@
   let last = performance.now(), tAll = 0;
   function frame(now) {
     requestAnimationFrame(frame);
-    const dt = Math.min(0.1, (now - last) / 1000); last = now; tAll += dt; roadMat.uniforms.uTime.value = tAll;
+    const dt = Math.min(0.1, (now - last) / 1000); last = now; tAll += dt; NRW.U.uTime.value = tAll;
     if (race) tickRace(dt); else tickMenu(dt);
-    if (world) {
-      for (const g of world.orbs) { const m4 = new THREE.Matrix4(), q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, tAll * 2.5, 0.4)), one = new THREE.Vector3(1, 1, 1), zero = new THREE.Vector3(0, 0, 0); for (const it of g.items) { m4.compose(it.p, q, it.gone ? zero : one); g.im.setMatrixAt(it.i, m4); } g.im.instanceMatrix.needsUpdate = true; }
-      for (const o of world.obstacles) if (o.pulse) o.m.material.opacity = 0.5 + 0.35 * Math.sin(tAll * 8);
-      for (const a of world.animated) a.rotation.y += dt * 0.1;
-    }
-    renderer.render(scene, camera);
+    NRW.U.uStar.value.copy(star.root.position);
+    if (world) world.update(dt, tAll, race ? race.sim : null);
+    if (composer) composer.render(); else renderer.render(scene, camera);
   }
 
   // boot
-  window.NR_APP = { startStage, get race() { return race; }, save };
+  window.NR_APP = { startStage, get race() { return race; }, save, cam: CAM };
   function boot() {
     if (boot.done) return; boot.done = true;
-    renderStages(); menuScene(); screen("title");
+    setupPost(); renderStages(); menuScene(); screen("title");
     $("#loading").classList.add("off");
     Snd.want = "menu";
     requestAnimationFrame(frame);
     const m = HASH.match(/stage=(ch\d)/); if (AUTO || m) setTimeout(() => startStage(m ? m[1] : "ch1"), 300);
   }
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(boot); setTimeout(boot, 2500);
-})();
+};

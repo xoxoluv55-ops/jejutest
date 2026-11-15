@@ -48,8 +48,9 @@ namespace NerveRunner
             {
                 case ZoneKind.Myelin: return Pal.Gold;
                 case ZoneKind.Damaged: return Pal.Red;
-                case ZoneKind.Review: return Pal.Hex(0xFF8A3D);
-                case ZoneKind.Shortcut: return Pal.Green;
+                // 2.4: both branch kinds share one neutral colour so the road colour never reveals the answer
+                case ZoneKind.Review:
+                case ZoneKind.Shortcut: return Pal.Hex(0xB98CFF);
                 case ZoneKind.ForkApproach: return Pal.Pink;
                 case ZoneKind.Synapse: return Pal.Purple;
                 default: return Line;

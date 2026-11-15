@@ -5,7 +5,7 @@ fs.mkdirSync(OUT, { recursive: true });
 (async () => {
   const browser = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
   const ctx = await browser.newContext({ viewport: { width: 1180, height: 820 }, deviceScaleFactor: 1, hasTouch: true });
-  await ctx.route(/cdn\.jsdelivr\.net\/npm\/three/, r => r.fulfill({ body: fs.readFileSync(THREE_LOCAL), contentType: "text/javascript" }));
+  await ctx.route(/cdn\.jsdelivr\.net\/npm\/three@0\.160\.0\//, r => { const rel = r.request().url().split("three@0.160.0/")[1]; r.fulfill({ body: fs.readFileSync(path.join(THREE_LOCAL, rel)), contentType: "text/javascript", headers: { "Access-Control-Allow-Origin": "*" } }); });
   await ctx.route(/fonts\.(googleapis|gstatic)/, r => r.abort());
   const page = await ctx.newPage(), errors = [];
   page.on("pageerror", e => errors.push("pageerror: " + e.message)); page.on("console", m => { if (m.type() === "error") errors.push("console: " + m.text()); });

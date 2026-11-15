@@ -11,6 +11,8 @@ namespace NerveRunner.Core
     {
         public readonly TrackGraph graph = new TrackGraph();
 
+        /// Correct branch bends this fraction of the review loop's bulge (still clearly shorter).
+        public const float SHORTCUT_BEND = 0.35f;
         const float POINT_STEP = 8f;
 
         Vector3 pos;
@@ -185,14 +187,15 @@ namespace NerveRunner.Core
                     float along = 20f + (length - 40f) * t;
                     float lat = Mathf.Lerp(o, oEnd, t);
                     float y = 0f;
-                    if (!correct)
+                    // 2.4: EVERY branch bends away (the correct one less), so the shortcut no longer
+                    // gives the answer away by being the only straight road.
                     {
-                        float env = Mathf.Sin(Mathf.PI * t);
+                        float env = Mathf.Sin(Mathf.PI * t) * (correct ? SHORTCUT_BEND : 1f);
                         if (Mathf.Abs(o) > 0.01f) lat += Mathf.Sign(o) * bulge * env;     // side lane: bow outwards
                         else
                         {                                                               // middle lane: arch up + S-curves
-                            y = bulge * 0.22f * env;
-                            lat += bulge * 0.18f * Mathf.Sin(2f * Mathf.PI * t) * env;
+                            y = bulge * 0.32f * env;
+                            lat += bulge * 0.30f * Mathf.Sin(2f * Mathf.PI * t) * env;
                         }
                     }
                     bp.Add(F + f * along + r * lat + Vector3.up * y);
@@ -204,11 +207,11 @@ namespace NerveRunner.Core
                                     correct ? ZoneKind.Shortcut : ZoneKind.Review, 5f);
                 seg.Build(bp);
                 seg.events.Add(new TrackEvent { type = TrackEventType.Trigger, s = 4f, tag = (correct ? "forkok:" : "review:") + q.id });
-                if (correct)
                 {
-                    // reward: energy orbs down the shortcut
-                    for (int k = 1; k <= 5; k++)
-                        seg.events.Add(new TrackEvent { type = TrackEventType.Orb, s = seg.length * k / 6.5f, x = 0f });
+                    // 2.4: the same orb line at the entrance of EVERY branch (orbs only on the
+                    // shortcut used to reveal the answer)
+                    for (int k = 0; k < 5; k++)
+                        seg.events.Add(new TrackEvent { type = TrackEventType.Orb, s = 30f + k * 32f, x = 0f });
                 }
                 seg.SortEvents();
                 approach.next.Add(seg);

@@ -152,14 +152,14 @@ const NR = (function () {
         const n = Math.ceil((length - 40) / 8);
         for (let k = 1; k < n; k++) {
           const t = k / n, along = 20 + (length - 40) * t; let lat = lerp(o, oEnd, t), y = 0;
-          if (!correct) { const env = Math.sin(Math.PI * t); if (Math.abs(o) > 0.01) lat += sign(o) * bulge * env; else { y = bulge * 0.22 * env; lat += bulge * 0.18 * Math.sin(2 * Math.PI * t) * env; } }
+          { const env = Math.sin(Math.PI * t) * (correct ? 0.35 : 1); if (Math.abs(o) > 0.01) lat += sign(o) * bulge * env; else { y = bulge * 0.32 * env; lat += bulge * 0.30 * Math.sin(2 * Math.PI * t) * env; } }
           bp.push(add(add(add(F, mul(f, along)), mul(r, lat)), mul(UP, y)));
         }
         bp.push(add(sub(M, mul(f, 20)), mul(r, oEnd))); bp.push(add(M, mul(r, oEnd)));
         const seg = this.graph.add((correct ? "Shortcut_" : "Review_") + q.id + "_" + i, correct ? ZONE.Shortcut : ZONE.Review, 5);
         seg.build(bp);
         seg.events.push(mkEvent(EV.Trigger, 4, 0, (correct ? "forkok:" : "review:") + q.id));
-        if (correct) for (let k = 1; k <= 5; k++) seg.events.push(mkEvent(EV.Orb, seg.length * k / 6.5, 0));
+        for (let k = 0; k < 5; k++) seg.events.push(mkEvent(EV.Orb, 30 + k * 32, 0));
         seg.sortEvents(); approach.next.push(seg); branches.push(seg);
       }
       this.pendingMerge = branches; this.pendingMergeOffsets = mergeOffsets; this.prevSeg = null;

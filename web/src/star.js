@@ -24,7 +24,10 @@ function tearP(tip,r){const l=[tip];const c=[tip[0],tip[1]-r*1.6];for(let i=1;i<
 // ToonRim shader port
 function toonMat(base,shade,rim,rimPow,emis){return new THREE.ShaderMaterial({uniforms:{B:{value:new THREE.Color(base)},S:{value:new THREE.Color(shade)},R:{value:new THREE.Color(rim)},P:{value:rimPow},E:{value:new THREE.Color(emis)},L:{value:new THREE.Vector3(0.4,0.8,0.5).normalize()}},
  vertexShader:`varying vec3 n;varying vec3 vw;void main(){n=normalize(mat3(modelMatrix)*normal);vec4 w=modelMatrix*vec4(position,1.);vw=normalize(cameraPosition-w.xyz);gl_Position=projectionMatrix*viewMatrix*w;}`,
- fragmentShader:`uniform vec3 B,S,R,E,L;uniform float P;varying vec3 n;varying vec3 vw;void main(){vec3 N=normalize(n);float ndl=dot(N,L)*.5+.5;float ramp=smoothstep(.38,.62,ndl);vec3 c=mix(S,B,ramp)+B*.12;vec3 h=normalize(L+vw);float sp=pow(max(dot(N,h),0.),60.);c+=smoothstep(.45,.55,sp)*.55;c+=pow(1.-max(dot(N,vw),0.),P)*R;c+=E;gl_FragColor=vec4(c,1.);}`});}
+ fragmentShader:`uniform vec3 B,S,R,E,L;uniform float P;varying vec3 n;varying vec3 vw;void main(){vec3 N=normalize(n);float ndl=dot(N,L)*.5+.5;float ramp=smoothstep(.38,.62,ndl);vec3 c=mix(S,B,ramp)+B*.12;vec3 h=normalize(L+vw);float sp=pow(max(dot(N,h),0.),60.);c+=smoothstep(.45,.55,sp)*.55;c+=pow(1.-max(dot(N,vw),0.),P)*R;c+=E;gl_FragColor=vec4(c,1.);
+gl_FragColor.rgb=pow(max(gl_FragColor.rgb,vec3(0.)),vec3(2.2));
+#include <colorspace_fragment>
+}`});}
 let _glowTex=null;function glowTex(){if(_glowTex)return _glowTex;const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');const g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.4,'rgba(255,255,255,.35)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return(_glowTex=new THREE.CanvasTexture(c));}
 function addMat(color,op){return new THREE.MeshBasicMaterial({color,map:glowTex(),transparent:true,opacity:op,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide});}
 let _sphG=null;function sph(p,s,mat){const m=new THREE.Mesh(_sphG||(_sphG=new THREE.SphereGeometry(0.5,24,16)),mat);m.position.set(...p);m.scale.set(...s);return m;}
