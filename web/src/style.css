@@ -270,6 +270,16 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 .mission.low{top:auto;bottom:calc(max(14px,env(safe-area-inset-bottom)) + 64px)}
 @media (max-height:520px){.mission.low{bottom:40px}}
 
+/* ---------- 4.2: full story screen ---------- */
+.lore{overflow:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:12px;max-width:900px;width:100%;margin:0 auto;padding-bottom:30px}
+.lore section{background:rgba(36,28,87,.75);border:2px solid var(--line);border-radius:18px;padding:12px 18px}
+.lore h3{font-family:var(--title);font-weight:400;font-size:22px;color:var(--yellow);margin:0 0 6px}
+.lore p{font-size:17px;line-height:1.65;margin:6px 0;color:var(--text)}
+.lore b{color:var(--cyan)}
+.lore ol{margin:4px 0;padding-left:22px;font-size:16px;line-height:1.6}
+.lore-go{font-family:var(--title);font-size:20px!important;color:var(--pink)!important;text-align:center}
+.lore .big{align-self:center}
+.story-btn{background:linear-gradient(180deg,#5C3FD0,#3A2C8C)}
 /* ---------- 4.1: slimmer, see-through top boxes (same text size) ---------- */
 .qpanel,.apanel{width:auto;max-width:min(760px,66vw);padding:4px 10px 6px;background:rgba(16,12,48,.5);border-width:1.5px;border-radius:12px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .apanel.bad{background:rgba(48,12,28,.5)}
@@ -284,3 +294,10 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 #mi-lanes div{padding:1px 6px;background:rgba(20,16,56,.45);border-width:1.5px}
 .hint,.story{padding:4px 10px;background:rgba(20,15,56,.5);border-width:1.5px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .section,.stat{background:rgba(20,15,56,.55)}
+/* 4.2: title fits a phone in landscape */
+@media (max-height:520px){
+  .title-wrap{gap:6px}.logo .l1,.logo .l2{font-size:40px}.sub{font-size:13px}.foot{display:none}
+  .menu{gap:6px;margin-top:2px}.menu .big{font-size:18px;padding:7px 16px;min-width:220px}
+  .row2 button{font-size:14px;padding:7px 8px;white-space:nowrap}
+  .lore p{font-size:15px}.lore h3{font-size:18px}.lore ol{font-size:14px}
+}

@@ -338,7 +338,7 @@ window.NR_MAIN = function () {
   function screen(name) { $$(".screen").forEach(s => s.classList.toggle("on", s.id === "scr-" + name)); }
   let toastT = 0, hintT = 0, answerT = 0, storyT = 0; const storyQ = [];
   function toast(text, color = "#F2F0FF", sec = 1.6) { const t = $("#h-toast"); t.textContent = text; t.style.color = color; t.style.opacity = 1; toastT = sec; }
-  function hint(text, sec = 5) { if (!save.showHints) return; const h = $("#h-hint"); h.textContent = text; h.style.display = "block"; hintT = sec; Voice.say(text, { mode: "idle" }); }
+  function hint(text, sec = 5, speech) { if (!save.showHints) return; const h = $("#h-hint"); h.textContent = text; h.style.display = "block"; hintT = sec; Voice.say(speech || text, { mode: "idle" }); }
   function countdown(t) { $("#h-count").textContent = t; }
   function fmt(t) { const m = Math.floor(t / 60), s = t - m * 60; return m + ":" + (s < 10 ? "0" : "") + s.toFixed(1); }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -480,7 +480,7 @@ window.NR_MAIN = function () {
     if (r.phase === "count") {
       r.t = (performance.now() - r.cdStart) / 1000; const n = 3 - Math.floor(r.t - 0.6);   // 4.0: wall clock, a slow frame can't stretch it
       if (r.t >= 0.6 && n !== r.cd && n >= 1 && n <= 3) { r.cd = n; countdown(String(n)); Snd.beep(); }
-      if (r.t >= 3.6) { countdown("GO!"); Snd.chime(); r.phase = "run"; r.t = 0; hint(r.auto ? "AUTO 데모 주행 중" : "◀ ▶ 버튼 또는 화면 왼쪽을 좌우로 끌어서 조향! 코너에서는 드리프트를 누른 채 꺾으면 터보 충전.", 5); }
+      if (r.t >= 3.6) { countdown("GO!"); Snd.chime(); r.phase = "run"; r.t = 0; hint(r.auto ? "AUTO 데모 주행 중" : "◀ ▶ 버튼 또는 화면 왼쪽을 좌우로 끌어서 조향! 코너에서는 드리프트를 누른 채 꺾으면 터보 충전.", 5, r.auto ? "" : "버튼이나 화면 왼쪽을 좌우로 끌어서 조향해! 코너에서는 드리프트!"); }
     } else if (r.phase === "run") {
       r.t += dt; if (r.t > 0.8 && r.t < 1.2) countdown("");
       const inp = r.auto ? r.auto.think(sim) : readInput(dt);
@@ -709,16 +709,16 @@ window.NR_MAIN = function () {
         else if (arg === "drift") hint("급커브! [드리프트]를 누른 채 커브 방향으로 조향 → 놓으면 미니 터보!", 6);
         break;
       case "mission":
-        if (arg.startsWith("sort:")) { const t = { nuclei: "뇌줄기 신경핵 탐험! 지금 층에 있는 신경핵 차선으로!", relay: "시상 중계 미션! 감각 신호를 맞는 중계핵으로 보내!", cortex: "대뇌 기능 포털! 명령에 맞는 겉질 영역으로!", cranial: "12뇌신경 포털! 동작에 맞는 뇌신경으로!" }[arg.slice(5)]; hint(t, 4); Voice.say(t, { mode: Voice.has("exp") ? "queue" : "replace" }); }
-        else if (arg.startsWith("cross:")) { const t = { dcml: "왼다리 진동 감각을 실어 나르자! 뒤기둥-안쪽섬유띠계는 어디서 교차할까?", stt: "왼손 통증 신호! 앞가쪽계는 언제 건너갈까?", cst: "왼손을 움직이는 명령! 겉질척수로는 어디서 교차할까?" }[arg.slice(6)]; hint(t + " 층마다 맞는 쪽 차선으로 드리프트!", 5); Voice.say(t, { mode: Voice.has("exp") ? "queue" : "replace" }); }
-        else if (arg === "reflex") { hint("척수반사 긴급 미션! 자극이 보이면 바로 반응 — 신장=부스트, 굽힘=점프, 교차폄=반대쪽으로, 상호억제=아무것도 누르지 않기. (실제 반사는 수십 ms로 훨씬 빨라요)", 6); Voice.say("척수반사 미션이야! 자극이 나오면 바로 반응해!", { mode: "replace" }); }
+        if (arg.startsWith("sort:")) { const t = { nuclei: "뇌줄기 신경핵 탐험! 지금 층에 있는 신경핵 차선으로!", relay: "시상 중계 미션! 감각 신호를 맞는 중계핵으로 보내!", cortex: "대뇌 기능 포털! 명령에 맞는 겉질 영역으로!", cranial: "12뇌신경 포털! 동작에 맞는 뇌신경으로!" }[arg.slice(5)]; hint(t, 4); Voice.say(t, { mode: "queue" }); }
+        else if (arg.startsWith("cross:")) { const t = { dcml: "왼다리 진동 감각을 실어 나르자! 뒤기둥-안쪽섬유띠계는 어디서 교차할까?", stt: "왼손 통증 신호! 앞가쪽계는 언제 건너갈까?", cst: "왼손을 움직이는 명령! 겉질척수로는 어디서 교차할까?" }[arg.slice(6)]; hint(t + " 층마다 맞는 쪽 차선으로 드리프트!", 5); Voice.say(t, { mode: "queue" }); }
+        else if (arg === "reflex") { hint("척수반사 긴급 미션! 자극이 보이면 바로 반응 — 신장=부스트, 굽힘=점프, 교차폄=반대쪽으로, 상호억제=아무것도 누르지 않기. (실제 반사는 수십 ms로 훨씬 빨라요)", 6); Voice.say("척수반사 미션이야! 자극이 나오면 바로 반응해!", { mode: "queue" }); }
         break;
       case "line": if (arg === "on") { hint("소뇌 균형 라인! NULL이 몸을 흔들어요(운동실조 흉내). 빛나는 선 위에 머물러 오차를 보정하세요.", 5); Voice.say("빛나는 선을 따라가! 흔들려도 소뇌처럼 바로바로 고쳐 줘!", { mode: "idle" }); } break;
       case "dzone": if (arg === "on") toast("드리프트 충전 ×1.8", "#FFB627", 1.2); break;
       case "integ":
         if (arg === "excite") hint("EPSP 가중 구간! 초록 ＋ 를 연달아 먹으면 막전위가 올라가 역치(-55 mV)에서 발화 → 가속! 파랑 − 는 피하기", 6);
         else if (arg === "inhibit") hint("IPSP 억제 구간! NULL이 막전위를 계속 올려요. 파랑 − 를 먹어서 역치 아래로 지키기! 초록 ＋ 는 피하기", 6);
-        if (arg === "excite" || arg === "inhibit") Voice.say(arg === "excite" ? "EPSP 구간이야! 초록 플러스를 연달아 모으면 역치까지 올라가서 발화해!" : "NULL 때문에 뉴런이 과흥분 중이야! 파란 마이너스를 모아서 진정시켜 줘!", { mode: Voice.has("exp") ? "queue" : "replace" });
+        if (arg === "excite" || arg === "inhibit") Voice.say(arg === "excite" ? "EPSP 구간이야! 초록 플러스를 연달아 모으면 역치까지 올라가서 발화해!" : "NULL 때문에 뉴런이 과흥분 중이야! 파란 마이너스를 모아서 진정시켜 줘!", { mode: "queue" });
         break;
       case "banner": toast(arg === "soma" ? "세포체 - 입력 신호의 가중(통합)" : "축삭종말 접근 - 시냅스 소포 준비", "#2EE6D6", 2.2); break;
       case "codex": r.learn.codexSeen.add(arg); { const ce = codexById.get(arg); if (ce && !save.codexUnlocked.includes(arg)) toast("신경 도감 등록: " + ce.name, "#2EE6D6", 1.8); } break;
@@ -862,6 +862,7 @@ window.NR_MAIN = function () {
     const b = ev.target.closest("[data-act]"); if (!b) return; const a = b.dataset.act;
     if (a === "play") startStage(save.lastStage || "ch1");
     else if (a === "stages") { show("#result", false); show("#pause", false); race = null; Voice.stop(); show("#hud", false); show("#touch", false); show("#qpanel", false); show("#apanel", false); renderStages(); screen("stages"); menuScene(); Snd.play("menu"); }
+    else if (a === "story") { screen("story"); save.loreSeen = true; persist(); }
     else if (a === "codex" || a === "notes") { codexMode = a; renderCodex(); screen("codex"); }
     else if (a === "settings") { renderSettings($("#settings-list")); screen("settings"); }
     else if (a === "title") goTitle();
@@ -934,7 +935,7 @@ window.NR_MAIN = function () {
   window.NR_APP = { startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
   function boot() {
     if (boot.done) return; boot.done = true;
-    setupPost(); renderStages(); menuScene(); screen("title");
+    setupPost(); renderStages(); menuScene(); screen(save.loreSeen || AUTO ? "title" : "story"); if (!save.loreSeen) { save.loreSeen = true; persist(); }
     $("#loading").classList.add("off");
     Snd.want = "menu";
     requestAnimationFrame(frame);
