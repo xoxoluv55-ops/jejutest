@@ -496,7 +496,7 @@ window.NR_MAIN = function () {
       let sdt = dt * r.timeScale * (r.auto ? WARP : 1);
       const n = Math.max(1, Math.ceil(sdt / (1 / 120) - 1e-4)), h = sdt / n;
       for (let i = 0; i < n && r.phase === "run"; i++) { sim.step(inp, h); inp.jump = false; handleEvents(); }
-      updateLane(); updateMission();
+      updateLane(); updateMission(); fadeNearGate();
     } else if (r.phase === "finish") {
       r.finishT += dt; if (r.finishT > 3.2) { r.phase = "done"; showResult(); }
     }
@@ -598,6 +598,15 @@ window.NR_MAIN = function () {
     else { Snd.thud(); comboBreak(); starWrong(); missionFlash(false, "✘ " + R.name.replace("!", "") + " — " + R.why); }
   }
 
+  // 4.3: when the gate/fork is close, the question box fades so the lanes are fully visible
+  function fadeNearGate() {
+    const r = race; let op = "1";
+    if (r.pending && $("#qpanel").classList.contains("on")) { const d = distToDecision(); if (d < 130) op = Math.max(0.2, Math.min(1, (d - 30) / 100)).toFixed(2); }
+    setStyle("#qpanel", "opacity", op);
+    const e = typeof miEvent === "object" && miEvent ? miEvent : null; let mo = "1";
+    if (e && r.sim.seg.events.includes(e)) { const d = e.s - r.sim.s; if (d < 90) mo = Math.max(0.25, Math.min(1, (d - 20) / 70)).toFixed(2); }
+    setStyle("#mission", "opacity", mo);
+  }
   function handleEvents() { const sim = race.sim; for (const e of sim.events) handle(e); sim.events.length = 0; }
   function feedback(ok) { if (ok) { Snd.chime(); setExpr("Correct", 2); starCorrect(); fx.burst(star.root.position, "correct"); } else { Snd.thud(); setExpr("Wrong", 2.2); starWrong(); CAM.shake = 0.15; } }
   function bossAnswer(ok) {
