@@ -501,7 +501,7 @@ window.NR_MAIN = function () {
   // view - that is the hitch when the camera swings behind STAR-01 during "3, 2, 1".)
   function startStage(id, mode) {
     mode = mode || (id === "survival" ? "survival" : (save.mode || "story"));
-    const ld = $("#loading"); ld.textContent = "구간 준비 중…"; ld.classList.remove("off"); race = null;
+    const ld = $("#loading"); ld.innerHTML = "<div>구간 준비 중…</div>"; ld.classList.remove("off"); race = null;
     setTimeout(() => { try { buildStage(id, mode); } finally { ld.classList.add("off"); } }, 30);
   }
   function warmUp() {

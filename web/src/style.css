@@ -342,3 +342,9 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 #mission{opacity:1!important}
 #mission #mi-prompt{background:rgba(10,24,40,calc(.3 * var(--bf,1)))}
 #mission #mi-lanes div{background:rgba(20,16,56,calc(.3 * var(--bf,1)))}
+
+/* loading fallback: shown by CSS alone after a few seconds (works even where JavaScript cannot run) */
+.loading>div{text-align:center;padding:0 24px}
+.ld-help{margin-top:18px;font-family:var(--body);font-size:15px;line-height:1.6;color:#FFD34D;opacity:0;animation:ldshow .4s 6s forwards}
+.ld-help b{color:#fff}
+@keyframes ldshow{to{opacity:1}}
