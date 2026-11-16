@@ -2284,6 +2284,7 @@ window.NR_MAIN = function () {
       if (!this.ctx) {
         const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
         this.ctx = new AC(); this.master = this.ctx.createGain(); this.master.connect(this.ctx.destination);
+        this.ctx.onstatechange = () => { if (this.ctx.state === "running" && this.want) this.play(this.want); };
         this.music = this.ctx.createGain(); this.music.gain.value = 0.75 * save.musicVol; this.music.connect(this.master);
         this.sfx = this.ctx.createGain(); this.sfx.gain.value = 0.65 * save.sfxVol; this.sfx.connect(this.master);
         const o = this.ctx.createOscillator(), f = this.ctx.createBiquadFilter(); o.type = "sawtooth"; o.frequency.value = 70; f.type = "lowpass"; f.frequency.value = 500;
@@ -2293,7 +2294,12 @@ window.NR_MAIN = function () {
         const loop = (type, freq, q) => { const src = this.ctx.createBufferSource(), fl = this.ctx.createBiquadFilter(), g = this.ctx.createGain(); src.buffer = nb; src.loop = true; fl.type = type; fl.frequency.value = freq; fl.Q.value = q; g.gain.value = 0; src.connect(fl); fl.connect(g); g.connect(this.sfx); src.start(); return { g, fl }; };
         this.driftN = loop("bandpass", 2600, 4); this.boostN = loop("lowpass", 700, 0.7);
       }
-      if (this.ctx.state !== "running") this.ctx.resume();
+      // iOS: resume() is asynchronous - music must start AFTER the context is running (it used to be skipped)
+      if (this.ctx.state !== "running") { const p = this.ctx.resume(); if (p && p.then) p.then(() => { if (this.want) this.play(this.want); }).catch(() => {}); }
+      if (!this.silentEl) {   // iPhone silent switch mutes Web Audio unless the page plays as "media"
+        try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) { }
+        try { const a = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA="); a.setAttribute("playsinline", ""); a.loop = true; a.volume = 0.01; const pr = a.play(); if (pr && pr.catch) pr.catch(() => {}); this.silentEl = a; } catch (e) { this.silentEl = true; }
+      }
       if (this.want) this.play(this.want);
       if (!this.pre) { this.pre = true; setTimeout(() => { try { this.buf("race"); this.buf("menu"); } catch (e) { } }, 400); }   // render loops while on the menu, not at race start
     },
@@ -2439,6 +2445,7 @@ window.NR_MAIN = function () {
   const optSpeech = o => Voice.clean(o).replace(/[,.\s]+$/, "");
   const firstTouch = () => { Snd.unlock(); Voice.unlock(); };
   window.addEventListener("pointerdown", firstTouch, { capture: true });
+  window.addEventListener("touchend", firstTouch, { capture: true }); window.addEventListener("click", firstTouch, { capture: true });   // iOS counts these as user gestures for audio
   window.addEventListener("keydown", firstTouch, { capture: true });
 
   //================== THREE SETUP ==================
@@ -3434,7 +3441,7 @@ window.NR_MAIN = function () {
   }
 
   // boot
-  window.NR_APP = { startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
+  window.NR_APP = { snd: Snd, startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
   function boot() {
     if (boot.done) return; boot.done = true;
     setupPost(); applySkin(); renderStages(); menuScene(); screen(save.loreSeen || AUTO ? "title" : "story"); if (!save.loreSeen) { save.loreSeen = true; persist(); }
