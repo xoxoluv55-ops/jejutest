@@ -62,3 +62,7 @@ window.NR_MAIN();
 (W / "dist/nerve_runner.html").write_text(head + "\n" + body, encoding="utf-8")
 (W / "index.html").write_text(f"<!doctype html>\n<html lang=\"ko\">\n<head>\n{head}\n</head>\n<body>\n{body}\n</body>\n</html>\n", encoding="utf-8")
 print("questions", len(q), "codex", len(cx), "story beats", len(st), "bytes", (W / "index.html").stat().st_size)
+# public web page (GitHub Pages: branch claude/nerve-runner-visual-upgrade, folder /docs)
+(W.parent / "docs").mkdir(exist_ok=True)
+(W.parent / "docs" / "index.html").write_text((W / "index.html").read_text(encoding="utf-8"), encoding="utf-8")
+(W.parent / "docs" / ".nojekyll").write_text("", encoding="utf-8")
