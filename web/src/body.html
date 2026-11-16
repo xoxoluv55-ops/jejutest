@@ -8,12 +8,13 @@
       <div class="sub">STAR-01과 함께 달리는 신경해부·신경생리 레이싱</div>
       <div class="menu">
         <button class="big primary" data-act="play">▶ 게임 시작</button>
+        <button class="big tut-btn" data-act="tutorial">🎓 튜토리얼 · 연습 주행</button>
         <button class="big" data-act="stages">스테이지 선택</button>
         <button class="big story-btn" data-act="story">📖 STAR-01 이야기</button>
-        <button class="big evo-btn" data-act="evo">⭐ STAR-01 진화 · 스킨</button>
         <div class="row2">
-          <button data-act="codex">📘 신경 도감</button>
-          <button data-act="notes">📝 오답 노트</button>
+          <button data-act="codex">📘 도감</button>
+          <button data-act="notes">📝 오답</button>
+          <button data-act="evo">⭐ 진화</button>
           <button data-act="settings">⚙️ 설정</button>
         </div>
       </div>
@@ -26,6 +27,20 @@
     <header><button class="back" data-act="title">◀</button><h2>스테이지 선택</h2><div id="mode-tabs" class="tabs mode-tabs"></div></header>
     <div id="mode-desc" class="mode-desc"></div>
     <div id="stage-grid" class="stage-grid"></div>
+  </section>
+
+  <!-- CONTROL PICKER (before the tutorial) -->
+  <section id="scr-controls" class="screen panel-screen">
+    <header><button class="back" data-act="title">◀</button><h2>조작 방식 고르기</h2></header>
+    <div class="mode-desc">STAR-01을 좌우로 움직이는 방법을 골라 주세요. 나중에 설정에서 언제든 바꿀 수 있어요.</div>
+    <div class="ctl-cards">
+      <button class="ctl-card" data-act="ctl-buttons">
+        <div class="ctl-pic"><span class="k">◀</span><span class="k">▶</span><span class="r">점프 등은<br>오른쪽 버튼</span></div>
+        <b>방향키 버튼</b><small>왼쪽 아래 큰 ◀ ▶ 버튼을 누르고 있는 동안 그쪽으로 움직여요.</small></button>
+      <button class="ctl-card" data-act="ctl-tap">
+        <div class="ctl-pic tap"><span class="half">◀<br>왼쪽 절반</span><span class="half">오른쪽 절반<br>▶</span></div>
+        <b>화면 반 터치</b><small>화면 왼쪽 절반을 누르면 왼쪽, 오른쪽 절반을 누르면 오른쪽으로 가요. (버튼 위는 제외)</small></button>
+    </div>
   </section>
 
   <!-- EVOLUTION / SKINS -->
@@ -101,6 +116,7 @@
     <div id="h-hint" class="hint"></div>
     <div id="h-story" class="story"><b></b><span></span></div>
     <div id="h-phase" class="phase"></div>
+    <div id="tut" class="tutcard"><div id="tut-ico"></div><div><b id="tut-title"></b><span id="tut-desc"></span></div></div>
     <div id="h-collapse" class="collapse"><span>붕괴 접근</span><div class="cbar"><div id="h-collapse-fill"></div></div><b id="h-collapse-m">-</b></div>
     <div id="h-slow" class="slow">생각 시간 · 슬로모션</div>
     <div id="h-lane" class="lanepill"></div>
@@ -125,7 +141,7 @@
 
   <!-- TOUCH CONTROLS -->
   <section id="touch" class="touch">
-    <div id="dragzone" class="dragzone"><div class="dragrail"><div id="dragknob" class="dragknob"></div></div><span>여기를 좌우로 끌어서 조향</span></div>
+    <div id="tapzone" class="tapzone"><div class="tz l" data-side="left"><span>◀</span></div><div class="tz r" data-side="right"><span>▶</span></div></div>
     <div class="pad left">
       <button class="tb steer" data-k="left">◀</button>
       <button class="tb steer" data-k="right">▶</button>

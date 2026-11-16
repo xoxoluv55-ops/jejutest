@@ -585,6 +585,24 @@ const NR = (function () {
     const g = quizCourse(bank, null, "서바이벌", steps); g.parTime = g.referenceLength / 42; return g;
   }
   const SURVIVAL = { id: "survival", chapter: 0, title: "서바이벌", subtitle: "끝없는 신경 질주", introStory: "", gateTitle: "", goals: [], boss: false, build: survivalCourse };
+  // 4.7 tutorial: a short practice run, one skill per section (no chapter content)
+  function tutorialCourse(bank) {
+    const b = new Builder(V(0, 0, 0), 0);
+    b.trigger("tut:left", 25); for (let k = 0; k < 6; k++) b.eventAt(EV.Orb, 70 + k * 18, -3.2);
+    b.eventAt(EV.Trigger, 200, 0, "tut:right"); for (let k = 0; k < 6; k++) b.eventAt(EV.Orb, 250 + k * 18, 3.2);
+    b.straight(400); b.cut("연습 1 · 좌우 이동", ZONE.Normal, 6, "tutorial");
+    b.trigger("tut:jump", 10); [140, 260].forEach(s => { const o = b.eventAt(EV.Obstacle, s, 0, "pulse"); o.width = 16; o.height = 1.2; });
+    b.straight(330); b.cut("연습 2 · 점프", ZONE.Normal, 6, "tutorial");
+    b.trigger("tut:drift", 5); b.trigger("dzone:on", 40); b.straight(90); b.turn(150, 48); b.straight(50); b.turn(-110, 58); b.event(EV.Trigger, 0, "dzone:off", -5); b.straight(60);
+    b.cut("연습 3 · 드리프트", ZONE.Normal, 6, "tutorial");
+    b.trigger("tut:boost", 10); for (let k = 0; k < 5; k++) b.eventAt(EV.Orb, 120 + k * 40, 0);
+    b.straight(360); b.cut("연습 4 · 부스트", ZONE.Normal, 6, "tutorial");
+    b.trigger("tut:gate", 5); { const q = bank.get("tut_q"); b.eventAt(EV.Trigger, 50, 0, "gateq:tut_q"); const g = b.eventAt(EV.Gate, 260, 0, "quiz"); g.questionId = q.id; g.laneX = laneXs(2, 9); g.correctLane = q.answer; }
+    b.straight(380); b.cut("연습 5 · 정답 게이트", ZONE.Normal, 9, "tutorial");
+    b.trigger("tut:end", 20); b.straight(220); b.event(EV.Finish, 0, "finish", -10); b.cut("연습 완주", ZONE.Normal, 6, "tutorial");
+    const g = b.graph; g.referenceLength = shortestLength(g); g.parTime = g.referenceLength / 30; return g;
+  }
+  const TUTORIAL = { id: "tutorial", chapter: 0, title: "튜토리얼", subtitle: "연습 주행", introStory: "tutorial_intro", gateTitle: "연습 게이트", goals: [], boss: false, build: tutorialCourse };
   const STAGES = [
     { id: "ch1", chapter: 1, title: "뉴런과 신경신호", subtitle: "뉴런 고속도로", introStory: "prologue", gateTitle: "활동전위 게이트", goals: ["뉴런의 구조", "활동전위", "도약전도", "시냅스 전달"], boss: false, build: chapter1 },
     Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "sprint", "fork:ch2_fork_horn", "reflex", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "jumppads", "loop", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "split", "warp", "plastic", "codex:reciprocal_inhibition", "inhibit", "gate:ch2_gate_reciprocal", "reflex", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
@@ -881,6 +899,6 @@ const NR = (function () {
     }
   }
 
-  return { STATE, SURVIVAL, TUNE, VM_REST, VM_THRESH, V, add, sub, mul, len, norm, clamp, clamp01, lerp, sign, ZONE, EV, SE, STAGES, Sim, AutoPilot, Bank, Session, wrongExp, laneXs, CH9_BOSS };
+  return { TUTORIAL, STATE, SURVIVAL, TUNE, VM_REST, VM_THRESH, V, add, sub, mul, len, norm, clamp, clamp01, lerp, sign, ZONE, EV, SE, STAGES, Sim, AutoPilot, Bank, Session, wrongExp, laneXs, CH9_BOSS };
 })();
 if (typeof module !== "undefined") module.exports = NR;

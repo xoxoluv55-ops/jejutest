@@ -4,6 +4,12 @@
 "use strict";
 window.NR_MAIN = function () {
   const C = window.NR_CONTENT, $ = s => document.querySelector(s), $$ = s => Array.from(document.querySelectorAll(s));
+  C.questions.push({ id: "tut_q", chapter: 0, topic: "연습", difficulty: "연습", question: "연습 문제: 다른 뉴런의 신호를 처음 받아들이는 곳은?", options: ["가지돌기", "축삭종말"], answer: 0, explanation: "가지돌기는 다른 뉴런에서 오는 신호를 받는 입구예요. 신호는 가지돌기 → 세포체 → 축삭 → 축삭종말 순서로 흘러가요.", wrongExplanations: ["", "축삭종말은 신호를 다음 뉴런으로 내보내는 출구예요."], structures: [] });
+  C.story.tutorial_intro = [
+    { speaker: "STAR-01", text: "안녕! 나는 STAR-01, 뉴런을 타고 달리는 신경 신호야. 본격적으로 달리기 전에 연습부터 해 보자!" },
+    { speaker: "STAR-01", text: "나는 저절로 앞으로 달려. 너는 좌우로 방향만 잡아 주면 돼. 길 위의 노란 오브를 모으면 신호 에너지가 차." },
+    { speaker: "STAR-01", text: "오른쪽 아래 버튼은 점프, 드리프트, 부스트야. 하나씩 차례대로 알려 줄게." },
+    { speaker: "STAR-01", text: "마지막엔 문제가 나와. 정답 보기가 있는 차선으로 들어가면 돼. 그럼 출발!" }];
   const bank = new NR.Bank(C.questions), codexById = new Map(C.codex.map(c => [c.id, c]));
   const HASH = location.hash || "", AUTO = /auto/.test(HASH), WARP = (HASH.match(/warp=(\d+)/) || [])[1] | 0 || 1;
 
@@ -396,17 +402,17 @@ window.NR_MAIN = function () {
   addEventListener("keydown", e => { keys[e.code] = true; if (["Space", "ArrowUp", "KeyW"].includes(e.code) && !e.repeat) jumpPress = true; if ((e.code === "Escape" || e.code === "KeyP") && race && race.phase === "run") pauseRace(); if (e.code === "Space") e.preventDefault(); });
   addEventListener("keyup", e => { keys[e.code] = false; });
   addEventListener("blur", () => { for (const k in held) held[k] = 0; for (const k in keys) keys[k] = false; });
-  // 3.0: analog steering - drag anywhere on the left part of the screen (buttons still work)
-  let drag = null;
-  const dz = $("#dragzone");
-  if (dz) {
-    dz.addEventListener("pointerdown", ev => { ev.preventDefault(); drag = { id: ev.pointerId, x0: ev.clientX, v: 0 }; try { dz.setPointerCapture(ev.pointerId); } catch (e) { } dz.classList.add("on"); });
-    dz.addEventListener("pointermove", ev => { if (drag && ev.pointerId === drag.id) { drag.v = NR.clamp((ev.clientX - drag.x0) / 55, -1, 1); const k = $("#dragknob"); if (k) k.style.transform = `translateX(${drag.v * 40}px)`; } });
-    const end = ev => { if (drag && ev.pointerId === drag.id) { drag = null; dz.classList.remove("on"); const k = $("#dragknob"); if (k) k.style.transform = ""; } };
-    dz.addEventListener("pointerup", end); dz.addEventListener("pointercancel", end); dz.addEventListener("lostpointercapture", end);
-  }
+  // 4.7: half-screen tap steering (chosen in the control picker): hold the left/right half of the screen
+  const tapHeld = { left: new Set(), right: new Set() };
+  $$("#tapzone .tz").forEach(z => {
+    const side = z.dataset.side;
+    z.addEventListener("pointerdown", ev => { ev.preventDefault(); tapHeld[side].add(ev.pointerId); try { z.setPointerCapture(ev.pointerId); } catch (e) { } z.classList.add("down"); });
+    const up = ev => { tapHeld[side].delete(ev.pointerId); if (!tapHeld[side].size) z.classList.remove("down"); };
+    z.addEventListener("pointerup", up); z.addEventListener("pointercancel", up); z.addEventListener("lostpointercapture", up);
+  });
+  function applyControlMode() { $("#touch").classList.toggle("tapmode", save.controlMode === "tap"); }
   function readInput(dt) {
-    let steer = 0; if (drag) { steerSm += (drag.v - steerSm) * (1 - Math.exp(-14 * dt)); const j = jumpPress; jumpPress = false; const it = itemPress || keys.KeyE; itemPress = false; return { item: it, steer: steerSm, jump: j, drift: !!(held.drift || keys.KeyZ || keys.ArrowDown), boost: !!(held.boost || keys.ShiftLeft || keys.KeyX) }; } if (held.left || keys.ArrowLeft || keys.KeyA) steer -= 1; if (held.right || keys.ArrowRight || keys.KeyD) steer += 1;
+    let steer = 0; if (held.left || tapHeld.left.size || keys.ArrowLeft || keys.KeyA) steer -= 1; if (held.right || tapHeld.right.size || keys.ArrowRight || keys.KeyD) steer += 1;
     const drift = !!(held.drift || keys.KeyZ || keys.ControlLeft || keys.ArrowDown || keys.KeyS), boost = !!(held.boost || keys.ShiftLeft || keys.KeyX);
     steer = NR.clamp(steer, -1, 1); const r = dt * (steer === 0 ? 10 : 6); steerSm += NR.clamp(steer - steerSm, -r, r);
     const j = jumpPress; jumpPress = false; const it = itemPress || keys.KeyE; itemPress = false; return { steer: steerSm, jump: j, drift, boost, item: it };
@@ -507,7 +513,7 @@ window.NR_MAIN = function () {
   // texture BEFORE the intro/countdown. (iOS otherwise compiles them the first time an object comes into
   // view - that is the hitch when the camera swings behind STAR-01 during "3, 2, 1".)
   function startStage(id, mode) {
-    mode = mode || (id === "survival" ? "survival" : (save.mode || "story"));
+    mode = id === "tutorial" ? "story" : mode || (id === "survival" ? "survival" : (save.mode || "story"));
     const ld = $("#loading"); ld.innerHTML = "<div>구간 준비 중…</div>"; ld.classList.remove("off"); race = null;
     setTimeout(() => { try { buildStage(id, mode); } finally { ld.classList.add("off"); } }, 30);
   }
@@ -520,7 +526,7 @@ window.NR_MAIN = function () {
   let rivalMeshes = null, ghostMesh = null;
   function buildStage(id, mode) {
     qbank = shuffledBank();
-    const stage = id === "survival" ? NR.SURVIVAL : (NR.STAGES.find(s => s.id === id) || NR.STAGES[0]); if (id !== "survival") save.lastStage = stage.id; persist();
+    const stage = id === "survival" ? NR.SURVIVAL : id === "tutorial" ? NR.TUTORIAL : (NR.STAGES.find(s => s.id === id) || NR.STAGES[0]); if (id !== "survival" && id !== "tutorial") save.lastStage = stage.id; persist();
     NR.STATE.plastic = ((save.plastic || {})[stage.id]) || 0;   // neuroplasticity shortcut state for this chapter
     const graph = stage.build(qbank); buildWorld(stage, graph);
     const sim = new NR.Sim(graph), learn = new NR.Session(qbank), forkSegByQ = new Map();
@@ -528,6 +534,7 @@ window.NR_MAIN = function () {
     let bossMax = 0; if (stage.boss && !graph.bossMax) { for (const e of graph.allEvents()) if (e.type === NR.EV.Gate && e.tag === "boss") bossMax++; for (const s of graph.segments) if (s.fork) bossMax++; }
     race = { stage, graph, sim, learn, forkSegByQ, phase: "intro", t: 0, cd: 4, timeScale: 1, pending: null, pendingLanes: null, bossMax, bossHp: bossMax, finishT: 0, auto: AUTO ? new NR.AutoPilot() : null, paused: false, lastSection: "", combo: 0, comboT: 0, maxCombo: 0, score: 0, lastOrb: -9, mode: mode || "story" };
     if (graph.bossMax) { race.bossMax = graph.bossMax; race.bossHp = graph.bossMax; }
+    race.tut = stage.id === "tutorial" ? { step: null, done: true } : null; $("#tut").classList.remove("on"); applyControlMode();
     setupMode(race); $("#h-collapse").classList.remove("on"); $("#app").classList.remove("danger"); updateItemUi();
     $("#h-combo").classList.remove("on"); fx.hide(); $("#mission").classList.remove("on"); $("#reflex").classList.remove("on"); miEvent = null; miResT = 0;
     screen(""); show("#hud", true); show("#touch", false); show("#qpanel", false); show("#apanel", false); show("#result", false); show("#pause", false);
@@ -622,12 +629,12 @@ window.NR_MAIN = function () {
     if (r.phase === "count") {
       r.t = (performance.now() - r.cdStart) / 1000; const n = 3 - Math.floor(r.t - 0.6);   // 4.0: wall clock, a slow frame can't stretch it
       if (r.t >= 0.6 && n !== r.cd && n >= 1 && n <= 3) { r.cd = n; countdown(String(n)); Snd.beep(); }
-      if (r.t >= 3.6) { countdown("GO!"); Snd.chime(); r.phase = "run"; r.t = 0; hint(r.auto ? "AUTO 데모 주행 중" : "◀ ▶ 버튼 또는 화면 왼쪽을 좌우로 끌어서 조향! 코너에서는 드리프트를 누른 채 꺾으면 터보 충전.", 5, r.auto ? "" : "버튼이나 화면 왼쪽을 좌우로 끌어서 조향해! 코너에서는 드리프트!"); }
+      if (r.t >= 3.6) { countdown("GO!"); Snd.chime(); r.phase = "run"; r.t = 0; hint(r.auto ? "AUTO 데모 주행 중" : (save.controlMode === "tap" ? "화면 왼쪽/오른쪽 절반을 눌러서 조향!" : "◀ ▶ 버튼으로 조향!") + " 코너에서는 드리프트를 누른 채 꺾으면 터보 충전.", 5, r.auto ? "" : (r.tut ? "" : "자, 출발!")); }
     } else if (r.phase === "run") {
       r.t += dt; if (r.t > 0.8 && r.t < 1.2) countdown("");
       const inp = r.auto ? r.auto.think(sim) : readInput(dt);
       if (r.queued && (!Voice.has("exp") || distToDecision() < 110)) { const qd = r.queued; r.queued = null; showQuestion(qbank.get(qd.id), qd.title); Snd.beep(); }
-      let wantSlow = 1;
+      let wantSlow = 1; if (r.tut && r.tut.step && !r.tut.done && !r.auto) wantSlow = 0.6;
       if (r.pending && !r.auto && r.mode === "story") {
         const base = NR.clamp(save.thinkSlow, 0.2, 1), D = distToDecision(), v = Math.max(12, sim.speed);
         const need = r.queued ? Voice.remaining("exp") + 6 : save.voiceOn ? Voice.remaining("q") + 1.5 : 0;   // seconds of talking/reading still needed
@@ -655,7 +662,7 @@ window.NR_MAIN = function () {
     setStyle("#h-prog", "width", (pf * 100).toFixed(1) + "%"); setStyle("#h-star", "left", (pf * 100).toFixed(1) + "%");
     setText("#h-time", fmt(sim.raceTime)); setText("#h-score", r.learn.correct + "/" + r.learn.total);
     setStyle("#h-energy", "width", (sim.boostEnergy * 100).toFixed(0) + "%");
-    updateVm(dt); tickCombo(dt); tickCollapse(); if (r.mode !== "story") tickMode(dt);
+    updateVm(dt); tickCombo(dt); tickTut(); tickCollapse(); if (r.mode !== "story") tickMode(dt);
     Snd.setHum(running ? sim.speed01 : 0, running && sim.boosting);
   }
 
@@ -700,6 +707,41 @@ window.NR_MAIN = function () {
   function tickCombo(dt) {
     const r = race; if (r.comboT > 0) { r.comboT -= dt; setStyle("#h-combo-t", "width", Math.max(0, r.comboT / COMBO_WINDOW * 100).toFixed(0) + "%"); if (r.comboT <= 0) comboBreak(); }
     setText("#h-score2", r.score);
+  }
+
+  // ---------- 4.7 tutorial ----------
+  function tutSteps() {
+    const tap = save.controlMode === "tap";
+    return {
+      left: ["⬅", "왼쪽으로 가 보기", tap ? "화면 왼쪽 절반을 누르고 있으면 왼쪽으로 가요. 왼쪽의 노란 오브를 모아 보세요!" : "왼쪽 아래 ◀ 버튼을 누르고 있으면 왼쪽으로 가요. 왼쪽의 노란 오브를 모아 보세요!", tap ? "tz-left" : "left"],
+      right: ["➡", "이번엔 오른쪽!", tap ? "화면 오른쪽 절반을 누르고 있어 보세요. 손을 떼면 그 자리에서 똑바로 달려요." : "▶ 버튼을 누르고 있어 보세요. 손을 떼면 그 자리에서 똑바로 달려요.", tap ? "tz-right" : "right"],
+      jump: ["⤒", "점프로 넘기", "빨간 파동이 다가오면 오른쪽 아래 [점프]! 공중에 뜬 동안은 부딪히지 않아요.", "jump"],
+      drift: ["↯", "드리프트로 코너 돌기", "급커브예요! [드리프트]를 누른 채 커브 쪽으로 꺾고, 커브를 빠져나오면 손을 떼세요. 불꽃 색이 바뀔수록 강한 미니 터보!", "drift"],
+      boost: ["⚡", "부스트", "[부스트]를 누르면 화면 아래 파란 '신호 에너지'를 써서 빨라져요. 에너지는 오브와 드리프트로 채워요.", "boost"],
+      gate: ["🅰", "정답 게이트", "문제가 나오면 정답 보기가 있는 차선으로 들어가요. 화면 아래 '지금 A …'가 지금 내 차선이에요. 문제가 뜨는 동안은 조금 느려져요.", null],
+      end: ["🏁", "연습 끝!", "잘했어요! 이제 진짜 신경계를 달려 봐요. 결승선까지 쭉!", null],
+    };
+  }
+  function tutStart(key) {
+    const r = race; if (!r.tut) return; const S = tutSteps()[key]; if (!S) return;
+    r.tut.step = key; r.tut.done = key === "end"; r.tut.t = 0;
+    const el = $("#tut"); el.classList.remove("done"); el.classList.add("on"); $("#tut-ico").textContent = S[0]; $("#tut-title").textContent = S[1]; $("#tut-desc").textContent = S[2];
+    $("#h-hint").style.display = "none"; tutCue(S[3]); Voice.say(S[2], { mode: "replace" });
+    if (key === "end") setTimeout(() => { if (race && race.tut) $("#tut").classList.remove("on"); }, 5000);
+  }
+  function tutCue(btn) {
+    $$(".tb.cue,.tz.cue").forEach(b => b.classList.remove("cue")); if (!btn) return;
+    const el = btn.startsWith("tz-") ? document.querySelector(`.tz[data-side="${btn.slice(3)}"]`) : document.querySelector(`.tb[data-k="${btn}"]`); if (el) el.classList.add("cue");
+  }
+  function tutDone(key) {
+    const r = race; if (!r || !r.tut || r.tut.step !== key || r.tut.done) return;
+    r.tut.done = true; tutCue(null); const el = $("#tut"); el.classList.add("done"); $("#tut-title").textContent = "✔ 잘했어요!"; Snd.chime();
+    Voice.say(pickOne(["잘했어!", "좋아, 완벽해!", "바로 그거야!"]), { mode: "replace" }); setTimeout(() => { if (race && race.tut && race.tut.step === key) el.classList.remove("on"); }, 1400);
+  }
+  function tickTut() {
+    const r = race, T = r.tut; if (!T || !T.step || T.done) return; const sim = r.sim;
+    if (T.step === "left" && sim.x < -2) tutDone("left");
+    else if (T.step === "right" && sim.x > 2) tutDone("right");
   }
 
   // ---------- 4.0 mission UI ----------
@@ -778,7 +820,7 @@ window.NR_MAIN = function () {
         if (e.src.tag === "glia" && e.correct) { extra = "희소돌기아교세포가 수초를 재생했습니다. 전도 속도 회복!"; toast("수초 복구 완료!", "#5CFF9D"); }
         else if (e.src.tag === "ap") extra = "활동전위 단계 " + (e.src.index + 1) + "/4";
         if (e.src.tag === "boss") bossAnswer(e.correct); if (e.correct && e.src.questionId) world.showWeak(e.src.questionId);
-        if (e.correct) comboAdd(2, 300, "정답"); else comboBreak();
+        if (e.correct) comboAdd(2, 300, "정답"); else comboBreak(); tutDone("gate");
         showAnswer(q, e.lane, e.correct, extra, e.correct ? 7 : 11); r.pending = null; r.pendingLanes = null; r.queued = null; break;
       }
       case S.ForkChosen: {
@@ -804,13 +846,13 @@ window.NR_MAIN = function () {
       }
       case S.WallHit: CAM.shake = 0.15; SV.squashVel -= 3; comboBreak(); Snd.thud(); setExpr("Surprise", 0.6); break;
       case S.DriftEnd:
-        if (e.tier > 0) { Snd.driftOk(e.tier); toast("드리프트 성공! 미니 터보 Lv." + e.tier, ["", "#4D8DFF", "#FFB627", "#FF5CC8"][e.tier], 1); setExpr("Joy", 0.8); fx.burst(star.root.position, "drift", e.tier); comboAdd(1, 80 * e.tier, "드리프트"); }
+        if (e.tier > 0) { tutDone("drift"); Snd.driftOk(e.tier); toast("드리프트 성공! 미니 터보 Lv." + e.tier, ["", "#4D8DFF", "#FFB627", "#FF5CC8"][e.tier], 1); setExpr("Joy", 0.8); fx.burst(star.root.position, "drift", e.tier); comboAdd(1, 80 * e.tier, "드리프트"); }
         else if (e.tag === "fail") { Snd.driftFail(); toast("드리프트 실패 — 코너에서 꺾어야 충전돼요", "#B4AEDB", 1.2); fx.burst(star.root.position, "fail"); comboBreak(); }
         break;
       case S.ObstacleDodged: if (e.tag === "jump" || e.correct) { comboAdd(1, 100, "점프 회피"); } else comboAdd(1, 50, "회피"); break;
       case S.Land: Snd.land(); SV.squashVel -= 4; fx.burst(star.root.position, "land"); break;
-      case S.BoostStart: Snd.boostStart(); setExpr("Joy", 1); CAM.kickPunch = 1; break;
-      case S.Jump: Snd.jump(); break;
+      case S.BoostStart: tutDone("boost"); Snd.boostStart(); setExpr("Joy", 1); CAM.kickPunch = 1; break;
+      case S.Jump: Snd.jump(); tutDone("jump"); break;
       case S.Checkpoint: toast("체크포인트", "#9B5CFF", 1); break;
       case S.EnterSegment: setSection(sim.seg.zone === NR.ZONE.Review ? "복습 구간" : sim.seg.zone === NR.ZONE.Shortcut ? "지름길" : sim.seg.name); break;
       case S.Finish: finish(); break;
@@ -907,6 +949,7 @@ window.NR_MAIN = function () {
           CAM.bossLook = 1.6; Snd.tone("sawtooth", 120, 60, 0.8, 0.3); Voice.say({ phase1: "NULL이 신호를 흩뜨리고 있어! 피하면서 에너지를 모으자!", phase2: "증상을 보고 정확히 진단해야 약점이 열려!", phase3: "마지막이야! 진단하고, 부스트로 코어를 뚫자!" }[arg], { mode: "queue" });
         } else if (arg.startsWith("counter:")) { const id = arg.slice(8); if (!race.sim.gateOk[id]) { world.bossAttack(); toast("NULL 반격! 레이저 주의", "#FF4D6D", 1.4); } }
         break;
+      case "tut": tutStart(arg); break;
       case "mission":
         if (arg.startsWith("sort:")) { const t = { nuclei: "뇌줄기 신경핵 탐험! 지금 층에 있는 신경핵 차선으로!", relay: "시상 중계 미션! 감각 신호를 맞는 중계핵으로 보내!", cortex: "대뇌 기능 포털! 명령에 맞는 겉질 영역으로!", cranial: "12뇌신경 포털! 동작에 맞는 뇌신경으로!" }[arg.slice(5)]; hint(t, 4); Voice.say(t, { mode: "queue" }); }
         else if (arg.startsWith("cross:")) { const t = { dcml: "왼다리 진동 감각을 실어 나르자! 뒤기둥-안쪽섬유띠계는 어디서 교차할까?", stt: "왼손 통증 신호! 앞가쪽계는 언제 건너갈까?", cst: "왼손을 움직이는 명령! 겉질척수로는 어디서 교차할까?" }[arg.slice(6)]; hint(t + " 층마다 맞는 쪽 차선으로 드리프트!", 5); Voice.say(t, { mode: "queue" }); }
@@ -978,6 +1021,16 @@ window.NR_MAIN = function () {
   //================== RESULT ==================
   function showResult() {
     const r = race, sim = r.sim, L = r.learn, par = r.graph.parTime, t = sim.raceTime;
+    if (r.stage.id === "tutorial") {   // practice only: nothing goes to records or wrong-answer notes
+      save.tutDone = true; persist(); $("#tut").classList.remove("on"); show("#apanel", false); show("#qpanel", false);
+      $("#r-title").textContent = "🎓 튜토리얼 완료!"; $("#r-grade").textContent = "조작을 모두 익혔어요. 이제 CH.1 뉴런 고속도로로 출발!";
+      $("#r-stats").innerHTML = [["기록", fmt(t)], ["오브", sim.coins], ["점수", r.score]].map(([a, b]) => `<div>${a}<b>${b}</b></div>`).join("");
+      $("#r-wrong").innerHTML = `<div class="entry"><b>정리</b><br>• 좌우: ${save.controlMode === "tap" ? "화면 왼쪽/오른쪽 절반 누르기" : "◀ ▶ 버튼"} (설정에서 바꿀 수 있어요)<br>• 점프: 빨간 파동 넘기 · 드리프트: 코너에서 누른 채 꺾고 떼면 터보 · 부스트: 에너지로 가속<br>• 문제: 정답 보기의 차선으로 들어가기</div>`;
+      $("#result [data-act=next]").style.display = ""; $("#result [data-act=next]").textContent = "CH.1 시작 ▶"; r.tutNext = true;
+      show("#hud", false); show("#result", true); Snd.play("menu"); Voice.say("연습 끝! 이제 진짜 신경계로 출발하자!");
+      window.__nrResult = { stage: "tutorial", time: t, correct: L.correct, total: L.total }; return;
+    }
+    $("#result [data-act=next]").textContent = "다음 스테이지 ▶";
     const today = new Date().toISOString().slice(0, 10); for (const a of L.answers) { const q = qbank.get(a.questionId); if (q && q.perm) { a.chosen = q.perm[a.chosen]; a.mapped = true; } }
     L.mergeInto(save, today); save.plays++;
     const b = save.best[r.stage.id], isBest = !b || t < b.time; if (isBest) save.best[r.stage.id] = { time: t, acc: L.accuracy, score: r.score };
@@ -1080,6 +1133,7 @@ window.NR_MAIN = function () {
       ["말 속도", "", "voiceRate", [[0.95, "천천히"], [1.08, "보통"], [1.2, "빠르게"]]],
       ["배경 음악 음량", "", "musicVol", [[0, "끔"], [0.35, "작게"], [0.7, "보통"], [1, "크게"]]],
       ["효과음 음량", "", "sfxVol", [[0, "끔"], [0.4, "작게"], [0.8, "보통"], [1, "크게"]]],
+      ["좌우 조작", "", "controlMode", [["buttons", "◀ ▶ 버튼"], ["tap", "화면 반 터치"]]],
       ["문제 생각 시간", "문제가 뜨면 레이스가 조금 느려져요 (기록 손해 없음)", "thinkSlow", [[0.5, "느리게"], [0.75, "조금"], [1, "끄기"]]],
       ["도움말 힌트", "", "showHints", [[true, "켜기"], [false, "끄기"]]],
       ["그래픽 품질", "버벅이면 '가볍게'", "quality", [["low", "가볍게"], ["auto", "자동"], ["high", "선명"]]],
@@ -1089,7 +1143,7 @@ window.NR_MAIN = function () {
     el.innerHTML = (compact ? "" : voiceRow()) + rows.map(([t, d, k, opts]) => `<div class="set"><div>${t}${d ? `<small>${d}</small>` : ""}</div><div class="opts">${opts.map(([v, l]) => `<button data-k="${k}" data-v='${JSON.stringify(v)}' class="${save[k] === v ? "on" : ""}">${l}</button>`).join("")}</div></div>`).join("") + (compact ? "" : `<div class="set"><div>기록 초기화<small>최고 기록·도감·오답 노트를 지워요</small></div><div class="opts"><button data-reset="1">초기화</button></div></div>`);
     el.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => {
       const k = b.dataset.k, v = JSON.parse(b.dataset.v); save[k] = v; persist();
-      if (k === "musicVol") Snd.setMusic(); if (k === "sfxVol") { Snd.setSfx(); Snd.coin(); }
+      if (k === "controlMode") applyControlMode(); if (k === "musicVol") Snd.setMusic(); if (k === "sfxVol") { Snd.setSfx(); Snd.coin(); }
       if (k === "quality") { autoLevel = TOUCH ? "mid" : "high"; renderer.setPixelRatio(dprCap()); setupPost(); resize(); if (!race) { if (world) world.dispose(scene); world = null; menuScene(); } }
       if ((k === "voiceOn" && v) || k === "voicePitch" || k === "voiceRate") Voice.say("안녕! 나는 스타 제로원이야. 이렇게 읽어 줄게!"); if (k === "voiceOn" && !v) Voice.stop();
       renderSettings(el, compact);
@@ -1108,7 +1162,9 @@ window.NR_MAIN = function () {
   function goTitle() { hideRacers(); race = null; Voice.stop(); show("#hud", false); show("#touch", false); show("#result", false); show("#pause", false); show("#qpanel", false); show("#apanel", false); show("#mini", false); show("#dialog", false); screen("title"); menuScene(); Snd.play("menu"); }
   document.addEventListener("click", ev => {
     const b = ev.target.closest("[data-act]"); if (!b) return; const a = b.dataset.act;
-    if (a === "play") startStage(save.lastStage || "ch1");
+    if (a === "play") { if (!save.tutDone) { screen("controls"); } else startStage(save.lastStage || "ch1"); }
+    else if (a === "tutorial") screen("controls");
+    else if (a === "ctl-buttons" || a === "ctl-tap") { save.controlMode = a === "ctl-tap" ? "tap" : "buttons"; persist(); applyControlMode(); startStage("tutorial", "story"); }
     else if (a === "stages") { hideRacers(); show("#result", false); show("#pause", false); race = null; Voice.stop(); show("#hud", false); show("#touch", false); show("#qpanel", false); show("#apanel", false); renderStages(); screen("stages"); menuScene(); Snd.play("menu"); }
     else if (a === "evo") { renderEvo(); screen("evo"); }
     else if (a === "story") { screen("story"); save.loreSeen = true; persist(); }
@@ -1118,6 +1174,7 @@ window.NR_MAIN = function () {
     else if (a === "resume") resumeRace();
     else if (a === "retry") { const id = race ? race.stage.id : save.lastStage, m = race ? race.mode : undefined; show("#pause", false); startStage(id, m); }
     else if (a === "quit") { hideRacers(); show("#pause", false); race = null; renderStages(); screen("stages"); show("#hud", false); show("#touch", false); show("#qpanel", false); show("#apanel", false); Voice.stop(); menuScene(); Snd.play("menu"); }
+    else if (a === "next" && race && race.tutNext) startStage("ch1", "story");
     else if (a === "next") { const i = NR.STAGES.findIndex(s => s.id === (race ? race.stage.id : save.lastStage)); startStage(NR.STAGES[Math.min(NR.STAGES.length - 1, i + 1)].id, race ? race.mode : undefined); }
   });
   $("#b-pause").addEventListener("click", pauseRace);
@@ -1188,7 +1245,7 @@ window.NR_MAIN = function () {
     $("#loading").classList.add("off");
     Snd.want = "menu";
     requestAnimationFrame(frame);
-    const m = HASH.match(/stage=(ch\d|survival)/), mm = HASH.match(/mode=(\w+)/); if (AUTO || m) setTimeout(() => startStage(m ? m[1] : "ch1", mm ? mm[1] : undefined), 300);
+    const m = HASH.match(/stage=(ch\d|survival|tutorial)/), mm = HASH.match(/mode=(\w+)/); if (AUTO || m) setTimeout(() => startStage(m ? m[1] : "ch1", mm ? mm[1] : undefined), 300);
   }
   (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(boot); setTimeout(boot, 2500);
 };

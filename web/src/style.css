@@ -306,6 +306,35 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 .evo .sw{height:44px;border-radius:12px}.evo b{font-family:var(--title);font-weight:400;font-size:22px}.evo small{color:var(--dim);font-size:14px;line-height:1.4}
 .evo.locked{opacity:.45}.evo.cur{border-color:var(--yellow);box-shadow:0 0 14px rgba(255,211,77,.5)}
 @media (max-height:520px){.phase{font-size:30px}.phase small{font-size:14px}.collapse{bottom:44px;font-size:12px}.collapse .cbar{width:90px}}
+/* ---------- 4.7: bigger arrows, half-screen tap steering, tutorial ---------- */
+.tb.steer{width:150px;height:132px;font-size:56px;border-radius:32px;border-width:4px}
+.pad.left{gap:20px}
+.tapzone{position:absolute;inset:0;display:none;pointer-events:auto;touch-action:none}
+.touch.tapmode .tapzone{display:flex}.touch.tapmode .pad.left{display:none}
+.tz{flex:1;display:flex;align-items:center;justify-content:center}
+.tz span{font-size:64px;color:rgba(255,255,255,.10);transition:color .1s}
+.tz.down{background:radial-gradient(circle at center,rgba(46,230,214,.16),rgba(46,230,214,0) 70%)}.tz.down span{color:rgba(46,230,214,.55)}
+.tz.cue span{color:rgba(255,211,77,.8);animation:cue .35s infinite alternate}
+.tut-btn{background:linear-gradient(180deg,#2EE6D6,#1A8F9F);color:#06202A;border-color:#B8FFF8}
+.row2 button{flex:1 1 0}
+.tutcard{position:absolute;left:50%;transform:translateX(-50%);top:calc(max(8px,env(safe-area-inset-top)) + 64px);display:none;align-items:center;gap:14px;width:min(720px,80vw);background:rgba(10,30,44,.82);border:3px solid var(--cyan);border-radius:18px;padding:10px 16px;pointer-events:none;z-index:6}
+.tutcard.on{display:flex;animation:rfin .25s ease-out}
+.tutcard.done{border-color:var(--green);background:rgba(10,44,24,.85)}
+#tut-ico{font-size:46px;line-height:1;min-width:56px;text-align:center}
+.tutcard b{display:block;font-family:var(--title);font-weight:400;font-size:24px;color:var(--yellow)}.tutcard.done b{color:var(--green)}
+.tutcard span{display:block;font-size:17px;line-height:1.45}
+.ctl-cards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;overflow:auto}
+.ctl-card{flex:1 1 300px;max-width:440px;display:flex;flex-direction:column;gap:8px;align-items:stretch;text-align:left;padding:16px;border-radius:20px}
+.ctl-card b{font-family:var(--title);font-weight:400;font-size:26px;color:var(--yellow)}.ctl-card small{font-family:var(--body);font-size:16px;line-height:1.5;color:var(--text)}
+.ctl-pic{height:120px;border-radius:14px;background:#120E36;display:flex;align-items:flex-end;gap:10px;padding:10px;position:relative}
+.ctl-pic .k{width:64px;height:58px;border-radius:16px;border:3px solid #C9A8FF;display:flex;align-items:center;justify-content:center;font-size:28px}
+.ctl-pic .r{margin-left:auto;font-size:13px;color:var(--dim);text-align:right}
+.ctl-pic.tap{align-items:stretch;padding:0;overflow:hidden}.ctl-pic .half{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;font-size:15px;color:#9CFFEA;border:2px dashed rgba(46,230,214,.5)}
+@media (max-height:520px){
+  .tb.steer{width:104px;height:92px;font-size:40px;border-radius:24px}.pad.left{gap:14px}
+  .tutcard{top:46px;padding:6px 12px;gap:10px}#tut-ico{font-size:32px;min-width:40px}.tutcard b{font-size:18px}.tutcard span{font-size:13px}
+  .ctl-pic{height:80px}.ctl-card b{font-size:20px}.ctl-card small{font-size:13px}
+}
 /* ---------- 4.1: slimmer, see-through top boxes (same text size) ---------- */
 .qpanel,.apanel{width:auto;max-width:min(760px,66vw);padding:4px 10px 6px;background:rgba(16,12,48,.5);border-width:1.5px;border-radius:12px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .apanel.bad{background:rgba(48,12,28,.5)}
@@ -350,3 +379,7 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 @keyframes ldshow{to{opacity:1}}
 
 .mini{z-index:12}.overlay{z-index:13}
+.tutcard.on{animation:tutin .25s ease-out}
+@keyframes tutin{0%{opacity:0;transform:translateX(-50%) scale(1.08)}100%{opacity:1;transform:translateX(-50%) scale(1)}}
+.tutcard{top:20%}
+@media (max-height:520px){.tutcard{top:17%}}
