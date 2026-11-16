@@ -559,7 +559,7 @@ window.NR_MAIN = function () {
       if (best && best.ghost && best.ghost.length) { r.ghost = best.ghost; ghostMesh.root.visible = true; }
       $("#h-rank").classList.add("on");
     }
-    if (r.mode === "survival") { r.sim.boostEnergy = 1; $("#h-rank").classList.add("on"); }
+    if (r.mode === "survival") { r.sim.boostEnergy = 1; r.life = 100; $("#h-rank").classList.add("on"); }
   }
   const segById = id => race.graph.segments[id];
   function tickMode(dt) {
@@ -596,13 +596,13 @@ window.NR_MAIN = function () {
     } else if (r.mode === "survival") {
       const prog = NR.clamp01(sim.progress / total);
       sim.speedScale = 1 + 0.4 * prog;   // faster and faster
-      if (r.phase === "run") { sim.boostEnergy = Math.max(0, sim.boostEnergy - dt * 0.022 * (1 + prog)); if (sim.boostEnergy <= 0.001) { survivalOver(); return; } }
-      if (hud) $("#h-rank").innerHTML = `<b>∞ 서바이벌</b><div class="row"><span>생존</span><span>${fmt(sim.raceTime)}</span></div><div class="row"><span>속도</span><span>×${sim.speedScale.toFixed(2)}</span></div><div class="row"><span>에너지</span><span>${Math.round(sim.boostEnergy * 100)}%</span></div>`;
+      if (r.phase === "run") { r.life = Math.max(0, r.life - dt * (0.9 + 1.4 * prog)); if (r.life <= 0) { survivalOver(); return; } }
+      if (hud) $("#h-rank").innerHTML = `<b>∞ 서바이벌</b><div class="row"><span>생존</span><span>${fmt(sim.raceTime)}</span></div><div class="row"><span>속도</span><span>×${sim.speedScale.toFixed(2)}</span></div><div class="row"><span>❤ 생명력</span><span style="color:${r.life < 30 ? "#FF4D6D" : "#5CFF9D"}">${Math.round(r.life)}</span></div>`;
     }
   }
   function survivalOver() {
-    const r = race; r.phase = "finish"; r.finishT = 0; r.survivalDead = true; show("#touch", false); countdown("ENERGY 0"); Snd.thud(); setExpr("Hurt", 99); CAM.showcase = 3.2;
-    Voice.say("에너지가 다 떨어졌어… 다음엔 더 오래 달려 보자!");
+    const r = race; r.phase = "finish"; r.finishT = 0; r.survivalDead = true; show("#touch", false); countdown("생명력 0"); Snd.thud(); setExpr("Hurt", 99); CAM.showcase = 3.2;
+    Voice.say("생명력이 다 떨어졌어… 오브를 모으고 충돌을 피하면 더 오래 달릴 수 있어!");
   }
   function startCountdown() {
     if (!race) return; race.phase = "count"; race.t = 0; race.cd = 4; race.cdStart = performance.now(); CAM.showcase = 2.6; setExpr("Joy", 2); SV.spinVel = 720; show("#touch", !race.auto);
@@ -839,9 +839,10 @@ window.NR_MAIN = function () {
       }
       case S.RingHit: { world.ringHit(e.src, true); Snd.coin(); comboAdd(1, e.correct ? 120 : 60, e.correct ? "PERFECT" : ""); if (e.correct) toast("정중앙 PERFECT! 결절에서 활동전위 재생성", "#9CFFEA", 0.7); fx.burst(star.root.position, "land"); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
       case S.RingMiss: { world.ringHit(e.src, false); if (sim.ringsTotal > 1) toast("결절을 놓쳤어요 - 연속 끊김", "#B4AEDB", 0.9); break; }
-      case S.ObstacleHit: CAM.shake = 0.35; starHit(); comboBreak(); if (r.mode === "survival") sim.boostEnergy = Math.max(0, sim.boostEnergy - 0.13); fx.burst(star.root.position, "hit"); setExpr("Hurt", 1.2); Snd.thud(); toast("NULL 충돌! 전도 지연", "#FF4D6D", 1.2); break;
+      case S.ObstacleHit: CAM.shake = 0.35; starHit(); comboBreak(); if (r.mode === "survival") { r.life = Math.max(0, r.life - 18); toast("생명력 −18", "#FF4D6D", 0.9); } fx.burst(star.root.position, "hit"); setExpr("Hurt", 1.2); Snd.thud(); toast("NULL 충돌! 전도 지연", "#FF4D6D", 1.2); break;
       case S.OrbCollected: case S.RepairOrb: {
         world.collect(e.src);
+        if (e.type === S.OrbCollected && r.mode === "survival") r.life = Math.min(100, r.life + 4);
         if (e.type === S.OrbCollected) { Snd.coin(); const streak = sim.raceTime - r.lastOrb < 1.4; r.lastOrb = sim.raceTime; comboAdd(streak ? 1 : 0, 25); } else { Snd.chime(); setExpr("Joy", 1); toast("수초 복구 " + sim.repairCount + "/3", "#5CFF9D", 1.4); } break;
       }
       case S.WallHit: CAM.shake = 0.15; SV.squashVel -= 3; comboBreak(); Snd.thud(); setExpr("Surprise", 0.6); break;
@@ -950,6 +951,7 @@ window.NR_MAIN = function () {
         } else if (arg.startsWith("counter:")) { const id = arg.slice(8); if (!race.sim.gateOk[id]) { world.bossAttack(); toast("NULL 반격! 레이저 주의", "#FF4D6D", 1.4); } }
         break;
       case "tut": tutStart(arg); break;
+      case "mini": openChapterMini(arg); break;
       case "mission":
         if (arg.startsWith("sort:")) { const t = { nuclei: "뇌줄기 신경핵 탐험! 지금 층에 있는 신경핵 차선으로!", relay: "시상 중계 미션! 감각 신호를 맞는 중계핵으로 보내!", cortex: "대뇌 기능 포털! 명령에 맞는 겉질 영역으로!", cranial: "12뇌신경 포털! 동작에 맞는 뇌신경으로!" }[arg.slice(5)]; hint(t, 4); Voice.say(t, { mode: "queue" }); }
         else if (arg.startsWith("cross:")) { const t = { dcml: "왼다리 진동 감각을 실어 나르자! 뒤기둥-안쪽섬유띠계는 어디서 교차할까?", stt: "왼손 통증 신호! 앞가쪽계는 언제 건너갈까?", cst: "왼손을 움직이는 명령! 겉질척수로는 어디서 교차할까?" }[arg.slice(6)]; hint(t + " 층마다 맞는 쪽 차선으로 드리프트!", 5); Voice.say(t, { mode: "queue" }); }
@@ -1018,6 +1020,21 @@ window.NR_MAIN = function () {
     setExpr(success ? "Joy" : "Hurt", 1.5); toast(success ? "시냅스 연결 성공! 가속!" : "시냅스 연결 불안정", success ? "#5CFF9D" : "#FF4D6D", 1.6); r.phase = "run";
   }
 
+  // 4.8 chapter minigames (own screens; the race pauses)
+  const minis = createMinis({ Snd, say: t => Voice.say(t, { mode: "replace" }) });
+  function openChapterMini(kind) {
+    const r = race; r.phase = "mini"; show("#touch", false); show("#qpanel", false); show("#apanel", false);
+    $("#mission").classList.remove("on"); $("#reflex").classList.remove("on"); miResT = 0; miEvent = null; $("#h-hint").style.display = "none"; $("#h-story").style.display = "none";
+    const done = (pass, ok, n) => {
+      r.sim.addTurbo(pass ? 2.8 : 0.8); if (pass) r.sim.addEnergy(0.4); CAM.kickPunch = pass ? 1.4 : 0;
+      if (pass) { comboAdd(3, 300 + 100 * ok, "미니게임"); Snd.fire(); NRW.U.uFire.value = 1; toast("미션 성공! 터보 가속", "#5CFF9D", 1.8); } else toast("미션 종료 — 다시 달려요", "#B4AEDB", 1.4);
+      r.minis = (r.minis || 0) + 1; r.minisOk = (r.minisOk || 0) + (pass ? 1 : 0);
+      show("#touch", !r.auto); steerSm = 0; for (const k in held) held[k] = 0; r.phase = "run";
+    };
+    if (r.auto) { done(true, 1, 1); return; }
+    minis.open(kind, done);
+  }
+
   //================== RESULT ==================
   function showResult() {
     const r = race, sim = r.sim, L = r.learn, par = r.graph.parTime, t = sim.raceTime;
@@ -1040,10 +1057,12 @@ window.NR_MAIN = function () {
     $("#r-title").textContent = r.stage.boss ? (r.bossHp === 0 ? "NULL 격파! 신경망 복구" : "NULL 진단 완료") : "STAGE CLEAR!";
     $("#r-grade").textContent = `CH.${r.stage.chapter} ${r.stage.title} · 등급 ${grade}` + (isBest ? " · 최고 기록!" : "");
     const st = [["기록", fmt(t)], ["목표(PAR)", fmt(par)], ["정답률", acc + "% (" + L.correct + "/" + L.total + ")"], ["점수", r.score], ["최대 콤보", r.maxCombo], ["오브", sim.coins], ["벽 충돌", sim.wallHits]];
+    if (L.total === 0) { const drop = new Set(["정답률", "목표(PAR)"]); for (let k = st.length - 1; k >= 0; k--) if (drop.has(st[k][0])) st.splice(k, 1); }
+    if (r.minis) st.push(["미니게임", r.minisOk + "/" + r.minis]);
     st.push(sim.ringsTotal ? ["도약전도 결절", sim.ringsHit + "/" + sim.ringsTotal] : ["NULL 충돌", sim.obstacleHits]);
     $("#r-stats").innerHTML = st.map(([a, b]) => `<div>${a}<b>${b}</b></div>`).join("");
     const wrong = L.answers.filter(a => !a.correct).map(a => bank.get(a.questionId)).filter(Boolean);
-    $("#r-wrong").innerHTML = wrong.length ? `<div class="grade">복습할 문제 ${wrong.length}개 (오답 노트에 저장됨)</div>` + wrong.map(q => `<div class="entry"><b>${esc(q.question)}</b><br><span class="ok">정답: ${esc(q.options[q.answer])}</span><br>${esc(q.explanation)}</div>`).join("") : `<div class="grade">모든 문제를 맞혔어요! 완벽한 신호 전달 ★</div>`;
+    $("#r-wrong").innerHTML = L.total === 0 ? "" : wrong.length ? `<div class="grade">복습할 문제 ${wrong.length}개 (오답 노트에 저장됨)</div>` + wrong.map(q => `<div class="entry"><b>${esc(q.question)}</b><br><span class="ok">정답: ${esc(q.options[q.answer])}</span><br>${esc(q.explanation)}</div>`).join("") : `<div class="grade">모든 문제를 맞혔어요! 완벽한 신호 전달 ★</div>`;
     const idx = NR.STAGES.indexOf(r.stage); $("#result [data-act=next]").style.display = idx >= 0 && idx < NR.STAGES.length - 1 ? "" : "none";
     modeResult(r, t);
     // 4.6 mastery: plasticity strength, XP, evolution
@@ -1099,7 +1118,7 @@ window.NR_MAIN = function () {
         : mode === "rival" ? (rb[s.id] ? "최고 순위 " + rb[s.id] + "위" : "도전 전")
         : (b ? "최고 " + fmt(b.time) + " · 정답률 " + Math.round(b.acc * 100) + "%" : "도전 전");
       return `<button class="stage${s.boss ? " boss" : ""}" data-stage="${s.id}"><span class="ch">CHAPTER ${s.chapter}${s.boss ? " · BOSS" : ""}</span><span class="tt">${esc(s.title)}</span><span class="st">${esc(s.subtitle)}</span><span class="goals">${s.goals.map(esc).join(" · ")}</span><span class="best">${best}</span></button>`;
-    }).join("") + `<button class="stage survival" data-stage="survival"><span class="ch">EXTRA · 서바이벌</span><span class="tt">끝없는 신경 질주</span><span class="st">점점 빨라지는 코스 · 에너지가 0이 되면 끝</span><span class="goals">충돌하면 에너지 감소 · 오브로 회복 · 시간이 갈수록 에너지 소모 증가</span><span class="best">${sv ? "최고 생존 " + fmt(sv.time) + " · " + sv.score + "점" : "도전 전"}</span></button>`;
+    }).join("") + `<button class="stage survival" data-stage="survival"><span class="ch">EXTRA · 서바이벌</span><span class="tt">끝없는 신경 질주</span><span class="st">점점 빨라지는 코스 · 생명력이 0이 되면 끝</span><span class="goals">생명력은 시간이 갈수록 줄고 충돌하면 −18 · 오브로 +4 회복 (부스트 에너지와 별개)</span><span class="best">${sv ? "최고 생존 " + fmt(sv.time) + " · " + sv.score + "점" : "도전 전"}</span></button>`;
     $$("#stage-grid .stage").forEach(b => b.addEventListener("click", () => startStage(b.dataset.stage, b.dataset.stage === "survival" ? "survival" : (save.mode || "story"))));
   }
   let codexMode = "codex", codexCh = 0;
@@ -1238,7 +1257,7 @@ window.NR_MAIN = function () {
   }
 
   // boot
-  window.NR_APP = { snd: Snd, startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
+  window.NR_APP = { cmini: k => openChapterMini(k), snd: Snd, startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
   function boot() {
     if (boot.done) return; boot.done = true;
     setupPost(); applySkin(); renderStages(); menuScene(); screen(save.loreSeen || AUTO ? "title" : "story"); if (!save.loreSeen) { save.loreSeen = true; persist(); }

@@ -441,7 +441,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
       const lab = new THREE.Mesh(new THREE.PlaneGeometry(4.5 * big / 1.4, 1.4 * big / 1.4), new THREE.MeshBasicMaterial({ map: labelTex([e.final ? "NULL 코어" : "약점"], { w: 512, h: 160, border: "#FFD34D", bg: "rgba(40,0,10,.85)", bigColor: "#FFD34D" }), transparent: true, depthWrite: false, side: THREE.DoubleSide }));
       lab.position.y = 3.2 * big; grp.add(lab);
       grp.visible = !e.need; W.root.add(grp); W.weaks.push({ e, grp, ring, core });
-    } else if (e.type === E.Trigger && e.tag === "synapse:warp") {
+    } else if (e.type === E.Trigger && (e.tag === "synapse:warp" || /^mini:/.test(e.tag))) {
       const f = frameAt(seg, e.s, 0, 4.5), g = new THREE.Group(); g.position.copy(f.p); g.quaternion.copy(f.q);
       for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(7 - i * 1.2, 0.35, 8, 64), glow([0xFF5CC8, 0x9B5CFF, 0x2EE6D6][i], 0.9)); g.add(t); W.anim.push({ o: t, spin: (i % 2 ? -1 : 1) * (0.6 + i * 0.3), axis: "z" }); }
       W.root.add(g);

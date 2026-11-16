@@ -281,6 +281,9 @@ const NR = (function () {
   const STATE = { plastic: 0 };   // set by the app before building a course
   function itemRow(b, s) { [-3.2, 0, 3.2].forEach(x => b.eventAt(EV.ItemBox, s, x, "item")); }
 
+  const MINI_NAME = { reflex: "척수반사 긴급 미션", cross: "신경 교차 경로 추적", nuclei: "뇌줄기 신경핵 배치", relay: "시상 중계 배달", cortex: "대뇌 기능 지도", cranial: "뇌신경 얼굴 반응", balance: "소뇌 균형 잡기", saltatory: "도약전도 타이밍" };
+  function miniStation(b, kind, theme) { b.eventAt(EV.Trigger, 150, 0, "mini:" + kind); b.straight(300); return b.cut("미니게임 · " + (MINI_NAME[kind] || kind), ZONE.Normal, 6, theme); }
+
   // ---------------- 4.0 racing set pieces ----------------
   function piece(b, kind, theme, dir) {
     const W = TUNE.width;
@@ -418,6 +421,7 @@ const NR = (function () {
     b.straight(300); b.turn(40, 200); b.straight(300); b.turn(-50, 180, 8); b.straight(220);
     { const total = b.distance; let k = 0; for (let d = 45; d < total - 30; d += 55, k++) { const r = b.eventAt(EV.NodeRing, d - total, 3.2 * Math.sin(k * 0.9)); r.width = 2.6; r.index = k; } }
     b.cut("말이집 축삭 (도약전도)", ZONE.Myelin, 6);
+    if (TUNE.arcade) miniStation(b, "saltatory", null);
     const qS = bank.get("ch1_fork_saltatory");
     b.trigger("forkq:" + qS.id, 0); b.straight(280); const fork2 = b.cut("도약전도 갈림길", ZONE.ForkApproach, 9); b.fork(fork2, qS, 400, 170, 6);
     b.trigger("story:damage", 0).trigger("codex:demyelination", 0);
@@ -450,7 +454,7 @@ const NR = (function () {
     b.trigger("integ:excite", 40); psps(b, "excite", 60, 330); b.eventAt(EV.Trigger, 335, 0, "integ:end");
     b.straight(220, 4); b.turn(45, 150); b.straight(120, 6); b.turn(-50, 120);
     b.cut("이마엽 지구 (Frontal)", ZONE.Normal, 6, "frontal");
-    { const L = sortRun(b, "cortex", 150); b.straight(L); b.cut("대뇌 기능 포털 미션", ZONE.Normal, 9, "frontal"); }
+    miniStation(b, "cortex", "frontal");
     b.trigger("codex:m1", 10).trigger("codex:broca", TUNE.gap || 300); const G7 = TUNE.gap || 300; gate("ch7_gate_m1", 40, "lobe", 6); gate("ch7_gate_broca", 40 + G7, "lobe", 6); b.straight(260 + G7, -4);
     b.cut("이마엽 · 운동/언어 게이트", ZONE.Normal, 9, "frontal");
     b.trigger("forkq:ch7_fork_s1", 0); b.straight(300); let f = b.cut("감각 정보 갈림길", ZONE.ForkApproach, 9, "frontal"); b.fork(f, bank.get("ch7_fork_s1"), 380, 150, 6);
@@ -565,6 +569,7 @@ const NR = (function () {
         }
         case "sprint": case "scurve": case "jumppads": case "movers": case "lasers": case "narrow": case "dzone": case "rings": case "split": case "balance": case "reflex": case "loop": case "collapse": case "warp": case "plastic": piece(b, kind, theme, dir); break;
         case "sort": case "cross": { const L = sortRun(b, arg, kind === "cross" ? 125 : 150); b.straight(L); b.cut(kind === "cross" ? "신경 교차 드리프트" : "포털 미션", ZONE.Normal, 9, theme); break; }
+        case "mini": miniStation(b, arg, theme); break;
         case "excite": case "inhibit": integrationZone(b, kind, kind === "excite" ? "EPSP 가중 구간" : "IPSP 억제 구간", theme, dir); break;
         case "orbs": b.straightWith(200, 6, (i, s) => b.eventAt(EV.Orb, s, 2.6 * Math.sin(i * 1.2))); b.turn(dir * 50, 130, 5); b.cut("신호 가속 구간", ZONE.Normal, 6, theme); break;
         case "finish": b.straightWith(260, 6, (i, s) => b.eventAt(EV.Orb, s, 2.4 * Math.sin(i * 1.4))); b.event(EV.Finish, 0, "finish", -10); b.cut(title + " 결승", ZONE.Normal, 6, theme); break;
@@ -605,13 +610,13 @@ const NR = (function () {
   const TUTORIAL = { id: "tutorial", chapter: 0, title: "튜토리얼", subtitle: "연습 주행", introStory: "tutorial_intro", gateTitle: "연습 게이트", goals: [], boss: false, build: tutorialCourse };
   const STAGES = [
     { id: "ch1", chapter: 1, title: "뉴런과 신경신호", subtitle: "뉴런 고속도로", introStory: "prologue", gateTitle: "활동전위 게이트", goals: ["뉴런의 구조", "활동전위", "도약전도", "시냅스 전달"], boss: false, build: chapter1 },
-    Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "sprint", "fork:ch2_fork_horn", "reflex", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "jumppads", "loop", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "split", "warp", "plastic", "codex:reciprocal_inhibition", "inhibit", "gate:ch2_gate_reciprocal", "reflex", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
-    Q(3, "tract", "감각 오름로·운동 내림로", "신경로 고속도로", ["뒤기둥-안쪽섬유띠계", "앞가쪽계", "겉질척수로", "교차 위치"], ["story:ch3_intro", "codex:dcml", "warm", "cross:dcml", "fork:ch3_fork_dcml", "gate:ch3_gate_dcml_cross", "codex:spinothalamic", "cross:stt", "gate:ch3_gate_stt_cross", "excite", "codex:spinocerebellar", "gate:ch3_gate_scb", "scurve", "loop", "plastic", "codex:cst", "cross:cst", "fork:ch3_fork_cst", "gate:ch3_gate_cst_cross", "lasers", "warp", "codex:vestibulospinal", "gate:ch3_gate_vst", "story:ch3_final", "finish"]),
-    Q(4, "brainstem", "뇌줄기", "뇌줄기 터널", ["중간뇌 구조", "다리뇌와 소뇌 연결", "숨뇌 생명 중추", "뇌줄기 뇌신경핵"], ["story:ch4_intro", "codex:midbrain", "warm", "excite", "sort:nuclei", "codex:substantia_nigra", "gate:ch4_gate_sn", "gate:ch4_gate_sc", "fork:ch4_fork_ic", "rings", "gate:ch4_gate_aqueduct", "gate:ch4_gate_cn_midbrain", "codex:pons", "movers", "collapse", "plastic", "fork:ch4_fork_pons", "sprint", "warp", "codex:medulla", "gate:ch4_gate_medulla", "story:ch4_final", "finish"]),
-    Q(5, "cerebellum", "소뇌", "소뇌 균형 서킷", ["소뇌의 기능", "조롱박세포", "소뇌다리", "소뇌 증상"], ["story:ch5_intro", "codex:cerebellum", "warm", "balance", "gate:ch5_gate_function", "dzone", "codex:purkinje", "inhibit", "gate:ch5_gate_purkinje", "scurve", "loop", "plastic", "codex:cerebellar_peduncles", "fork:ch5_fork_mcp", "gate:ch5_gate_scp", "balance", "narrow", "warp", "gate:ch5_gate_vermis", "dzone", "gate:ch5_gate_tremor", "story:ch5_final", "finish"]),
-    Q(6, "diencephalon", "사이뇌", "사이뇌 중계 기지", ["시상 중계핵", "시상하부 항상성", "뇌하수체 조절", "솔방울샘"], ["story:ch6_intro", "codex:thalamus", "warm", "sort:relay", "fork:ch6_fork_thalamus", "gate:ch6_gate_vpl", "gate:ch6_gate_lgn", "excite", "split", "loop", "plastic", "codex:hypothalamus", "fork:ch6_fork_hypothal", "lasers", "gate:ch6_gate_pituitary", "sprint", "warp", "codex:pineal", "gate:ch6_gate_pineal", "story:ch6_final", "finish"]),
+    Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "sprint", "fork:ch2_fork_horn", "mini:reflex", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "jumppads", "loop", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "split", "warp", "plastic", "codex:reciprocal_inhibition", "inhibit", "gate:ch2_gate_reciprocal", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
+    Q(3, "tract", "감각 오름로·운동 내림로", "신경로 고속도로", ["뒤기둥-안쪽섬유띠계", "앞가쪽계", "겉질척수로", "교차 위치"], ["story:ch3_intro", "codex:dcml", "warm", "mini:cross", "fork:ch3_fork_dcml", "gate:ch3_gate_dcml_cross", "codex:spinothalamic", "gate:ch3_gate_stt_cross", "excite", "codex:spinocerebellar", "gate:ch3_gate_scb", "scurve", "loop", "plastic", "codex:cst", "fork:ch3_fork_cst", "gate:ch3_gate_cst_cross", "lasers", "warp", "codex:vestibulospinal", "gate:ch3_gate_vst", "story:ch3_final", "finish"]),
+    Q(4, "brainstem", "뇌줄기", "뇌줄기 터널", ["중간뇌 구조", "다리뇌와 소뇌 연결", "숨뇌 생명 중추", "뇌줄기 뇌신경핵"], ["story:ch4_intro", "codex:midbrain", "warm", "excite", "mini:nuclei", "codex:substantia_nigra", "gate:ch4_gate_sn", "gate:ch4_gate_sc", "fork:ch4_fork_ic", "rings", "gate:ch4_gate_aqueduct", "gate:ch4_gate_cn_midbrain", "codex:pons", "movers", "collapse", "plastic", "fork:ch4_fork_pons", "sprint", "warp", "codex:medulla", "gate:ch4_gate_medulla", "story:ch4_final", "finish"]),
+    Q(5, "cerebellum", "소뇌", "소뇌 균형 서킷", ["소뇌의 기능", "조롱박세포", "소뇌다리", "소뇌 증상"], ["story:ch5_intro", "codex:cerebellum", "warm", "mini:balance", "gate:ch5_gate_function", "dzone", "codex:purkinje", "inhibit", "gate:ch5_gate_purkinje", "scurve", "loop", "plastic", "codex:cerebellar_peduncles", "fork:ch5_fork_mcp", "gate:ch5_gate_scp", "balance", "narrow", "warp", "gate:ch5_gate_vermis", "dzone", "gate:ch5_gate_tremor", "story:ch5_final", "finish"]),
+    Q(6, "diencephalon", "사이뇌", "사이뇌 중계 기지", ["시상 중계핵", "시상하부 항상성", "뇌하수체 조절", "솔방울샘"], ["story:ch6_intro", "codex:thalamus", "warm", "mini:relay", "fork:ch6_fork_thalamus", "gate:ch6_gate_vpl", "gate:ch6_gate_lgn", "excite", "split", "loop", "plastic", "codex:hypothalamus", "fork:ch6_fork_hypothal", "lasers", "gate:ch6_gate_pituitary", "sprint", "warp", "codex:pineal", "gate:ch6_gate_pineal", "story:ch6_final", "finish"]),
     { id: "ch7", chapter: 7, title: "대뇌", subtitle: "대뇌 도시", introStory: "ch7_intro", gateTitle: "대뇌 기능 게이트", goals: ["대뇌엽의 위치", "일차운동·감각겉질", "청각·시각겉질", "언어 영역과 실어증"], boss: false, build: chapter7 },
-    Q(8, "cranial", "12뇌신경", "12뇌신경 포털", ["눈 운동 신경", "얼굴의 신경", "감각·운동·혼합 분류", "아래 뇌신경"], ["story:ch8_intro", "codex:cn_overview", "warm", "excite", "sort:cranial", "gate:ch8_gate_sensory", "codex:cn_eye", "gate:ch8_gate_abducens", "rings", "gate:ch8_gate_trochlear", "jumppads", "loop", "plastic", "codex:cn_face", "fork:ch8_fork_facial", "gate:ch8_gate_trigeminal", "narrow", "warp", "collapse", "codex:cn_lower", "fork:ch8_fork_hypoglossal", "gate:ch8_gate_vagus", "gate:ch8_gate_accessory", "story:ch8_final", "finish"]),
+    Q(8, "cranial", "12뇌신경", "12뇌신경 포털", ["눈 운동 신경", "얼굴의 신경", "감각·운동·혼합 분류", "아래 뇌신경"], ["story:ch8_intro", "codex:cn_overview", "warm", "excite", "mini:cranial", "gate:ch8_gate_sensory", "codex:cn_eye", "gate:ch8_gate_abducens", "rings", "gate:ch8_gate_trochlear", "jumppads", "loop", "plastic", "codex:cn_face", "fork:ch8_fork_facial", "gate:ch8_gate_trigeminal", "narrow", "warp", "collapse", "codex:cn_lower", "fork:ch8_fork_hypoglossal", "gate:ch8_gate_vagus", "gate:ch8_gate_accessory", "story:ch8_final", "finish"]),
     { id: "ch9", chapter: 9, title: "임상 챌린지 (NULL)", subtitle: "NULL 보스 아레나", introStory: "ch9_intro", gateTitle: "NULL 진단 게이트", goals: ["병변 위치 추론", "교차와 반대쪽 증상", "위·아래운동신경세포", "척수 반쪽 손상"], boss: true, build: chapter9 },
   ];
 

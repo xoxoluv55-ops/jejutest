@@ -346,6 +346,77 @@ h2{font-family:var(--title);font-weight:400;margin:0}
   .tutcard{top:46px;padding:6px 12px;gap:10px}#tut-ico{font-size:32px;min-width:40px}.tutcard b{font-size:18px}.tutcard span{font-size:13px}
   .ctl-pic{height:80px}.ctl-card b{font-size:20px}.ctl-card small{font-size:13px}
 }
+/* ---------- 4.8: chapter minigames ---------- */
+.mg2{position:absolute;inset:0;z-index:12;display:none;flex-direction:column;align-items:center;gap:8px;padding:max(10px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));background:radial-gradient(ellipse at 50% 20%,#28186E,#07051A);overflow:auto;touch-action:manipulation}
+.mg2.on{display:flex}
+.mg2-top{display:flex;align-items:center;gap:16px;width:min(1000px,100%)}
+.mg2 h2{font-size:30px;color:var(--pink);text-shadow:0 0 12px var(--purple)}
+.mg2-dots{display:flex;gap:6px;margin-left:auto}.mg2-dots i{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.18)}.mg2-dots i.cur{background:var(--yellow)}.mg2-dots i.ok{background:var(--green)}.mg2-dots i.no{background:var(--red)}
+.mg2-prompt{font-size:21px;text-align:center;line-height:1.4;min-height:1.4em}.mg2-prompt b{color:var(--yellow);font-family:var(--title);font-weight:400;font-size:26px}
+.mg2-timer{width:min(600px,90%);height:8px;border-radius:4px;background:rgba(255,255,255,.12);overflow:hidden;display:none}.mg2-timer div{height:100%;width:100%;background:linear-gradient(90deg,var(--red),var(--yellow))}
+.mg2-area{width:min(1000px,100%);flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.mg2-fb{font-size:17px;line-height:1.5;min-height:1.5em;text-align:center;max-width:900px}.mg2-fb.ok{color:var(--green)}.mg2-fb.no{color:#FF8FA3}
+.mg2-intro{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(7,5,26,.9);padding:20px;text-align:center}
+.mg2-intro b{font-family:var(--title);font-weight:400;font-size:34px;color:var(--yellow)}.mg2-intro p{font-size:19px;line-height:1.6;max-width:720px;margin:0}.mg2-intro .mg2-small{font-size:15px;color:var(--dim)}.mg2-intro .mg2-score{font-family:var(--title);font-size:30px;color:var(--cyan)}
+.mg-opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(820px,100%)}.mg-opts.col{grid-template-columns:1fr;width:auto;min-width:240px}
+.mg-opts button,.re-th button{font-family:var(--body);font-size:18px;padding:14px 12px;border-radius:14px;background:#3A2C8C}
+button.right{background:#1F7A4D!important;border-color:var(--green)!important}button.wrong{background:#7A2040!important;border-color:var(--red)!important}
+.rf-stim{font-family:var(--title);font-size:30px;text-align:center;background:rgba(255,182,39,.12);border:2px solid var(--gold);border-radius:16px;padding:10px 18px}
+.rf-arc{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px;font-size:14px}.rf-arc span{padding:5px 9px;border-radius:10px;background:rgba(255,255,255,.08);border:1.5px solid #555;transition:all .2s}.rf-arc span.lit{background:rgba(92,255,157,.25);border-color:var(--green);box-shadow:0 0 10px rgba(92,255,157,.6)}.rf-arc i{font-style:normal;color:var(--dim)}
+.tr-head{display:flex;justify-content:space-between;width:min(700px,100%);font-family:var(--title);color:var(--dim)}
+.tr-wrap{position:relative;width:min(700px,100%);display:flex;flex-direction:column;gap:5px}
+.tr-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}.tr-svg polyline{fill:none;stroke:#FFD34D;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 6px #FFB627)}
+.tr-row{display:grid;grid-template-columns:1fr 1.4fr 1fr;align-items:center;gap:6px;opacity:.55}.tr-row.cur{opacity:1}
+.tr-row em{font-style:normal;text-align:center;font-size:15px;line-height:1.25;padding:6px;border-left:2px dashed rgba(255,255,255,.3);border-right:2px dashed rgba(255,255,255,.3)}
+.tr-row button{height:44px;border-radius:12px;background:rgba(46,230,214,.08);border:2px solid rgba(46,230,214,.35);padding:0}.tr-row.cur button{background:rgba(46,230,214,.18);border-color:var(--cyan)}
+.tr-row button.on{background:rgba(255,211,77,.45);border-color:var(--yellow)}.tr-row button.bad{background:rgba(255,77,109,.4)}
+.nu-card{font-family:var(--title);font-size:26px;background:#FFF4D6;color:#2A1640;border-radius:14px;padding:8px 20px;box-shadow:0 6px 0 #C79C3D}
+.nu-stem{display:flex;flex-direction:column;align-items:center;gap:6px;width:min(560px,100%)}
+.nu-lv{width:100%;border-radius:22px;padding:8px 12px;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:var(--body)}.nu-lv b{font-family:var(--title);font-weight:400;font-size:22px}
+.nu-0{background:#5C3FD0;width:92%}.nu-1{background:#7B4FD8;width:100%;border-radius:40px}.nu-2{background:#4A3AB0;width:70%}.nu-lv.bad{background:#7A2040}
+.nu-chips{display:flex;flex-wrap:wrap;gap:4px;justify-content:center}.nu-chips span{font-size:12px;background:rgba(255,255,255,.85);color:#2A1640;border-radius:8px;padding:2px 6px}.nu-chips span.fix{background:#FFB3C1}
+.re-row{display:flex;align-items:center;gap:14px;width:100%;justify-content:center;flex-wrap:wrap}
+.re-src{font-size:18px;text-align:center;background:rgba(46,230,214,.12);border:2px solid var(--cyan);border-radius:16px;padding:10px;min-width:150px}.re-src span{display:block;font-size:46px}
+.re-th{position:relative;display:grid;grid-template-columns:repeat(3,auto);gap:8px;padding:30px 18px 18px;border-radius:50%;background:radial-gradient(ellipse,#6A3FD0,#3A2C8C);min-width:340px}
+.re-th button{display:flex;flex-direction:column;align-items:center;padding:8px 10px}.re-th button b{font-family:var(--title);font-weight:400;font-size:22px}.re-th small{font-size:11px;color:var(--dim)}
+.re-name{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-family:var(--title);color:#E8D8FF}
+.re-dst{font-family:var(--title);font-size:18px;color:var(--yellow);min-width:150px;text-align:center}
+.cx-brain{width:min(640px,100%);max-height:52vh}
+.cx-brain .lobe{stroke:#1a1040;stroke-width:3}.cx-brain .fr{fill:#3E6FD8}.cx-brain .pa{fill:#3FB57A}.cx-brain .oc{fill:#D8508F}.cx-brain .te{fill:#D8963E}
+.cx-brain .cs{stroke:#1a1040;stroke-width:3;fill:none;stroke-dasharray:6 5}.cx-brain text{fill:rgba(255,255,255,.75);font-size:15px;font-family:sans-serif}
+.cx-brain .hs circle{fill:rgba(255,255,255,.35);stroke:#fff;stroke-width:3;cursor:pointer;animation:hsp 1.2s infinite alternate}.cx-brain .hs .hl{fill:#FFD34D;font-size:15px;text-anchor:middle;font-weight:bold;paint-order:stroke;stroke:#000;stroke-width:3px}
+.cx-brain .hs.right circle{fill:#5CFF9D}.cx-brain .hs.wrong circle{fill:#FF4D6D}
+@keyframes hsp{to{fill:rgba(255,255,255,.7)}}
+.cr-row{display:flex;gap:24px;align-items:center;justify-content:center;flex-wrap:wrap}
+.cr-face{width:min(260px,40vw);height:auto}.cr-face .head{fill:#FFD34D;stroke:#C88A1D;stroke-width:3}.cr-face .sh path{fill:#5C9CFF}.cr-face .eye ellipse{fill:#fff;stroke:#333;stroke-width:2}.cr-face .pu{fill:#1A1033}
+.cr-face *{transition:transform .5s;transform-box:fill-box;transform-origin:center}
+.cr-face .m0{stroke:#7A1838;stroke-width:4;fill:none}.cr-face .m1,.cr-face .tg{opacity:0}.cr-face .m1{fill:#7A1838}.cr-face .tg{fill:#FF7A9C}
+.cr-face.act-abd .pl{transform:translateX(-8px)}.cr-face.act-abd .pr{transform:translateX(8px)}
+.cr-face.act-tro .pl{transform:translate(5px,5px)}.cr-face.act-tro .pr{transform:translate(-5px,5px)}
+.cr-face.act-fac .m0{opacity:0}.cr-face.act-fac .m1{opacity:1}
+.cr-face.act-tri .jaw{animation:chew .35s 4 alternate}@keyframes chew{to{transform:translateY(7px)}}
+.cr-face.act-hyp .tg{opacity:1;transform:translateY(8px) scaleY(1.4)}
+.cr-face.act-acc .sh{transform:translateY(-16px)}
+.cr-face.act-ocu .pu{transform:scale(.45)}
+.ba-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;width:min(760px,100%)}
+.ba-beam{position:relative;width:100%;height:60px;border-radius:30px;background:rgba(255,255,255,.08);border:3px solid #6A3FD0}
+.ba-zone{position:absolute;left:36%;width:28%;top:0;bottom:0;background:rgba(92,255,157,.22);border-left:2px solid var(--green);border-right:2px solid var(--green)}
+.ba-star{position:absolute;top:50%;transform:translate(-50%,-50%);font-size:44px;color:#FF8A3D;text-shadow:0 0 12px #FF8A3D}.ba-star.in{color:var(--yellow);text-shadow:0 0 14px var(--yellow)}
+.ba-pct{font-family:var(--title);font-size:32px;color:var(--cyan)}
+.ba-ctl{display:flex;gap:40px}.ba-ctl button{width:140px;height:110px;font-size:50px;border-radius:28px;touch-action:none}.ba-ctl button.down{background:#5C3FD0}
+.sa-axon{position:relative;display:flex;align-items:center;width:min(900px,100%);height:70px}
+.sa-seg{flex:1;height:34px;border-radius:17px;background:linear-gradient(180deg,#FFE9A8,#E0A93E)}.sa-seg.dm{background:#555;height:14px;border-radius:4px}
+.sa-node{width:18px;height:22px;border-radius:5px;background:#1E8F9F;margin:0 2px;transition:all .15s}.sa-node.glow{background:#5CF6FF;box-shadow:0 0 20px #5CF6FF;transform:scale(1.6)}.sa-node.hit{background:var(--green);box-shadow:0 0 14px var(--green)}.sa-node.miss{background:var(--red)}
+.sa-pulse{position:absolute;top:50%;width:26px;height:26px;margin-left:-13px;margin-top:-13px;border-radius:50%;background:#fff;box-shadow:0 0 18px #FFD34D,0 0 30px #FFD34D}
+.sa-btn{min-width:260px;font-size:28px!important;padding:18px 30px!important}
+@media (max-height:520px){
+  .mg2{gap:4px}.mg2 h2{font-size:20px}.mg2-prompt{font-size:15px}.mg2-prompt b{font-size:18px}.mg2-fb{font-size:13px}
+  .mg-opts{gap:6px}.mg-opts button,.re-th button{font-size:14px;padding:8px}.rf-stim{font-size:20px;padding:6px 12px}.rf-arc{font-size:11px}
+  .tr-row button{height:30px}.tr-row em{font-size:12px;padding:2px}.tr-wrap{gap:3px}
+  .nu-card{font-size:18px;padding:4px 14px}.nu-lv{padding:4px 10px}.nu-lv b{font-size:16px}
+  .re-src{font-size:13px;min-width:110px;padding:6px}.re-src span{font-size:30px}.re-th{min-width:280px;padding:24px 12px 12px}.re-th button b{font-size:16px}
+  .cx-brain{max-height:60vh}.cr-face{width:160px}.ba-ctl button{width:110px;height:80px}.mg2-intro b{font-size:24px}.mg2-intro p{font-size:15px}
+}
 /* ---------- 4.1: slimmer, see-through top boxes (same text size) ---------- */
 .qpanel,.apanel{width:auto;max-width:min(760px,66vw);padding:4px 10px 6px;background:rgba(16,12,48,.5);border-width:1.5px;border-radius:12px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .apanel.bad{background:rgba(48,12,28,.5)}
@@ -577,6 +648,16 @@ h2{font-family:var(--title);font-weight:400;margin:0}
         <div id="mg-fb" class="mg-fb"></div>
       </div>
     </div>
+  </section>
+
+  <!-- CHAPTER MINIGAMES -->
+  <section id="mg2" class="mg2">
+    <div class="mg2-top"><h2 id="mg2-title"></h2><div id="mg2-dots" class="mg2-dots"></div></div>
+    <div id="mg2-prompt" class="mg2-prompt"></div>
+    <div id="mg2-timer" class="mg2-timer"><div></div></div>
+    <div id="mg2-area" class="mg2-area"></div>
+    <div id="mg2-fb" class="mg2-fb"></div>
+    <div id="mg2-intro" class="mg2-intro"></div>
   </section>
 
   <!-- PAUSE -->
@@ -898,6 +979,9 @@ const NR = (function () {
   const STATE = { plastic: 0 };   // set by the app before building a course
   function itemRow(b, s) { [-3.2, 0, 3.2].forEach(x => b.eventAt(EV.ItemBox, s, x, "item")); }
 
+  const MINI_NAME = { reflex: "척수반사 긴급 미션", cross: "신경 교차 경로 추적", nuclei: "뇌줄기 신경핵 배치", relay: "시상 중계 배달", cortex: "대뇌 기능 지도", cranial: "뇌신경 얼굴 반응", balance: "소뇌 균형 잡기", saltatory: "도약전도 타이밍" };
+  function miniStation(b, kind, theme) { b.eventAt(EV.Trigger, 150, 0, "mini:" + kind); b.straight(300); return b.cut("미니게임 · " + (MINI_NAME[kind] || kind), ZONE.Normal, 6, theme); }
+
   // ---------------- 4.0 racing set pieces ----------------
   function piece(b, kind, theme, dir) {
     const W = TUNE.width;
@@ -1035,6 +1119,7 @@ const NR = (function () {
     b.straight(300); b.turn(40, 200); b.straight(300); b.turn(-50, 180, 8); b.straight(220);
     { const total = b.distance; let k = 0; for (let d = 45; d < total - 30; d += 55, k++) { const r = b.eventAt(EV.NodeRing, d - total, 3.2 * Math.sin(k * 0.9)); r.width = 2.6; r.index = k; } }
     b.cut("말이집 축삭 (도약전도)", ZONE.Myelin, 6);
+    if (TUNE.arcade) miniStation(b, "saltatory", null);
     const qS = bank.get("ch1_fork_saltatory");
     b.trigger("forkq:" + qS.id, 0); b.straight(280); const fork2 = b.cut("도약전도 갈림길", ZONE.ForkApproach, 9); b.fork(fork2, qS, 400, 170, 6);
     b.trigger("story:damage", 0).trigger("codex:demyelination", 0);
@@ -1067,7 +1152,7 @@ const NR = (function () {
     b.trigger("integ:excite", 40); psps(b, "excite", 60, 330); b.eventAt(EV.Trigger, 335, 0, "integ:end");
     b.straight(220, 4); b.turn(45, 150); b.straight(120, 6); b.turn(-50, 120);
     b.cut("이마엽 지구 (Frontal)", ZONE.Normal, 6, "frontal");
-    { const L = sortRun(b, "cortex", 150); b.straight(L); b.cut("대뇌 기능 포털 미션", ZONE.Normal, 9, "frontal"); }
+    miniStation(b, "cortex", "frontal");
     b.trigger("codex:m1", 10).trigger("codex:broca", TUNE.gap || 300); const G7 = TUNE.gap || 300; gate("ch7_gate_m1", 40, "lobe", 6); gate("ch7_gate_broca", 40 + G7, "lobe", 6); b.straight(260 + G7, -4);
     b.cut("이마엽 · 운동/언어 게이트", ZONE.Normal, 9, "frontal");
     b.trigger("forkq:ch7_fork_s1", 0); b.straight(300); let f = b.cut("감각 정보 갈림길", ZONE.ForkApproach, 9, "frontal"); b.fork(f, bank.get("ch7_fork_s1"), 380, 150, 6);
@@ -1182,6 +1267,7 @@ const NR = (function () {
         }
         case "sprint": case "scurve": case "jumppads": case "movers": case "lasers": case "narrow": case "dzone": case "rings": case "split": case "balance": case "reflex": case "loop": case "collapse": case "warp": case "plastic": piece(b, kind, theme, dir); break;
         case "sort": case "cross": { const L = sortRun(b, arg, kind === "cross" ? 125 : 150); b.straight(L); b.cut(kind === "cross" ? "신경 교차 드리프트" : "포털 미션", ZONE.Normal, 9, theme); break; }
+        case "mini": miniStation(b, arg, theme); break;
         case "excite": case "inhibit": integrationZone(b, kind, kind === "excite" ? "EPSP 가중 구간" : "IPSP 억제 구간", theme, dir); break;
         case "orbs": b.straightWith(200, 6, (i, s) => b.eventAt(EV.Orb, s, 2.6 * Math.sin(i * 1.2))); b.turn(dir * 50, 130, 5); b.cut("신호 가속 구간", ZONE.Normal, 6, theme); break;
         case "finish": b.straightWith(260, 6, (i, s) => b.eventAt(EV.Orb, s, 2.4 * Math.sin(i * 1.4))); b.event(EV.Finish, 0, "finish", -10); b.cut(title + " 결승", ZONE.Normal, 6, theme); break;
@@ -1222,13 +1308,13 @@ const NR = (function () {
   const TUTORIAL = { id: "tutorial", chapter: 0, title: "튜토리얼", subtitle: "연습 주행", introStory: "tutorial_intro", gateTitle: "연습 게이트", goals: [], boss: false, build: tutorialCourse };
   const STAGES = [
     { id: "ch1", chapter: 1, title: "뉴런과 신경신호", subtitle: "뉴런 고속도로", introStory: "prologue", gateTitle: "활동전위 게이트", goals: ["뉴런의 구조", "활동전위", "도약전도", "시냅스 전달"], boss: false, build: chapter1 },
-    Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "sprint", "fork:ch2_fork_horn", "reflex", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "jumppads", "loop", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "split", "warp", "plastic", "codex:reciprocal_inhibition", "inhibit", "gate:ch2_gate_reciprocal", "reflex", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
-    Q(3, "tract", "감각 오름로·운동 내림로", "신경로 고속도로", ["뒤기둥-안쪽섬유띠계", "앞가쪽계", "겉질척수로", "교차 위치"], ["story:ch3_intro", "codex:dcml", "warm", "cross:dcml", "fork:ch3_fork_dcml", "gate:ch3_gate_dcml_cross", "codex:spinothalamic", "cross:stt", "gate:ch3_gate_stt_cross", "excite", "codex:spinocerebellar", "gate:ch3_gate_scb", "scurve", "loop", "plastic", "codex:cst", "cross:cst", "fork:ch3_fork_cst", "gate:ch3_gate_cst_cross", "lasers", "warp", "codex:vestibulospinal", "gate:ch3_gate_vst", "story:ch3_final", "finish"]),
-    Q(4, "brainstem", "뇌줄기", "뇌줄기 터널", ["중간뇌 구조", "다리뇌와 소뇌 연결", "숨뇌 생명 중추", "뇌줄기 뇌신경핵"], ["story:ch4_intro", "codex:midbrain", "warm", "excite", "sort:nuclei", "codex:substantia_nigra", "gate:ch4_gate_sn", "gate:ch4_gate_sc", "fork:ch4_fork_ic", "rings", "gate:ch4_gate_aqueduct", "gate:ch4_gate_cn_midbrain", "codex:pons", "movers", "collapse", "plastic", "fork:ch4_fork_pons", "sprint", "warp", "codex:medulla", "gate:ch4_gate_medulla", "story:ch4_final", "finish"]),
-    Q(5, "cerebellum", "소뇌", "소뇌 균형 서킷", ["소뇌의 기능", "조롱박세포", "소뇌다리", "소뇌 증상"], ["story:ch5_intro", "codex:cerebellum", "warm", "balance", "gate:ch5_gate_function", "dzone", "codex:purkinje", "inhibit", "gate:ch5_gate_purkinje", "scurve", "loop", "plastic", "codex:cerebellar_peduncles", "fork:ch5_fork_mcp", "gate:ch5_gate_scp", "balance", "narrow", "warp", "gate:ch5_gate_vermis", "dzone", "gate:ch5_gate_tremor", "story:ch5_final", "finish"]),
-    Q(6, "diencephalon", "사이뇌", "사이뇌 중계 기지", ["시상 중계핵", "시상하부 항상성", "뇌하수체 조절", "솔방울샘"], ["story:ch6_intro", "codex:thalamus", "warm", "sort:relay", "fork:ch6_fork_thalamus", "gate:ch6_gate_vpl", "gate:ch6_gate_lgn", "excite", "split", "loop", "plastic", "codex:hypothalamus", "fork:ch6_fork_hypothal", "lasers", "gate:ch6_gate_pituitary", "sprint", "warp", "codex:pineal", "gate:ch6_gate_pineal", "story:ch6_final", "finish"]),
+    Q(2, "spinal", "척수와 반사", "척수 반사 회로", ["척수의 구조", "반사궁", "신장반사", "상호억제·굽힘반사"], ["story:ch2_intro", "codex:ventral_horn", "warm", "sprint", "fork:ch2_fork_horn", "mini:reflex", "gate:ch2_gate_drg", "codex:stretch_reflex", "gate:ch2_gate_spindle", "jumppads", "loop", "hairpin", "gate:ch2_gate_monosyn", "codex:reflex_arc", "fork:ch2_fork_arc", "split", "warp", "plastic", "codex:reciprocal_inhibition", "inhibit", "gate:ch2_gate_reciprocal", "codex:flexor_reflex", "gate:ch2_gate_flexor", "story:ch2_final", "finish"]),
+    Q(3, "tract", "감각 오름로·운동 내림로", "신경로 고속도로", ["뒤기둥-안쪽섬유띠계", "앞가쪽계", "겉질척수로", "교차 위치"], ["story:ch3_intro", "codex:dcml", "warm", "mini:cross", "fork:ch3_fork_dcml", "gate:ch3_gate_dcml_cross", "codex:spinothalamic", "gate:ch3_gate_stt_cross", "excite", "codex:spinocerebellar", "gate:ch3_gate_scb", "scurve", "loop", "plastic", "codex:cst", "fork:ch3_fork_cst", "gate:ch3_gate_cst_cross", "lasers", "warp", "codex:vestibulospinal", "gate:ch3_gate_vst", "story:ch3_final", "finish"]),
+    Q(4, "brainstem", "뇌줄기", "뇌줄기 터널", ["중간뇌 구조", "다리뇌와 소뇌 연결", "숨뇌 생명 중추", "뇌줄기 뇌신경핵"], ["story:ch4_intro", "codex:midbrain", "warm", "excite", "mini:nuclei", "codex:substantia_nigra", "gate:ch4_gate_sn", "gate:ch4_gate_sc", "fork:ch4_fork_ic", "rings", "gate:ch4_gate_aqueduct", "gate:ch4_gate_cn_midbrain", "codex:pons", "movers", "collapse", "plastic", "fork:ch4_fork_pons", "sprint", "warp", "codex:medulla", "gate:ch4_gate_medulla", "story:ch4_final", "finish"]),
+    Q(5, "cerebellum", "소뇌", "소뇌 균형 서킷", ["소뇌의 기능", "조롱박세포", "소뇌다리", "소뇌 증상"], ["story:ch5_intro", "codex:cerebellum", "warm", "mini:balance", "gate:ch5_gate_function", "dzone", "codex:purkinje", "inhibit", "gate:ch5_gate_purkinje", "scurve", "loop", "plastic", "codex:cerebellar_peduncles", "fork:ch5_fork_mcp", "gate:ch5_gate_scp", "balance", "narrow", "warp", "gate:ch5_gate_vermis", "dzone", "gate:ch5_gate_tremor", "story:ch5_final", "finish"]),
+    Q(6, "diencephalon", "사이뇌", "사이뇌 중계 기지", ["시상 중계핵", "시상하부 항상성", "뇌하수체 조절", "솔방울샘"], ["story:ch6_intro", "codex:thalamus", "warm", "mini:relay", "fork:ch6_fork_thalamus", "gate:ch6_gate_vpl", "gate:ch6_gate_lgn", "excite", "split", "loop", "plastic", "codex:hypothalamus", "fork:ch6_fork_hypothal", "lasers", "gate:ch6_gate_pituitary", "sprint", "warp", "codex:pineal", "gate:ch6_gate_pineal", "story:ch6_final", "finish"]),
     { id: "ch7", chapter: 7, title: "대뇌", subtitle: "대뇌 도시", introStory: "ch7_intro", gateTitle: "대뇌 기능 게이트", goals: ["대뇌엽의 위치", "일차운동·감각겉질", "청각·시각겉질", "언어 영역과 실어증"], boss: false, build: chapter7 },
-    Q(8, "cranial", "12뇌신경", "12뇌신경 포털", ["눈 운동 신경", "얼굴의 신경", "감각·운동·혼합 분류", "아래 뇌신경"], ["story:ch8_intro", "codex:cn_overview", "warm", "excite", "sort:cranial", "gate:ch8_gate_sensory", "codex:cn_eye", "gate:ch8_gate_abducens", "rings", "gate:ch8_gate_trochlear", "jumppads", "loop", "plastic", "codex:cn_face", "fork:ch8_fork_facial", "gate:ch8_gate_trigeminal", "narrow", "warp", "collapse", "codex:cn_lower", "fork:ch8_fork_hypoglossal", "gate:ch8_gate_vagus", "gate:ch8_gate_accessory", "story:ch8_final", "finish"]),
+    Q(8, "cranial", "12뇌신경", "12뇌신경 포털", ["눈 운동 신경", "얼굴의 신경", "감각·운동·혼합 분류", "아래 뇌신경"], ["story:ch8_intro", "codex:cn_overview", "warm", "excite", "mini:cranial", "gate:ch8_gate_sensory", "codex:cn_eye", "gate:ch8_gate_abducens", "rings", "gate:ch8_gate_trochlear", "jumppads", "loop", "plastic", "codex:cn_face", "fork:ch8_fork_facial", "gate:ch8_gate_trigeminal", "narrow", "warp", "collapse", "codex:cn_lower", "fork:ch8_fork_hypoglossal", "gate:ch8_gate_vagus", "gate:ch8_gate_accessory", "story:ch8_final", "finish"]),
     { id: "ch9", chapter: 9, title: "임상 챌린지 (NULL)", subtitle: "NULL 보스 아레나", introStory: "ch9_intro", gateTitle: "NULL 진단 게이트", goals: ["병변 위치 추론", "교차와 반대쪽 증상", "위·아래운동신경세포", "척수 반쪽 손상"], boss: true, build: chapter9 },
   ];
 
@@ -1690,6 +1776,283 @@ function createFX(scene, camera) {
 
 </script>
 <script>
+// NERVE RUNNER 4.8 - chapter minigames. Each chapter mission is its own small game on a dedicated
+// screen (the race pauses): reflex response, tract tracing, brainstem nuclei placement, thalamic relay,
+// cortex map, cranial-nerve face, cerebellar balance, saltatory timing.
+"use strict";
+function createMinis(ctx) {   // ctx: { Snd, say(text) }
+  const $ = s => document.querySelector(s);
+  const root = $("#mg2"), area = $("#mg2-area"), title = $("#mg2-title"), prompt = $("#mg2-prompt"), fbEl = $("#mg2-fb"), dots = $("#mg2-dots"), tbar = $("#mg2-timer"), intro = $("#mg2-intro");
+  let S = null, timers = [];
+  const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+  const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  function stopAll() { timers.forEach(clearTimeout); timers = []; if (S && S.raf) cancelAnimationFrame(S.raf); if (S && S.cleanup) S.cleanup(); tbar.style.display = "none"; }
+  function renderDots() { dots.innerHTML = S.n ? Array.from({ length: S.n }, (_, k) => `<i class="${k < S.log.length ? (S.log[k] ? "ok" : "no") : k === S.log.length ? "cur" : ""}"></i>`).join("") : ""; }
+  const api = {
+    area, later, shuffle, esc,
+    setPrompt(t) { prompt.innerHTML = t; },
+    feedback(ok, text) { fbEl.className = "mg2-fb " + (ok ? "ok" : "no"); fbEl.innerHTML = (ok ? "✔ " : "✘ ") + text; },
+    clearFb() { fbEl.className = "mg2-fb"; fbEl.innerHTML = ""; },
+    result(ok) { S.log.push(!!ok); if (ok) S.ok++; renderDots(); ok ? ctx.Snd.chime() : ctx.Snd.thud(); },
+    timer(sec, onEnd) {   // shrinking bar; returns cancel()
+      const bar = tbar.firstElementChild; tbar.style.display = "block"; bar.style.transition = "none"; bar.style.width = "100%"; void bar.offsetWidth;
+      bar.style.transition = `width ${sec}s linear`; bar.style.width = "0%"; const t = later(() => { tbar.style.display = "none"; onEnd(); }, sec * 1000);
+      return () => { clearTimeout(t); tbar.style.display = "none"; };
+    },
+    say: ctx.say, Snd: ctx.Snd, get S() { return S; },
+    finish(summary) {
+      stopAll(); const pass = S.n ? S.ok / S.n >= 0.6 : !!S.pass;
+      intro.innerHTML = `<b>${pass ? "🎉 미션 성공!" : "미션 종료"}</b><p class="mg2-score">${S.n ? `${S.ok} / ${S.n} 성공` : summary || ""}</p>${S.n && summary ? `<p>${summary}</p>` : ""}<p class="mg2-small">${pass ? "보상: 터보 가속 + 신호 에너지" : "60% 이상이면 성공 — 다음엔 더 잘할 수 있어요!"}</p><button class="big primary" id="mg2-go">계속 달리기 ▶</button>`;
+      intro.style.display = "flex"; ctx.say(pass ? "미션 성공! 다시 달리자!" : "아쉽지만 괜찮아, 다시 달리자!");
+      $("#mg2-go").onclick = () => { root.className = "mg2"; area.innerHTML = ""; const d = S.done, ok = S.ok, n = S.n; S = null; d(pass, ok, n); };
+    },
+  };
+  function open(kind, done) {
+    const G = GAMES[kind]; if (!G) { done(true, 0, 0); return; }
+    stopAll(); S = { kind, done, ok: 0, n: G.rounds || 0, log: [], pass: false };
+    root.className = "mg2 on mg-" + kind; title.textContent = G.title; area.innerHTML = ""; api.clearFb(); prompt.innerHTML = ""; renderDots();
+    intro.innerHTML = `<b>${G.title}</b><p>${G.intro}</p>${G.note ? `<p class="mg2-small">${G.note}</p>` : ""}<button class="big primary" id="mg2-go">시작 ▶</button>`; intro.style.display = "flex";
+    ctx.say(G.speech || G.intro);
+    $("#mg2-go").onclick = () => { intro.style.display = "none"; ctx.Snd.beep(); G.start(api); };
+  }
+
+  //================= games =================
+  const GAMES = {};
+
+  // CH.2 spinal reflex emergency
+  GAMES.reflex = {
+    title: "척수반사 긴급 미션", rounds: 5,
+    intro: "갑자기 자극이 들어와요! 척수가 어떻게 반응할지 5초 안에 골라 주세요. 맞히면 반사궁에 신호가 흘러요.",
+    note: "※ 실제 반사는 수십 밀리초 안에 일어나요. 제한 시간은 게임을 위한 것이에요.",
+    start(A) {
+      const R = [
+        { k: "stretch", s: "🔨 무릎 아래 힘줄을 반사망치로 톡!", a: 0, arc: ["근방추", "Ia 감각신경", "척수 (단일시냅스)", "α운동신경세포", "넙다리네갈래근 수축"], why: "근방추가 늘어남 → Ia 감각신경 → α운동신경세포 → 같은 근육 수축 (신장반사)" },
+        { k: "flex", s: "📌 맨발로 압정을 밟았다!", a: 1, arc: ["통각 수용기", "감각신경", "척수 사이신경세포", "운동신경", "굽힘근 수축"], why: "통각 → 사이신경세포 → 굽힘근 수축으로 발을 들어 올리고 폄근은 억제 (굽힘반사)" },
+        { k: "crossed", s: "📌 한 발로 압정을 밟아 그 발을 들었다! 몸이 기우뚱…", a: 2, arc: ["통각 수용기", "감각신경", "척수 (반대쪽으로 교차)", "반대쪽 운동신경", "반대쪽 다리 폄"], why: "자극받은 다리는 굽히고, 반대쪽 다리는 펴서 체중을 받쳐요 (교차폄반사)" },
+        { k: "recip", s: "💪 넙다리네갈래근(폄근)이 힘껏 수축한다!", a: 3, arc: ["근방추", "Ia 감각신경", "억제성 사이신경세포", "길항근 운동신경 억제", "뒤넙다리근 이완"], why: "억제성 사이신경세포가 길항근을 이완시켜 동작이 부드러워져요 (상호억제)" },
+      ];
+      const OPT = ["같은 근육 수축 (다리 차올림)", "굽힘근 수축 (발 들어 올리기)", "반대쪽 다리 펴서 버티기", "길항근 이완"];
+      const seq = A.shuffle(R.concat([R[(Math.random() * 4) | 0]])); let i = 0;
+      A.area.innerHTML = `<div class="rf-stim" id="rf-stim"></div><div class="rf-arc" id="rf-arc"></div><div class="mg-opts" id="rf-opts"></div>`;
+      const round = () => {
+        if (i >= seq.length) return A.finish("반사는 뇌까지 가지 않고 척수에서 바로 처리돼요.");
+        const r = seq[i]; A.clearFb(); A.setPrompt("자극! 척수의 반응은?");
+        document.getElementById("rf-stim").textContent = r.s; A.Snd.tone("square", 1200, 1500, 0.12, 0.2);
+        document.getElementById("rf-arc").innerHTML = r.arc.map(x => `<span>${x}</span>`).join("<i>→</i>");
+        const box = document.getElementById("rf-opts"); box.innerHTML = OPT.map((o, k) => `<button data-k="${k}">${o}</button>`).join("");
+        let answered = false;
+        const pick = k => {
+          if (answered) return; answered = true; cancel(); const ok = k === r.a; A.result(ok);
+          box.querySelectorAll("button").forEach(b => { const kk = +b.dataset.k; b.disabled = true; if (kk === r.a) b.classList.add("right"); else if (kk === k) b.classList.add("wrong"); });
+          A.feedback(ok, (k < 0 ? "시간 초과! " : "") + r.why);
+          if (ok) document.querySelectorAll("#rf-arc span").forEach((s, n) => A.later(() => s.classList.add("lit"), n * 220));
+          i++; A.later(round, 2600);
+        };
+        const cancel = A.timer(5, () => pick(-1));
+        box.querySelectorAll("button").forEach(b => b.onclick = () => pick(+b.dataset.k));
+      };
+      round();
+    },
+  };
+
+  // CH.3 tract tracing (crossing points)
+  GAMES.cross = {
+    title: "신경 교차 경로 추적", rounds: 3,
+    intro: "신호를 따라 층마다 신호가 지나가는 쪽(몸의 왼쪽/오른쪽 절반)을 눌러 경로를 그려요. 어디서 반대쪽으로 건너가는지가 핵심!",
+    start(A) {
+      const T = [
+        { name: "뒤기둥-안쪽섬유띠계", from: "왼다리의 진동·위치 감각", up: true, lv: [["척수 (뒤뿌리로 들어옴)", 0], ["척수 위쪽 (뒤기둥 · 널판다발)", 0], ["숨뇌 아래 (얇은핵 · 쐐기핵)", 0], ["숨뇌 위 (교차 → 안쪽섬유띠)", 1], ["시상 VPL", 1], ["마루엽 일차몸감각겉질", 1]], why: "같은 쪽으로 올라가 숨뇌에서 교차해요." },
+        { name: "앞가쪽계 (척수시상로)", from: "왼손의 통증·온도", up: true, lv: [["척수 뒤뿔 (들어옴)", 0], ["척수 1–2분절 위 (앞흰질맞교차 후)", 1], ["숨뇌", 1], ["시상 VPL", 1], ["마루엽 일차몸감각겉질", 1]], why: "척수에 들어오자마자 1–2분절 안에서 교차해요." },
+        { name: "가쪽겉질척수로", from: "왼손을 움직이라는 명령", up: false, lv: [["일차운동겉질", 1], ["속섬유막", 1], ["숨뇌 피라미드 (교차 전)", 1], ["숨뇌 아래 (피라미드 교차 후)", 0], ["척수 가쪽겉질척수로", 0], ["척수 앞뿔 → 왼손 근육", 0]], why: "숨뇌 피라미드 교차에서 반대쪽으로 넘어가요." },
+      ];
+      let t = 0;
+      const tract = () => {
+        if (t >= T.length) return A.finish("감각은 위로 올라가며, 운동 명령은 내려가며 반대쪽으로 교차해요.");
+        const tr = T[t], rows = tr.up ? tr.lv.slice().reverse() : tr.lv.slice(); let step = 0, miss = 0; A.clearFb();
+        A.setPrompt(`<b>${tr.name}</b> — ${tr.from} ${tr.up ? "↑ 올라가요" : "↓ 내려가요"}`);
+        A.area.innerHTML = `<div class="tr-head"><span>◀ 몸 왼쪽</span><span>몸 오른쪽 ▶</span></div><div class="tr-wrap"><svg class="tr-svg" id="tr-svg"></svg>${rows.map((r, k) => `<div class="tr-row" data-r="${k}"><button data-s="0"></button><em>${r[0]}</em><button data-s="1"></button></div>`).join("")}</div>`;
+        const order = tr.up ? rows.map((_, k) => rows.length - 1 - k) : rows.map((_, k) => k), pts = [];
+        const draw = () => { const svg = document.getElementById("tr-svg"), wr = svg.getBoundingClientRect(); svg.innerHTML = pts.length > 1 ? `<polyline points="${pts.map(p => `${p[0] - wr.left},${p[1] - wr.top}`).join(" ")}" />` : ""; };
+        const mark = () => { document.querySelectorAll(".tr-row").forEach((el, k) => el.classList.toggle("cur", k === order[step])); };
+        mark();
+        A.area.querySelectorAll(".tr-row button").forEach(b => b.onclick = () => {
+          const row = +b.parentElement.dataset.r; if (row !== order[step]) return;
+          const side = +b.dataset.s, want = rows[row][1], ok = side === want; if (!ok) { miss++; A.Snd.thud(); }
+          const good = b.parentElement.querySelector(`button[data-s="${want}"]`); good.classList.add("on"); if (!ok) b.classList.add("bad");
+          const rc = good.getBoundingClientRect(); pts.push([rc.left + rc.width / 2, rc.top + rc.height / 2]); draw();
+          if (!ok) A.feedback(false, `여기서는 ${want ? "오른쪽" : "왼쪽"}이에요. ${tr.why}`); else A.Snd.coin();
+          step++; mark();
+          if (step >= rows.length) { const pass = miss <= 1; A.result(pass); A.feedback(pass, `${tr.name}: ${tr.why}`); t++; A.later(tract, 3000); }
+        });
+      };
+      tract();
+    },
+  };
+
+  // CH.4 brainstem nuclei placement
+  GAMES.nuclei = {
+    title: "뇌줄기 신경핵 배치", rounds: 7,
+    intro: "카드에 적힌 신경핵이 뇌줄기의 어느 층에 있는지 눌러서 제자리에 놓아 주세요.",
+    start(A) {
+      const L = ["중간뇌", "다리뇌", "숨뇌"];
+      const D = A.shuffle([["III 눈돌림신경핵", 0], ["IV 도르래신경핵", 0], ["에딩거-웨스트팔핵 (동공 수축)", 0], ["V 삼차신경 운동핵 (씹기)", 1], ["VI 갓돌림신경핵", 1], ["VII 얼굴신경핵", 1], ["XII 혀밑신경핵", 2], ["의문핵 (삼킴 · 발성)", 2], ["X 미주신경 등쪽운동핵", 2]]).slice(0, 7);
+      A.area.innerHTML = `<div class="nu-card" id="nu-card"></div><div class="nu-stem">${L.map((l, k) => `<button class="nu-lv nu-${k}" data-l="${k}"><b>${l}</b><div class="nu-chips"></div></button>`).join("")}</div>`;
+      let i = 0;
+      const round = () => {
+        if (i >= D.length) return A.finish("III·IV는 중간뇌, V·VI·VII은 다리뇌, IX·X·XII은 숨뇌 — 위에서 아래로 번호가 커져요.");
+        A.clearFb(); A.setPrompt("이 신경핵은 어느 층에 있을까?"); document.getElementById("nu-card").textContent = D[i][0]; let done = false;
+        A.area.querySelectorAll(".nu-lv").forEach(b => b.onclick = () => {
+          if (done) return; done = true; const k = +b.dataset.l, ok = k === D[i][1]; A.result(ok);
+          const tgt = A.area.querySelector(`.nu-lv[data-l="${D[i][1]}"] .nu-chips`); tgt.insertAdjacentHTML("beforeend", `<span class="${ok ? "" : "fix"}">${A.esc(D[i][0])}</span>`);
+          if (!ok) b.classList.add("bad"); A.later(() => b.classList.remove("bad"), 700);
+          A.feedback(ok, `${D[i][0]}은 ${L[D[i][1]]}에 있어요.`); i++; A.later(round, 1500);
+        });
+      };
+      round();
+    },
+  };
+
+  // CH.6 thalamic relay delivery
+  GAMES.relay = {
+    title: "시상 중계 배달", rounds: 6,
+    intro: "감각 신호가 시상에 도착해요! 6초 안에 맞는 중계핵을 눌러서 대뇌겉질로 보내 주세요.",
+    start(A) {
+      const N = [["LGN", "가쪽무릎핵", "일차시각겉질 (뒤통수엽)"], ["MGN", "안쪽무릎핵", "일차청각겉질 (관자엽)"], ["VPL", "배쪽뒤가쪽핵", "일차몸감각겉질 · 몸"], ["VPM", "배쪽뒤안쪽핵", "일차몸감각겉질 · 얼굴"], ["VL", "배쪽가쪽핵", "일차운동겉질"]];
+      const SRC = [["👁", "망막에서 온 빛 신호", 0], ["👂", "달팽이관에서 온 소리 신호", 1], ["✋", "손끝의 촉각·통증", 2], ["🦶", "발바닥의 진동 감각", 2], ["😊", "얼굴 피부의 촉각 (삼차신경)", 3], ["⚖", "소뇌에서 온 운동 조절 신호", 4]];
+      const seq = A.shuffle(SRC);
+      A.area.innerHTML = `<div class="re-row"><div class="re-src" id="re-src"></div><div class="re-th">${N.map((n, k) => `<button data-k="${k}"><b>${n[0]}</b><small>${n[1]}</small></button>`).join("")}<span class="re-name">시상</span></div><div class="re-dst" id="re-dst">대뇌겉질</div></div>`;
+      let i = 0;
+      const round = () => {
+        if (i >= seq.length) return A.finish("시상은 후각을 뺀 거의 모든 감각이 대뇌로 가기 전에 거치는 관문이에요.");
+        const s = seq[i]; A.clearFb(); A.setPrompt("어느 중계핵으로 보낼까?"); document.getElementById("re-src").innerHTML = `<span>${s[0]}</span>${s[1]}`; document.getElementById("re-dst").textContent = "대뇌겉질";
+        let done = false; const btns = A.area.querySelectorAll(".re-th button"); btns.forEach(b => b.className = "");
+        const pick = k => {
+          if (done) return; done = true; cancel(); const ok = k === s[2]; A.result(ok);
+          btns.forEach(b => { if (+b.dataset.k === s[2]) b.className = "right"; else if (+b.dataset.k === k) b.className = "wrong"; });
+          document.getElementById("re-dst").textContent = "→ " + N[s[2]][2]; A.feedback(ok, `${k < 0 ? "시간 초과! " : ""}${s[1]} → ${N[s[2]][0]} (${N[s[2]][1]}) → ${N[s[2]][2]}`); i++; A.later(round, 2300);
+        };
+        const cancel = A.timer(6, () => pick(-1)); btns.forEach(b => b.onclick = () => pick(+b.dataset.k));
+      };
+      round();
+    },
+  };
+
+  // CH.7 cortex function map
+  GAMES.cortex = {
+    title: "대뇌 기능 지도", rounds: 6,
+    intro: "명령이 떨어지면 그 일을 맡은 대뇌겉질 영역(빛나는 점)을 눌러 주세요. 뇌는 왼쪽을 바라보고 있어요.",
+    start(A) {
+      const H = { m1: [190, 58, "일차운동겉질"], s1: [222, 62, "일차몸감각겉질"], broca: [118, 150, "브로카 영역"], wern: [272, 150, "베르니케 영역"], a1: [218, 160, "일차청각겉질"], v1: [352, 138, "일차시각겉질"] };
+      const Q = A.shuffle([["오른손을 움직여라!", "m1"], ["손끝 감촉을 느껴라!", "s1"], ["말을 만들어 내라!", "broca"], ["들은 말을 이해하라!", "wern"], ["음악 소리를 들어라!", "a1"], ["물체의 모양을 보라!", "v1"]]);
+      A.area.innerHTML = `<svg class="cx-brain" viewBox="0 0 400 250">
+        <path class="lobe fr" d="M30,130 C28,55 105,18 185,20 L205,128 L150,172 C92,190 38,182 30,130Z"/><path class="lobe pa" d="M185,20 C258,18 312,40 332,82 L250,118 L205,128Z"/>
+        <path class="lobe oc" d="M332,82 C372,100 382,152 360,190 L300,170 L250,118Z"/><path class="lobe te" d="M150,172 L205,128 L250,118 L300,170 C268,214 190,224 150,172Z"/>
+        <path class="cs" d="M196,22 L210,126"/><text x="85" y="95">이마엽</text><text x="250" y="70">마루엽</text><text x="330" y="160">뒤통수엽</text><text x="180" y="200">관자엽</text>
+        ${Object.entries(H).map(([k, h]) => `<g class="hs" data-k="${k}"><circle cx="${h[0]}" cy="${h[1]}" r="17"/><text x="${h[0]}" y="${h[1] + 34}" class="hl"></text></g>`).join("")}</svg>`;
+      let i = 0;
+      const round = () => {
+        if (i >= Q.length) return A.finish("운동은 이마엽, 몸감각은 마루엽, 청각·언어 이해는 관자엽, 시각은 뒤통수엽!");
+        const q = Q[i]; A.clearFb(); A.setPrompt(`🧠 <b>${q[0]}</b>`); let done = false; A.say(q[0]);
+        A.area.querySelectorAll(".hs").forEach(g => g.onclick = () => {
+          if (done) return; done = true; const ok = g.dataset.k === q[1]; A.result(ok);
+          const right = A.area.querySelector(`.hs[data-k="${q[1]}"]`); right.classList.add("right"); right.querySelector(".hl").textContent = H[q[1]][2];
+          if (!ok) { g.classList.add("wrong"); g.querySelector(".hl").textContent = H[g.dataset.k][2]; A.later(() => { g.classList.remove("wrong"); g.querySelector(".hl").textContent = ""; }, 2000); }
+          A.feedback(ok, `${q[0]} → ${H[q[1]][2]}`); i++; A.later(() => { right.classList.remove("right"); right.querySelector(".hl").textContent = ""; round(); }, 2100);
+        });
+      };
+      round();
+    },
+  };
+
+  // CH.8 cranial nerve face
+  GAMES.cranial = {
+    title: "뇌신경 얼굴 반응", rounds: 6,
+    intro: "동작 명령에 맞는 뇌신경을 고르면 얼굴이 그대로 움직여요!",
+    start(A) {
+      const ACT = [["눈을 바깥쪽으로!", "VI 갓돌림신경", "abd"], ["눈을 안쪽 아래로!", "IV 도르래신경", "tro"], ["활짝 웃어!", "VII 얼굴신경", "fac"], ["꼭꼭 씹어!", "V 삼차신경", "tri"], ["혀를 쭉 내밀어!", "XII 혀밑신경", "hyp"], ["어깨를 으쓱!", "XI 더부신경", "acc"], ["동공을 작게!", "III 눈돌림신경", "ocu"]];
+      const ALL = ACT.map(a => a[1]); const seq = A.shuffle(ACT).slice(0, 6);
+      A.area.innerHTML = `<div class="cr-row"><svg class="cr-face" id="cr-face" viewBox="0 0 220 220">
+        <g class="sh"><path d="M10,215 C20,175 60,165 110,165 C160,165 200,175 210,215Z"/></g>
+        <circle class="head" cx="110" cy="95" r="70"/>
+        <g class="eye"><ellipse cx="82" cy="85" rx="16" ry="12"/><circle class="pu pl" cx="82" cy="85" r="6"/></g><g class="eye"><ellipse cx="138" cy="85" rx="16" ry="12"/><circle class="pu pr" cx="138" cy="85" r="6"/></g>
+        <g class="jaw"><path class="m0" d="M90,128 Q110,134 130,128"/><path class="m1" d="M84,122 Q110,150 136,122 Z"/><path class="tg" d="M102,132 Q110,160 118,132 Z"/></g></svg>
+        <div class="mg-opts col" id="cr-opts"></div></div>`;
+      const face = document.getElementById("cr-face"); let i = 0;
+      const round = () => {
+        if (i >= seq.length) return A.finish("눈을 움직이는 건 III·IV·VI, 표정은 VII, 씹기는 V, 혀는 XII, 어깨는 XI!");
+        const s = seq[i]; face.setAttribute("class", "cr-face"); A.clearFb(); A.setPrompt(`🗣 <b>${s[0]}</b>`); A.say(s[0]);
+        const opts = A.shuffle([s[1]].concat(A.shuffle(ALL.filter(x => x !== s[1])).slice(0, 3))), box = document.getElementById("cr-opts");
+        box.innerHTML = opts.map(o => `<button>${o}</button>`).join(""); let done = false;
+        box.querySelectorAll("button").forEach(b => b.onclick = () => {
+          if (done) return; done = true; const ok = b.textContent === s[1]; A.result(ok);
+          box.querySelectorAll("button").forEach(x => { x.disabled = true; if (x.textContent === s[1]) x.classList.add("right"); else if (x === b) x.classList.add("wrong"); });
+          face.setAttribute("class", "cr-face act-" + s[2]); A.feedback(ok, `${s[0]} → ${s[1]}`); i++; A.later(round, 2300);
+        });
+      };
+      round();
+    },
+  };
+
+  // CH.5 cerebellar balance
+  GAMES.balance = {
+    title: "소뇌 균형 잡기", rounds: 0,
+    intro: "NULL이 STAR-01을 계속 흔들어요(운동실조 흉내). ◀ ▶를 눌러 가운데 초록 구역에 15초 동안 최대한 오래 머물러 주세요. 60% 이상이면 성공!",
+    note: "소뇌는 '하려던 움직임'과 '실제 움직임'을 비교해 오차를 계속 고쳐 줘요.",
+    start(A) {
+      A.area.innerHTML = `<div class="ba-wrap"><div class="ba-beam"><div class="ba-zone"></div><div class="ba-star" id="ba-star">★</div></div><div class="ba-pct" id="ba-pct">0%</div>
+        <div class="ba-ctl"><button data-d="-1">◀</button><button data-d="1">▶</button></div></div>`;
+      const hold = { "-1": 0, "1": 0 }, keys = e => { if (e.code === "ArrowLeft") hold["-1"] = e.type === "keydown" ? 1 : 0; if (e.code === "ArrowRight") hold["1"] = e.type === "keydown" ? 1 : 0; };
+      A.area.querySelectorAll(".ba-ctl button").forEach(b => { const d = b.dataset.d; b.onpointerdown = e => { e.preventDefault(); hold[d] = 1; b.classList.add("down"); }; b.onpointerup = b.onpointercancel = b.onpointerleave = () => { hold[d] = 0; b.classList.remove("down"); }; });
+      addEventListener("keydown", keys); addEventListener("keyup", keys); A.S.cleanup = () => { removeEventListener("keydown", keys); removeEventListener("keyup", keys); };
+      let x = 0, v = 0, t = 0, inside = 0, last = performance.now(); const star = document.getElementById("ba-star"), pct = document.getElementById("ba-pct");
+      A.setPrompt("가운데 초록 구역을 지켜라!"); A.timer(15, () => {});
+      const loop = now => {
+        const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+        const drift = Math.sin(t * 1.3) * 1.6 + Math.sin(t * 2.9 + 1) * 1.1 + Math.sin(t * 0.55 + 2) * 0.9;
+        v += (drift + (hold["1"] - hold["-1"]) * 4.2 - v * 2.2) * dt; x = Math.max(-1, Math.min(1, x + v * dt)); if (Math.abs(x) >= 1) v *= -0.3;
+        const inZ = Math.abs(x) < 0.28; if (inZ) inside += dt; star.style.left = (50 + x * 46) + "%"; star.classList.toggle("in", inZ);
+        pct.textContent = Math.round(inside / Math.max(0.01, t) * 100) + "%";
+        if (t >= 15) { const r = inside / t; A.S.pass = r >= 0.6; A.result(A.S.pass); return A.finish(`균형 유지 ${Math.round(r * 100)}%`); }
+        A.S.raf = requestAnimationFrame(loop);
+      };
+      A.S.raf = requestAnimationFrame(loop);
+    },
+  };
+
+  // CH.1 saltatory conduction timing
+  GAMES.saltatory = {
+    title: "도약전도 타이밍", rounds: 8,
+    intro: "신호가 랑비에 결절(청록 마디)에 닿아 빛나는 순간 [재생성!]을 눌러 활동전위를 다시 만들어 주세요. 수초 구간은 빠르게 건너뛰어요.",
+    note: "회색 구간은 수초가 벗겨진 곳(탈수초)이라 신호가 느려져요.",
+    start(A) {
+      const NODES = 8, damaged = 5;
+      A.area.innerHTML = `<div class="sa-axon">${Array.from({ length: NODES }, (_, k) => `<div class="sa-seg${k === damaged ? " dm" : ""}"></div><div class="sa-node" data-n="${k}"></div>`).join("")}<div class="sa-pulse" id="sa-pulse"></div></div><button class="big primary sa-btn" id="sa-btn">⚡ 재생성!</button>`;
+      const pulse = document.getElementById("sa-pulse"), nodes = A.area.querySelectorAll(".sa-node"), btn = document.getElementById("sa-btn");
+      let k = 0, phase = "travel", t0 = performance.now(), from = 0; A.setPrompt("결절이 빛날 때 누르세요!");
+      const posOf = n => { const el = nodes[n], ax = el.parentElement.getBoundingClientRect(), r = el.getBoundingClientRect(); return (r.left + r.width / 2 - ax.left) / ax.width * 100; };
+      const travelT = n => (n === damaged ? 1.5 : 0.75 - n * 0.03) * 1000, WINDOW = 650;
+      btn.onclick = () => {
+        if (phase === "window") { phase = "travel"; A.result(true); nodes[k].classList.add("hit"); A.Snd.coin(); A.feedback(true, k === damaged ? "탈수초 구간을 겨우 통과! 전도가 느렸어요." : "활동전위 재생성! 다음 결절로 껑충"); next(); }
+        else if (phase === "travel") { A.feedback(false, "아직! 결절에 닿아 빛날 때 눌러요."); }
+      };
+      const next = () => { k++; if (k >= NODES) { phase = "end"; return A.later(() => A.finish("수초는 절연체라 전류가 빨리 지나가고, 결절에서만 활동전위가 다시 만들어져요."), 600); } from = posOf(k - 1); t0 = performance.now(); };
+      const loop = now => {
+        if (phase === "travel") {
+          const u = Math.min(1, (now - t0) / travelT(k)), a = k === 0 ? 0 : from, b = posOf(k); pulse.style.left = (a + (b - a) * u) + "%";
+          if (u >= 1) { phase = "window"; t0 = now; nodes[k].classList.add("glow"); }
+        } else if (phase === "window" && now - t0 > WINDOW) { phase = "travel"; nodes[k].classList.remove("glow"); nodes[k].classList.add("miss"); A.result(false); A.feedback(false, "놓쳤어요 — 신호가 약해졌어요."); next(); }
+        if (phase !== "end") A.S.raf = requestAnimationFrame(loop);
+      };
+      pulse.style.left = "0%"; A.S.raf = requestAnimationFrame(loop);
+    },
+  };
+
+  return { open, close() { stopAll(); root.className = "mg2"; S = null; } };
+}
+
+</script>
+<script>
 // NERVE RUNNER web - the world: STAR-01 rides INSIDE the nervous system.
 //  * every road is the inside of an axon: a translucent membrane tube with ion channels; the
 //    membrane lights up (depolarises) around STAR-01 = the action potential travelling with you
@@ -2133,7 +2496,7 @@ window.NRW_INIT = function () { window.NRW = (function () {
       const lab = new THREE.Mesh(new THREE.PlaneGeometry(4.5 * big / 1.4, 1.4 * big / 1.4), new THREE.MeshBasicMaterial({ map: labelTex([e.final ? "NULL 코어" : "약점"], { w: 512, h: 160, border: "#FFD34D", bg: "rgba(40,0,10,.85)", bigColor: "#FFD34D" }), transparent: true, depthWrite: false, side: THREE.DoubleSide }));
       lab.position.y = 3.2 * big; grp.add(lab);
       grp.visible = !e.need; W.root.add(grp); W.weaks.push({ e, grp, ring, core });
-    } else if (e.type === E.Trigger && e.tag === "synapse:warp") {
+    } else if (e.type === E.Trigger && (e.tag === "synapse:warp" || /^mini:/.test(e.tag))) {
       const f = frameAt(seg, e.s, 0, 4.5), g = new THREE.Group(); g.position.copy(f.p); g.quaternion.copy(f.q);
       for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(7 - i * 1.2, 0.35, 8, 64), glow([0xFF5CC8, 0x9B5CFF, 0x2EE6D6][i], 0.9)); g.add(t); W.anim.push({ o: t, spin: (i % 2 ? -1 : 1) * (0.6 + i * 0.3), axis: "z" }); }
       W.root.add(g);
@@ -2889,7 +3252,7 @@ window.NR_MAIN = function () {
       if (best && best.ghost && best.ghost.length) { r.ghost = best.ghost; ghostMesh.root.visible = true; }
       $("#h-rank").classList.add("on");
     }
-    if (r.mode === "survival") { r.sim.boostEnergy = 1; $("#h-rank").classList.add("on"); }
+    if (r.mode === "survival") { r.sim.boostEnergy = 1; r.life = 100; $("#h-rank").classList.add("on"); }
   }
   const segById = id => race.graph.segments[id];
   function tickMode(dt) {
@@ -2926,13 +3289,13 @@ window.NR_MAIN = function () {
     } else if (r.mode === "survival") {
       const prog = NR.clamp01(sim.progress / total);
       sim.speedScale = 1 + 0.4 * prog;   // faster and faster
-      if (r.phase === "run") { sim.boostEnergy = Math.max(0, sim.boostEnergy - dt * 0.022 * (1 + prog)); if (sim.boostEnergy <= 0.001) { survivalOver(); return; } }
-      if (hud) $("#h-rank").innerHTML = `<b>∞ 서바이벌</b><div class="row"><span>생존</span><span>${fmt(sim.raceTime)}</span></div><div class="row"><span>속도</span><span>×${sim.speedScale.toFixed(2)}</span></div><div class="row"><span>에너지</span><span>${Math.round(sim.boostEnergy * 100)}%</span></div>`;
+      if (r.phase === "run") { r.life = Math.max(0, r.life - dt * (0.9 + 1.4 * prog)); if (r.life <= 0) { survivalOver(); return; } }
+      if (hud) $("#h-rank").innerHTML = `<b>∞ 서바이벌</b><div class="row"><span>생존</span><span>${fmt(sim.raceTime)}</span></div><div class="row"><span>속도</span><span>×${sim.speedScale.toFixed(2)}</span></div><div class="row"><span>❤ 생명력</span><span style="color:${r.life < 30 ? "#FF4D6D" : "#5CFF9D"}">${Math.round(r.life)}</span></div>`;
     }
   }
   function survivalOver() {
-    const r = race; r.phase = "finish"; r.finishT = 0; r.survivalDead = true; show("#touch", false); countdown("ENERGY 0"); Snd.thud(); setExpr("Hurt", 99); CAM.showcase = 3.2;
-    Voice.say("에너지가 다 떨어졌어… 다음엔 더 오래 달려 보자!");
+    const r = race; r.phase = "finish"; r.finishT = 0; r.survivalDead = true; show("#touch", false); countdown("생명력 0"); Snd.thud(); setExpr("Hurt", 99); CAM.showcase = 3.2;
+    Voice.say("생명력이 다 떨어졌어… 오브를 모으고 충돌을 피하면 더 오래 달릴 수 있어!");
   }
   function startCountdown() {
     if (!race) return; race.phase = "count"; race.t = 0; race.cd = 4; race.cdStart = performance.now(); CAM.showcase = 2.6; setExpr("Joy", 2); SV.spinVel = 720; show("#touch", !race.auto);
@@ -3169,9 +3532,10 @@ window.NR_MAIN = function () {
       }
       case S.RingHit: { world.ringHit(e.src, true); Snd.coin(); comboAdd(1, e.correct ? 120 : 60, e.correct ? "PERFECT" : ""); if (e.correct) toast("정중앙 PERFECT! 결절에서 활동전위 재생성", "#9CFFEA", 0.7); fx.burst(star.root.position, "land"); if (sim.ringChain >= 2) toast("도약전도 x" + sim.ringChain + "  +" + Math.round(sim.chainBonus * 100) + "%", "#FFB627", 0.9); break; }
       case S.RingMiss: { world.ringHit(e.src, false); if (sim.ringsTotal > 1) toast("결절을 놓쳤어요 - 연속 끊김", "#B4AEDB", 0.9); break; }
-      case S.ObstacleHit: CAM.shake = 0.35; starHit(); comboBreak(); if (r.mode === "survival") sim.boostEnergy = Math.max(0, sim.boostEnergy - 0.13); fx.burst(star.root.position, "hit"); setExpr("Hurt", 1.2); Snd.thud(); toast("NULL 충돌! 전도 지연", "#FF4D6D", 1.2); break;
+      case S.ObstacleHit: CAM.shake = 0.35; starHit(); comboBreak(); if (r.mode === "survival") { r.life = Math.max(0, r.life - 18); toast("생명력 −18", "#FF4D6D", 0.9); } fx.burst(star.root.position, "hit"); setExpr("Hurt", 1.2); Snd.thud(); toast("NULL 충돌! 전도 지연", "#FF4D6D", 1.2); break;
       case S.OrbCollected: case S.RepairOrb: {
         world.collect(e.src);
+        if (e.type === S.OrbCollected && r.mode === "survival") r.life = Math.min(100, r.life + 4);
         if (e.type === S.OrbCollected) { Snd.coin(); const streak = sim.raceTime - r.lastOrb < 1.4; r.lastOrb = sim.raceTime; comboAdd(streak ? 1 : 0, 25); } else { Snd.chime(); setExpr("Joy", 1); toast("수초 복구 " + sim.repairCount + "/3", "#5CFF9D", 1.4); } break;
       }
       case S.WallHit: CAM.shake = 0.15; SV.squashVel -= 3; comboBreak(); Snd.thud(); setExpr("Surprise", 0.6); break;
@@ -3280,6 +3644,7 @@ window.NR_MAIN = function () {
         } else if (arg.startsWith("counter:")) { const id = arg.slice(8); if (!race.sim.gateOk[id]) { world.bossAttack(); toast("NULL 반격! 레이저 주의", "#FF4D6D", 1.4); } }
         break;
       case "tut": tutStart(arg); break;
+      case "mini": openChapterMini(arg); break;
       case "mission":
         if (arg.startsWith("sort:")) { const t = { nuclei: "뇌줄기 신경핵 탐험! 지금 층에 있는 신경핵 차선으로!", relay: "시상 중계 미션! 감각 신호를 맞는 중계핵으로 보내!", cortex: "대뇌 기능 포털! 명령에 맞는 겉질 영역으로!", cranial: "12뇌신경 포털! 동작에 맞는 뇌신경으로!" }[arg.slice(5)]; hint(t, 4); Voice.say(t, { mode: "queue" }); }
         else if (arg.startsWith("cross:")) { const t = { dcml: "왼다리 진동 감각을 실어 나르자! 뒤기둥-안쪽섬유띠계는 어디서 교차할까?", stt: "왼손 통증 신호! 앞가쪽계는 언제 건너갈까?", cst: "왼손을 움직이는 명령! 겉질척수로는 어디서 교차할까?" }[arg.slice(6)]; hint(t + " 층마다 맞는 쪽 차선으로 드리프트!", 5); Voice.say(t, { mode: "queue" }); }
@@ -3348,6 +3713,21 @@ window.NR_MAIN = function () {
     setExpr(success ? "Joy" : "Hurt", 1.5); toast(success ? "시냅스 연결 성공! 가속!" : "시냅스 연결 불안정", success ? "#5CFF9D" : "#FF4D6D", 1.6); r.phase = "run";
   }
 
+  // 4.8 chapter minigames (own screens; the race pauses)
+  const minis = createMinis({ Snd, say: t => Voice.say(t, { mode: "replace" }) });
+  function openChapterMini(kind) {
+    const r = race; r.phase = "mini"; show("#touch", false); show("#qpanel", false); show("#apanel", false);
+    $("#mission").classList.remove("on"); $("#reflex").classList.remove("on"); miResT = 0; miEvent = null; $("#h-hint").style.display = "none"; $("#h-story").style.display = "none";
+    const done = (pass, ok, n) => {
+      r.sim.addTurbo(pass ? 2.8 : 0.8); if (pass) r.sim.addEnergy(0.4); CAM.kickPunch = pass ? 1.4 : 0;
+      if (pass) { comboAdd(3, 300 + 100 * ok, "미니게임"); Snd.fire(); NRW.U.uFire.value = 1; toast("미션 성공! 터보 가속", "#5CFF9D", 1.8); } else toast("미션 종료 — 다시 달려요", "#B4AEDB", 1.4);
+      r.minis = (r.minis || 0) + 1; r.minisOk = (r.minisOk || 0) + (pass ? 1 : 0);
+      show("#touch", !r.auto); steerSm = 0; for (const k in held) held[k] = 0; r.phase = "run";
+    };
+    if (r.auto) { done(true, 1, 1); return; }
+    minis.open(kind, done);
+  }
+
   //================== RESULT ==================
   function showResult() {
     const r = race, sim = r.sim, L = r.learn, par = r.graph.parTime, t = sim.raceTime;
@@ -3370,10 +3750,12 @@ window.NR_MAIN = function () {
     $("#r-title").textContent = r.stage.boss ? (r.bossHp === 0 ? "NULL 격파! 신경망 복구" : "NULL 진단 완료") : "STAGE CLEAR!";
     $("#r-grade").textContent = `CH.${r.stage.chapter} ${r.stage.title} · 등급 ${grade}` + (isBest ? " · 최고 기록!" : "");
     const st = [["기록", fmt(t)], ["목표(PAR)", fmt(par)], ["정답률", acc + "% (" + L.correct + "/" + L.total + ")"], ["점수", r.score], ["최대 콤보", r.maxCombo], ["오브", sim.coins], ["벽 충돌", sim.wallHits]];
+    if (L.total === 0) { const drop = new Set(["정답률", "목표(PAR)"]); for (let k = st.length - 1; k >= 0; k--) if (drop.has(st[k][0])) st.splice(k, 1); }
+    if (r.minis) st.push(["미니게임", r.minisOk + "/" + r.minis]);
     st.push(sim.ringsTotal ? ["도약전도 결절", sim.ringsHit + "/" + sim.ringsTotal] : ["NULL 충돌", sim.obstacleHits]);
     $("#r-stats").innerHTML = st.map(([a, b]) => `<div>${a}<b>${b}</b></div>`).join("");
     const wrong = L.answers.filter(a => !a.correct).map(a => bank.get(a.questionId)).filter(Boolean);
-    $("#r-wrong").innerHTML = wrong.length ? `<div class="grade">복습할 문제 ${wrong.length}개 (오답 노트에 저장됨)</div>` + wrong.map(q => `<div class="entry"><b>${esc(q.question)}</b><br><span class="ok">정답: ${esc(q.options[q.answer])}</span><br>${esc(q.explanation)}</div>`).join("") : `<div class="grade">모든 문제를 맞혔어요! 완벽한 신호 전달 ★</div>`;
+    $("#r-wrong").innerHTML = L.total === 0 ? "" : wrong.length ? `<div class="grade">복습할 문제 ${wrong.length}개 (오답 노트에 저장됨)</div>` + wrong.map(q => `<div class="entry"><b>${esc(q.question)}</b><br><span class="ok">정답: ${esc(q.options[q.answer])}</span><br>${esc(q.explanation)}</div>`).join("") : `<div class="grade">모든 문제를 맞혔어요! 완벽한 신호 전달 ★</div>`;
     const idx = NR.STAGES.indexOf(r.stage); $("#result [data-act=next]").style.display = idx >= 0 && idx < NR.STAGES.length - 1 ? "" : "none";
     modeResult(r, t);
     // 4.6 mastery: plasticity strength, XP, evolution
@@ -3429,7 +3811,7 @@ window.NR_MAIN = function () {
         : mode === "rival" ? (rb[s.id] ? "최고 순위 " + rb[s.id] + "위" : "도전 전")
         : (b ? "최고 " + fmt(b.time) + " · 정답률 " + Math.round(b.acc * 100) + "%" : "도전 전");
       return `<button class="stage${s.boss ? " boss" : ""}" data-stage="${s.id}"><span class="ch">CHAPTER ${s.chapter}${s.boss ? " · BOSS" : ""}</span><span class="tt">${esc(s.title)}</span><span class="st">${esc(s.subtitle)}</span><span class="goals">${s.goals.map(esc).join(" · ")}</span><span class="best">${best}</span></button>`;
-    }).join("") + `<button class="stage survival" data-stage="survival"><span class="ch">EXTRA · 서바이벌</span><span class="tt">끝없는 신경 질주</span><span class="st">점점 빨라지는 코스 · 에너지가 0이 되면 끝</span><span class="goals">충돌하면 에너지 감소 · 오브로 회복 · 시간이 갈수록 에너지 소모 증가</span><span class="best">${sv ? "최고 생존 " + fmt(sv.time) + " · " + sv.score + "점" : "도전 전"}</span></button>`;
+    }).join("") + `<button class="stage survival" data-stage="survival"><span class="ch">EXTRA · 서바이벌</span><span class="tt">끝없는 신경 질주</span><span class="st">점점 빨라지는 코스 · 생명력이 0이 되면 끝</span><span class="goals">생명력은 시간이 갈수록 줄고 충돌하면 −18 · 오브로 +4 회복 (부스트 에너지와 별개)</span><span class="best">${sv ? "최고 생존 " + fmt(sv.time) + " · " + sv.score + "점" : "도전 전"}</span></button>`;
     $$("#stage-grid .stage").forEach(b => b.addEventListener("click", () => startStage(b.dataset.stage, b.dataset.stage === "survival" ? "survival" : (save.mode || "story"))));
   }
   let codexMode = "codex", codexCh = 0;
@@ -3568,7 +3950,7 @@ window.NR_MAIN = function () {
   }
 
   // boot
-  window.NR_APP = { snd: Snd, startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
+  window.NR_APP = { cmini: k => openChapterMini(k), snd: Snd, startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
   function boot() {
     if (boot.done) return; boot.done = true;
     setupPost(); applySkin(); renderStages(); menuScene(); screen(save.loreSeen || AUTO ? "title" : "story"); if (!save.loreSeen) { save.loreSeen = true; persist(); }

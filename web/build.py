@@ -40,6 +40,9 @@ body = f"""{src("body.html")}
 {src("fx.js")}
 </script>
 <script>
+{src("minis.js")}
+</script>
+<script>
 {src("world.js")}
 </script>
 <script>
