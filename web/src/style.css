@@ -348,3 +348,5 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 .ld-help{margin-top:18px;font-family:var(--body);font-size:15px;line-height:1.6;color:#FFD34D;opacity:0;animation:ldshow .4s 6s forwards}
 .ld-help b{color:#fff}
 @keyframes ldshow{to{opacity:1}}
+
+.mini{z-index:12}.overlay{z-index:13}

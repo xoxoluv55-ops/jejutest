@@ -360,6 +360,8 @@ h2{font-family:var(--title);font-weight:400;margin:0}
 .ld-help b{color:#fff}
 @keyframes ldshow{to{opacity:1}}
 
+.mini{z-index:12}.overlay{z-index:13}
+
 </style>
 <div id="app">
   <canvas id="gl"></canvas>
@@ -3195,7 +3197,8 @@ window.NR_MAIN = function () {
 
   //================== SYNAPSE MINIGAME (GameUI.Minigame.cs) ==================
   function openMinigame(kind) {
-    const r = race; r.phase = "mini"; show("#touch", false); show("#qpanel", false); setExpr("Surprise", 1.5); const warp = kind === "warp";
+    const r = race; r.phase = "mini"; show("#touch", false); show("#qpanel", false); show("#apanel", false); setExpr("Surprise", 1.5); const warp = kind === "warp";
+    $("#mission").classList.remove("on"); $("#reflex").classList.remove("on"); miResT = 0; miEvent = null; $("#h-hint").style.display = "none"; $("#h-story").style.display = "none";   // nothing on top of the minigame
     $("#mini h2").textContent = warp ? "시냅스 워프 포털" : "시냅스 게이트";
     const qo = qbank.get("ch1_syn_order"), qe = qbank.get("ch1_syn_epsp");
     const done = (success, mistakes, epsp) => { r.learn.answer(qo.id, mistakes === 0 ? qo.answer : 1, r.sim.raceTime); r.learn.answer(qe.id, epsp, r.sim.raceTime); closeMinigame(success); };
