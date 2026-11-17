@@ -39,17 +39,19 @@ export class TitleScene extends BaseScene {
       // central capsule with hologram body (key art)
       const cx = W * 0.5, baseY = wallH + H * 0.16;
       this.add.image(cx, baseY + 10, 'light').setScale(3.2, 1.1).setTint(0x2a8cff).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.6);
-      const cap = this.add.image(cx, baseY, 'capsule').setOrigin(0.5, 1).setScale(1.65);
-      const holo = this.add.image(cx, baseY - 70, 'holo_body').setOrigin(0.5, 1).setScale(0.62).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.95);
+      const envOk = this.textures.exists('env');
+      const cap = envOk ? this.add.image(cx, baseY, 'env', 'p_capsule_holo').setOrigin(0.5, 1).setScale(1.55) : this.add.image(cx, baseY, 'capsule').setOrigin(0.5, 1).setScale(1.65);
+      const holo = this.add.image(cx, baseY - (envOk ? 95 : 70), 'holo_body').setOrigin(0.5, 1).setScale(0.62).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.95);
+      if (envOk) holo.setVisible(false);
       this.tweens.add({ targets: holo, alpha: 0.65, duration: 1600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
       this.tweens.add({ targets: holo, y: holo.y - 6, duration: 2600, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
       cap.setDepth(1); holo.setDepth(2);
       this.add.image(cx, baseY - 150, 'light').setScale(2.2).setTint(0x3fbaff).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.35).setDepth(2);
       // side consoles
-      this.add.image(W * 0.2, baseY + 40, 'console_red').setOrigin(0.5, 1).setScale(1.2).setDepth(3);
-      this.add.image(W * 0.8, baseY + 40, 'console').setOrigin(0.5, 1).setScale(1.2).setDepth(3);
-      this.add.image(W * 0.05, baseY + 30, 'rack').setOrigin(0.5, 1).setScale(1.3).setDepth(3);
-      this.add.image(W * 0.95, baseY + 30, 'rack').setOrigin(0.5, 1).setScale(1.3).setDepth(3);
+      (envOk ? this.add.image(W * 0.2, baseY + 40, 'env', 'p_console').setScale(1.0) : this.add.image(W * 0.2, baseY + 40, 'console_red').setScale(1.2)).setOrigin(0.5, 1).setDepth(3);
+      (envOk ? this.add.image(W * 0.8, baseY + 40, 'env', 'p_techbox').setScale(1.0) : this.add.image(W * 0.8, baseY + 40, 'console').setScale(1.2)).setOrigin(0.5, 1).setDepth(3);
+      (envOk ? this.add.image(W * 0.05, baseY + 30, 'env', 'p_rack').setScale(1.0) : this.add.image(W * 0.05, baseY + 30, 'rack').setScale(1.3)).setOrigin(0.5, 1).setDepth(3);
+      (envOk ? this.add.image(W * 0.95, baseY + 30, 'env', 'p_fridge').setScale(1.0) : this.add.image(W * 0.95, baseY + 30, 'rack').setScale(1.3)).setOrigin(0.5, 1).setDepth(3);
     }
     // ---------- red emergency beacons ----------
     for (const fx of [0.14, 0.86]) {

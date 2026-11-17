@@ -27,6 +27,9 @@ export class Player {
   scene: Phaser.Scene;
   root: Phaser.GameObjects.Container;
   body: Phaser.GameObjects.Sprite;
+  rig: Phaser.GameObjects.Container;
+  rigUp: Phaser.GameObjects.Sprite; rigL: Phaser.GameObjects.Sprite; rigR: Phaser.GameObjects.Sprite;
+  private rigView: 'front' | 'back' | '' = '';
   shadow: Phaser.GameObjects.Image;
   aura: Phaser.GameObjects.Image;
   carry: Phaser.GameObjects.Image;
@@ -55,8 +58,11 @@ export class Player {
     this.shadow = scene.add.image(0, 0, 'shadow').setScale(1.1, 1.0).setAlpha(0.8);
     this.aura = scene.add.image(0, -44, 'light').setScale(0.6).setTint(BOT_HEX[color]).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.12);
     this.body = scene.add.sprite(0, 0, `bot_${color}`, 'front_0').setScale(this.baseScale);
+    const tk = `bot_${color}`;
+    this.rigL = scene.add.sprite(0, 0, tk, 'front_lL'); this.rigR = scene.add.sprite(0, 0, tk, 'front_lR'); this.rigUp = scene.add.sprite(0, 0, tk, 'front_up');
+    this.rig = scene.add.container(0, 0, [this.rigL, this.rigR, this.rigUp]).setScale(this.baseScale).setVisible(false);
     this.carry = scene.add.image(0, -112, 'bone_holo_humerus').setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
-    this.root.add([this.shadow, this.aura, this.body, this.carry]);
+    this.root.add([this.shadow, this.aura, this.body, this.rig, this.carry]);
     this.phys = scene.add.zone(x, y - 10, 34, 24);
     scene.physics.add.existing(this.phys);
     this.pb = this.phys.body as Phaser.Physics.Arcade.Body;
@@ -154,12 +160,12 @@ export class Player {
           this.body.anims.timeScale = Phaser.Math.Clamp(sp / (running ? 380 : 250), 0.6, 1.2);
           tilt = (running ? 0.07 : 0.025) * (this.flip ? -1 : 1);
         } else {
-          // no up/down leg frames in the sheet: static pose + step bob & sway
+          // front/back walk: cut-out leg rig (alternating legs + body bob/sway) at full sprite resolution
           this.setAnim(this.facing);
           const ph = this.t * (running ? 15 : 11);
-          bob = -Math.abs(Math.sin(ph)) * (running ? 7 : 5);
-          tilt = Math.sin(ph) * 0.06;
-          sy = 1 + Math.sin(ph * 2) * 0.025; sx = 1 - Math.sin(ph * 2) * 0.02;
+          this.walkRig(this.facing as 'front' | 'back', ph, running);
+          bob = -Math.abs(Math.sin(ph)) * (running ? 4 : 3);
+          tilt = Math.sin(ph) * 0.035;
         }
         this.stepAcc += dt * (running ? 15 : 11) / Math.PI;
         if (this.stepAcc >= 1) {
@@ -177,6 +183,10 @@ export class Player {
     tilt += Phaser.Math.Clamp((this.vx - this.pvx) * 0.0005, -0.05, 0.05);
     this.pvx = this.vx;
 
+    const useRig = !this.action && moving && (this.facing === 'front' || this.facing === 'back');
+    this.rig.setVisible(useRig); this.body.setVisible(!useRig);
+    if (!useRig) this.rigView = '';
+    this.rig.y = bob - lift; this.rig.rotation = tilt;
     this.body.setFlipX(this.flip && (this.cur === 'walk' || this.cur === 'run' || this.cur === 'interact' || this.cur === 'scan'));
     this.body.y = bob - lift;
     this.body.rotation = tilt;
@@ -190,6 +200,18 @@ export class Player {
     this.root.setDepth(this.root.y);
     this.trail.setDepth(this.root.y - 1); this.dust.setDepth(this.root.y - 2);
     if (running && this.facing === 'side') this.trail.emitParticleAt(this.root.x + Phaser.Math.Between(-8, 8), this.root.y - 30, 1);
+  }
+
+  private walkRig(view: 'front' | 'back', ph: number, running: boolean) {
+    if (this.rigView !== view) {
+      this.rigView = view;
+      this.rigUp.setFrame(`${view}_up`); this.rigL.setFrame(`${view}_lL`); this.rigR.setFrame(`${view}_lR`);
+    }
+    const lift = running ? 16 : 11;          // in sprite pixels (rig is scaled with the body)
+    const s = Math.sin(ph);
+    this.rigL.y = -Math.max(0, s) * lift; this.rigR.y = -Math.max(0, -s) * lift;
+    this.rigL.x = Math.max(0, s) * 1.5; this.rigR.x = -Math.max(0, -s) * 1.5;
+    this.rigUp.y = -Math.abs(s) * 2; this.rigUp.rotation = s * 0.025;
   }
 
   burst(color = 0x5fd0ff, n = 18) { this.trail.setParticleTint(color); this.trail.emitParticleAt(this.root.x, this.root.y - 40, n); this.trail.setParticleTint(0x5fd0ff); }

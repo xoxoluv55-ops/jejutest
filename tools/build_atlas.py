@@ -69,6 +69,24 @@ for anim, (sec, idxs) in ANIMS.items():
         ox = round(AX - hc); oy = round(CELL_H - PAD - bot)
         cell.alpha_composite(im, (max(0, ox), max(0, oy)), (max(0, -ox), max(0, -oy)))
         cells.append((f'{anim}_{n}', cell))
+
+# 1b) leg rig pieces for front/back walking (sheet has no usable front/back walk frames):
+#     upper body (to 83.5% height) + left/right leg (from 80% height, centre columns), same cell + anchor.
+def rig(prefix):
+    src = dict(cells)[f'{prefix}_0']
+    arr = np.array(src); a = arr[..., 3] > 30
+    ys = np.nonzero(a.any(axis=1))[0]; xs = np.nonzero(a.any(axis=0))[0]
+    top, bot, l, r = ys.min(), ys.max(), xs.min(), xs.max(); h = bot - top; w = r - l
+    Y = np.arange(arr.shape[0])[:, None]; X = np.arange(arr.shape[1])[None, :]
+    def piece(mask):
+        out = arr.copy(); out[..., 3] = np.where(mask, out[..., 3], 0); return Image.fromarray(out)
+    cx = AX
+    upper = Y < top + h * 0.835
+    legs = (Y >= top + h * 0.80) & (X >= l + w * 0.26) & (X <= l + w * 0.75)
+    cells.append((f'{prefix}_up', piece(upper)))
+    cells.append((f'{prefix}_lL', piece(legs & (X < cx))))
+    cells.append((f'{prefix}_lR', piece(legs & (X >= cx))))
+rig('front'); rig('back')
 print('frames', len(cells))
 
 # 2) pack (shelf packer, rows of equal height)
