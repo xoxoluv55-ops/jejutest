@@ -173,7 +173,7 @@ export function drawBone(ctx: CanvasRenderingContext2D, id: BoneId, style: BoneS
     fc.globalCompositeOperation = 'source-in';
     if (style === 'xray') {
       const g = fc.createLinearGradient(0, 0, fill.width, fill.height);
-      g.addColorStop(0, 'rgba(215,228,242,0.62)'); g.addColorStop(1, 'rgba(175,192,212,0.5)');
+      g.addColorStop(0, 'rgba(225,232,240,0.5)'); g.addColorStop(1, 'rgba(170,180,192,0.36)');
       fc.fillStyle = g; fc.fillRect(0, 0, fill.width, fill.height);
       // medullary canal: darker core along long-bone shafts
       fc.globalCompositeOperation = 'destination-out';
@@ -290,8 +290,6 @@ export function makeXrayTexture(scene: Phaser.Scene) {
   // film grain + scanlines
   const r = rng(42);
   for (let i = 0; i < 9000; i++) { ctx.fillStyle = `rgba(255,255,255,${r() * 0.05})`; ctx.fillRect(r() * R.w, r() * R.h, 1, 1); }
-  ctx.fillStyle = 'rgba(0,0,0,0.12)';
-  for (let y = 0; y < R.h; y += 3) ctx.fillRect(0, y, R.w, 1);
   // markers text on film
   ctx.fillStyle = 'rgba(220,235,255,0.75)'; ctx.font = '700 22px Rajdhani, sans-serif'; ctx.fillText('R', 22, 40);
   ctx.font = '500 12px Rajdhani, sans-serif'; ctx.fillText('BODY LAB · X-04 · AP SHOULDER', 22, R.h - 18);

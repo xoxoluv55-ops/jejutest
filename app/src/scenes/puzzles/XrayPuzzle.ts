@@ -17,11 +17,13 @@ interface Mark { id: string; n: number; x: number; y: number; sx: number; sy: nu
 export class XrayPuzzle extends PuzzleBase {
   constructor() { super('Xray'); }
   chips: Chip[] = []; marks: Mark[] = [];
+  tags: { x: number; y: number; w: number; h: number }[] = [];
+  film = { x: 0, y: 0, w: 0, h: 0 };
   overlay!: Phaser.GameObjects.Container; overlayOn = false;
 
   create() {
     this.initView();
-    this.chips = []; this.marks = []; this.overlayOn = false;
+    this.chips = []; this.marks = []; this.tags = []; this.overlayOn = false;
     const adv = G.run.difficulty === 'adv';
     this.frame('영상 판독기 · 어깨 AP 방사선 사진', '번호가 표시된 구조물에 알맞은 이름표를 끌어다 붙이세요. 이 영상에 보이지 않는 구조의 이름표도 섞여 있습니다.', C.cyan);
     const { W, H } = View; const portrait = H > W;
@@ -30,6 +32,7 @@ export class XrayPuzzle extends PuzzleBase {
     const s = Math.min(areaW / film.w, areaH / film.h);
     const fx = this.px + 30 + (areaW - film.w * s) / 2, fy = this.py + 80 + (areaH - film.h * s) / 2;
     // lightbox glow
+    this.film = { x: fx, y: fy, w: film.w * s, h: film.h * s };
     const lb = this.add.graphics(); lb.fillStyle(0xbfe6ff, 0.08); lb.fillRoundedRect(fx - 16, fy - 16, film.w * s + 32, film.h * s + 32, 10);
     lb.lineStyle(2, 0x9fd8ff, 0.5); lb.strokeRoundedRect(fx - 16, fy - 16, film.w * s + 32, film.h * s + 32, 10);
     this.add.image(fx, fy, film.key).setOrigin(0).setScale(s / DENSITY);
@@ -88,6 +91,23 @@ export class XrayPuzzle extends PuzzleBase {
     this.input.on('dragend', (_p: any, obj: Phaser.GameObjects.Container) => { const ch = this.chips.find(c => c.c === obj); if (!ch || ch.done || this.solved) return; this.drop(ch); });
   }
 
+  /** Compact label on the film, nudged so tags never overlap and stay inside the film. */
+  placeTag(m: Mark, text: string) {
+    const t = T(this, 0, 0, text, 13, '#eafff4', { weight: '700' }).setOrigin(0, 0.5).setDepth(20);
+    const w = t.width + 16, h = 24;
+    const left = m.sx < m.x;
+    let x = left ? m.sx - w : m.sx, y = m.sy - h / 2;
+    x = Phaser.Math.Clamp(x, this.film.x + 4, this.film.x + this.film.w - w - 4);
+    for (let k = 0; k < 20 && this.tags.some(r => !(x + w < r.x || x > r.x + r.w || y + h < r.y || y > r.y + r.h)); k++) y += (m.sy > m.y ? 1 : -1) * (h + 4);
+    y = Phaser.Math.Clamp(y, this.film.y + 4, this.film.y + this.film.h - h - 4);
+    this.tags.push({ x, y, w, h });
+    const g = this.add.graphics().setDepth(19);
+    g.lineStyle(1.5, C.green, 0.9); g.lineBetween(m.x, m.y, left ? x + w : x, y + h / 2);
+    g.fillStyle(0x062a1c, 0.92); g.fillRoundedRect(x, y, w, h, 6); g.lineStyle(1.5, C.green, 1); g.strokeRoundedRect(x, y, w, h, 6);
+    t.setPosition(x + 8, y + h / 2);
+    g.setAlpha(0); t.setAlpha(0); this.tweens.add({ targets: [g, t], alpha: 1, duration: 200 });
+  }
+
   nearest(x: number, y: number) {
     let best: Mark | null = null, bd = 1e9;
     for (const m of this.marks) { if (m.filled) continue; const d = Math.min(Phaser.Math.Distance.Between(x, y, m.x, m.y), Phaser.Math.Distance.Between(x, y, m.sx, m.sy)); if (d < bd) { bd = d; best = m; } }
@@ -120,8 +140,8 @@ export class XrayPuzzle extends PuzzleBase {
     if (m.id === ch.id) {
       ch.done = true; m.filled = true; ch.c.disableInteractive();
       this.drawChip(ch, 'ok'); this.drawMark(m, false);
-      const left = m.sx < m.x;
-      this.tweens.add({ targets: ch.c, x: m.sx + (left ? -ch.w / 2 - 6 : ch.w / 2 + 6), y: m.sy, scale: 0.86, duration: 220, ease: 'Back.out' });
+      this.tweens.add({ targets: ch.c, x: m.x, y: m.y, scale: 0.3, alpha: 0, duration: 200, ease: 'Cubic.in' });
+      this.placeTag(m, G.run.difficulty === 'adv' ? L.en : `${L.ko} ${L.en}`);
       Audio.play('snap');
       this.setFeedback(`${m.n}번 = ${L.ko} (${L.en}) ✓  ${L.where}`, 'ok');
       if (this.marks.every(x => x.filled)) this.finish();
