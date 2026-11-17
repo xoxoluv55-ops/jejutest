@@ -1,28 +1,30 @@
-# 이미지 요청 목록 — CH1 배경·소품 (v2)
+# 에셋 현황 & 추가 제작 요청 (v3)
 
-캐릭터 시트처럼 **한 장에 여러 에셋을 모은 시트**로 주시면 자동 슬라이스 → 누끼 → 크기 통일 → 아틀라스로 적용합니다.
+## 적용 완료 (환경 시트 `docs/concept/concept_env.png`에서 개별 분리)
+| 용도 | 사용 에셋 | 처리 |
+|---|---|---|
+| 냉동 캡슐 ×3 | 홀로그램 골격 캡슐 | 누끼 → 공통 월드 스케일(캐릭터 86 기준) → 아틀라스 |
+| 골격 복구 테이블 | 홀로그램 진료대 | 〃 (중앙 스테이션이라 1.6배) |
+| 콘솔 / 기술 장비 / 수술대 / X-ray 모니터 / 서버 랙 / 표본 냉장고 / 차단기 / 데이터 단말 / 상자 / 시험관 | 각 소품 | 〃 |
+| 탈출 게이트 | LOCK 셔터 → 열린 게이트 | 개방 연출 시 크로스페이드 |
+| 관절 보정실 출입구 | 열린 문(파란 빛) | 출입구 장식 |
+| 벽 장식·바닥 장식 | 배관, 환풍기, 그릴, 유리판, 경광등, CCTV, 휠체어, 들것, 카트, 수액대, 화분, 드럼통, 콘, 경고판, 바리케이드 | 〃 |
+| 바닥 3종 / 벽 1종 | 금속판, 그레이팅, 다이아몬드판 / 청색 조명 벽 | 조명 평탄화 + 가장자리 크로스페이드로 **이음새 없는 반복 텍스처** |
+| 위험 바닥 / 증기 배출구 / 승강기 패드 | 경고 줄무늬 판, 그레이팅 판, 발광 판 | 바닥 데칼 |
 
-## 공통 규칙 (원근·조명·크기 통일용)
-- **시점**: 탑다운 3/4 시점 (위에서 약 55° 내려다봄). 모든 소품을 같은 각도로.
-- **조명**: 왼쪽 위에서 오는 차가운 청백색 주광 + 아래쪽 붉은 비상등 반사.
-- **크기 기준**: 시트 한쪽에 지금 캐릭터(실험체 로봇, 정면)를 작게 함께 그려 크기 비교 → 캡슐은 캐릭터 키의 약 1.6배, 콘솔은 허리 높이.
-- **배경**: 소품 사이 간격을 넉넉히, **단색 배경**(#00FF00 초록 또는 순수 흰색). 바닥 그림자 X, 글자·라벨 X.
-- 픽셀아트 X, 3D 렌더 X — 캐릭터 시트와 같은 고품질 2D 일러스트.
+## 아직 부족한 것 — 추가 제작 필요
+| # | 에셋 | 지금 상태 | 필요한 규격 |
+|---|---|---|---|
+| 1 | **정면·후면 걷기 프레임** | 시트 프레임이 약 40px·5장·포즈 차이 거의 없음 → 사용 불가. 대신 고해상도 정면/후면 이미지를 상체·왼다리·오른다리로 나눈 **다리 리그**로 걷기 구현 | 프레임당 **세로 250px 이상**, 정면·후면 각 **6~8장**, 4색 동일 디자인(가슴 엠블럼 색 일치), 단색 배경, 한 줄 정렬 |
+| 2 | 파손된 캡슐 | 빈 캡슐 + 코드로 그린 금·유리 파편 | 유리가 깨진 캡슐 1장 (기존 캡슐과 같은 각도·크기) |
+| 3 | 표본 보관함 열린 상태 | 닫힌 냉장고에 색·빛 효과만 | 같은 냉장고의 **문 열린** 버전 1장 |
+| 4 | 관절 보정 장치 | 기술 장비 + 코드로 그린 관절 홀로그램 | 로봇 팔 관절이 달린 전용 장치 1장 |
+| 5 | 세로 벽용 측면 문 | 영상 판독실 문은 코드로 그린 그림 | **옆에서 본(좌/우 벽에 달린)** 슬라이딩 문 닫힘/열림 2장 |
+| 6 | 바닥·벽 고해상도 | 시트 타일이 약 80px → iPad Retina에서 약간 흐림 | 각 **512px 이상 seamless**: 금속판, 그레이팅, 의료 타일, 벽면(가로 반복), **벽 윗면(캡)** |
+| 7 | 타이틀 배경 | 시트 안의 썸네일(약 645×130) → 사용 불가, 기존 구성 화면 유지 | **1920×1080 이상** 단독 이미지, 글자·캐릭터 없음 |
+| 8 | 바닥 손상 패널 | 경고판 + 코드 배선 | 위에서 본 파손 바닥(노출 배선) 1장 |
 
-## 시트 1 — 연구실 소품 (가장 중요)
-> Asset sheet of sci-fi medical research lab props for a 2D top-down 3/4 view game, same camera angle (~55° from above) for every prop, cool blue-white key light from the upper left, soft red emergency rim light, high quality 2D game illustration matching a cute chibi astronaut robot character, props separated with generous spacing on a **plain pure green (#00FF00) background**, no text, no labels, no floor shadows.
-> Props: 1) cylindrical cryo capsule with glass tube, intact, 2) same capsule with shattered glass, 3) control console desk with two angled blue monitors, 4) same console with red error screens, 5) surgical table with overhead lamp arm, 6) round holographic projection table (top empty), 7) mechanical joint-calibration rig with robotic arm joint and violet glow, 8) wall-mounted X-ray lightbox with films and a small desk, 9) wall breaker panel with yellow-black hazard stripes, 10) specimen locker closed, 11) specimen locker open and empty, 12) metal supply crate, 13) server rack with blinking LEDs, 14) specimen jar with floating organ, 15) data terminal on a pedestal
-
-## 시트 2 — 바닥·벽 타일
-> Seamless tileable textures for a top-down sci-fi lab game, viewed straight from above, each texture in its own square, plain green background between them, no text:
-> 1) dark navy metal floor plates with bolts and subtle scratches, 2) dark metal grating corridor floor with faint blue under-glow, 3) dark teal medical floor tiles, 4) lab wall front face strip (wide, horizontally seamless) with panels, vents and a cyan light line at the top, 5) wall top cap texture
-
-## 시트 3 — 대형 오브젝트
-> 1) heavy blast door exit gate face (front view, two sliding leaves, hazard stripes, three lock lights above), 2) the same gate open, 3) sliding side door, 4) elevator floor pad with green glow ring
-
-## 타이틀 배경 (1장)
-> Key art background of an underground body research lab "BODY LAB": central glass capsule with a glowing blue-red anatomical hologram human, red rotating emergency lights, fog, consoles on both sides, cinematic lighting, **no characters, no text**, 16:10 landscape.
-
----
-### 적용 방식
-보내 주시면: 슬라이스 → 누끼 → 위 기준(캐릭터 키 86 단위)으로 크기 정규화 → `app/public/assets/art/`에 키 이름으로 저장 → `manifest.json` 등록. 게임은 해당 키의 절차적 텍스처 대신 이미지를 자동으로 사용합니다.
+### 공통 규칙
+- 지금 소품과 **같은 시점**(정면에서 약간 위, 3/4)과 **왼쪽 위 조명**, 굵은 외곽선 스타일 유지.
+- **단색 배경**(흰색 또는 #00FF00), 소품 간격 넉넉히, 글자·라벨 없음.
+- 한 장에 여러 에셋을 모아도 됩니다 — 자동으로 분리합니다.

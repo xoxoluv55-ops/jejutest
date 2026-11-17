@@ -11,7 +11,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = sys.argv[1]; UP = 3; DENS = 2
 OUT = os.path.join(ROOT, 'app', 'public', 'assets', 'atlas')
 BASE = 0.75
-FACTOR = {'p_holobed': 1.35, 'd_gate_lock': 1.45, 'd_gate_open': 1.45, 'd_door_closed': 1.3, 'd_door_1': 1.55, 'd_door_2': 1.55, 'd_door_3': 1.55,
+FACTOR = {'p_holobed': 1.6, 'd_gate_lock': 1.45, 'd_gate_open': 1.45, 'd_door_closed': 1.3, 'd_door_1': 1.55, 'd_door_2': 1.55, 'd_door_3': 1.55,
           'p_capsule_holo': 0.8, 'p_capsule_empty': 0.95, 'x_beacon': 0.45, 'x_camera': 0.45, 'x_lamp': 0.5, 'x_cone': 0.7}
 items = []
 for f in sorted(os.listdir(SRC)):
@@ -21,6 +21,11 @@ for f in sorted(os.listdir(SRC)):
     world = FACTOR.get(k, BASE) / UP          # world units per cut pixel
     px = world * DENS
     im = im.resize((max(1, round(im.width * px)), max(1, round(im.height * px))), Image.LANCZOS)
+    items.append((k, im))
+# floor plates (opaque squares from the tile row) used as hazard / vent / lift decals, 92 world units wide
+for k, src in [('t_hazard', 'f_hazard'), ('t_grate', 'f_grate'), ('t_glow', 'f_glow')]:
+    im = Image.open(os.path.join(SRC, src + '.png')).convert('RGBA')
+    im = im.crop((3, 3, im.width - 3, im.height - 3)).resize((184, 184), Image.LANCZOS)
     items.append((k, im))
 items.sort(key=lambda t: -t[1].height)
 W = 2048; x = y = rowh = 0; placed = []

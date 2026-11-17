@@ -254,25 +254,22 @@ export class GameScene extends Phaser.Scene {
     this.prop('jar', 1180, 880, { col: [36, 20] }); this.prop('jar', 1222, 884, { col: [36, 20] }); this.prop('jar', 1540, 882, { col: [36, 20] });
     this.prop('crate', 1860, 1690, { col: [70, 40] }); this.prop('crate', 1930, 1690, { col: [70, 40] }); this.prop('crate', 1880, 1615, { col: [70, 40] });
     this.prop('rack', 790, 905, { col: [60, 30] });
-    this.prop('vent', 820, 1380, { depth: -930 });
     const cam = this.textures.exists('env') ? this.add.image(1520, 716, 'env', 'x_camera').setScale(0.5).setDepth(800) : this.add.image(1520, 712, 'cam').setScale(0.6).setDepth(800);
     this.tweens.add({ targets: cam, angle: { from: -18, to: 18 }, duration: 3000, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     // --- B-02 corridor ---
     this.prop('rack', 210, 1262, { col: [60, 30] });
     this.cabinet = this.prop('cabinet', 420, 1270, { col: [86, 30] });
     this.prop('crate', 700, 1540, { col: [70, 40] });
-    this.prop('vent', 260, 1500, { depth: -930 });
     // --- J-03 joint bay ---
     this.prop('rack', 940, 1858, { col: [60, 30] });
     this.prop('jar', 1620, 1870, { col: [36, 20] }); this.prop('jar', 1660, 1874, { col: [36, 20] });
     this.prop('crate', 1650, 2290, { col: [70, 40] });
-    this.prop('vent', 960, 2230, { depth: -930 });
     // --- X-04 x-ray room ---
     this.prop('console', 2150, 1110, { col: [130, 40] });
     this.prop('rack', 2600, 870, { col: [60, 30] }); this.prop('rack', 2530, 870, { col: [60, 30] });
     this.prop('jar', 2060, 880, { col: [36, 20] });
     // --- lift ---
-    this.add.image(1360, 540, 'elevator_pad').setScale(0.5).setDepth(-930);
+    if (this.textures.exists('env')) { this.prop('t_glow', 1360, 600, { depth: -930, scale: 1.3 }); } else this.add.image(1360, 540, 'elevator_pad').setScale(0.5).setDepth(-930);
   }
 
   buildDoors() {
@@ -425,7 +422,10 @@ export class GameScene extends Phaser.Scene {
       alpha: { start: 0.45, end: 0 }, tint: 0xcfe6ff, emitting: false,
     }).setDepth(6001);
     const add = (kind: 'spark' | 'steam', x: number, y: number, r: number, period: number, on: number, phase: number) => {
-      if (kind === 'spark') this.prop('spark_panel', x, y + 30, { depth: -925 });
+      if (kind === 'spark') {
+        if (this.textures.exists('env')) { this.prop('t_hazard', x, y + 46, { depth: -925 }); const sp = this.add.image(x, y, 'spark_panel').setScale(0.32).setDepth(-924).setAlpha(0.9); void sp; }
+        else this.prop('spark_panel', x, y + 30, { depth: -925 });
+      } else if (this.textures.exists('env')) this.prop('t_grate', x, y + 46, { depth: -926 });
       this.hazards.push({ kind, x, y, r, period, on, phase });
     };
     add('spark', 470, 1405, 62, 2.8, 0.75, 0);
