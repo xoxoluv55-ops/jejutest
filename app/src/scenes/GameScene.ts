@@ -24,6 +24,9 @@ export interface Interactable {
 
 export interface Mission { text: string; done: boolean; active: boolean; tag?: string }
 
+// Prop sizes relative to the ~86-unit-tall test unit (one consistent world scale).
+const PROP_SCALE: Record<string, number> = { capsule: 1.35, capsule_broken: 1.35, rack: 1.25, cabinet: 1.2, cabinet_open: 1.2, console: 1.15, console_red: 1.15, optable: 1.15, xray_box: 1.2, joint_rig: 1.2, breaker: 1.1, terminal: 1.1, jar: 1.1 };
+
 const BONE_SPOTS: Record<BoneId, { x: number; y: number; hidden?: boolean; via?: 'cabinet' | 'capsule' }> = {
   fibula: { x: 560, y: 1500 },
   scapula: { x: 420, y: 1262, hidden: true, via: 'cabinet' },
@@ -62,6 +65,11 @@ export class GameScene extends Phaser.Scene {
   holoProj!: Phaser.GameObjects.Image;
   holoSkel: Phaser.GameObjects.Image[] = [];
   private onResize = () => this.fitCam();
+
+  preload() {
+    const c = G.run.color;
+    if (!this.textures.exists(`bot_${c}`)) this.load.atlas(`bot_${c}`, `assets/atlas/bot_${c}.png`, `assets/atlas/bot_${c}.json`);
+  }
 
   create() {
     const run = G.run;
@@ -174,10 +182,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   prop(key: string, x: number, y: number, o: { col?: [number, number]; scale?: number; depth?: number; flip?: boolean; alpha?: number } = {}) {
-    const img = this.add.image(x, y, key).setOrigin(0.5, 1).setScale((o.scale ?? 1) * 0.5).setDepth(o.depth ?? y);
+    const sc = o.scale ?? PROP_SCALE[key] ?? 1;
+    const img = this.add.image(x, y, key).setOrigin(0.5, 1).setScale(sc * 0.5).setDepth(o.depth ?? y);
     if (o.flip) img.setFlipX(true);
     if (o.alpha !== undefined) img.setAlpha(o.alpha);
-    if (o.col) this.solid(x - o.col[0] / 2, y - o.col[1], o.col[0], o.col[1]);
+    if (o.col) { const cw = o.col[0] * sc, ch = o.col[1] * Math.min(sc, 1.15); this.solid(x - cw / 2, y - ch, cw, ch); }
     return img;
   }
 
@@ -185,7 +194,7 @@ export class GameScene extends Phaser.Scene {
     // --- A-01 main lab ---
     for (const [x, key] of [[900, 'capsule'], [1680, 'capsule'], [1820, 'capsule']] as [number, string][]) {
       this.prop(key, x, 905, { col: [96, 36] });
-      const h = this.add.image(x, 845, 'holo_body').setOrigin(0.5, 1).setScale(0.3).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.8).setDepth(906);
+      const h = this.add.image(x, 838, 'holo_body').setOrigin(0.5, 1).setScale(0.4).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.8).setDepth(906);
       this.tweens.add({ targets: h, alpha: 0.45, duration: 1300 + x % 500, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     }
     this.capsuleB = this.prop('capsule_broken', 1040, 905, { col: [96, 36] });

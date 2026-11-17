@@ -46,10 +46,10 @@ export class XrayPuzzle extends PuzzleBase {
     order.forEach((id, i) => {
       const L = LANDMARKS[id];
       const x = fx + (L.x - film.x) * s, y = fy + (L.y - film.y) * s;
-      // label socket placed outside along a leader line
-      const leftSide = L.x < 330;
-      const sx = leftSide ? fx - 6 : fx + film.w * s + 6;
-      const sy = Phaser.Math.Clamp(y + (i - 2) * 6, fy + 30, fy + film.h * s - 30);
+      // short leader towards the side with free space (lateral structures -> left, others -> right/down)
+      const leftSide = L.x < 300;
+      const sx = x + (leftSide ? -54 : 54);
+      const sy = y + (i % 2 ? 22 : -22);
       const g = this.add.graphics();
       const m: Mark = { id, n: i + 1, x, y, sx, sy, filled: false, g };
       this.marks.push(m);

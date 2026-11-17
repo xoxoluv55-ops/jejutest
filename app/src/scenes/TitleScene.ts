@@ -80,7 +80,7 @@ export class TitleScene extends BaseScene {
       const x = groupX + (i - 1.5) * (portrait ? 150 : 150) + (lead ? 0 : 0);
       const y = fy - (lead ? 0 : 40);
       this.add.image(x, y + 6, 'shadow').setScale(lead ? 2.4 : 1.8).setAlpha(0.8).setDepth(11 + i);
-      const b = this.add.image(x, y, `bot_${c}_front`).setOrigin(0.5, 1).setScale(sc).setDepth(lead ? 20 : 12 + i);
+      const b = this.add.image(x, y, `full_${c}`).setOrigin(0.5, 1).setScale(sc * 0.95).setDepth(lead ? 20 : 12 + i);
       this.tweens.add({ targets: b, y: y - 6, scaleY: sc * 1.015, duration: 1100 + i * 120, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: i * 200 });
       this.add.image(x, y - b.displayHeight * 0.62, 'light').setScale(0.5).setTint(BOT_HEX[c]).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.18).setDepth(11);
     });
@@ -186,7 +186,7 @@ export class TitleScene extends BaseScene {
     BOT_COLORS.forEach((c, i) => {
       const x = px + 34 + i * (cw + 14), y = py + 268;
       const gg = this.add.graphics(); m.add(gg);
-      const img = this.add.image(x + cw / 2, y + 158, `bot_s_${c}_front`).setOrigin(0.5, 1).setScale(0.68); m.add(img);
+      const img = this.add.image(x + cw / 2, y + 166, `hero_${c}`).setOrigin(0.5, 1).setScale(Math.min((cw - 16) / 469, 150 / 520)); m.add(img);
       const z = this.add.zone(x, y, cw, 170).setOrigin(0).setInteractive({ useHandCursor: true });
       z.on('pointerup', () => { color = c; Audio.play('click'); redraw(); this.tweens.add({ targets: img, y: img.y - 14, duration: 140, yoyo: true, ease: 'Quad.out' }); });
       m.add(z);

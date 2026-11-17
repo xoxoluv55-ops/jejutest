@@ -28,6 +28,7 @@ const game = new Phaser.Game({
   height: px.pxH,
   scale: { mode: Phaser.Scale.NONE, zoom: 1 / View.dpr },
   antialias: true,
+  mipmapFilter: 'LINEAR_MIPMAP_LINEAR',
   roundPixels: false,
   powerPreference: 'high-performance',
   input: { activePointers: 4 },

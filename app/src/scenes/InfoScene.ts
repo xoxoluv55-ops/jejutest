@@ -81,7 +81,7 @@ export class InfoScene extends BaseScene {
     T(this, x + 30, y + 29, '협동 플레이 (MULTIPLAYER)', 22, C.white, { weight: '700' }).setOrigin(0, 0.5);
     T(this, x + 40, y + 96, '현재 상태: 개발 예정 (PHASE 3)', 22, C.violetS, { weight: '700' });
     T(this, x + 40, y + 140,
-      '이 데모(PHASE 1)는 솔로 플레이만 지원합니다. 가짜 플레이어나 시뮬레이션으로 협동을 흉내 내지 않고,\n실제 WebSocket 서버를 붙여 다음 기능을 구현할 예정입니다.', 17, '#c9d6ee', { wordWrap: { width: w - 80 }, lineSpacing: 6 });
+      '이 데모(PHASE 1)는 솔로 플레이만 지원합니다. 가짜 플레이어나 시뮬레이션으로 협동을 흉내 내지 않고,\nSupabase Realtime(브로드캐스트·프레즌스)으로 다음 기능을 구현할 예정입니다. (설계: docs/MULTIPLAYER.md)', 17, '#c9d6ee', { wordWrap: { width: w - 80 }, lineSpacing: 6 });
     const items = ['방 만들기 · 입장 코드 발급 · 코드로 참가', '플레이어 색상 선택 · 준비 상태 · 호스트 시작', '최대 4인 위치 동기화 · 퍼즐 상태 즉시 공유', '역할 분담 협동 미션 (X-ray 분석 / 뼈 조립 / 관절 검증 / 보안 해제)'];
     items.forEach((s, i) => T(this, x + 56, y + 240 + i * 42, `◆  ${s}`, 18, C.white, { weight: '600' }));
     new Button(this, x + w / 2, y + h - 56, '확인', () => this.close(), { w: 240, h: 56, accent: C.violet, icon: 'check' });

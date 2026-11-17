@@ -24,7 +24,7 @@ export class ResultScene extends BaseScene {
     this.add.rectangle(W / 2, H / 2, W, H, 0x03060c);
     this.add.image(W / 2, H * 0.3, 'light').setScale(6, 3).setTint(0x3dffa2).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.18);
     this.add.particles(0, 0, 'dot', { x: { min: 0, max: W }, y: H + 10, lifespan: 6000, speedY: { min: -120, max: -40 }, scale: { min: 0.05, max: 0.2 }, alpha: { start: 0.8, end: 0 }, tint: [0x3dffa2, 0x4fd8ff, 0xffffff], blendMode: 'ADD', frequency: 60 });
-    const b = this.add.image(W * 0.2, H * 0.78, `bot_${r.color}_front`).setOrigin(0.5, 1).setScale(0.62);
+    const b = this.add.image(W * 0.18, H * 0.8, `full_${r.color}`).setOrigin(0.5, 1).setScale(0.85);
     this.tweens.add({ targets: b, y: b.y - 18, duration: 500, yoyo: true, repeat: -1, ease: 'Quad.out' });
     this.tweens.add({ targets: b, angle: { from: -6, to: 6 }, duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     const title = T(this, W / 2, 80, 'ESCAPE SUCCESS', 64, '#ffffff', { display: true, weight: '900' }).setOrigin(0.5);

@@ -23,7 +23,7 @@ export class BootScene extends BaseScene {
     this.status = T(this, W / 2, H / 2 + 46, '시설 시스템 부팅 중…', 18, C.dim).setOrigin(0.5);
     this.bar = this.add.graphics();
     this.load.on('progress', (v: number) => this.drawBar(v * 0.7));
-    for (const c of BOT_COLORS) for (const v of ['front', 'side', 'back']) { this.load.image(`bot_${c}_${v}`, `assets/cut/bot_${c}_${v}.png`); this.load.image(`bot_s_${c}_${v}`, `assets/cut/bot_s_${c}_${v}.png`); }
+    for (const c of BOT_COLORS) { this.load.image(`hero_${c}`, `assets/atlas/hero_${c}.png`); this.load.image(`full_${c}`, `assets/atlas/full_${c}.png`); }
     this.load.image('holo_body', 'assets/cut/holo_body.png');
     // Optional hand-made art overrides (see docs/ASSETS.md)
     this.load.json('art_manifest', 'assets/art/manifest.json');

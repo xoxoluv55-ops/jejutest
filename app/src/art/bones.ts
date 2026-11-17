@@ -1,6 +1,6 @@
 // Renders anatomical bones from primitive geometry into canvases (bone / x-ray / hologram styles).
 import Phaser from 'phaser';
-import { BONES, BoneId, Prim } from '../data/anatomy';
+import { BONES, BoneId, Prim, DETAILS } from '../data/anatomy';
 
 export const DENSITY = 2; // texture pixels per logical unit
 
@@ -47,6 +47,17 @@ export function boneBounds(id: BoneId, pad = 14) {
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
 }
 
+/** Gaussian-ish blur without ctx.filter (unsupported on older iPad Safari): draw via an offset shadow. */
+export function blurred(src: HTMLCanvasElement, radius: number) {
+  const c = document.createElement('canvas'); c.width = src.width; c.height = src.height;
+  const x = c.getContext('2d')!;
+  const off = src.width + radius * 4;
+  x.shadowColor = '#000'; x.shadowBlur = radius; x.shadowOffsetX = off;
+  x.drawImage(src, -off, 0);
+  // shadowColor is opaque black: keep the source colour by tinting through source-in of a colour copy
+  return c;
+}
+
 function rng(seed: number) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
 
 /** Shade a primitive like a cylinder / sphere so bones read as 3D. */
@@ -78,60 +89,118 @@ export function drawBone(ctx: CanvasRenderingContext2D, id: BoneId, style: BoneS
   ctx.save();
   ctx.lineJoin = 'round';
   if (style === 'bone') {
-    // drop shadow + outline
-    ctx.shadowColor = 'rgba(0,0,0,0.55)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
-    ctx.fillStyle = '#2b2418';
-    for (const p of paths) ctx.fill(p);
-    ctx.shadowColor = 'transparent';
-    ctx.strokeStyle = '#2b2418'; ctx.lineWidth = 5;
-    for (const p of paths) ctx.stroke(p);
-    for (let i = 0; i < prims.length; i++) shadePrim(ctx, prims[i], paths[i], '#fffaf0', '#e6d8bb', '#a8916a');
-    // porous texture
-    const r = rng(id.length * 977);
-    const b = boneBounds(id, 0);
-    ctx.save();
-    const clip = new Path2D(); for (const p of paths) clip.addPath(p);
-    ctx.clip(clip);
-    for (let i = 0; i < (b.w * b.h) / 90; i++) {
-      ctx.fillStyle = r() < 0.5 ? 'rgba(90,70,40,0.10)' : 'rgba(255,255,255,0.10)';
-      ctx.beginPath(); ctx.arc(b.x + r() * b.w, b.y + r() * b.h, 0.6 + r() * 1.6, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.restore();
-  } else {
-    // Silhouette-based styles: union of all primitives, then a glowing "cortex" rim.
+    // Seamless illustrated bone: union silhouette + soft form shading + rim light + anatomical detail.
     const b = boneBounds(id, 24);
-    const sil = document.createElement('canvas');
-    const S = 2; sil.width = b.w * S; sil.height = b.h * S;
-    const sc = sil.getContext('2d')!;
-    sc.scale(S, S); sc.translate(-b.x, -b.y); sc.fillStyle = '#fff';
+    const S = 2;
+    const mk = () => { const c = document.createElement('canvas'); c.width = b.w * S; c.height = b.h * S; const x = c.getContext('2d')!; x.scale(S, S); x.translate(-b.x, -b.y); return { c, x }; };
+    const sil = mk(); sil.x.fillStyle = '#fff'; for (const p of paths) sil.x.fill(p);
+    const art = mk();
+    const ax = art.x;
+    // base colour, light from upper-left
+    ax.drawImage(sil.c, b.x, b.y, b.w, b.h);
+    ax.globalCompositeOperation = 'source-in';
+    const g = ax.createLinearGradient(b.x, b.y, b.x + b.w, b.y + b.h);
+    g.addColorStop(0, '#fbf3e1'); g.addColorStop(0.55, '#e8d9b8'); g.addColorStop(1, '#c9b289');
+    ax.fillStyle = g; ax.fillRect(b.x, b.y, b.w, b.h);
+    // per-primitive volume (low alpha so seams vanish)
+    ax.globalCompositeOperation = 'source-atop';
+    ax.globalAlpha = 0.3;
+    for (let i = 0; i < prims.length; i++) shadePrim(ax, prims[i], paths[i], '#fffaf0', 'rgba(232,216,184,0)', '#a88e64');
+    ax.globalAlpha = 1;
+    // fossae + ridges
+    const d = DETAILS[id];
+    for (const [x, y, rx, ry, r] of d.shades) {
+      const gr = ax.createRadialGradient(x - rx * 0.3, y - ry * 0.3, 0, x, y, Math.max(rx, ry));
+      gr.addColorStop(0, 'rgba(120,92,56,0.45)'); gr.addColorStop(1, 'rgba(120,92,56,0)');
+      ax.fillStyle = gr; ax.beginPath(); ax.ellipse(x, y, rx, ry, r || 0, 0, Math.PI * 2); ax.fill();
+    }
+    ax.lineCap = 'round'; ax.lineJoin = 'round';
+    for (const ln of d.lines) {
+      const tr = () => { ax.beginPath(); ax.moveTo(ln[0][0], ln[0][1]); for (let i = 1; i < ln.length - 1; i++) { const mx = (ln[i][0] + ln[i + 1][0]) / 2, my = (ln[i][1] + ln[i + 1][1]) / 2; ax.quadraticCurveTo(ln[i][0], ln[i][1], mx, my); } ax.lineTo(ln[ln.length - 1][0], ln[ln.length - 1][1]); };
+      tr(); ax.strokeStyle = 'rgba(255,250,236,0.55)'; ax.lineWidth = 2.6; ax.stroke();
+      ax.save(); ax.translate(0.9, 0.9); tr(); ax.strokeStyle = 'rgba(110,84,50,0.42)'; ax.lineWidth = 1.4; ax.stroke(); ax.restore();
+    }
+    // porous micro texture
+    const r = rng(id.length * 977);
+    for (let i = 0; i < (b.w * b.h) / 70; i++) {
+      ax.fillStyle = r() < 0.55 ? 'rgba(110,84,50,0.10)' : 'rgba(255,255,255,0.14)';
+      ax.beginPath(); ax.arc(b.x + r() * b.w, b.y + r() * b.h, 0.5 + r() * 1.3, 0, Math.PI * 2); ax.fill();
+    }
+    // inner edge darkening (ambient occlusion at silhouette)
+    const edge = mk();
+    edge.x.setTransform(1, 0, 0, 1, 0, 0);
+    edge.x.fillStyle = '#000'; edge.x.fillRect(0, 0, edge.c.width, edge.c.height);
+    edge.x.globalCompositeOperation = 'destination-out';
+    edge.x.drawImage(sil.c, 0, 0);
+    const soft = blurred(edge.c, 5 * S);
+    edge.x.globalCompositeOperation = 'copy'; edge.x.drawImage(soft, 0, 0);
+    edge.x.globalCompositeOperation = 'destination-in'; edge.x.drawImage(sil.c, 0, 0);
+    ax.save(); ax.setTransform(1, 0, 0, 1, 0, 0); ax.globalCompositeOperation = 'source-atop'; ax.globalAlpha = 0.35; ax.drawImage(edge.c, 0, 0);
+    // rim light on the upper-left edge
+    const rim = document.createElement('canvas'); rim.width = sil.c.width; rim.height = sil.c.height; const rx = rim.getContext('2d')!;
+    rx.drawImage(sil.c, 0, 0); rx.globalCompositeOperation = 'destination-out'; rx.drawImage(sil.c, 3 * S, 3 * S);
+    rx.globalCompositeOperation = 'source-in'; rx.fillStyle = '#fffdf6'; rx.fillRect(0, 0, rim.width, rim.height);
+    ax.globalAlpha = 0.6; ax.drawImage(rim, 0, 0);
+    ax.restore();
+    // drop shadow + crisp outline, then the painted bone
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
+    const ol = document.createElement('canvas'); ol.width = sil.c.width; ol.height = sil.c.height; const ox = ol.getContext('2d')!;
+    for (const [dx, dy] of [[-1.6, 0], [1.6, 0], [0, -1.6], [0, 1.6], [-1.1, -1.1], [1.1, 1.1], [-1.1, 1.1], [1.1, -1.1]]) ox.drawImage(sil.c, dx * S, dy * S);
+    ox.globalCompositeOperation = 'source-in'; ox.fillStyle = '#3b2e1c'; ox.fillRect(0, 0, ol.width, ol.height);
+    ctx.drawImage(ol, b.x, b.y, b.w, b.h);
+    ctx.restore();
+    ctx.drawImage(art.c, b.x, b.y, b.w, b.h);
+  } else {
+    // Silhouette-based styles (x-ray / hologram / ghost): soft fill + true inner rim (cortex).
+    const b = boneBounds(id, 24);
+    const S = 2;
+    const sil = document.createElement('canvas'); sil.width = b.w * S; sil.height = b.h * S;
+    const sc = sil.getContext('2d')!; sc.scale(S, S); sc.translate(-b.x, -b.y); sc.fillStyle = '#fff';
     for (const p of paths) sc.fill(p);
+    const col = style === 'xray' ? '232,242,255' : '120,225,255';
+    const rimW = style === 'xray' ? 3.2 : 2.4;
     const rim = document.createElement('canvas'); rim.width = sil.width; rim.height = sil.height;
     const rc = rim.getContext('2d')!;
-    const col = style === 'xray' ? '225,238,255' : '120,225,255';
-    rc.shadowColor = `rgba(${col},1)`; rc.shadowBlur = (style === 'xray' ? 7 : 9) * S;
-    rc.drawImage(sil, 0, 0); rc.drawImage(sil, 0, 0);
-    rc.shadowColor = 'transparent';
+    rc.drawImage(sil, 0, 0);
     rc.globalCompositeOperation = 'destination-out';
-    // shrink interior a bit so a rim remains
-    const inset = style === 'xray' ? 3.2 * S : 2.2 * S;
-    rc.drawImage(sil, inset, inset, sil.width - inset * 2, sil.height - inset * 2);
+    const inner = blurred(sil, rimW * S); rc.drawImage(inner, 0, 0);
     rc.globalCompositeOperation = 'source-in';
-    rc.fillStyle = `rgba(${col},${style === 'ghost' ? 0.45 : 0.95})`; rc.fillRect(0, 0, rim.width, rim.height);
+    rc.fillStyle = `rgba(${col},${style === 'ghost' ? 0.5 : 1})`; rc.fillRect(0, 0, rim.width, rim.height);
     const fill = document.createElement('canvas'); fill.width = sil.width; fill.height = sil.height;
     const fc = fill.getContext('2d')!;
     fc.drawImage(sil, 0, 0);
     fc.globalCompositeOperation = 'source-in';
     if (style === 'xray') {
       const g = fc.createLinearGradient(0, 0, fill.width, fill.height);
-      g.addColorStop(0, 'rgba(200,215,230,0.42)'); g.addColorStop(1, 'rgba(150,170,190,0.30)');
-      fc.fillStyle = g;
-    } else fc.fillStyle = style === 'holo' ? 'rgba(70,190,255,0.22)' : 'rgba(60,170,255,0.08)';
-    fc.fillRect(0, 0, fill.width, fill.height);
+      g.addColorStop(0, 'rgba(215,228,242,0.62)'); g.addColorStop(1, 'rgba(175,192,212,0.5)');
+      fc.fillStyle = g; fc.fillRect(0, 0, fill.width, fill.height);
+      // medullary canal: darker core along long-bone shafts
+      fc.globalCompositeOperation = 'destination-out';
+      fc.setTransform(S, 0, 0, S, -b.x * S, -b.y * S);
+      fc.lineCap = 'round';
+      for (const p of prims) if (p.t === 'q' && Math.hypot(p.x2 - p.x1, p.y2 - p.y1) > 60) {
+        fc.strokeStyle = 'rgba(0,0,0,0.22)'; fc.lineWidth = Math.min(p.w1, p.w2) * 0.5;
+        fc.beginPath(); fc.moveTo(p.x1, p.y1); fc.lineTo(p.x2, p.y2); fc.stroke();
+      }
+      // trabecular texture in the ends
+      fc.globalCompositeOperation = 'source-atop';
+      const r = rng(id.length * 131);
+      for (const p of prims) if (p.t === 'e' && p.rx > 9) for (let i = 0; i < p.rx * p.ry / 6; i++) {
+        const a = r() * Math.PI * 2, d = Math.sqrt(r());
+        fc.fillStyle = `rgba(255,255,255,${0.05 + r() * 0.09})`;
+        fc.fillRect(p.x + Math.cos(a) * d * p.rx, p.y + Math.sin(a) * d * p.ry, 1.2, 1.2);
+      }
+      fc.setTransform(1, 0, 0, 1, 0, 0);
+    } else {
+      fc.fillStyle = style === 'holo' ? 'rgba(70,190,255,0.22)' : 'rgba(60,170,255,0.08)';
+      fc.fillRect(0, 0, fill.width, fill.height);
+    }
     ctx.globalCompositeOperation = style === 'xray' ? 'lighter' : 'source-over';
     ctx.drawImage(fill, b.x, b.y, b.w, b.h);
-    ctx.drawImage(rim, b.x, b.y, b.w, b.h);
+    if (style !== 'xray') { ctx.save(); ctx.shadowColor = `rgba(${col},0.9)`; ctx.shadowBlur = 8; ctx.drawImage(rim, b.x, b.y, b.w, b.h); ctx.restore(); }
+    else { ctx.drawImage(rim, b.x, b.y, b.w, b.h); ctx.drawImage(rim, b.x, b.y, b.w, b.h); }
     if (style === 'holo') {
-      // scanlines
       ctx.globalCompositeOperation = 'source-over';
       ctx.save(); const clip = new Path2D(); for (const p of paths) clip.addPath(p); ctx.clip(clip);
       ctx.fillStyle = 'rgba(160,240,255,0.10)';
