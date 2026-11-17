@@ -133,10 +133,10 @@ export class AlignPuzzle extends PuzzleBase {
     // abduction demo around the humeral head (patient's right arm moves laterally = viewer's left)
     this.time.delayedCall(500, () => {
       Audio.play('rotate');
-      this.tweens.add({ targets: this.arm, angle: 60, duration: 1400, ease: 'Sine.inOut', yoyo: true, hold: 500, onComplete: () => {
+      this.tweens.add({ targets: this.arm, angle: 45, duration: 1400, ease: 'Sine.inOut', yoyo: true, hold: 500, onComplete: () => {
         this.success('c_gh', '상완골두는 안쪽·위·뒤를 향해 관절와와 만난다', 300);
       } });
-      const tag = T(this, this.arm.x - 200, this.arm.y + 40, '외전 60° · 볼-소켓 관절', 18, C.violetS, { weight: '700' }).setAlpha(0);
+      const tag = T(this, this.arm.x - 200, this.arm.y + 40, '외전 45° · 볼-소켓 관절', 18, C.violetS, { weight: '700' }).setAlpha(0);
       this.tweens.add({ targets: tag, alpha: 1, duration: 400, yoyo: true, hold: 1800 });
     });
   }

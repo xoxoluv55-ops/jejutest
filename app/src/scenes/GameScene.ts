@@ -565,7 +565,7 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(1600, () => {
       Audio.play('unlock');
       this.cameras.main.stopFollow();
-      this.cameras.main.pan(1360, 760, 900, 'Sine.inOut');
+      this.cameras.main.pan(1360, 760, 900, 'Sine.easeInOut');
       this.locks.forEach((l, i) => this.time.delayedCall(i * 200, () => { l.setScale(2); this.tweens.add({ targets: l, scale: 1.2, duration: 300 }); Audio.play('beep'); }));
       this.time.delayedCall(1000, () => {
         Audio.play('door'); this.cameras.main.shake(1200, 0.005);
@@ -595,8 +595,8 @@ export class GameScene extends Phaser.Scene {
     this.player.play('victory');
     Audio.play('victory');
     this.cameras.main.stopFollow();
-    this.cameras.main.pan(1360, 520, 1200, 'Sine.inOut');
-    this.cameras.main.zoomTo(this.cameras.main.zoom * 1.5, 1600, 'Sine.inOut');
+    this.cameras.main.pan(1360, 520, 1200, 'Sine.easeInOut');
+    this.cameras.main.zoomTo(this.cameras.main.zoom * 1.5, 1600, 'Sine.easeInOut');
     const beam = this.add.image(1360, 540, 'light').setTint(0x3dffa2).setBlendMode(Phaser.BlendModes.ADD).setScale(0.6, 3).setAlpha(0).setDepth(8800);
     this.tweens.add({ targets: beam, alpha: 0.9, duration: 1500, delay: 600 });
     for (let i = 0; i < 6; i++) this.time.delayedCall(400 + i * 280, () => this.player.burst([0x3dffa2, 0x4fd8ff, 0xffffff][i % 3], 26));
