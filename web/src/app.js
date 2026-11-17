@@ -1032,7 +1032,8 @@ window.NR_MAIN = function () {
       show("#touch", !r.auto); steerSm = 0; for (const k in held) held[k] = 0; r.phase = "run";
     };
     if (r.auto) { done(true, 1, 1); return; }
-    minis.open(kind, done);
+    $("#app").classList.add("in-mini");
+    minis.open(kind, (...args) => { $("#app").classList.remove("in-mini"); done(...args); });
   }
 
   //================== RESULT ==================

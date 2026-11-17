@@ -69,3 +69,8 @@ print("questions", len(q), "codex", len(cx), "story beats", len(st), "bytes", (W
 (W.parent / "docs").mkdir(exist_ok=True)
 (W.parent / "docs" / "index.html").write_text((W / "index.html").read_text(encoding="utf-8"), encoding="utf-8")
 (W.parent / "docs" / ".nojekyll").write_text("", encoding="utf-8")
+# minigame art (loaded lazily by URL, kept out of the HTML): copy next to every published page
+import shutil
+for dst in (W / "dist" / "assets" / "mg", W.parent / "docs" / "assets" / "mg"):
+    dst.mkdir(parents=True, exist_ok=True)
+    for f in (W / "assets" / "mg").glob("*.webp"): shutil.copy2(f, dst / f.name)

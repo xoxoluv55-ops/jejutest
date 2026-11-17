@@ -11,8 +11,11 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   function stopAll() { timers.forEach(clearTimeout); timers = []; if (S && S.raf) cancelAnimationFrame(S.raf); if (S && S.cleanup) S.cleanup(); tbar.style.display = "none"; }
   function renderDots() { dots.innerHTML = S.n ? Array.from({ length: S.n }, (_, k) => `<i class="${k < S.log.length ? (S.log[k] ? "ok" : "no") : k === S.log.length ? "cur" : ""}"></i>`).join("") : ""; }
+  const BASE = ctx.assetBase || "assets/mg/";
   const api = {
     area, later, shuffle, esc,
+    // images are only requested when their minigame opens (lazy) and dropped with the DOM on exit
+    img(file, alt) { return `<img class="art" src="${BASE}${file}" alt="${alt}" decoding="async" draggable="false" onload="this.classList.add('ok')" onerror="this.classList.add('err')"><span class="art-alt">${alt}</span>`; },
     setPrompt(t) { prompt.innerHTML = t; },
     feedback(ok, text) { fbEl.className = "mg2-fb " + (ok ? "ok" : "no"); fbEl.innerHTML = (ok ? "✔ " : "✘ ") + text; },
     clearFb() { fbEl.className = "mg2-fb"; fbEl.innerHTML = ""; },
@@ -36,6 +39,7 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
     root.className = "mg2 on mg-" + kind; title.textContent = G.title; area.innerHTML = ""; api.clearFb(); prompt.innerHTML = ""; renderDots();
     intro.innerHTML = `<b>${G.title}</b><p>${G.intro}</p>${G.note ? `<p class="mg2-small">${G.note}</p>` : ""}<button class="big primary" id="mg2-go">시작 ▶</button>`; intro.style.display = "flex";
     ctx.say(G.speech || G.intro);
+    if (G.assets) S.pre = G.assets.map(f => { const im = new Image(); im.decoding = "async"; im.src = BASE + f; return im; });   // warm the cache while the intro is read
     $("#mg2-go").onclick = () => { intro.style.display = "none"; ctx.Snd.beep(); G.start(api); };
   }
 
@@ -112,29 +116,6 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
     },
   };
 
-  // CH.4 brainstem nuclei placement
-  GAMES.nuclei = {
-    title: "뇌줄기 신경핵 배치", rounds: 7,
-    intro: "카드에 적힌 신경핵이 뇌줄기의 어느 층에 있는지 눌러서 제자리에 놓아 주세요.",
-    start(A) {
-      const L = ["중간뇌", "다리뇌", "숨뇌"];
-      const D = A.shuffle([["III 눈돌림신경핵", 0], ["IV 도르래신경핵", 0], ["에딩거-웨스트팔핵 (동공 수축)", 0], ["V 삼차신경 운동핵 (씹기)", 1], ["VI 갓돌림신경핵", 1], ["VII 얼굴신경핵", 1], ["XII 혀밑신경핵", 2], ["의문핵 (삼킴 · 발성)", 2], ["X 미주신경 등쪽운동핵", 2]]).slice(0, 7);
-      A.area.innerHTML = `<div class="nu-card" id="nu-card"></div><div class="nu-stem">${L.map((l, k) => `<button class="nu-lv nu-${k}" data-l="${k}"><b>${l}</b><div class="nu-chips"></div></button>`).join("")}</div>`;
-      let i = 0;
-      const round = () => {
-        if (i >= D.length) return A.finish("III·IV는 중간뇌, V·VI·VII은 다리뇌, IX·X·XII은 숨뇌 — 위에서 아래로 번호가 커져요.");
-        A.clearFb(); A.setPrompt("이 신경핵은 어느 층에 있을까?"); document.getElementById("nu-card").textContent = D[i][0]; let done = false;
-        A.area.querySelectorAll(".nu-lv").forEach(b => b.onclick = () => {
-          if (done) return; done = true; const k = +b.dataset.l, ok = k === D[i][1]; A.result(ok);
-          const tgt = A.area.querySelector(`.nu-lv[data-l="${D[i][1]}"] .nu-chips`); tgt.insertAdjacentHTML("beforeend", `<span class="${ok ? "" : "fix"}">${A.esc(D[i][0])}</span>`);
-          if (!ok) b.classList.add("bad"); A.later(() => b.classList.remove("bad"), 700);
-          A.feedback(ok, `${D[i][0]}은 ${L[D[i][1]]}에 있어요.`); i++; A.later(round, 1500);
-        });
-      };
-      round();
-    },
-  };
-
   // CH.6 thalamic relay delivery
   GAMES.relay = {
     title: "시상 중계 배달", rounds: 6,
@@ -160,27 +141,82 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
     },
   };
 
-  // CH.7 cortex function map
-  GAMES.cortex = {
-    title: "대뇌 기능 지도", rounds: 6,
-    intro: "명령이 떨어지면 그 일을 맡은 대뇌겉질 영역(빛나는 점)을 눌러 주세요. 뇌는 왼쪽을 바라보고 있어요.",
+  // CH.4 brainstem nuclei placement (4.9 art: ch4_brainstem.webp, front view)
+  // Hit zones are HTML buttons laid over the image at the midbrain / pons / medulla levels.
+  GAMES.nuclei = {
+    title: "뇌줄기 신경핵 배치", rounds: 7, assets: ["ch4_brainstem.webp"],
+    intro: "카드에 적힌 신경핵이 뇌줄기의 어느 층에 있는지 골라 제자리에 꽂아 주세요. 맞히면 그 층이 빛나요.",
+    note: "앞에서 본 뇌줄기 그림이에요. 실제 신경핵들은 뇌줄기 안쪽 깊은 곳(등쪽)에 있어요.",
     start(A) {
-      const H = { m1: [190, 58, "일차운동겉질"], s1: [222, 62, "일차몸감각겉질"], broca: [118, 150, "브로카 영역"], wern: [272, 150, "베르니케 영역"], a1: [218, 160, "일차청각겉질"], v1: [352, 138, "일차시각겉질"] };
-      const Q = A.shuffle([["오른손을 움직여라!", "m1"], ["손끝 감촉을 느껴라!", "s1"], ["말을 만들어 내라!", "broca"], ["들은 말을 이해하라!", "wern"], ["음악 소리를 들어라!", "a1"], ["물체의 모양을 보라!", "v1"]]);
-      A.area.innerHTML = `<svg class="cx-brain" viewBox="0 0 400 250">
-        <path class="lobe fr" d="M30,130 C28,55 105,18 185,20 L205,128 L150,172 C92,190 38,182 30,130Z"/><path class="lobe pa" d="M185,20 C258,18 312,40 332,82 L250,118 L205,128Z"/>
-        <path class="lobe oc" d="M332,82 C372,100 382,152 360,190 L300,170 L250,118Z"/><path class="lobe te" d="M150,172 L205,128 L250,118 L300,170 C268,214 190,224 150,172Z"/>
-        <path class="cs" d="M196,22 L210,126"/><text x="85" y="95">이마엽</text><text x="250" y="70">마루엽</text><text x="330" y="160">뒤통수엽</text><text x="180" y="200">관자엽</text>
-        ${Object.entries(H).map(([k, h]) => `<g class="hs" data-k="${k}"><circle cx="${h[0]}" cy="${h[1]}" r="17"/><text x="${h[0]}" y="${h[1] + 34}" class="hl"></text></g>`).join("")}</svg>`;
+      const L = [
+        { name: "중간뇌", sub: "Midbrain", box: [110, 112, 110, 36] },
+        { name: "다리뇌", sub: "Pons", box: [100, 148, 130, 67] },
+        { name: "숨뇌", sub: "Medulla oblongata", box: [112, 215, 104, 85] },
+      ];
+      const IW = 328, IH = 367, pct = (v, d) => (v / d * 100).toFixed(2) + "%";
+      const D = A.shuffle([["III 눈돌림신경핵", 0], ["IV 도르래신경핵", 0], ["에딩거-웨스트팔핵 (동공 수축)", 0], ["V 삼차신경 운동핵 (씹기)", 1], ["VI 갓돌림신경핵", 1], ["VII 얼굴신경핵", 1], ["XII 혀밑신경핵", 2], ["의문핵 (삼킴 · 발성)", 2], ["X 미주신경 등쪽운동핵", 2]]).slice(0, 7);
+      A.area.innerHTML = `<div class="art-row">
+        <div class="nu-side"><div class="nu-deck"><small>배치할 신경핵</small><div class="nu-card2" id="nu-card"></div></div><div class="nu-log" id="nu-log"></div></div>
+        <div class="art-stage nu-stage" style="aspect-ratio:${IW}/${IH}">
+          ${A.img("ch4_brainstem.webp", "뇌줄기 (앞에서 본 모습)")}
+          ${L.map((l, k) => `<div class="nu-glow" data-g="${k}" style="left:${pct(l.box[0] - 30, IW)};top:${pct(l.box[1] - 10, IH)};width:${pct(l.box[2] + 60, IW)};height:${pct(l.box[3] + 20, IH)}"></div>
+            <button class="hit nu-zone" data-l="${k}" style="left:${pct(l.box[0], IW)};top:${pct(l.box[1], IH)};width:${pct(l.box[2], IW)};height:${pct(l.box[3], IH)}" aria-label="${l.name}"></button>
+            <div class="nu-tag" style="top:${pct(l.box[1] + l.box[3] / 2, IH)}"><b>${l.name}</b><small>${l.sub}</small><div class="nu-dots" data-d="${k}"></div></div>`).join("")}
+          <div class="nu-tag sp" style="top:${pct(335, IH)}"><b>척수</b><small>Spinal cord</small></div>
+        </div></div>`;
       let i = 0;
       const round = () => {
-        if (i >= Q.length) return A.finish("운동은 이마엽, 몸감각은 마루엽, 청각·언어 이해는 관자엽, 시각은 뒤통수엽!");
+        if (i >= D.length) return A.finish("III·IV는 중간뇌, V·VI·VII은 다리뇌, IX·X·XII은 숨뇌 — 위에서 아래로 번호가 커져요.");
+        A.clearFb(); A.setPrompt("이 신경핵은 어느 층에 있을까? <small>그림의 층을 눌러요</small>");
+        const card = document.getElementById("nu-card"); card.textContent = D[i][0]; card.className = "nu-card2 in"; let done = false;
+        A.area.querySelectorAll(".nu-zone").forEach(b => b.onclick = () => {
+          if (done) return; done = true; const k = +b.dataset.l, want = D[i][1], ok = k === want; A.result(ok);
+          const g = A.area.querySelector(`.nu-glow[data-g="${want}"]`); g.classList.remove("on", "bad"); void g.offsetWidth; g.classList.add("on");
+          if (!ok) { const gb = A.area.querySelector(`.nu-glow[data-g="${k}"]`); gb.classList.remove("on", "bad"); void gb.offsetWidth; gb.classList.add("bad"); }
+          card.className = "nu-card2 fly" + (ok ? "" : " miss");
+          A.area.querySelector(`.nu-dots[data-d="${want}"]`).insertAdjacentHTML("beforeend", `<i class="${ok ? "" : "fix"}" title="${A.esc(D[i][0])}"></i>`);
+          document.getElementById("nu-log").insertAdjacentHTML("afterbegin", `<div class="${ok ? "ok" : "no"}">${ok ? "✔" : "✘"} ${A.esc(D[i][0])} → <b>${L[want].name}</b></div>`);
+          A.feedback(ok, `${D[i][0]}은 <b>${L[want].name}</b>에 있어요.`); i++; A.later(round, 1700);
+        });
+      };
+      round();
+    },
+  };
+
+  // CH.7 cortex function map (4.9 art: ch7_cerebrum_lateral.webp, left hemisphere, front = left)
+  GAMES.cortex = {
+    title: "대뇌 기능 지도", rounds: 6, assets: ["ch7_cerebrum_lateral.webp"],
+    intro: "명령이 떨어지면 그 일을 맡은 대뇌겉질 영역을 눌러 주세요. 왼쪽 반구를 옆에서 본 모습이고, 왼쪽이 이마(앞)예요.",
+    note: "분홍 띠 = 중심앞이랑(일차운동겉질), 노란 띠 = 중심뒤이랑(일차몸감각겉질), 초록 = 관자엽",
+    start(A) {
+      const IW = 503, IH = 384, pct = (v, d) => (v / d * 100).toFixed(2) + "%";
+      // [x, y, glowW, glowH, rotateDeg, name] in image pixels (checked against the gyri in the art)
+      const H = {
+        m1: [238, 105, 52, 190, 9, "일차운동겉질 (중심앞이랑)"],
+        s1: [281, 100, 50, 185, 9, "일차몸감각겉질 (중심뒤이랑)"],
+        broca: [160, 188, 78, 50, -15, "브로카 영역 (아래이마이랑)"],
+        a1: [287, 204, 78, 30, -8, "일차청각겉질 (가로관자이랑)"],
+        wern: [372, 220, 84, 52, -8, "베르니케 영역 (위관자이랑 뒤쪽)"],
+        v1: [470, 212, 50, 92, 0, "일차시각겉질 (뒤통수엽 끝)"],
+      };
+      const LOBE = [["이마엽", 95, 150], ["마루엽", 390, 95], ["관자엽", 335, 285], ["뒤통수엽", 455, 150], ["소뇌", 410, 330]];
+      const Q = A.shuffle([["오른손을 움직여라!", "m1"], ["손끝 감촉을 느껴라!", "s1"], ["말을 만들어 내라!", "broca"], ["들은 말을 이해하라!", "wern"], ["음악 소리를 들어라!", "a1"], ["물체의 모양을 보라!", "v1"]]);
+      A.area.innerHTML = `<div class="art-stage cx-stage" style="aspect-ratio:${IW}/${IH}">
+        ${A.img("ch7_cerebrum_lateral.webp", "왼쪽 대뇌 반구 (가쪽면)")}
+        ${Object.entries(H).map(([k, h]) => `<div class="cx-glow" data-g="${k}" style="left:${pct(h[0] - h[2] / 2, IW)};top:${pct(h[1] - h[3] / 2, IH)};width:${pct(h[2], IW)};height:${pct(h[3], IH)};transform:rotate(${h[4]}deg)"></div>`).join("")}
+        ${LOBE.map(l => `<span class="cx-lobe" style="left:${pct(l[1], IW)};top:${pct(l[2], IH)}">${l[0]}</span>`).join("")}
+        ${Object.entries(H).map(([k, h]) => `<button class="hit cx-hs" data-k="${k}" style="left:${pct(h[0], IW)};top:${pct(h[1], IH)}" aria-label="영역"><i></i><span class="cx-name"></span></button>`).join("")}
+        <span class="cx-dir l">앞 (이마)</span><span class="cx-dir r">뒤</span></div>`;
+      let i = 0;
+      const round = () => {
+        if (i >= Q.length) return A.finish("운동은 중심앞이랑, 몸감각은 중심뒤이랑, 말하기는 브로카, 말 이해는 베르니케, 청각은 관자엽, 시각은 뒤통수엽!");
         const q = Q[i]; A.clearFb(); A.setPrompt(`🧠 <b>${q[0]}</b>`); let done = false; A.say(q[0]);
-        A.area.querySelectorAll(".hs").forEach(g => g.onclick = () => {
-          if (done) return; done = true; const ok = g.dataset.k === q[1]; A.result(ok);
-          const right = A.area.querySelector(`.hs[data-k="${q[1]}"]`); right.classList.add("right"); right.querySelector(".hl").textContent = H[q[1]][2];
-          if (!ok) { g.classList.add("wrong"); g.querySelector(".hl").textContent = H[g.dataset.k][2]; A.later(() => { g.classList.remove("wrong"); g.querySelector(".hl").textContent = ""; }, 2000); }
-          A.feedback(ok, `${q[0]} → ${H[q[1]][2]}`); i++; A.later(() => { right.classList.remove("right"); right.querySelector(".hl").textContent = ""; round(); }, 2100);
+        A.area.querySelectorAll(".cx-hs").forEach(b => b.onclick = () => {
+          if (done) return; done = true; const k = b.dataset.k, ok = k === q[1]; A.result(ok);
+          const show = (key, cls) => { const g = A.area.querySelector(`.cx-glow[data-g="${key}"]`), hs = A.area.querySelector(`.cx-hs[data-k="${key}"]`); g.className = "cx-glow " + cls; hs.classList.add(cls); hs.querySelector(".cx-name").textContent = H[key][5]; };
+          show(q[1], "right"); if (!ok) show(k, "wrong");
+          A.feedback(ok, `${q[0]} → <b>${H[q[1]][5]}</b>`); i++;
+          A.later(() => { A.area.querySelectorAll(".cx-glow").forEach(g => g.className = "cx-glow"); A.area.querySelectorAll(".cx-hs").forEach(h => { h.classList.remove("right", "wrong"); h.querySelector(".cx-name").textContent = ""; }); round(); }, 2300);
         });
       };
       round();
