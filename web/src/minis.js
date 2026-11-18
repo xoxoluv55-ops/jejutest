@@ -5,15 +5,27 @@
 function createMinis(ctx) {   // ctx: { Snd, say(text) }
   const $ = s => document.querySelector(s);
   const root = $("#mg2"), area = $("#mg2-area"), title = $("#mg2-title"), prompt = $("#mg2-prompt"), fbEl = $("#mg2-fb"), dots = $("#mg2-dots"), tbar = $("#mg2-timer"), intro = $("#mg2-intro");
-  let S = null, timers = [];
-  const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+  let S = null, timers = [], pausedAt = 0, pausedTotal = 0, curBar = null;
+  // a pausable clock: while the game is paused (pause menu) time stands still for timers and loops
+  const now = () => (pausedAt || performance.now()) - pausedTotal;
+  const arm = o => { o.id = setTimeout(() => { o.dead = true; o.fn(); }, Math.max(0, o.end - now())); };
+  const later = (fn, ms) => { const o = { fn, end: now() + ms, dead: false }; timers.push(o); if (!pausedAt) arm(o); return o; };
+  const cancel = o => { if (o) { o.dead = true; clearTimeout(o.id); } };
+  function pause() {
+    if (pausedAt) return; pausedAt = performance.now(); timers.forEach(o => clearTimeout(o.id));
+    if (curBar && !curBar.dead) { const bar = tbar.firstElementChild, w = getComputedStyle(bar).width; bar.style.transition = "none"; bar.style.width = w; }
+  }
+  function resume() {
+    if (!pausedAt) return; pausedTotal += performance.now() - pausedAt; pausedAt = 0; timers = timers.filter(o => !o.dead); timers.forEach(arm);
+    if (curBar && !curBar.dead) { const bar = tbar.firstElementChild; void bar.offsetWidth; bar.style.transition = `width ${Math.max(0, (curBar.end - now()) / 1000)}s linear`; bar.style.width = "0%"; }
+  }
   const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  function stopAll() { timers.forEach(clearTimeout); timers = []; if (S && S.raf) cancelAnimationFrame(S.raf); if (S && S.cleanup) S.cleanup(); tbar.style.display = "none"; }
+  function stopAll() { timers.forEach(cancel); timers = []; curBar = null; if (S && S.raf) cancelAnimationFrame(S.raf); if (S && S.cleanup) S.cleanup(); tbar.style.display = "none"; }
   function renderDots() { dots.innerHTML = S.n ? Array.from({ length: S.n }, (_, k) => `<i class="${k < S.log.length ? (S.log[k] ? "ok" : "no") : k === S.log.length ? "cur" : ""}"></i>`).join("") : ""; }
   const BASE = ctx.assetBase || "assets/mg/";
   const api = {
-    area, later, shuffle, esc,
+    area, later, shuffle, esc, now,
     // images are only requested when their minigame opens (lazy) and dropped with the DOM on exit
     img(file, alt) { return `<img class="art" src="${BASE}${file}" alt="${alt}" decoding="async" draggable="false" onload="this.classList.add('ok')" onerror="this.classList.add('err')"><span class="art-alt">${alt}</span>`; },
     setPrompt(t) { prompt.innerHTML = t; },
@@ -22,8 +34,8 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
     result(ok) { S.log.push(!!ok); if (ok) S.ok++; renderDots(); ok ? ctx.Snd.chime() : ctx.Snd.thud(); },
     timer(sec, onEnd) {   // shrinking bar; returns cancel()
       const bar = tbar.firstElementChild; tbar.style.display = "block"; bar.style.transition = "none"; bar.style.width = "100%"; void bar.offsetWidth;
-      bar.style.transition = `width ${sec}s linear`; bar.style.width = "0%"; const t = later(() => { tbar.style.display = "none"; onEnd(); }, sec * 1000);
-      return () => { clearTimeout(t); tbar.style.display = "none"; };
+      bar.style.transition = `width ${sec}s linear`; bar.style.width = "0%"; const t = later(() => { tbar.style.display = "none"; onEnd(); }, sec * 1000); curBar = t;
+      return () => { cancel(t); tbar.style.display = "none"; };
     },
     say: ctx.say, Snd: ctx.Snd, get S() { return S; },
     finish(summary) {
@@ -287,10 +299,10 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
       const hold = { "-1": 0, "1": 0 }, keys = e => { if (e.code === "ArrowLeft") hold["-1"] = e.type === "keydown" ? 1 : 0; if (e.code === "ArrowRight") hold["1"] = e.type === "keydown" ? 1 : 0; };
       A.area.querySelectorAll(".ba-btn").forEach(b => { const d = b.dataset.d; b.onpointerdown = e => { e.preventDefault(); hold[d] = 1; b.classList.add("down"); }; b.onpointerup = b.onpointercancel = b.onpointerleave = () => { hold[d] = 0; b.classList.remove("down"); }; });
       addEventListener("keydown", keys); addEventListener("keyup", keys); A.S.cleanup = () => { removeEventListener("keydown", keys); removeEventListener("keyup", keys); };
-      let x = 0, v = 0, t = 0, inside = 0, streak = 0, last = performance.now(); const star = document.getElementById("ba-star"), pct = document.getElementById("ba-pct"), scene = document.getElementById("ba-scene");
+      let x = 0, v = 0, t = 0, inside = 0, streak = 0, last = A.now(); const star = document.getElementById("ba-star"), pct = document.getElementById("ba-pct"), scene = document.getElementById("ba-scene");
       A.setPrompt("가운데 초록 구역을 지켜라!"); A.timer(15, () => {});
-      const loop = now => {
-        const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+      const loop = () => {
+        const now = A.now(), dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
         const drift = Math.sin(t * 1.3) * 1.6 + Math.sin(t * 2.9 + 1) * 1.1 + Math.sin(t * 0.55 + 2) * 0.9;
         v += (drift + (hold["1"] - hold["-1"]) * 4.2 - v * 2.2) * dt; x = Math.max(-1, Math.min(1, x + v * dt)); if (Math.abs(x) >= 1) v *= -0.3;
         const inZ = Math.abs(x) < 0.28; if (inZ) { inside += dt; streak += dt; } else streak = 0;
@@ -315,7 +327,7 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
         <img class="sa-syn" id="sa-syn" src="${BASE}ch1_synapse.webp" alt="축삭종말 시냅스" draggable="false"></div>
         <div class="sa-legend"><span class="m">수초 (절연)</span><span class="n">랑비에 결절</span><span class="d">탈수초</span></div><button class="big primary sa-btn" id="sa-btn">⚡ 재생성!</button>`;
       const pulse = document.getElementById("sa-pulse"), nodes = A.area.querySelectorAll(".sa-node"), btn = document.getElementById("sa-btn");
-      let k = 0, phase = "travel", t0 = performance.now(), from = 0; A.setPrompt("결절이 빛날 때 누르세요!");
+      let k = 0, phase = "travel", t0 = A.now(), from = 0; A.setPrompt("결절이 빛날 때 누르세요!");
       const posOf = n => { const el = nodes[n], ax = el.parentElement.getBoundingClientRect(), r = el.getBoundingClientRect(); return (r.left + r.width / 2 - ax.left) / ax.width * 100; };
       const travelT = n => (n === damaged ? 1.5 : 0.75 - n * 0.03) * 1000, WINDOW = 650;
       const burst = el => { el.classList.remove("boom"); void el.offsetWidth; el.classList.add("boom"); };
@@ -324,7 +336,8 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
         else if (phase === "travel") { A.feedback(false, "아직! 결절에 닿아 빛날 때 눌러요."); }
       };
       const next = () => { k++; if (k >= NODES) { phase = "end"; document.getElementById("sa-syn").classList.add("lit"); return A.later(() => A.finish("수초는 절연체라 전류가 빨리 지나가고, 결절에서만 활동전위가 다시 만들어져요."), 900); } from = posOf(k - 1); t0 = performance.now(); };
-      const loop = now => {
+      const loop = () => {
+        const now = A.now();
         if (phase === "travel") {
           const u = Math.min(1, (now - t0) / travelT(k)), a = k === 0 ? 0 : from, b = posOf(k), slow = k === damaged;
           pulse.style.left = (a + (b - a) * u) + "%"; pulse.style.transform = `translate(-50%,${slow ? -50 : -50 - Math.sin(u * Math.PI) * 55}%) rotate(${u * 360}deg)`;   // hops between nodes, crawls over the bare axon
@@ -336,5 +349,5 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
     },
   };
 
-  return { open, close() { stopAll(); root.className = "mg2"; S = null; } };
+  return { open, pause, resume, get active() { return !!S; }, close() { stopAll(); root.className = "mg2"; S = null; pausedAt = 0; } };
 }

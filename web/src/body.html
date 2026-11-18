@@ -107,7 +107,6 @@
         <div class="stat"><small>시간</small><b id="h-time">0:00.0</b></div>
         <div class="stat"><small>정답</small><b id="h-score">0/0</b></div>
         <div class="stat"><small>점수</small><b id="h-score2">0</b></div>
-        <button id="b-pause" class="icon">Ⅱ</button>
       </div>
     </div>
     <div class="energy"><div id="h-energy"></div><span>신호 에너지</span></div>
@@ -191,13 +190,17 @@
     <div id="mg2-intro" class="mg2-intro"></div>
   </section>
 
+  <!-- 5.0: always-reachable pause / quit (above the race, dialog and minigames) -->
+  <div id="sysbar" class="sysbar"><button id="b-pause" aria-label="일시정지"><b>Ⅱ</b><span>일시정지</span></button><button id="b-exit" aria-label="게임 종료"><b>✕</b><span>종료</span></button></div>
+
   <!-- PAUSE -->
   <section id="pause" class="overlay">
     <div class="card">
-      <h2>일시정지</h2>
-      <button class="big primary" data-act="resume">계속하기</button>
-      <button class="big" data-act="retry">처음부터</button>
-      <button class="big" data-act="quit">스테이지 선택으로</button>
+      <h2 id="pause-h">일시정지</h2>
+      <p id="pause-sub" class="pause-sub"></p>
+      <button class="big primary" data-act="resume">▶ 계속하기</button>
+      <button class="big p-retry" data-act="retry">↺ 처음부터 다시</button>
+      <div class="p-quit"><button class="big" data-act="quit">✕ 종료 · 스테이지 선택</button><button class="big" data-act="quit-title">✕ 종료 · 타이틀로</button></div>
       <div id="pause-settings" class="settings mini-settings"></div>
     </div>
   </section>

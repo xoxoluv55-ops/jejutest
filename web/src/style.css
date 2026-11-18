@@ -601,3 +601,56 @@ img.sa-pulse{position:absolute;top:50%;width:58px;height:auto;margin:0;border-ra
 .cx-name:empty{display:none!important}
 .art-stage .re-nuc{width:100px;height:66px;margin:-33px 0 0 -50px}
 @media (max-height:520px){.art-stage .re-nuc{width:66px;height:46px;margin:-23px 0 0 -33px}}
+
+/* ===== 5.0 always-visible pause / quit, pause card, play records ===== */
+.sysbar{position:absolute;z-index:12;top:max(8px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));display:none;gap:8px}
+.sysbar.on{display:flex}
+.sysbar button{display:flex;align-items:center;gap:6px;height:48px;min-width:48px;padding:0 14px;border-radius:14px;border:2px solid rgba(255,255,255,.55);background:rgba(16,12,48,.72);color:#fff;font:700 15px/1 var(--body,system-ui);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;box-shadow:0 2px 10px rgba(0,0,0,.45)}
+.sysbar button b{font-size:19px;font-family:var(--title);font-weight:400}
+.sysbar #b-exit{border-color:#FF7A9A;color:#FFD0DC}
+.sysbar button:active{transform:scale(.95);background:rgba(58,45,122,.9)}
+.hud .hud-right{margin-right:232px}
+#pause .card{max-width:min(560px,92vw)}
+.pause-sub{margin:2px 0 12px;color:var(--dim);font-size:16px;line-height:1.5}
+.pause-sub b{color:#fff}
+#pause .p-quit{display:flex;gap:10px;flex-wrap:wrap}.p-quit .big{flex:1;min-width:200px;border-color:#FF7A9A}
+#pause.exit .p-retry{display:none}
+#pause.exit #pause-h{color:#FF8AA6}
+.save-warn{border-color:#FF4D6D!important;color:#FFD0DC}
+.rec-sum{line-height:1.7}.rec-csv{margin:8px 0 4px;width:auto;padding:10px 18px;font-size:16px}
+.rec-table{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.rec-row{display:grid;grid-template-columns:86px 1.6fr .8fr .8fr 56px 70px 64px;gap:6px;padding:7px 10px;background:var(--card);border-radius:8px;align-items:center}
+.rec-h{background:transparent;color:var(--dim);font-weight:700}
+@media (max-height:500px),(max-width:700px){
+  .sysbar{top:max(4px,env(safe-area-inset-top));gap:6px}
+  .sysbar button{height:40px;padding:0 10px;font-size:13px;border-radius:12px}.sysbar button b{font-size:16px}
+  .hud .hud-right{margin-right:196px}
+  .rec-row{grid-template-columns:64px 1.4fr .7fr .8fr 44px 0 52px;font-size:12px;padding:5px 6px}.rec-row span:nth-child(6){display:none}
+}
+
+/* ===== 5.0 question readability (A-team feedback): the question is the biggest thing, the guidance
+   label is a separate small line above it, nothing else may sit on top of the panel ===== */
+.qpanel{max-width:min(900px,76vw);padding:8px 16px 10px}
+.qpanel .q-title{display:flex;align-items:center;gap:10px;margin:0 0 7px;padding:0 0 6px;border-bottom:1.5px solid rgba(255,138,216,.45)}
+.qpanel .q-title b{font-family:var(--body,system-ui);font-weight:700;font-size:15px;color:#FF9BE0;letter-spacing:.2px}
+.qpanel .q-title small{font-size:13px;color:#C9C3F0}
+.qpanel .q-text{font-size:29px;line-height:1.28;font-weight:800;color:#fff;margin:0 0 10px;word-break:keep-all;text-shadow:0 2px 3px #000,0 0 10px rgba(0,0,0,.95)}
+.qpanel .q-opts{gap:10px}
+.qpanel .opt{font-size:20px;padding:6px 12px;line-height:1.25;word-break:keep-all}
+.qpanel .opt .k{font-size:23px}
+#app.q-on .toast{top:calc(var(--qb,30%) + 10px)}
+#app.q-on .mission,#app.q-on .tutcard{top:calc(var(--qb,30%) + 10px)}
+@media (max-height:520px){
+  .qpanel{max-width:min(720px,78vw);top:calc(max(6px,env(safe-area-inset-top)) + 50px);padding:5px 12px 7px}
+  .qpanel .q-title{margin:0 0 4px;padding:0 0 3px}
+  .qpanel .q-title b{font-size:12px}.qpanel .q-title small{display:none}
+  .qpanel .q-text{font-size:21px;line-height:1.25;margin:0 0 6px}
+  .qpanel .q-opts{gap:6px}
+  .qpanel .opt{font-size:15px;padding:3px 8px}.qpanel .opt .k{font-size:17px}
+  #app.q-on .toast{font-size:17px}
+}
+/* absolute + left:50% capped the shrink-to-fit width at half the screen -> lines wrapped early */
+.qpanel{width:max-content}
+.rec-row .ok{color:var(--green,#5CFF9D)}.rec-row .bad{color:#FF8AA6}
+.pause-sub small{font-size:.88em;opacity:.85}
+@media (max-height:500px),(max-width:700px){.rec-row{grid-template-columns:70px 1.5fr .7fr .8fr 44px 52px}}

@@ -15,12 +15,21 @@ window.NR_MAIN = function () {
 
   //================== SAVE ==================
   const SAVE_KEY = "nerverunner_web_v1";
-  const save = Object.assign({ voiceRate: 1.08, voicePitch: 1.0, voiceURI: "", voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
+  const save = Object.assign({ voiceRate: 1.12, voicePitch: 1.1, voiceURI: "", voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
   if (!(save.v >= 3)) { save.thinkSlow = 0.75; save.v = 3; }      // 2.5: slow motion was too slow
   if (save.musicVol == null) save.musicVol = save.musicOn === false ? 0 : 0.7;
   if (save.sfxVol == null) save.sfxVol = save.sfxOn === false ? 0 : 0.8;
   if (!(save.v >= 4)) { save.voicePitch = 1.0; save.voiceRate = 1.08; save.v = 4; }   // 2.6: raised pitch sounded synthetic
-  const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) { } };
+  if (!(save.v >= 5)) { save.voicePitch = 1.1; save.voiceRate = 1.12; save.voiceChosen = false; save.v = 5; }   // 5.1: brighter, livelier female voice (user reference)
+  // 5.0: a failed write (private mode / full storage) is remembered and shown, never swallowed silently
+  let saveFailed = false;
+  const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); saveFailed = false; return true; } catch (e) { saveFailed = true; return false; } };
+  // time-attack ghosts are big: they live in their own key so they can never block the main record save
+  const GHOST_KEY = "nerverunner_ghost_v1";
+  const ghosts = (() => { try { return JSON.parse(localStorage.getItem(GHOST_KEY)) || {}; } catch (e) { return {}; } })();
+  const persistGhosts = () => { try { localStorage.setItem(GHOST_KEY, JSON.stringify(ghosts)); } catch (e) { } };
+  if (!Array.isArray(save.history)) save.history = [];
+  if (save.ta) { let moved = false; for (const k in save.ta) if (save.ta[k] && save.ta[k].ghost) { ghosts[k] = save.ta[k].ghost; delete save.ta[k].ghost; save.ta[k].hasGhost = true; moved = true; } if (moved) { persistGhosts(); persist(); } }
 
   //================== AUDIO (NRMusic.cs port + simple SFX) ==================
   const Snd = {
@@ -135,7 +144,9 @@ window.NR_MAIN = function () {
     rank(v) {
       const n = v.name; let s = 0;
       if (/premium|프리미엄/i.test(n)) s += 60; if (/enhanced|향상|고품질|neural|natural|online/i.test(n)) s += 45; if (/google/i.test(n)) s += 30;
-      if (/yuna|유나/i.test(n)) s += 12; if (/sora|소라|jian|지안|suhyun|수현|minsu|민수|heami|sunhi|선희/i.test(n)) s += 8;
+      // 5.1: STAR-01 is a bright young female voice (the reference sample) -> female Korean voices first, male ones last
+      if (/yuna|유나/i.test(n)) s += 14; if (/sora|소라|suhyun|수현|heami|sunhi|선희|seoyeon|서연|google/i.test(n)) s += 10;
+      if (/jian|지안|minsu|민수|injoon|인준|hyunsu|현수|jun\b|male|남성/i.test(n)) s -= 90;
       if (/compact|eloquence|grandma|grandpa|rocko|shelley|sandy|reed|flo|eddy|할머니|할아버지/i.test(n)) s -= 40; return s;
     },
     pick() {
@@ -330,6 +341,8 @@ window.NR_MAIN = function () {
     $$("#evo-list [data-skin]").forEach(b => b.addEventListener("click", () => { save.skin = +b.dataset.skin; persist(); applySkin(); renderEvo(); }));
   }
 
+  // test hook: #auto&wrong=N -> the demo autopilot answers every N-th question wrong
+  function makeAuto() { const ap = new NR.AutoPilot(), m = HASH.match(/wrong=(\d+)/); if (m) { let n = 0; const every = +m[1], memo = new Map(); ap.chooseLane = (q, c, lanes) => { if (!memo.has(q)) memo.set(q, (n++ % every === 0) ? (c + 1) % lanes : c); return memo.get(q); }; } return ap; }
   //================== 4.5 RIVALS / GHOST ==================
   // Three AI racers run their OWN simulation on the same track (real driving, real overtakes).
   const RIVALS = [
@@ -399,7 +412,7 @@ window.NR_MAIN = function () {
     b.addEventListener("pointerdown", down); b.addEventListener("pointerup", up); b.addEventListener("pointercancel", up); b.addEventListener("lostpointercapture", up);
     b.addEventListener("contextmenu", e => e.preventDefault());
   });
-  addEventListener("keydown", e => { keys[e.code] = true; if (["Space", "ArrowUp", "KeyW"].includes(e.code) && !e.repeat) jumpPress = true; if ((e.code === "Escape" || e.code === "KeyP") && race && race.phase === "run") pauseRace(); if (e.code === "Space") e.preventDefault(); });
+  addEventListener("keydown", e => { keys[e.code] = true; if (["Space", "ArrowUp", "KeyW"].includes(e.code) && !e.repeat) jumpPress = true; if ((e.code === "Escape" || e.code === "KeyP") && race && race.phase !== "finish") { if (race.paused) resumeRace(); else pauseRace(false); } if (e.code === "Space") e.preventDefault(); });
   addEventListener("keyup", e => { keys[e.code] = false; });
   addEventListener("blur", () => { for (const k in held) held[k] = 0; for (const k in keys) keys[k] = false; });
   // 4.7: half-screen tap steering (chosen in the control picker): hold the left/right half of the screen
@@ -477,7 +490,15 @@ window.NR_MAIN = function () {
   $("#a-listen").addEventListener("pointerup", () => { if (!lastAnswer) return; const { q, chosen, correct } = lastAnswer, w = correct ? "" : NR.wrongExp(q, chosen); Voice.say((w ? w + " " : "") + q.explanation, { tag: "exp" }); answerT = Math.max(answerT, 6); });
 
   let storyWait = 0;
+  // 5.0: while a question is up, toasts / mission banners / tutorial card sit BELOW it instead of on top of it
+  let qOn = false, qBottom = -1;
+  function layoutAroundQ() {
+    const p = $("#qpanel"), on = p.classList.contains("on"), app = $("#app");
+    if (on !== qOn) { qOn = on; app.classList.toggle("q-on", on); }
+    if (on) { const b = Math.round(p.getBoundingClientRect().bottom); if (b !== qBottom) { qBottom = b; app.style.setProperty("--qb", b + "px"); } }
+  }
   function tickUi(dt) {
+    layoutAroundQ();
     Snd.setDuck(Voice.talking ? 0.4 : 1);
     if (toastT > 0) { toastT -= dt; if (toastT <= 0.4) $("#h-toast").style.opacity = Math.max(0, toastT / 0.4); }
     if (hintT > 0) { hintT -= dt; if (hintT <= 0) $("#h-hint").style.display = "none"; }
@@ -532,7 +553,7 @@ window.NR_MAIN = function () {
     const sim = new NR.Sim(graph), learn = new NR.Session(qbank), forkSegByQ = new Map();
     for (const seg of graph.segments) if (seg.fork) forkSegByQ.set(seg.fork.questionId, seg);
     let bossMax = 0; if (stage.boss && !graph.bossMax) { for (const e of graph.allEvents()) if (e.type === NR.EV.Gate && e.tag === "boss") bossMax++; for (const s of graph.segments) if (s.fork) bossMax++; }
-    race = { stage, graph, sim, learn, forkSegByQ, phase: "intro", t: 0, cd: 4, timeScale: 1, pending: null, pendingLanes: null, bossMax, bossHp: bossMax, finishT: 0, auto: AUTO ? new NR.AutoPilot() : null, paused: false, lastSection: "", combo: 0, comboT: 0, maxCombo: 0, score: 0, lastOrb: -9, mode: mode || "story" };
+    race = { stage, graph, sim, learn, forkSegByQ, phase: "intro", t: 0, cd: 4, timeScale: 1, pending: null, pendingLanes: null, bossMax, bossHp: bossMax, finishT: 0, auto: AUTO ? makeAuto() : null, paused: false, lastSection: "", combo: 0, comboT: 0, maxCombo: 0, score: 0, lastOrb: -9, mode: mode || "story" };
     if (graph.bossMax) { race.bossMax = graph.bossMax; race.bossHp = graph.bossMax; }
     race.tut = stage.id === "tutorial" ? { step: null, done: true } : null; $("#tut").classList.remove("on"); applyControlMode();
     setupMode(race); $("#h-collapse").classList.remove("on"); $("#app").classList.remove("danger"); updateItemUi();
@@ -556,7 +577,7 @@ window.NR_MAIN = function () {
     }
     if (r.mode === "time") {
       const best = (save.ta || {})[r.stage.id]; r.splitsAt = [0.25, 0.5, 0.75]; r.splits = []; r.ghostRec = []; r.ghostT = 0; r.bestTA = best || null;
-      if (best && best.ghost && best.ghost.length) { r.ghost = best.ghost; ghostMesh.root.visible = true; }
+      if (best && ghosts[r.stage.id] && ghosts[r.stage.id].length) { r.ghost = ghosts[r.stage.id]; ghostMesh.root.visible = true; }
       $("#h-rank").classList.add("on");
     }
     if (r.mode === "survival") { r.sim.boostEnergy = 1; r.life = 100; $("#h-rank").classList.add("on"); }
@@ -619,8 +640,41 @@ window.NR_MAIN = function () {
   }
   function distToDecision() { const r = race, d = r.decision; if (!d || d.seg !== r.sim.seg) return 999; return Math.max(0, d.s - r.sim.s); }
 
-  function pauseRace() { if (!race || race.phase !== "run") return; race.paused = true; Voice.stop(); renderSettings($("#pause-settings"), true); show("#pause", true); }
-  function resumeRace() { if (!race) return; race.paused = false; show("#pause", false); }
+  // 5.0: pause / quit work in every phase (story dialog, countdown, race, chapter minigame, synapse gate)
+  function pauseRace(exit) {
+    if (!race || race.phase === "finish") return; const r = race;
+    if (!r.paused) { r.paused = true; r.pausedAt = performance.now(); Voice.stop(); Snd.setHum(0, false); minis.pause(); }
+    const p = $("#pause"); p.classList.toggle("exit", !!exit);
+    $("#pause-h").textContent = exit ? "게임을 종료할까요?" : "일시정지";
+    const n = r.learn.total;
+    $("#pause-sub").innerHTML = exit ? (n ? `지금까지 푼 <b>${n}문제</b>의 결과와 오답은 저장돼요.<br><small>최고 기록·점수는 완주해야 저장돼요.</small>` : "아직 푼 문제가 없어요. 종료하면 이번 주행은 기록되지 않아요.") : `${r.stage.chapter ? "CH." + r.stage.chapter + " " : ""}${esc(r.stage.title || "")} · ${fmt(r.sim.raceTime)} · 정답 ${r.learn.correct}/${n}`;
+    if (exit) $("#pause-settings").innerHTML = ""; else renderSettings($("#pause-settings"), true);
+    show("#pause", true);
+  }
+  function resumeRace() {
+    if (!race) return; const r = race;
+    if (r.phase === "count" && r.pausedAt) r.cdStart += performance.now() - r.pausedAt;   // the 3-2-1 waits for you
+    r.paused = false; r.pausedAt = 0; minis.resume(); show("#pause", false);
+    if (r.phase === "intro" && dialogLines && dialogLines[dialogIdx]) Voice.say(dialogLines[dialogIdx].text, { star: dialogLines[dialogIdx].speaker === "STAR-01" });
+  }
+  function syncSys() { const on = !!race && race.phase !== "finish"; const el = $("#sysbar"); if (el.classList.contains("on") !== on) el.classList.toggle("on", on); }
+  const todayStr = () => new Date().toISOString().slice(0, 10);
+  function mapAnswers(L) { for (const a of L.answers) { if (a.mapped) continue; const q = qbank.get(a.questionId); if (q && q.perm) { a.chosen = q.perm[a.chosen]; a.mapped = true; } } }
+  // one row per play in save.history (kept on this device; viewable / exportable from 오답 노트 → 📊 플레이 기록)
+  function logPlay(r, end) {
+    const L = r.learn; save.history.push({ at: new Date().toISOString(), stage: r.stage.id, ch: r.stage.chapter || 0, mode: r.mode, end, time: Math.round(r.sim.raceTime * 10) / 10, correct: L.correct, total: L.total, score: r.score | 0, wrong: L.answers.filter(a => !a.correct).map(a => a.questionId) });
+    if (save.history.length > 300) save.history.splice(0, save.history.length - 300);
+  }
+  // leaving mid-race keeps what was learned: answered questions go to the wrong-answer notes and the play log
+  function commitPartial(r, end) {
+    if (!r || r.committed || r.stage.id === "tutorial") return; r.committed = true;
+    if (!r.learn.total) return; mapAnswers(r.learn); r.learn.mergeInto(save, todayStr()); logPlay(r, end); persist();
+  }
+  function teardownRace(end) {
+    commitPartial(race, end || "중도 종료"); if (race) race.paused = true;
+    minis.close(); $("#app").classList.remove("in-mini"); show("#mini", false); dialogLines = null; dialogDone = null; show("#dialog", false);
+    $("#mission").classList.remove("on"); $("#reflex").classList.remove("on"); $("#tut").classList.remove("on"); show("#pause", false); Voice.stop();
+  }
 
   function tickRace(rdt) {
     const r = race, sim = r.sim; let dt = Math.min(rdt, 0.05);
@@ -921,7 +975,7 @@ window.NR_MAIN = function () {
   }
   function trigger(tag) {
     const r = race, c = tag.indexOf(":"), kind = c >= 0 ? tag.slice(0, c) : tag, arg = c >= 0 ? tag.slice(c + 1) : "";
-    const thinkTag = save.thinkSlow < 0.99 ? "  · 생각 시간: 슬로모션" : "";
+    const thinkTag = "";   // 5.0: the slow-motion tag cluttered the label; #h-slow already shows it
     switch (kind) {
       case "story": if (r.mode === "story" && arg !== r.stage.introStory && C.story[arg]) storyQ.push(...C.story[arg]); break;
       case "hint":
@@ -1049,8 +1103,8 @@ window.NR_MAIN = function () {
       window.__nrResult = { stage: "tutorial", time: t, correct: L.correct, total: L.total }; return;
     }
     $("#result [data-act=next]").textContent = "다음 스테이지 ▶";
-    const today = new Date().toISOString().slice(0, 10); for (const a of L.answers) { const q = qbank.get(a.questionId); if (q && q.perm) { a.chosen = q.perm[a.chosen]; a.mapped = true; } }
-    L.mergeInto(save, today); save.plays++;
+    const today = todayStr(); mapAnswers(L); r.committed = true;
+    L.mergeInto(save, today); save.plays++; logPlay(r, r.survivalDead ? "생명력 0" : "완주");
     const b = save.best[r.stage.id], isBest = !b || t < b.time; if (isBest) save.best[r.stage.id] = { time: t, acc: L.accuracy, score: r.score };
     if (!save.bestScore) save.bestScore = {}; if (!(save.bestScore[r.stage.id] >= r.score)) save.bestScore[r.stage.id] = r.score;
     persist();
@@ -1080,6 +1134,7 @@ window.NR_MAIN = function () {
     if (evoMsg) { if (save.skin == null || save.skin === prevForm) { save.skin = newForm; persist(); } applySkin(); setTimeout(() => Voice.say("우와, 진화했어! 이제 나는 " + FORMS[newForm].name + "야!", { mode: "queue" }), 1500); }
     if (r.graph.bossMax) { $("#r-title").textContent = sim.bossHp === 0 ? "🏆 NULL 소멸! 신경망 복구 완료" : `NULL 도주… (남은 체력 ${sim.bossHp}/${r.bossMax})`; }
     show("#hud", false); show("#result", true); Snd.play("menu"); $("#mission").classList.remove("on"); $("#reflex").classList.remove("on");
+    if (saveFailed) $("#r-wrong").insertAdjacentHTML("afterbegin", `<div class="entry save-warn">⚠ 이 기기에 기록을 저장하지 못했어요. Safari 개인정보 보호(비공개) 탭이거나 저장 공간이 가득 찼을 수 있어요. 일반 탭에서 다시 열어 주세요.</div>`);
     Voice.say(acc === 100 ? "완벽해! 문제를 전부 맞혔어!" : "완주 성공! 틀린 문제는 오답 노트에서 같이 다시 보자.");
     window.__nrResult = { stage: r.stage.id, mode: r.mode, position: r.position, time: t, correct: L.correct, total: L.total, coins: sim.coins, score: r.score, maxCombo: r.maxCombo };
   }
@@ -1095,7 +1150,7 @@ window.NR_MAIN = function () {
       window.__nrResult && (window.__nrResult.position = pos);
     } else if (r.mode === "time") {
       const ta = save.ta || (save.ta = {}), old = ta[r.stage.id], isBest = !old || t < old.time;
-      if (isBest) { ta[r.stage.id] = { time: t, splits: r.splits.slice(), ghost: r.ghostRec.slice(0, 40000) }; try { persist(); } catch (e) { } }
+      if (isBest) { ta[r.stage.id] = { time: t, splits: r.splits.slice(), hasGhost: true }; ghosts[r.stage.id] = r.ghostRec.slice(0, 40000); persist(); persistGhosts(); }
       $("#r-title").textContent = isBest ? "⏱ 새 최고 기록!" : "⏱ 타임어택 완주";
       $("#r-wrong").insertAdjacentHTML("afterbegin", `<div class="entry"><b>기록 ${fmt(t)}</b>${old ? ` (이전 최고 ${fmt(old.time)}, ${t - old.time <= 0 ? "−" : "+"}${Math.abs(t - old.time).toFixed(1)}초)` : ""}<br>구간: ${r.splits.map((x, i) => `${i + 1}구간 ${fmt(x)}`).join(" · ")}${isBest ? "<br>다음 도전부터 이 기록이 고스트로 함께 달려요." : ""}</div>`);
     } else if (r.mode === "survival") {
@@ -1115,7 +1170,7 @@ window.NR_MAIN = function () {
     const ta = save.ta || {}, rb = save.rivalBest || {}, sv = save.survival;
     $("#stage-grid").innerHTML = NR.STAGES.map(s => {
       const b = save.best[s.id];
-      const best = mode === "time" ? (ta[s.id] ? "타임어택 " + fmt(ta[s.id].time) + (ta[s.id].ghost ? " · 고스트 있음" : "") : "기록 없음")
+      const best = mode === "time" ? (ta[s.id] ? "타임어택 " + fmt(ta[s.id].time) + (ta[s.id].hasGhost ? " · 고스트 있음" : "") : "기록 없음")
         : mode === "rival" ? (rb[s.id] ? "최고 순위 " + rb[s.id] + "위" : "도전 전")
         : (b ? "최고 " + fmt(b.time) + " · 정답률 " + Math.round(b.acc * 100) + "%" : "도전 전");
       return `<button class="stage${s.boss ? " boss" : ""}" data-stage="${s.id}"><span class="ch">CHAPTER ${s.chapter}${s.boss ? " · BOSS" : ""}</span><span class="tt">${esc(s.title)}</span><span class="st">${esc(s.subtitle)}</span><span class="goals">${s.goals.map(esc).join(" · ")}</span><span class="best">${best}</span></button>`;
@@ -1123,9 +1178,23 @@ window.NR_MAIN = function () {
     $$("#stage-grid .stage").forEach(b => b.addEventListener("click", () => startStage(b.dataset.stage, b.dataset.stage === "survival" ? "survival" : (save.mode || "story"))));
   }
   let codexMode = "codex", codexCh = 0;
+  const MODE_KO = { story: "스토리", rival: "라이벌", time: "타임어택", survival: "서바이벌" };
+  const stageName = id => { const s = NR.STAGES.find(x => x.id === id); return s ? `CH.${s.chapter} ${s.title}` : id === "survival" ? "서바이벌" : id; };
+  function recordsHtml() {
+    const H = save.history.slice().reverse(), tot = H.reduce((a, h) => a + h.total, 0), cor = H.reduce((a, h) => a + h.correct, 0);
+    let ok = true; try { localStorage.setItem("nerverunner_probe", "1"); localStorage.removeItem("nerverunner_probe"); } catch (e) { ok = false; }
+    const head = `<div class="entry rec-sum"><b>이 기기에 저장된 기록</b> · 저장 상태: ${ok && !saveFailed ? '<span class="ok">정상 ✔</span>' : '<span class="bad">저장 안 됨 ⚠ (비공개 탭/저장공간 확인)</span>'}<br>플레이 ${H.length}회 · 푼 문제 ${tot}개 · 정답률 ${tot ? Math.round(cor / tot * 100) : 0}% · 오답 노트 ${save.wrongNotes.length}개 · 도감 ${save.codexUnlocked.length}개<br><button class="big rec-csv" data-act="csv">⬇ CSV로 저장 (엑셀에서 열기)</button><div class="meta">기록은 이 브라우저(기기)에만 저장돼요. 다른 기기·비공개 탭에서는 보이지 않아요.</div></div>`;
+    if (!H.length) return head + `<div class="entry">아직 기록이 없어요. 한 번 달리면 여기에 쌓여요.</div>`;
+    return head + `<div class="rec-table"><div class="rec-row rec-h"><span>날짜</span><span>스테이지</span><span>모드</span><span>결과</span><span>정답</span><span>시간</span><span>점수</span></div>` + H.map(h => { const d = new Date(h.at); return `<div class="rec-row"><span>${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}</span><span>${esc(stageName(h.stage))}</span><span>${MODE_KO[h.mode] || h.mode}</span><span class="${h.end === "완주" ? "ok" : "bad"}">${esc(h.end)}</span><span>${h.correct}/${h.total}</span><span>${fmt(h.time)}</span><span>${h.score}</span></div>`; }).join("") + `</div>`;
+  }
+  function exportCsv() {
+    const rows = [["날짜시간", "스테이지", "모드", "결과", "정답수", "문제수", "정답률(%)", "주행시간(초)", "점수", "틀린 문제"]].concat(save.history.map(h => [new Date(h.at).toLocaleString("ko-KR"), stageName(h.stage), MODE_KO[h.mode] || h.mode, h.end, h.correct, h.total, h.total ? Math.round(h.correct / h.total * 100) : "", h.time, h.score, h.wrong.map(id => { const q = bank.get(id); return q ? q.question : id; }).join(" / ")]));
+    const csv = "\ufeff" + rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" })); a.download = "nerve_runner_records_" + todayStr() + ".csv"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
   function renderCodex() {
-    $("#codex-h").textContent = codexMode === "codex" ? "신경 도감" : "오답 노트";
-    const tabs = [["codex", "📘 도감"], ["notes", "📝 오답 노트"]].map(([m, l]) => `<button data-mode="${m}" class="${codexMode === m ? "on" : ""}">${l}</button>`).join("") + (codexMode === "codex" ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(c => `<button data-ch="${c}" class="${codexCh === c ? "on" : ""}">${c ? "CH." + c : "전체"}</button>`).join("") : "");
+    $("#codex-h").textContent = codexMode === "codex" ? "신경 도감" : codexMode === "records" ? "플레이 기록" : "오답 노트";
+    const tabs = [["codex", "📘 도감"], ["notes", "📝 오답 노트"], ["records", "📊 플레이 기록"]].map(([m, l]) => `<button data-mode="${m}" class="${codexMode === m ? "on" : ""}">${l}</button>`).join("") + (codexMode === "codex" ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(c => `<button data-ch="${c}" class="${codexCh === c ? "on" : ""}">${c ? "CH." + c : "전체"}</button>`).join("") : "");
     $("#codex-tabs").innerHTML = tabs;
     $$("#codex-tabs [data-mode]").forEach(b => b.addEventListener("click", () => { codexMode = b.dataset.mode; renderCodex(); }));
     $$("#codex-tabs [data-ch]").forEach(b => b.addEventListener("click", () => { codexCh = +b.dataset.ch; renderCodex(); }));
@@ -1136,6 +1205,8 @@ window.NR_MAIN = function () {
         const on = save.codexUnlocked.includes(c.id);
         return `<div class="entry${on ? "" : " locked"}"><b>${on ? esc(c.name) : "???"}</b><span class="en">${on ? esc(c.english || "") : ""}</span> <span class="meta">CH.${c.chapter} · ${esc(c.category || "")}</span><br>${on ? esc(c.description) : "아직 만나지 않은 구조예요."}${on && c.gameLink ? `<br><span class="meta">🎮 ${esc(c.gameLink)}</span>` : ""}</div>`;
       }).join("");
+    } else if (codexMode === "records") {
+      html = recordsHtml();
     } else {
       const notes = save.wrongNotes.slice().sort((a, b) => (a.resolved - b.resolved) || (b.wrongCount - a.wrongCount));
       html = notes.length ? notes.map(n => {
@@ -1149,8 +1220,8 @@ window.NR_MAIN = function () {
   function renderSettings(el, compact) {
     const rows = [
       ["별 음성 안내", "STAR-01이 문제·해설을 읽어 줘요" + (Voice.ok ? "" : " (이 브라우저는 미지원)"), "voiceOn", [[true, "켜기"], [false, "끄기"]]],
-      ["목소리 톤", "", "voicePitch", [[0.95, "차분하게"], [1.0, "자연스럽게"], [1.15, "밝게"]]],
-      ["말 속도", "", "voiceRate", [[0.95, "천천히"], [1.08, "보통"], [1.2, "빠르게"]]],
+      ["목소리 톤", "", "voicePitch", [[1.0, "자연스럽게"], [1.1, "밝게 (기본)"], [1.2, "아주 밝게"]]],
+      ["말 속도", "", "voiceRate", [[0.98, "천천히"], [1.12, "보통"], [1.25, "빠르게"]]],
       ["배경 음악 음량", "", "musicVol", [[0, "끔"], [0.35, "작게"], [0.7, "보통"], [1, "크게"]]],
       ["효과음 음량", "", "sfxVol", [[0, "끔"], [0.4, "작게"], [0.8, "보통"], [1, "크게"]]],
       ["좌우 조작", "", "controlMode", [["buttons", "◀ ▶ 버튼"], ["tap", "화면 반 터치"]]],
@@ -1179,7 +1250,7 @@ window.NR_MAIN = function () {
     return `<div class="set voice-set"><div>STAR-01 목소리<small>지금: <b>${esc(Voice.voice ? Voice.voice.name : "기기 기본 음성")}</b>${Voice.voice && /premium|프리미엄|enhanced|향상/i.test(Voice.voice.name) ? " ✓" : ""}<br>iPad에서 더 자연스러운 목소리: 설정 › 손쉬운 사용 › 읽기 및 말하기 › 음성 › 한국어 › '지안·유나(프리미엄)' 같은 프리미엄 음성을 내려받으면 자동으로 골라져요. 목록에 없으면 Safari에서 열어 보세요.</small></div><div class="opts"><select id="voice-sel">${opts}</select><button id="voice-try">▶ 들어보기</button></div></div>`;
   }
   function hideRacers() { if (rivalMeshes) rivalMeshes.forEach(m => m.root.visible = false); if (ghostMesh) ghostMesh.root.visible = false; }
-  function goTitle() { hideRacers(); race = null; Voice.stop(); show("#hud", false); show("#touch", false); show("#result", false); show("#pause", false); show("#qpanel", false); show("#apanel", false); show("#mini", false); show("#dialog", false); screen("title"); menuScene(); Snd.play("menu"); }
+  function goTitle() { if (race) teardownRace(); hideRacers(); race = null; Voice.stop(); show("#hud", false); show("#touch", false); show("#result", false); show("#pause", false); show("#qpanel", false); show("#apanel", false); show("#mini", false); show("#dialog", false); screen("title"); menuScene(); Snd.play("menu"); }
   document.addEventListener("click", ev => {
     const b = ev.target.closest("[data-act]"); if (!b) return; const a = b.dataset.act;
     if (a === "play") { if (!save.tutDone) { screen("controls"); } else startStage(save.lastStage || "ch1"); }
@@ -1192,13 +1263,16 @@ window.NR_MAIN = function () {
     else if (a === "settings") { renderSettings($("#settings-list")); screen("settings"); }
     else if (a === "title") goTitle();
     else if (a === "resume") resumeRace();
-    else if (a === "retry") { const id = race ? race.stage.id : save.lastStage, m = race ? race.mode : undefined; show("#pause", false); startStage(id, m); }
-    else if (a === "quit") { hideRacers(); show("#pause", false); race = null; renderStages(); screen("stages"); show("#hud", false); show("#touch", false); show("#qpanel", false); show("#apanel", false); Voice.stop(); menuScene(); Snd.play("menu"); }
+    else if (a === "quit-title") { teardownRace(); goTitle(); }
+    else if (a === "csv") exportCsv();
+    else if (a === "retry") { const id = race ? race.stage.id : save.lastStage, m = race ? race.mode : undefined; teardownRace("다시 시작"); startStage(id, m); }
+    else if (a === "quit") { teardownRace(); hideRacers(); show("#pause", false); race = null; renderStages(); screen("stages"); show("#hud", false); show("#touch", false); show("#qpanel", false); show("#apanel", false); Voice.stop(); menuScene(); Snd.play("menu"); }
     else if (a === "next" && race && race.tutNext) startStage("ch1", "story");
     else if (a === "next") { const i = NR.STAGES.findIndex(s => s.id === (race ? race.stage.id : save.lastStage)); startStage(NR.STAGES[Math.min(NR.STAGES.length - 1, i + 1)].id, race ? race.mode : undefined); }
   });
-  $("#b-pause").addEventListener("click", pauseRace);
-  document.addEventListener("visibilitychange", () => { if (document.hidden) { if (race && race.phase === "run") pauseRace(); Voice.stop(); if (Snd.ctx) Snd.ctx.suspend(); } else if (Snd.ctx) Snd.ctx.resume(); });
+  $("#b-pause").addEventListener("click", () => pauseRace(false));
+  $("#b-exit").addEventListener("click", () => pauseRace(true));
+  document.addEventListener("visibilitychange", () => { if (document.hidden) { if (race && race.phase !== "finish") pauseRace(false); Voice.stop(); if (Snd.ctx) Snd.ctx.suspend(); } else if (Snd.ctx) Snd.ctx.resume(); });
 
   // title scene: STAR-01 floating in front of the backdrop
   let menuSim = null;
@@ -1236,7 +1310,7 @@ window.NR_MAIN = function () {
     const dt = Math.min(0.1, (now - last) / 1000); last = now; tAll += dt; NRW.U.uTime.value = tAll;
     watchFps(dt);
     NRW.U.uFire.value = Math.max(0, NRW.U.uFire.value - dt * 1.2); NRW.U.uSeize.value = Math.max(0, NRW.U.uSeize.value - dt * 1.5);
-    if (race) tickRace(dt); else tickMenu(dt);        // input + simulation every display frame
+    if (race) tickRace(dt); else tickMenu(dt); syncSys();        // input + simulation every display frame
     // 4.0: optional 30 FPS render cap (steadier on weak devices); simulation/input are not capped
     renderAcc += dt; if (save.fpsCap === 30 && renderAcc < 1 / 30 - 0.004) return;
     const rdt = renderAcc; renderAcc = 0;
