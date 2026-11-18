@@ -51,7 +51,16 @@ save('wall_top', ca, (w, 72))
 Image.open(os.path.join(OUT, 'wall_top.png')).rotate(-90, expand=True).save(os.path.join(OUT, 'wall_top_v.png'), optimize=True)
 print('wall_top_v', Image.open(os.path.join(OUT, 'wall_top_v.png')).size)
 
+# dedicated single-image floors (already tileable; light edge cross-fade only): plate -> joint/X-ray rooms, grate -> corridor
+for key, name in [('floor_tile', 'floor_plate_hd'), ('floor_grate', 'floor_grate_hd')]:
+    im = Image.open(os.path.join(ROOT, 'docs', 'concept', name + '.png')).convert('RGB')
+    save(key, seamless(np.array(im).astype(np.float32), 4, (0, 1)), (512, 512))
+
+# title background: standalone key art (1672x941 source)
+Image.open(os.path.join(ROOT, 'docs', 'concept', 'title_hd.png')).convert('RGB').save(os.path.join(OUT, 'title_bg.jpg'), quality=90, optimize=True)
+print('title_bg', Image.open(os.path.join(OUT, 'title_bg.jpg')).size)
+
 mf = os.path.join(OUT, 'manifest.json'); keys = json.load(open(mf))
-for k in ['floor_lab', 'wall_face', 'wall_top', 'wall_top_v']:
+for k in ['floor_lab', 'floor_grate', 'floor_tile', 'wall_face', 'wall_top', 'wall_top_v']:
     if k not in keys: keys.append(k)
 json.dump(keys, open(mf, 'w')); print(keys)
