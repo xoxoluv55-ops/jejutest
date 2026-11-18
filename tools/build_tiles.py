@@ -8,10 +8,11 @@ import numpy as np
 from PIL import Image, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = sys.argv[1]; OUT = os.path.join(ROOT, 'app', 'public', 'assets', 'art'); os.makedirs(OUT, exist_ok=True)
+SRC = sys.argv[1]; SRC2 = sys.argv[2] if len(sys.argv) > 2 else None; OUT = os.path.join(ROOT, 'app', 'public', 'assets', 'art'); os.makedirs(OUT, exist_ok=True)
 
 def prep(name, inset=3):
-    im = Image.open(os.path.join(SRC, name + '.png')).convert('RGB')
+    d = SRC2 if (SRC2 and os.path.exists(os.path.join(SRC2, name + '.png'))) else SRC
+    im = Image.open(os.path.join(d, name + '.png')).convert('RGB')
     im = im.crop((inset, inset, im.width - inset, im.height - inset))
     im = im.resize((im.width * 2, im.height * 2), Image.LANCZOS)
     a = np.array(im).astype(np.float32)
@@ -41,9 +42,14 @@ def save(key, a, size):
     im.save(os.path.join(OUT, key + '.png'), optimize=True); print(key, im.size)
 
 # floors: 256x256 world units at density 2 -> 512px, 4x4 plates (64 units each)
-save('floor_lab', block(seamless(prep('f_plate')), 4, 4), (512, 512))
-save('floor_grate', block(seamless(prep('f_grate')), 4, 4), (512, 512))
+V2 = SRC2 is not None
+save('floor_lab', block(seamless(prep('f2_metal' if V2 else 'f_plate')), 2 if V2 else 4, 2 if V2 else 4), (512, 512))
+save('floor_grate', block(seamless(prep('f2_grate' if V2 else 'f_grate')), 3 if V2 else 4, 3 if V2 else 4), (512, 512))
 save('floor_tile', block(seamless(prep('f_diamond')), 4, 4), (512, 512))
 # wall face: 256x110 world units -> 512x220px, 2 modules across, only horizontal seam matters
-save('wall_face', block(seamless(prep('w_blue'), axes=(1,)), 2, 1), (512, 220))
+if V2:
+    a, b = seamless(prep('w2_base'), axes=(1,)), seamless(prep('w2_console'), axes=(1,))
+    h = min(a.shape[0], b.shape[0]); save('wall_face', np.concatenate([a[:h], b[:h]], axis=1), (512, 220))
+else:
+    save('wall_face', block(seamless(prep('w_blue'), axes=(1,)), 2, 1), (512, 220))
 json.dump(['floor_lab', 'floor_grate', 'floor_tile', 'wall_face'], open(os.path.join(OUT, 'manifest.json'), 'w'))

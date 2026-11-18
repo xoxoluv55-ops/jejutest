@@ -1,4 +1,5 @@
-"""Cut individual props / doors / decor out of the environment sheet (docs/concept/concept_env.png).
+"""Cut individual assets out of an environment sheet. Usage: python3 -I tools/cut_env.py <outdir> [v2]
+(v1 = docs/concept/concept_env.png, v2 = docs/concept/concept_env2.png)
 Each box is background-removed with rembg (largest object kept), trimmed and saved as PNG with alpha.
 Usage: python3 -I tools/cut_env.py <outdir>
 """
@@ -9,7 +10,8 @@ from rembg import remove, new_session
 from scipy import ndimage
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHEET = Image.open(os.path.join(ROOT, 'docs', 'concept', 'concept_env.png')).convert('RGB')
+V2 = len(sys.argv) > 2 and sys.argv[2] == 'v2'
+SHEET = Image.open(os.path.join(ROOT, 'docs', 'concept', 'concept_env2.png' if V2 else 'concept_env.png')).convert('RGB')
 OUT = sys.argv[1]; os.makedirs(OUT, exist_ok=True)
 sess = new_session('isnet-general-use')
 UP = 3
@@ -41,6 +43,17 @@ TILES = {
     'title_strip': (10, 896, 650, 1018),
 }
 
+if V2:
+    BOXES = {
+        'p_capsule_broken': (514, 748, 654, 894), 'x_console_broken': (662, 762, 803, 864), 'x_floor_hole': (808, 766, 974, 868),
+        'p_locker_closed': (531, 899, 644, 1014), 'p_locker_open': (659, 899, 774, 1014), 'p_joint_rig': (786, 876, 949, 1014),
+        'd_side_closed': (1274, 578, 1322, 689), 'd_panel': (1184, 578, 1254, 689), 'p_organ_shelf': (846, 466, 958, 562),
+    }
+    TILES = {
+        'f2_metal': (20, 760, 126, 860), 'f2_grate': (140, 760, 246, 860), 'f2_hazard': (260, 760, 366, 860), 'f2_damaged': (380, 760, 486, 860),
+        'w2_base': (20, 900, 126, 988), 'w2_pipes': (140, 900, 246, 988), 'w2_vent': (260, 900, 366, 988), 'w2_console': (380, 900, 486, 988),
+        'title_bg_src': (994, 754, 1528, 1010),
+    }
 for name, box in BOXES.items():
     c = SHEET.crop(box)
     big = c.resize((c.width * UP, c.height * UP), Image.LANCZOS)

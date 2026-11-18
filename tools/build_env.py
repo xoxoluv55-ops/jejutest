@@ -2,22 +2,25 @@
 World scale: 1 sheet pixel = 0.75 world units for props/decor (so the test unit, 86 units tall, matches the
 sheet's proportions); doors/gate and the recovery bed get explicit factors. Texture density = 2 px / unit.
 Frames are pivoted bottom-centre. Output: app/public/assets/atlas/env.png + env.json
-Usage: python3 -I tools/build_env.py <cutdir>
+Usage: python3 -I tools/build_env.py <cutdir> [<cutdir2> ...]
 """
 import os, sys, json
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = sys.argv[1]; UP = 3; DENS = 2
+SRCS = sys.argv[1:]; SRC = SRCS[0]; UP = 3; DENS = 2
 OUT = os.path.join(ROOT, 'app', 'public', 'assets', 'atlas')
 BASE = 0.75
-FACTOR = {'p_holobed': 1.6, 'd_gate_lock': 1.45, 'd_gate_open': 1.45, 'd_door_closed': 1.3, 'd_door_1': 1.55, 'd_door_2': 1.55, 'd_door_3': 1.55,
+FACTOR = {'p_holobed': 1.6, 'p_capsule_broken': 1.0, 'p_locker_closed': 1.05, 'p_locker_open': 1.05, 'p_joint_rig': 1.0, 'd_side_closed': 1.45, 'd_panel': 1.4, 'd_gate_lock': 1.45, 'd_gate_open': 1.45, 'd_door_closed': 1.3, 'd_door_1': 1.55, 'd_door_2': 1.55, 'd_door_3': 1.55,
           'p_capsule_holo': 0.8, 'p_capsule_empty': 0.95, 'x_beacon': 0.45, 'x_camera': 0.45, 'x_lamp': 0.5, 'x_cone': 0.7}
 items = []
-for f in sorted(os.listdir(SRC)):
-    if not f.endswith('.png') or f[0] not in 'pdx': continue
-    k = f[:-4]
-    im = Image.open(os.path.join(SRC, f)).convert('RGBA')
+SKIP = {'p_organ_shelf'}
+seen = {}
+for d in SRCS:
+    for f in sorted(os.listdir(d)):
+        if f.endswith('.png') and f[0] in 'pdx' and f[:-4] not in SKIP: seen[f[:-4]] = os.path.join(d, f)
+for k, path in sorted(seen.items()):
+    im = Image.open(path).convert('RGBA')
     world = FACTOR.get(k, BASE) / UP          # world units per cut pixel
     px = world * DENS
     im = im.resize((max(1, round(im.width * px)), max(1, round(im.height * px))), Image.LANCZOS)

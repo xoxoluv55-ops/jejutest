@@ -29,9 +29,9 @@ const PROP_SCALE: Record<string, number> = { capsule: 1.35, capsule_broken: 1.35
 
 // Procedural key -> illustrated asset (env atlas, built by tools/build_env.py from the environment sheet).
 const ENV_MAP: Record<string, string> = {
-  capsule: 'p_capsule_holo', capsule_broken: 'p_capsule_empty', console: 'p_console', console_red: 'p_techbox', optable: 'p_optable',
-  jar: 'p_tubes', crate: 'p_crates', rack: 'p_rack', cabinet: 'p_fridge', cabinet_open: 'p_fridge', holo_table: 'p_holobed',
-  joint_rig: 'p_techbox', breaker: 'p_breaker', xray_box: 'p_xray', terminal: 'p_terminal',
+  capsule: 'p_capsule_holo', capsule_broken: 'p_capsule_broken', console: 'p_console', console_red: 'p_techbox', optable: 'p_optable',
+  jar: 'p_tubes', crate: 'p_crates', rack: 'p_rack', cabinet: 'p_locker_closed', cabinet_open: 'p_locker_open', holo_table: 'p_holobed',
+  joint_rig: 'p_joint_rig', breaker: 'p_breaker', xray_box: 'p_xray', terminal: 'p_terminal',
 };
 
 const BONE_SPOTS: Record<BoneId, { x: number; y: number; hidden?: boolean; via?: 'cabinet' | 'capsule' }> = {
@@ -215,8 +215,8 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: h, alpha: 0.45, duration: 1300 + x % 500, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     }
     this.capsuleB = this.prop('capsule_broken', 1040, 905, { col: [96, 36] });
-    if (this.textures.exists('env')) {
-      // shattered glass + fault light over the empty capsule (no broken-capsule art in the sheet)
+    if (this.textures.exists('env') && !this.textures.get('env').has('p_capsule_broken')) {
+      // shattered glass + fault light over the empty capsule (fallback when no broken-capsule art)
       const b = this.capsuleB.getBounds(); const g = this.add.graphics().setDepth(906);
       const rr = new Phaser.Math.RandomDataGenerator(['caps']);
       g.lineStyle(1.4, 0xe6f6ff, 0.85);
@@ -242,6 +242,7 @@ export class GameScene extends Phaser.Scene {
       this.prop('x_barrels', 1660, 1950, { col: [60, 24] }); this.prop('p_locker', 1640, 2300, { col: [60, 24] });
       this.prop('x_barrier', 2560, 1280, { col: [100, 20] }); this.prop('p_tubes', 2600, 1150, { col: [40, 20] });
       this.prop('p_techbox', 2580, 980, { col: [70, 26] });
+      if (this.textures.get('env').has('x_console_broken')) this.prop('x_console_broken', 1880, 1250, { col: [90, 26] });
     } else {
       this.add.image(1100, 760, 'monitor_wall').setScale(0.5).setDepth(799);
       this.add.image(1620, 760, 'monitor_wall').setScale(0.5).setDepth(799);
@@ -296,7 +297,9 @@ export class GameScene extends Phaser.Scene {
       this.tweens.add({ targets: l, alpha: 0.5, duration: 500, yoyo: true, repeat: -1, delay: i * 120 });
     }
     // X-ray room sliding door (locked until power restored)
-    this.xrayDoor = this.add.image(1978, 1140, 'door_v').setOrigin(0.5, 1).setScale(0.5, 0.5 * 160 / 180).setDepth(1140);
+    this.xrayDoor = this.textures.exists('env') && this.textures.get('env').has('d_side_closed')
+      ? this.add.image(1978, 1142, 'env', 'd_side_closed').setOrigin(0.5, 1).setScale(0.5).setDepth(1142)
+      : this.add.image(1978, 1140, 'door_v').setOrigin(0.5, 1).setScale(0.5, 0.5 * 160 / 180).setDepth(1140);
     this.xrayDoorBlock = this.solid(1960, 980, 36, 160);
   }
 
@@ -347,7 +350,7 @@ export class GameScene extends Phaser.Scene {
     });
     // joint rig (J-03)
     this.prop('joint_rig', 1480, 2010, { col: [180, 60] });
-    if (this.textures.exists('env')) {
+    if (this.textures.exists('env') && !this.textures.get('env').has('p_joint_rig')) {
       // holographic joint model rotating above the calibration unit
       const jg = this.add.graphics().setDepth(2011).setBlendMode(Phaser.BlendModes.ADD);
       this.time.addEvent({ delay: 33, loop: true, callback: () => {
@@ -423,7 +426,8 @@ export class GameScene extends Phaser.Scene {
     }).setDepth(6001);
     const add = (kind: 'spark' | 'steam', x: number, y: number, r: number, period: number, on: number, phase: number) => {
       if (kind === 'spark') {
-        if (this.textures.exists('env')) { this.prop('t_hazard', x, y + 46, { depth: -925 }); const sp = this.add.image(x, y, 'spark_panel').setScale(0.32).setDepth(-924).setAlpha(0.9); void sp; }
+        if (this.textures.exists('env') && this.textures.get('env').has('x_floor_hole')) this.prop('x_floor_hole', x, y + 40, { depth: -925 });
+        else if (this.textures.exists('env')) { this.prop('t_hazard', x, y + 46, { depth: -925 }); this.add.image(x, y, 'spark_panel').setScale(0.32).setDepth(-924).setAlpha(0.9); }
         else this.prop('spark_panel', x, y + 30, { depth: -925 });
       } else if (this.textures.exists('env')) this.prop('t_grate', x, y + 46, { depth: -926 });
       this.hazards.push({ kind, x, y, r, period, on, phase });
@@ -518,7 +522,7 @@ export class GameScene extends Phaser.Scene {
     this.player.play('interact', it.x - this.player.x, it.y - this.player.y);
     Audio.play('open');
     it.gone = true; it.marker?.setVisible(false);
-    if (via === 'cabinet') { if (this.textures.exists('env')) { this.cabinet.setTint(0x8fa6c8); this.add.image(this.cabinet.x, this.cabinet.y - 50, 'light').setTint(0x4fd8ff).setBlendMode(Phaser.BlendModes.ADD).setScale(0.6).setAlpha(0.5).setDepth(this.cabinet.depth + 1); } else this.cabinet.setTexture('cabinet_open'); this.cabinetOpen = true; this.toast('보관함 잠금 해제 — 내부에서 표본 발견!', 'ok'); }
+    if (via === 'cabinet') { if (this.textures.exists('env') && this.textures.get('env').has('p_locker_open')) { this.cabinet.setFrame('p_locker_open'); this.cabinet.setOrigin(0.5, 1); } else if (this.textures.exists('env')) { this.cabinet.setTint(0x8fa6c8); this.add.image(this.cabinet.x, this.cabinet.y - 50, 'light').setTint(0x4fd8ff).setBlendMode(Phaser.BlendModes.ADD).setScale(0.6).setAlpha(0.5).setDepth(this.cabinet.depth + 1); } else this.cabinet.setTexture('cabinet_open'); this.cabinetOpen = true; this.toast('보관함 잠금 해제 — 내부에서 표본 발견!', 'ok'); }
     else { this.capsuleOpen = true; this.toast('캡슐 잔해 속에서 표본 발견!', 'ok'); this.cameras.main.shake(150, 0.002); }
     const s = BONE_SPOTS[id];
     const c = this.boneSprite(id, s.x, s.y + (via === 'cabinet' ? 50 : 60));

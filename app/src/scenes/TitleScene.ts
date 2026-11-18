@@ -25,7 +25,13 @@ export class TitleScene extends BaseScene {
     const hasBg = this.textures.exists('title_bg');
     if (hasBg) {
       const bg = this.add.image(W / 2, H / 2, 'title_bg');
-      bg.setScale(Math.max(W / bg.width, H / bg.height));
+      bg.setScale(Math.max(W / bg.width, H / bg.height) * 1.04);
+      this.tweens.add({ targets: bg, scale: bg.scale * 1.03, x: W / 2 - 12, duration: 14000, yoyo: true, repeat: -1, ease: 'Sine.inOut' });  // slow parallax drift
+      // darken left/right so logo and menu stay readable over the key art
+      const shade = this.add.graphics();
+      shade.fillGradientStyle(0x02030a, 0x02030a, 0x02030a, 0x02030a, 0.78, 0, 0.78, 0); shade.fillRect(0, 0, W * 0.45, H);
+      shade.fillGradientStyle(0x02030a, 0x02030a, 0x02030a, 0x02030a, 0, 0.7, 0, 0.7); shade.fillRect(W * 0.6, 0, W * 0.4, H);
+      shade.fillStyle(0x02030a, 0.25); shade.fillRect(0, 0, W, H);
     } else {
       this.add.rectangle(W / 2, H / 2, W, H, 0x04060b);
       const wall = this.add.tileSprite(0, 0, W, wallH, 'wall_face').setOrigin(0).setTileScale(wallH / 220);

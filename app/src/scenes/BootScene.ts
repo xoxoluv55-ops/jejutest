@@ -26,6 +26,7 @@ export class BootScene extends BaseScene {
     for (const c of BOT_COLORS) { this.load.image(`hero_${c}`, `assets/atlas/hero_${c}.png`); this.load.image(`full_${c}`, `assets/atlas/full_${c}.png`); }
     this.load.image('holo_body', 'assets/cut/holo_body.png');
     this.load.atlas('env', 'assets/atlas/env.png', 'assets/atlas/env.json');
+    this.load.image('title_bg', 'assets/art/title_bg.jpg');
     // Optional hand-made art overrides (see docs/ASSETS.md)
     this.load.json('art_manifest', 'assets/art/manifest.json');
   }
