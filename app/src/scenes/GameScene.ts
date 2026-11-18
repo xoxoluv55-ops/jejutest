@@ -137,7 +137,7 @@ export class GameScene extends Phaser.Scene {
   buildFloors() {
     const all = [...ROOMS, ...PASSAGES];
     for (const r of all) {
-      this.add.tileSprite(r.x, r.y, r.w, r.h, r.floor).setOrigin(0).setTileScale(0.5).setDepth(-1000);
+      this.add.tileSprite(r.x, r.y, r.w, r.h, r.floor).setOrigin(0).setTileScale(0.5).setDepth(-1000).setTint(r.floor === 'floor_lab' ? 0x7c88a6 : r.floor === 'floor_grate' ? 0x8e98b4 : 0xa4a8c4);
     }
     // ambient occlusion strips under wall faces and along vertical walls
     const ao = this.add.graphics().setDepth(-900);
