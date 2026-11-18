@@ -3,9 +3,9 @@
 import json, os, subprocess, sys, time, urllib.request, urllib.error
 from concurrent.futures import ThreadPoolExecutor
 W = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-VOICE = os.environ.get("FISH_VOICE", "46939387dd944a45a399bd92b8de52cb")   # "20대 여지_내돈내산 쇼츠" (public library voice)
+VOICE = os.environ.get("FISH_VOICE", "85ac82e33b014a16abe9d0b4b9b0cb68")   # "애니메이션" (public library voice, chosen by the user)
 MODEL = os.environ.get("FISH_MODEL", "s2.1-pro-free")
-OUT = os.path.join(W, "assets", "voice"); RAW = os.path.join(W, "..", ".voice_raw"); os.makedirs(OUT, exist_ok=True); os.makedirs(RAW, exist_ok=True)
+OUT = os.environ.get("FISH_OUT") or os.path.join(W, "assets", "voice"); RAW = os.path.join(W, "..", ".voice_raw"); os.makedirs(OUT, exist_ok=True); os.makedirs(RAW, exist_ok=True)
 lines = json.load(open(os.path.join(W, "tools", "voice_lines.json"), encoding="utf-8"))
 def one(x):
     dst = os.path.join(OUT, x["key"] + ".mp3")

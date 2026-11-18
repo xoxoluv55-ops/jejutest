@@ -654,3 +654,7 @@ img.sa-pulse{position:absolute;top:50%;width:58px;height:auto;margin:0;border-ra
 .rec-row .ok{color:var(--green,#5CFF9D)}.rec-row .bad{color:#FF8AA6}
 .pause-sub small{font-size:.88em;opacity:.85}
 @media (max-height:500px),(max-width:700px){.rec-row{grid-template-columns:70px 1.5fr .7fr .8fr 44px 52px}}
+/* 5.3 player-paced minigame explanations */
+.mg2-next{display:inline-block;margin-left:12px;padding:8px 18px;border-radius:12px;border:2px solid #FFD34D;background:rgba(255,211,77,.18);color:#FFE9A8;font:700 16px/1 var(--body,system-ui);cursor:pointer;vertical-align:middle;animation:mgNext 1.2s ease-in-out infinite alternate}
+@keyframes mgNext{to{background:rgba(255,211,77,.35)}}
+@media (max-height:520px){.mg2-next{padding:6px 12px;font-size:14px;margin-left:8px}}

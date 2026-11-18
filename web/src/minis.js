@@ -31,6 +31,10 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
     setPrompt(t) { prompt.innerHTML = t; },
     feedback(ok, text) { fbEl.className = "mg2-fb " + (ok ? "ok" : "no"); fbEl.innerHTML = (ok ? "✔ " : "✘ ") + text; },
     clearFb() { fbEl.className = "mg2-fb"; fbEl.innerHTML = ""; },
+    next(fn, ms) {   // 5.3: player-paced - the explanation stays until "다음" is tapped (auto after a long wait)
+      const b = document.createElement("button"); b.className = "mg2-next"; b.textContent = "다음 ▶"; fbEl.appendChild(b); let gone = false;
+      const go = () => { if (gone) return; gone = true; b.remove(); fn(); }; b.onclick = go; later(go, Math.max(15000, ms * 5));
+    },
     result(ok) { S.log.push(!!ok); if (ok) S.ok++; renderDots(); ok ? ctx.Snd.chime() : ctx.Snd.thud(); },
     timer(sec, onEnd) {   // shrinking bar; returns cancel()
       const bar = tbar.firstElementChild; tbar.style.display = "block"; bar.style.transition = "none"; bar.style.width = "100%"; void bar.offsetWidth;
@@ -93,7 +97,7 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
           card.className = "nu-card2 fly" + (ok ? "" : " miss");
           A.area.querySelector(`.nu-dots[data-d="${want}"]`).insertAdjacentHTML("beforeend", `<i class="${ok ? "" : "fix"}" title="${A.esc(D[i][0])}"></i>`);
           document.getElementById("nu-log").insertAdjacentHTML("afterbegin", `<div class="${ok ? "ok" : "no"}">${ok ? "✔" : "✘"} ${A.esc(D[i][0])} → <b>${L[want].name}</b></div>`);
-          A.feedback(ok, `${D[i][0]}은 <b>${L[want].name}</b>에 있어요.`); i++; A.later(round, 1700);
+          A.feedback(ok, `${D[i][0]}은 <b>${L[want].name}</b>에 있어요.`); i++; A.next(round, 1700);
         });
       };
       round();
@@ -133,7 +137,7 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
           const show = (key, cls) => { const g = A.area.querySelector(`.cx-glow[data-g="${key}"]`), hs = A.area.querySelector(`.cx-hs[data-k="${key}"]`); g.className = "cx-glow " + cls; hs.classList.add(cls); hs.querySelector(".cx-name").textContent = H[key][5]; };
           show(q[1], "right"); if (!ok) show(k, "wrong");
           A.feedback(ok, `${q[0]} → <b>${H[q[1]][5]}</b>`); i++;
-          A.later(() => { A.area.querySelectorAll(".cx-glow").forEach(g => g.className = "cx-glow"); A.area.querySelectorAll(".cx-hs").forEach(h => { h.classList.remove("right", "wrong"); h.querySelector(".cx-name").textContent = ""; }); round(); }, 2300);
+          A.next(() => { A.area.querySelectorAll(".cx-glow").forEach(g => g.className = "cx-glow"); A.area.querySelectorAll(".cx-hs").forEach(h => { h.classList.remove("right", "wrong"); h.querySelector(".cx-name").textContent = ""; }); round(); }, 2300);
         });
       };
       round();
@@ -179,9 +183,9 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
           // the reflex arc lights up over the spinal cord section (always shows the correct pathway)
           svg.innerHTML = `<path class="rf-path${r.inh ? " inh" : ""}" pathLength="100" d="${r.path}"/><circle r="6" class="rf-dot${r.inh ? " inh" : ""}"><animateMotion dur="1.6s" fill="freeze" path="${r.path}"/></circle>${r.inh ? `<text x="120" y="168" class="rf-inh">⊣ 억제</text>` : ""}`;
           document.querySelectorAll("#rf-arc span").forEach((s, n) => A.later(() => s.classList.add("lit"), n * 300));
-          i++; A.later(round, 3000);
+          i++; A.next(round, 3000);
         };
-        const cancel = A.timer(5, () => pick(-1));
+        const cancel = () => { };   // 5.3: no time limit - think it through
         box.querySelectorAll("button").forEach(b => b.onclick = () => pick(+b.dataset.k));
       };
       round();
@@ -217,7 +221,7 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
           if (step > 0 && rows[row][1] !== rows[order[step - 1]][1]) b.parentElement.classList.add("xpt");   // the crossing level
           if (!ok) A.feedback(false, `여기서는 ${want ? "오른쪽" : "왼쪽"}이에요. ${tr.why}`); else A.Snd.coin();
           step++; mark();
-          if (step >= rows.length) { const pass = miss <= 1; A.result(pass); A.feedback(pass, `${tr.name}: ${tr.why}`); t++; A.later(tract, 3200); }
+          if (step >= rows.length) { const pass = miss <= 1; A.result(pass); A.feedback(pass, `${tr.name}: ${tr.why}`); t++; A.next(tract, 3200); }
         });
       };
       tract();
@@ -252,9 +256,9 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
           btns.forEach(b => { if (+b.dataset.k === s[2]) b.classList.add("right"); else if (+b.dataset.k === k) b.classList.add("wrong"); });
           A.area.querySelector(`.re-glow[data-g="${s[2]}"]`).className = "re-glow on"; if (!ok && k >= 0) A.area.querySelector(`.re-glow[data-g="${k}"]`).className = "re-glow bad";
           bo.className = "re-beam out go"; A.later(() => { dst.textContent = N[s[2]][2]; dst.classList.add("lit"); }, 500);
-          A.feedback(ok, `${k < 0 ? "시간 초과! " : ""}${s[1]} → <b>${N[s[2]][0]}</b> (${N[s[2]][1]}) → ${N[s[2]][2]}`); i++; A.later(round, 2600);
+          A.feedback(ok, `${k < 0 ? "시간 초과! " : ""}${s[1]} → <b>${N[s[2]][0]}</b> (${N[s[2]][1]}) → ${N[s[2]][2]}`); i++; A.next(round, 2600);
         };
-        const cancel = A.timer(6, () => pick(-1)); btns.forEach(b => b.onclick = () => pick(+b.dataset.k));
+        const cancel = A.timer(12, () => pick(-1));   // 5.3: 6 s -> 12 s btns.forEach(b => b.onclick = () => pick(+b.dataset.k));
       };
       round();
     },
@@ -280,7 +284,7 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
           if (done) return; done = true; const ok = b.textContent === s[1]; A.result(ok);
           box.querySelectorAll("button").forEach(x => { x.disabled = true; if (x.textContent === s[1]) x.classList.add("right"); else if (x === b) x.classList.add("wrong"); });
           setFace(s[2], s[3]); const nv = document.getElementById("cr-nerve"); nv.textContent = s[1]; nv.className = "cr-nerve on";
-          A.feedback(ok, `${s[0]} → <b>${s[1]}</b>${s[3] === "light" ? " (빛을 비추면 동공이 작아져요 — 부교감 섬유)" : ""}`); i++; A.later(() => { nv.className = "cr-nerve"; round(); }, 2400);
+          A.feedback(ok, `${s[0]} → <b>${s[1]}</b>${s[3] === "light" ? " (빛을 비추면 동공이 작아져요 — 부교감 섬유)" : ""}`); i++; A.next(() => { nv.className = "cr-nerve"; round(); }, 2400);
         });
       };
       round();
@@ -329,7 +333,7 @@ function createMinis(ctx) {   // ctx: { Snd, say(text) }
       const pulse = document.getElementById("sa-pulse"), nodes = A.area.querySelectorAll(".sa-node"), btn = document.getElementById("sa-btn");
       let k = 0, phase = "travel", t0 = A.now(), from = 0; A.setPrompt("결절이 빛날 때 누르세요!");
       const posOf = n => { const el = nodes[n], ax = el.parentElement.getBoundingClientRect(), r = el.getBoundingClientRect(); return (r.left + r.width / 2 - ax.left) / ax.width * 100; };
-      const travelT = n => (n === damaged ? 1.5 : 0.75 - n * 0.03) * 1000, WINDOW = 650;
+      const travelT = n => (n === damaged ? 2.0 : 1.05 - n * 0.03) * 1000, WINDOW = 1050;   // 5.3: slower, wider window
       const burst = el => { el.classList.remove("boom"); void el.offsetWidth; el.classList.add("boom"); };
       btn.onclick = () => {
         if (phase === "window") { phase = "travel"; A.result(true); nodes[k].classList.remove("glow"); nodes[k].classList.add("hit"); burst(nodes[k]); A.Snd.coin(); A.feedback(true, k === damaged ? "탈수초 구간을 겨우 통과! 전도가 느렸어요." : "활동전위 재생성! 다음 결절로 껑충"); next(); }

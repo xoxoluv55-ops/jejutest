@@ -15,12 +15,14 @@ window.NR_MAIN = function () {
 
   //================== SAVE ==================
   const SAVE_KEY = "nerverunner_web_v1";
-  const save = Object.assign({ voiceRate: 1.12, voicePitch: 1.1, voiceURI: "", clipVoice: true, voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
+  const save = Object.assign({ voiceRate: 1.12, voicePitch: 1.1, voiceURI: "", clipVoice: true, voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.6, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
   if (!(save.v >= 3)) { save.thinkSlow = 0.75; save.v = 3; }      // 2.5: slow motion was too slow
   if (save.musicVol == null) save.musicVol = save.musicOn === false ? 0 : 0.7;
   if (save.sfxVol == null) save.sfxVol = save.sfxOn === false ? 0 : 0.8;
   if (!(save.v >= 4)) { save.voicePitch = 1.0; save.voiceRate = 1.08; save.v = 4; }   // 2.6: raised pitch sounded synthetic
+  if (!(save.v >= 6)) { save.thinkSlow = 0.6; }   // 5.3: questions came too fast -> slower by default
   if (!(save.v >= 5)) { save.voicePitch = 1.1; save.voiceRate = 1.12; save.voiceChosen = false; save.v = 5; }   // 5.1: brighter, livelier female voice (user reference)
+  if (!(save.v >= 6)) save.v = 6;
   // 5.0: a failed write (private mode / full storage) is remembered and shown, never swallowed silently
   let saveFailed = false;
   const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); saveFailed = false; return true; } catch (e) { saveFailed = true; return false; } };
@@ -495,7 +497,7 @@ window.NR_MAIN = function () {
   }
   let lastAnswer = null;
   function showQuestion(q, title) {
-    if (!q) return; show("#apanel", false); answerT = 0;
+    if (!q) return; show("#apanel", false); answerT = 0; if (race) race.qShownT = 0;
     $("#q-title").textContent = title; $("#q-tag").textContent = "[" + q.topic + " · " + q.difficulty + "]"; $("#q-text").textContent = q.question;
     const lanes = questionLanes(q, q.options.length);
     $("#q-opts").innerHTML = q.options.map((o, i) => `<div class="opt" data-i="${i}" style="border-left:8px solid ${HEXS(LANE[i % 4])}"><span class="lane">${lanes[i]}</span><span class="k" style="color:${HEXS(LANE[i % 4])}">${LETTER(i)}</span>${esc(o)}</div>`).join("");
@@ -712,12 +714,15 @@ window.NR_MAIN = function () {
     } else if (r.phase === "run") {
       r.t += dt; if (r.t > 0.8 && r.t < 1.2) countdown("");
       const inp = r.auto ? r.auto.think(sim) : readInput(dt);
-      if (r.queued && (!Voice.has("exp") || distToDecision() < 110)) { const qd = r.queued; r.queued = null; showQuestion(qbank.get(qd.id), qd.title); Snd.beep(); }
+      if (r.queued && (!Voice.has("exp") || distToDecision() < 220)) { const qd = r.queued; r.queued = null; showQuestion(qbank.get(qd.id), qd.title); Snd.beep(); }
       let wantSlow = 1; if (r.tut && r.tut.step && !r.tut.done && !r.auto) wantSlow = 0.6;
       if (r.pending && !r.auto && r.mode === "story") {
         const base = NR.clamp(save.thinkSlow, 0.2, 1), D = distToDecision(), v = Math.max(12, sim.speed);
-        const need = r.queued ? Voice.remaining("exp") + 6 : save.voiceOn ? Voice.remaining("q") + 1.5 : 0;   // seconds of talking/reading still needed
-        wantSlow = need > 0 && D < 900 ? NR.clamp(D / (v * need), Math.min(base, 0.5), base) : base;
+        // 5.3: a guaranteed reading time from the length of the question and its options, voice or not
+        const pq = qbank.get(r.pending), read = pq ? 3.5 + pq.question.length * 0.12 + pq.options.join("").length * 0.06 : 7;
+        if ($("#qpanel").classList.contains("on")) r.qShownT = (r.qShownT || 0) + dt;
+        const need = r.queued ? Voice.remaining("exp") + 1 + read : Math.max(save.voiceOn ? Voice.remaining("q") + 1.5 : 0, read - (r.qShownT || 0));
+        wantSlow = need > 0 && D < 900 ? NR.clamp(D / (v * need), Math.min(base, 0.28), base) : base;
       }
       r.timeScale += NR.clamp(wantSlow - r.timeScale, -dt * 2.5, dt * 2.5);
       $("#h-slow").style.display = r.timeScale < 0.97 && !$("#qpanel").classList.contains("on") ? "block" : "none"; $("#h-slow").textContent = r.queued ? "해설 듣는 중 · 슬로모션" : "생각 시간 · 슬로모션";
@@ -1251,7 +1256,7 @@ window.NR_MAIN = function () {
       ["배경 음악 음량", "", "musicVol", [[0, "끔"], [0.35, "작게"], [0.7, "보통"], [1, "크게"]]],
       ["효과음 음량", "", "sfxVol", [[0, "끔"], [0.4, "작게"], [0.8, "보통"], [1, "크게"]]],
       ["좌우 조작", "", "controlMode", [["buttons", "◀ ▶ 버튼"], ["tap", "화면 반 터치"]]],
-      ["문제 생각 시간", "문제가 뜨면 레이스가 조금 느려져요 (기록 손해 없음)", "thinkSlow", [[0.5, "느리게"], [0.75, "조금"], [1, "끄기"]]],
+      ["문제 생각 시간", "문제가 뜨면 레이스가 조금 느려져요 (기록 손해 없음)", "thinkSlow", [[0.45, "아주 느리게"], [0.6, "느리게 (기본)"], [0.8, "조금"], [1, "끄기"]]],
       ["도움말 힌트", "", "showHints", [[true, "켜기"], [false, "끄기"]]],
       ["그래픽 품질", "버벅이면 '가볍게'", "quality", [["low", "가볍게"], ["auto", "자동"], ["high", "선명"]]],
       ["프레임 제한", "끊기면 30 FPS로 고정 (조작은 그대로 빠르게)", "fpsCap", [[0, "제한 없음"], [30, "30 FPS 안정"]]],
