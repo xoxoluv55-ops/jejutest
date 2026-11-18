@@ -12,3 +12,4 @@ NerveRunner/*.sln
 Tools/**/bin/
 Tools/**/obj/
 Tools/CompileCheck/refs/
+.voice_raw/

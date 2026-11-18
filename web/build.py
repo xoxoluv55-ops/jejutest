@@ -13,6 +13,11 @@ for i in range(1, 10):
     for b in json.loads((RES / f"story_ch{i}.json").read_text(encoding="utf-8"))["beats"]:
         st[b["id"]] = b["lines"]
 content = json.dumps({"questions": q, "codex": cx, "story": st}, ensure_ascii=False, separators=(",", ":"))
+# 5.2: pre-generated STAR-01 voice clips (tools/fish_gen.py) - sentence -> clip key, only for clips that exist
+VL = W / "tools" / "voice_lines.json"
+vmap = {x["text"]: x["key"] for x in json.loads(VL.read_text(encoding="utf-8"))} if VL.exists() else {}
+vmap = {t: k for t, k in vmap.items() if (W / "assets" / "voice" / (k + ".mp3")).exists()}
+vjson = json.dumps(vmap, ensure_ascii=False, separators=(",", ":"))
 src = lambda n: (W / "src" / n).read_text(encoding="utf-8")
 THREE = "https://cdn.jsdelivr.net/npm/three@0.160.0/"
 head = f"""<title>NERVE RUNNER</title>
@@ -29,7 +34,7 @@ head = f"""<title>NERVE RUNNER</title>
 {src("style.css")}
 </style>"""
 body = f"""{src("body.html")}
-<script>window.NR_CONTENT={content.replace("</", "<\\/")};</script>
+<script>window.NR_CONTENT={content.replace("</", "<\\/")};window.NR_VOICE={vjson.replace("</", "<\\/")};</script>
 <script>
 {src("core.js")}
 </script>
@@ -64,7 +69,7 @@ window.NR_MAIN();
 (W / "dist").mkdir(exist_ok=True)
 (W / "dist/nerve_runner.html").write_text(head + "\n" + body, encoding="utf-8")
 (W / "index.html").write_text(f"<!doctype html>\n<html lang=\"ko\">\n<head>\n{head}\n</head>\n<body>\n{body}\n</body>\n</html>\n", encoding="utf-8")
-print("questions", len(q), "codex", len(cx), "story beats", len(st), "bytes", (W / "index.html").stat().st_size)
+print("questions", len(q), "codex", len(cx), "story beats", len(st), "voice clips", len(vmap), "bytes", (W / "index.html").stat().st_size)
 # public web page (GitHub Pages: branch claude/nerve-runner-visual-upgrade, folder /docs)
 (W.parent / "docs").mkdir(exist_ok=True)
 (W.parent / "docs" / "index.html").write_text((W / "index.html").read_text(encoding="utf-8"), encoding="utf-8")
@@ -74,3 +79,9 @@ import shutil
 for dst in (W / "dist" / "assets" / "mg", W.parent / "docs" / "assets" / "mg"):
     dst.mkdir(parents=True, exist_ok=True)
     for f in (W / "assets" / "mg").glob("*.webp"): shutil.copy2(f, dst / f.name)
+
+# voice clips (fetched one sentence at a time while playing): GitHub Pages copy + local preview
+vsrc = W / "assets" / "voice"
+if vsrc.exists():
+    dst = W.parent / "docs" / "assets" / "voice"; dst.mkdir(parents=True, exist_ok=True)
+    for f in vsrc.glob("*.mp3"): shutil.copy2(f, dst / f.name)

@@ -15,7 +15,7 @@ window.NR_MAIN = function () {
 
   //================== SAVE ==================
   const SAVE_KEY = "nerverunner_web_v1";
-  const save = Object.assign({ voiceRate: 1.12, voicePitch: 1.1, voiceURI: "", voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
+  const save = Object.assign({ voiceRate: 1.12, voicePitch: 1.1, voiceURI: "", clipVoice: true, voiceOn: true, musicOn: true, sfxOn: true, thinkSlow: 0.4, quality: "auto", showHints: true, best: {}, wrongNotes: [], codexUnlocked: [], lastStage: "ch1", storySeen: {}, plays: 0 }, (() => { try { return JSON.parse(localStorage.getItem(SAVE_KEY)) || {}; } catch (e) { return {}; } })());
   if (!(save.v >= 3)) { save.thinkSlow = 0.75; save.v = 3; }      // 2.5: slow motion was too slow
   if (save.musicVol == null) save.musicVol = save.musicOn === false ? 0 : 0.7;
   if (save.sfxVol == null) save.sfxVol = save.sfxOn === false ? 0 : 0.8;
@@ -139,6 +139,22 @@ window.NR_MAIN = function () {
   //================== VOICE: device Korean TTS, best voice first, natural phrasing, queued ==================
   // Instagram-style neural voices need a cloud TTS service; here we use the best voice installed on
   // the device (iPad: "유나/Yuna (프리미엄·향상됨)" etc.) and speak in short natural sentences.
+  // 5.2: STAR-01's lines play as pre-generated clips (fish.audio S2.1, assets/voice/<key>.mp3) when one exists
+  // for the sentence; anything else (names, numbers built at runtime, NULL/narrator) uses the device voice.
+  const Clips = {
+    map: window.NR_VOICE || {}, cache: new Map(), base: "assets/voice/", el: null, failed: 0,
+    has(t) { return !!(save.clipVoice !== false && this.failed < 3 && this.map[t]); },
+    load(t) {   // starts the download as soon as a sentence is queued, so it is usually ready when its turn comes
+      const k = this.map[t]; if (!k) return null; let p = this.cache.get(k);
+      if (!p) { p = fetch(this.base + k + ".mp3").then(r => { if (!r.ok) throw 0; return r.arrayBuffer(); }).then(b => new Promise((res, rej) => { const ctx = Snd.ctx; if (!ctx) return rej(0); ctx.decodeAudioData(b, res, rej); })).catch(e => { this.cache.delete(k); this.failed++; throw e; }); this.cache.set(k, p); if (this.cache.size > 80) this.cache.delete(this.cache.keys().next().value); }
+      return p;
+    },
+    play(buf, onend) {   // through Web Audio (already unlocked for the music on iOS), ducking handled by Snd.setDuck
+      const ctx = Snd.ctx, src = ctx.createBufferSource(), g = ctx.createGain(); g.gain.value = Math.max(0.2, save.voiceVol == null ? 1 : save.voiceVol) * 1.15;
+      src.buffer = buf; src.playbackRate.value = 1; src.connect(g); g.connect(ctx.destination); src.onended = onend; src.start(); this.el = src; return src;
+    },
+    stop() { if (this.el) { try { this.el.onended = null; this.el.stop(); } catch (e) { } this.el = null; } },
+  };
   const Voice = {
     ok: "speechSynthesis" in window, list: [], voice: null, q: [], cur: null, star: true, timer: 0,
     rank(v) {
@@ -175,7 +191,7 @@ window.NR_MAIN = function () {
       if (mode === "idle" && this.talking) return false;
       if (mode === "replace") this.stop();
       if (mode === "polite") this.q.length = 0;   // let the sentence being spoken finish, drop the rest, then talk
-      for (const c of this.chunks(this.clean(text))) this.q.push({ text: c, star: o.star !== false, tag: o.tag || null });
+      for (const c of this.chunks(this.clean(text))) { const it = { text: c, star: o.star !== false, tag: o.tag || null }; if (it.star && Clips.has(c) && Snd.ctx) { it.clip = Clips.load(c); it.clip.catch(() => { }); } this.q.push(it); }
       if (!this.cur) this.next(); return true;
     },
     next() {
@@ -184,13 +200,22 @@ window.NR_MAIN = function () {
       this.star = c.star; const est = 0.6 + c.text.length * 0.2 / (save.voiceRate || 1); c.end = performance.now() / 1000 + est;
       const done = () => { if (this.cur === c) { this.cur = null; setTimeout(() => { if (!this.cur) this.next(); }, 140); } };
       this.timer = setTimeout(done, (est + 2.5) * 1000);     // fallback: some engines never fire onend
+      if (c.clip) {   // recorded voice; if it is not ready within 1.5 s (slow network) the device voice says it instead
+        let started = false; const tts = () => { if (started || this.cur !== c) return; started = true; c.clip = null; this.speakTTS(c, done); };
+        const wait = setTimeout(tts, 1500);
+        c.clip.then(buf => { if (started || this.cur !== c) return; started = true; clearTimeout(wait); clearTimeout(this.timer); c.end = performance.now() / 1000 + buf.duration; this.timer = setTimeout(done, (buf.duration + 2) * 1000); Clips.play(buf, done); }, tts);
+        return;
+      }
+      this.speakTTS(c, done);
+    },
+    speakTTS(c, done) {
       if (!this.ok) return;
       try {
         const u = new SpeechSynthesisUtterance(c.text); u.lang = "ko-KR"; if (this.voice) u.voice = this.voice;
         u.rate = save.voiceRate || 1.05; u.pitch = c.star ? (save.voicePitch || 1.0) : 0.92; u.onend = done; u.onerror = done; speechSynthesis.speak(u);
       } catch (e) { }
     },
-    stop() { this.q.length = 0; this.cur = null; clearTimeout(this.timer); if (this.ok) try { speechSynthesis.cancel(); } catch (e) { } },
+    stop() { this.q.length = 0; this.cur = null; clearTimeout(this.timer); Clips.stop(); if (this.ok) try { speechSynthesis.cancel(); } catch (e) { } },
     get talking() { return !!this.cur || this.q.length > 0; },
     has(tag) { return (this.cur && this.cur.tag === tag) || this.q.some(c => c.tag === tag); },
     remaining(tag) { const now = performance.now() / 1000; let t = this.cur && (!tag || this.cur.tag === tag) ? Math.max(0, this.cur.end - now) : 0; for (const c of this.q) if (!tag || c.tag === tag) t += 0.6 + c.text.length * 0.2 / (save.voiceRate || 1); return t; },
@@ -1220,7 +1245,8 @@ window.NR_MAIN = function () {
   function renderSettings(el, compact) {
     const rows = [
       ["별 음성 안내", "STAR-01이 문제·해설을 읽어 줘요" + (Voice.ok ? "" : " (이 브라우저는 미지원)"), "voiceOn", [[true, "켜기"], [false, "끄기"]]],
-      ["목소리 톤", "", "voicePitch", [[1.0, "자연스럽게"], [1.1, "밝게 (기본)"], [1.2, "아주 밝게"]]],
+      ["STAR-01 목소리", "녹음 음성: 미리 만든 자연스러운 목소리 · 기기 음성: 휴대폰 내장 읽기", "clipVoice", [[true, "녹음 음성"], [false, "기기 음성"]]],
+      ["목소리 톤", "기기 음성일 때만 적용", "voicePitch", [[1.0, "자연스럽게"], [1.1, "밝게 (기본)"], [1.2, "아주 밝게"]]],
       ["말 속도", "", "voiceRate", [[0.98, "천천히"], [1.12, "보통"], [1.25, "빠르게"]]],
       ["배경 음악 음량", "", "musicVol", [[0, "끔"], [0.35, "작게"], [0.7, "보통"], [1, "크게"]]],
       ["효과음 음량", "", "sfxVol", [[0, "끔"], [0.4, "작게"], [0.8, "보통"], [1, "크게"]]],
@@ -1236,7 +1262,7 @@ window.NR_MAIN = function () {
       const k = b.dataset.k, v = JSON.parse(b.dataset.v); save[k] = v; persist();
       if (k === "controlMode") applyControlMode(); if (k === "musicVol") Snd.setMusic(); if (k === "sfxVol") { Snd.setSfx(); Snd.coin(); }
       if (k === "quality") { autoLevel = TOUCH ? "mid" : "high"; renderer.setPixelRatio(dprCap()); setupPost(); resize(); if (!race) { if (world) world.dispose(scene); world = null; menuScene(); } }
-      if ((k === "voiceOn" && v) || k === "voicePitch" || k === "voiceRate") Voice.say("안녕! 나는 스타 제로원이야. 이렇게 읽어 줄게!"); if (k === "voiceOn" && !v) Voice.stop();
+      if ((k === "voiceOn" && v) || k === "voicePitch" || k === "voiceRate" || k === "clipVoice") Voice.say("안녕! 나는 스타 제로원이야. 이렇게 읽어 줄게!"); if (k === "voiceOn" && !v) Voice.stop();
       renderSettings(el, compact);
     }));
     const vs = el.querySelector("#voice-sel"); if (vs) vs.addEventListener("change", () => { save.voiceURI = vs.value; save.voiceChosen = true; persist(); Voice.pick(); Voice.say("안녕! 이 목소리 어때?"); });
@@ -1332,7 +1358,7 @@ window.NR_MAIN = function () {
   }
 
   // boot
-  window.NR_APP = { cmini: k => openChapterMini(k), snd: Snd, startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
+  window.NR_APP = { voice: Voice, clips: Clips, cmini: k => openChapterMini(k), snd: Snd, startStage, get race() { return race; }, save, cam: CAM, mini: () => openMinigame() };
   function boot() {
     if (boot.done) return; boot.done = true;
     setupPost(); applySkin(); renderStages(); menuScene(); screen(save.loreSeen || AUTO ? "title" : "story"); if (!save.loreSeen) { save.loreSeen = true; persist(); }
