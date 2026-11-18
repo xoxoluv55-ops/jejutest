@@ -14,22 +14,20 @@ export function ensureBotAnims(scene: Phaser.Scene, color: string) {
     scene.anims.create({ key: k, frames: Array.from({ length: n }, (_, i) => ({ key, frame: `${name}_${i}` })), frameRate: fps, repeat });
   };
   mk('idle', 4, 5, -1); mk('walk', 8, 12, -1); mk('run', 8, 16, -1);
+  mk('fwalk', 8, 11, -1); mk('bwalk', 8, 11, -1);
   mk('interact', 4, 10, 0); mk('scan', 5, 9, 0); mk('hit', 3, 9, 0); mk('victory', 5, 8, -1);
 }
 
 /**
  * Test-unit avatar driven by sprite-sheet animations (idle / walk / run / interact / scan / hit / victory)
  * plus light procedural polish: acceleration easing, lean, step bob, squash, shadow.
- * Side frames face right and are mirrored for left. Up/down movement has no dedicated leg frames in the
- * source sheet, so front/back views use the static pose + step bob/sway.
+ * Side frames face right and are mirrored for left. Up/down movement uses dedicated 8-frame
+ * front (fwalk) / back (bwalk) walk cycles; running plays the same cycles faster.
  */
 export class Player {
   scene: Phaser.Scene;
   root: Phaser.GameObjects.Container;
   body: Phaser.GameObjects.Sprite;
-  rig: Phaser.GameObjects.Container;
-  rigUp: Phaser.GameObjects.Sprite; rigL: Phaser.GameObjects.Sprite; rigR: Phaser.GameObjects.Sprite;
-  private rigView: 'front' | 'back' | '' = '';
   shadow: Phaser.GameObjects.Image;
   aura: Phaser.GameObjects.Image;
   carry: Phaser.GameObjects.Image;
@@ -58,11 +56,8 @@ export class Player {
     this.shadow = scene.add.image(0, 0, 'shadow').setScale(1.1, 1.0).setAlpha(0.8);
     this.aura = scene.add.image(0, -44, 'light').setScale(0.6).setTint(BOT_HEX[color]).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.12);
     this.body = scene.add.sprite(0, 0, `bot_${color}`, 'front_0').setScale(this.baseScale);
-    const tk = `bot_${color}`;
-    this.rigL = scene.add.sprite(0, 0, tk, 'front_lL'); this.rigR = scene.add.sprite(0, 0, tk, 'front_lR'); this.rigUp = scene.add.sprite(0, 0, tk, 'front_up');
-    this.rig = scene.add.container(0, 0, [this.rigL, this.rigR, this.rigUp]).setScale(this.baseScale).setVisible(false);
     this.carry = scene.add.image(0, -112, 'bone_holo_humerus').setBlendMode(Phaser.BlendModes.ADD).setVisible(false);
-    this.root.add([this.shadow, this.aura, this.body, this.rig, this.carry]);
+    this.root.add([this.shadow, this.aura, this.body, this.carry]);
     this.phys = scene.add.zone(x, y - 10, 34, 24);
     scene.physics.add.existing(this.phys);
     this.pb = this.phys.body as Phaser.Physics.Arcade.Body;
@@ -160,12 +155,9 @@ export class Player {
           this.body.anims.timeScale = Phaser.Math.Clamp(sp / (running ? 380 : 250), 0.6, 1.2);
           tilt = (running ? 0.07 : 0.025) * (this.flip ? -1 : 1);
         } else {
-          // front/back walk: cut-out leg rig (alternating legs + body bob/sway) at full sprite resolution
-          this.setAnim(this.facing);
-          const ph = this.t * (running ? 15 : 11);
-          this.walkRig(this.facing as 'front' | 'back', ph, running);
-          bob = -Math.abs(Math.sin(ph)) * (running ? 4 : 3);
-          tilt = Math.sin(ph) * 0.035;
+          // front/back walk: dedicated 8-frame cycles (running = same cycle, faster)
+          this.setAnim(this.facing === 'back' ? 'bwalk' : 'fwalk');
+          this.body.anims.timeScale = Phaser.Math.Clamp(sp / 250, 0.6, 1.55);
         }
         this.stepAcc += dt * (running ? 15 : 11) / Math.PI;
         if (this.stepAcc >= 1) {
@@ -183,10 +175,6 @@ export class Player {
     tilt += Phaser.Math.Clamp((this.vx - this.pvx) * 0.0005, -0.05, 0.05);
     this.pvx = this.vx;
 
-    const useRig = !this.action && moving && (this.facing === 'front' || this.facing === 'back');
-    this.rig.setVisible(useRig); this.body.setVisible(!useRig);
-    if (!useRig) this.rigView = '';
-    this.rig.y = bob - lift; this.rig.rotation = tilt;
     this.body.setFlipX(this.flip && (this.cur === 'walk' || this.cur === 'run' || this.cur === 'interact' || this.cur === 'scan'));
     this.body.y = bob - lift;
     this.body.rotation = tilt;
@@ -200,18 +188,6 @@ export class Player {
     this.root.setDepth(this.root.y);
     this.trail.setDepth(this.root.y - 1); this.dust.setDepth(this.root.y - 2);
     if (running && this.facing === 'side') this.trail.emitParticleAt(this.root.x + Phaser.Math.Between(-8, 8), this.root.y - 30, 1);
-  }
-
-  private walkRig(view: 'front' | 'back', ph: number, running: boolean) {
-    if (this.rigView !== view) {
-      this.rigView = view;
-      this.rigUp.setFrame(`${view}_up`); this.rigL.setFrame(`${view}_lL`); this.rigR.setFrame(`${view}_lR`);
-    }
-    const lift = running ? 16 : 11;          // in sprite pixels (rig is scaled with the body)
-    const s = Math.sin(ph);
-    this.rigL.y = -Math.max(0, s) * lift; this.rigR.y = -Math.max(0, -s) * lift;
-    this.rigL.x = Math.max(0, s) * 1.5; this.rigR.x = -Math.max(0, -s) * 1.5;
-    this.rigUp.y = -Math.abs(s) * 2; this.rigUp.rotation = s * 0.025;
   }
 
   burst(color = 0x5fd0ff, n = 18) { this.trail.setParticleTint(color); this.trail.emitParticleAt(this.root.x, this.root.y - 40, n); this.trail.setParticleTint(0x5fd0ff); }

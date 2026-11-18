@@ -11,7 +11,7 @@ export function rng(seed: number) { let s = seed >>> 0 || 1; return () => { s = 
 
 /** Keys replaced by hand-made images (public/assets/art/<key>.png, listed in manifest.json). */
 export const USER_ART = new Set<string>();
-const TILE_KEYS = new Set(['floor_lab', 'floor_grate', 'floor_tile', 'wall_face', 'wall_top']);
+const TILE_KEYS = new Set(['floor_lab', 'floor_grate', 'floor_tile', 'wall_face', 'wall_top', 'wall_top_v']);
 
 export function paint(scene: Phaser.Scene, key: string, w: number, h: number, fn: (c: Ctx, w: number, h: number) => void) {
   if (scene.textures.exists(key)) {
@@ -184,12 +184,15 @@ export function buildEnvironment(scene: Phaser.Scene) {
     hazard(c, 0, h - 9, w, 5, 0.55);
     grime(c, w, h, 6, 42); grain(c, w, h, 900, 0.05, 43);
   });
-  paint(scene, 'wall_top', 64, 64, (c, w, h) => {
+  // wall top: one horizontal period of 117x36 units (user art: beam strip); wall_top_v = same, rotated for vertical walls
+  const capFn = (c: Ctx, w: number, h: number) => {
     c.fillStyle = '#1a2235'; c.fillRect(0, 0, w, h);
     c.fillStyle = lg(c, 0, 0, w, h, [[0, '#232e47'], [1, '#141b2b']]); c.fillRect(2, 2, w - 4, h - 4);
     c.strokeStyle = 'rgba(0,0,0,0.5)'; c.strokeRect(0.5, 0.5, w - 1, h - 1);
     grain(c, w, h, 300, 0.07, 44);
-  });
+  };
+  paint(scene, 'wall_top', 117, 36, capFn);
+  paint(scene, 'wall_top_v', 36, 117, capFn);
 
   // ---------------- DOORS ----------------
   paint(scene, 'door_v', 44, 180, (c, w, h) => {

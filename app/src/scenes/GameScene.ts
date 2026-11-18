@@ -180,7 +180,7 @@ export class GameScene extends Phaser.Scene {
     for (const v of VWALLS) {
       for (let y = v.y; y < v.y + v.h; y += 60) {
         const h = Math.min(60, v.y + v.h - y);
-        this.add.tileSprite(v.x, y, WALL_CAP, h, 'wall_top').setOrigin(0).setTileScale(0.5).setDepth(y + h);
+        this.add.tileSprite(v.x, y, WALL_CAP, h, 'wall_top_v').setOrigin(0).setTileScale(0.5).setTilePosition(0, (y - v.y) * 2).setDepth(y + h);
       }
       const g = this.add.graphics().setDepth(v.y + v.h);
       g.lineStyle(2, 0x5a6c96, 0.4); g.lineBetween(v.x + 1, v.y, v.x + 1, v.y + v.h); g.lineBetween(v.x + WALL_CAP - 1, v.y, v.x + WALL_CAP - 1, v.y + v.h);
