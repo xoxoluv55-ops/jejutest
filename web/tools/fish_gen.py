@@ -13,7 +13,7 @@ def one(x):
     raw = os.path.join(RAW, x["key"] + ".mp3")
     for attempt in range(6):
         try:
-            req = urllib.request.Request("https://api.fish.audio/v1/tts", method="POST", data=json.dumps({"text": x["text"], "reference_id": VOICE, "format": "mp3", "latency": "normal"}).encode(), headers={"Content-Type": "application/json", "model": MODEL, "Authorization": "Bearer proxy-injected"})
+            req = urllib.request.Request("https://api.fish.audio/v1/tts", method="POST", data=json.dumps({"text": x["text"].replace("[", "'").replace("]", "'") if x["text"] != "가속" else "가속!", "reference_id": VOICE, "format": "mp3", "latency": "normal"}).encode(), headers={"Content-Type": "application/json", "model": MODEL, "Authorization": "Bearer proxy-injected"})
             with urllib.request.urlopen(req, timeout=120) as r: open(raw, "wb").write(r.read())
             break
         except urllib.error.HTTPError as e:
