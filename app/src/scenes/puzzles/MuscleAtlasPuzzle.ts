@@ -52,7 +52,7 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
       const x = this.fx + lx * this.s, y = this.fy + ly * this.s;
       const mt = makeMuscleTexture(this, id, 'glow');
       // whole-muscle highlight layer (also shows the parts hidden under superficial muscles)
-      const glow = this.add.image(this.fx + (mt.x + mt.w / 2) * this.s, this.fy + (mt.y + mt.h / 2) * this.s, mt.key).setScale(this.s / DENSITY).setAlpha(0).setDepth(3);
+      const glow = this.add.image(this.fx + (mt.x + mt.w / 2) * this.s, this.fy + (mt.y + mt.h / 2) * this.s, mt.key).setScale(this.s / DENSITY).setAlpha(0).setDepth(3).setBlendMode(Phaser.BlendModes.ADD);   // additive: clearly visible glow
       const g = this.add.graphics().setDepth(5);
       const m: Mark = { id, n: i + 1, x, y, filled: false, g, glow };
       this.marks.push(m); this.drawMark(m, false);

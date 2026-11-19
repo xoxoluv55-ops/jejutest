@@ -253,10 +253,13 @@ export class MuscleMotionPuzzle extends PuzzleBase {
         g.fillStyle(0xffffff, 0.9 * (1 - restA)); g.fillCircle(pts[0].x, pts[0].y, 3.5); g.fillCircle(pts[pts.length - 1].x, pts[pts.length - 1].y, 3.5);
       }
       // reference inset: the real (undeformed) muscles at 0 deg
-      const iw = this.view.w * 0.22, ih = iw * m.size[1] / m.size[0];
-      this.inset!.setTexture(live ? `mo_${rk}_r0` : `mo_${rk}_n0`).setOrigin(1, 0).setPosition(this.view.x + this.view.w - 12, this.view.y + 112).setDisplaySize(iw, ih).setAlpha(0.95 * (1 - restA)).setVisible(true);
-      g.lineStyle(1, 0xffb3c6, 0.6 * (1 - restA)); g.strokeRect(this.view.x + this.view.w - 12 - iw, this.view.y + 112, iw, ih);
-      this.labels.push(T(this, this.view.x + this.view.w - 12 - iw / 2, this.view.y + 116 + ih, '실제 근육 메시 (0°)', 11, '#ffb3c6').setOrigin(0.5, 0).setDepth(7).setAlpha(1 - restA));
+      // bottom-right corner (empty in both views at every angle), above the credit line
+      const iw = this.view.w * 0.2, ih = iw * m.size[1] / m.size[0];
+      const iy = this.view.y + this.view.h - 76 - ih;
+      this.inset!.setTexture(live ? `mo_${rk}_r0` : `mo_${rk}_n0`).setOrigin(1, 0).setPosition(this.view.x + this.view.w - 12, iy).setDisplaySize(iw, ih).setAlpha(0.95 * (1 - restA)).setVisible(true);
+      g.fillStyle(0x0a0410, 0.7 * (1 - restA)); g.fillRect(this.view.x + this.view.w - 12 - iw, iy, iw, ih);
+      g.lineStyle(1, 0xffb3c6, 0.6 * (1 - restA)); g.strokeRect(this.view.x + this.view.w - 12 - iw, iy, iw, ih);
+      this.labels.push(T(this, this.view.x + this.view.w - 12 - iw / 2, iy - 4, '실제 근육 메시 (0°)', 11, '#ffb3c6').setOrigin(0.5, 1).setDepth(7).setAlpha(1 - restA));
     } else this.inset!.setVisible(false);
     // range arc + handle
     const P = this.pivot();
