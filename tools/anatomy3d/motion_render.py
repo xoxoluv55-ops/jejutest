@@ -6,6 +6,7 @@ import numpy as np
 from PIL import Image
 from scipy import ndimage as ndi
 from model import *
+from build import CART
 from motion import Elem, bone_elems, pose_elbow, pose_shoulder, apply, gh_centre, elbow_axis
 from post import load, finish, save
 from atts import compute as att_compute
