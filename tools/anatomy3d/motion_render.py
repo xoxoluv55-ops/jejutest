@@ -42,6 +42,8 @@ else:
     BOX = dict(u0=-990, u1=60, z0=640, z1=1560)          # u = X (mm)
     pose = pose_shoulder
 
+BONES_ONLY = '--bones-only' in sys.argv
+if BONES_ONLY: MUS, CTX = [], []
 W = int(round((BOX['u1'] - BOX['u0']) * SC)); H = int(round((BOX['z1'] - BOX['z0']) * SC))
 W += W % 2; H += H % 2
 
@@ -85,7 +87,7 @@ for fi, ang in enumerate(ANG):
     P = pose(ang)
     for e in elems:
         V, fib, strain = e.pose(P)
-        for variant in (['n', 'r'] if fi == 0 else ['r']):
+        for variant in (['n', 'r'] if fi == 0 and not BONES_ONLY else ['r']):
             base = color_for(e.g, None if variant == 'n' else ROLES, e.fid)
             meshes.append(entry(f'f{fi}{variant}:{e.g}:{e.fid}', V, e.F, 0 if e.g in MUS else 2, base, e.ten, fib))
     for (g, V, F) in bones:
@@ -121,13 +123,13 @@ VIEW = [0, 0, W, H]
 for fi in range(len(ANG)):
     fm = [m for m in meshes if m['name'].startswith(f'f{fi}')]
     jobs = []
-    for variant in (['n', 'r'] if fi == 0 else ['r']):
+    for variant in (['n', 'r'] if fi == 0 and not BONES_ONLY else ['r']):
         ms = [m['name'] for m in fm if m['name'].startswith(f'f{fi}{variant}:') or m['name'].startswith(f'f{fi}b:')]
         nm = f'f{fi}{variant}'
         jobs += [dict(name=nm + '_c', size=[W * 2, H * 2], view=VIEW, meshes=ms),
                  dict(name=nm + '_d', size=[W, H], view=VIEW, meshes=ms, mode='dir'),
                  dict(name=nm + '_i', size=[W, H], view=VIEW, meshes=ms, mode='id', ids=IDS)]
-    if RND == 'shoulder':   # supraspinatus alone (x-ray overlay: it lies behind the clavicle/acromion in this view)
+    if RND == 'shoulder' and not BONES_ONLY:   # supraspinatus alone (x-ray overlay: it lies behind the clavicle/acromion in this view)
         ms = [m['name'] for m in fm if m['name'].startswith(f'f{fi}r:supraspinatus:')]
         jobs += [dict(name=f'f{fi}x_c', size=[W * 2, H * 2], view=VIEW, meshes=ms),
                  dict(name=f'f{fi}x_d', size=[W, H], view=VIEW, meshes=ms, mode='dir'),
@@ -142,9 +144,9 @@ def proc(nm, seed):
     return finish(load(os.path.join(TMP, nm + '_c.png')), load(os.path.join(TMP, nm + '_d.png')), load(os.path.join(TMP, nm + '_i.png')), PAL, MG, seed=seed)
 
 for fi in range(len(ANG)):
-    for variant in (['n', 'r'] if fi == 0 else ['r']):
+    for variant in (['n', 'r'] if fi == 0 and not BONES_ONLY else ['r']):
         img, lab, names = proc(f'f{fi}{variant}', 3)       # same seed every frame -> no texture flicker
-        save(img, os.path.join(OUT, f'{RND}_{variant}{fi}.webp'), q=88)
+        save(img, os.path.join(OUT, f'{RND}_{"b" if BONES_ONLY else variant}{fi}.webp'), q=88)
         if variant == 'r':
             labels = {}
             for m in CARDS + (['brachioradialis'] if RND == 'elbow' else []):
@@ -155,7 +157,7 @@ for fi in range(len(ANG)):
                 dt = ndi.distance_transform_edt(big); y, x = np.unravel_index(np.argmax(dt), dt.shape)
                 labels[m] = [round(x / 2, 1), round(y / 2, 1)]
             meta['frames'][fi]['labels'] = labels
-    if RND == 'shoulder':
+    if RND == 'shoulder' and not BONES_ONLY:
         img, lab, _ = proc(f'f{fi}x', 3)
         a = img[..., 3]; ys, xs = np.where(a > 0.02)
         x0, x1, y0, y1 = xs.min() - 4, xs.max() + 4, ys.min() - 4, ys.max() + 4
@@ -166,5 +168,5 @@ for fr in meta['frames']:
     fr['pivot'] = [round(v / 2, 1) for v in fr['pivot']]; fr['handle'] = [round(v / 2, 1) for v in fr['handle']]
     if 'lat' in fr: fr['lat'] = [[round(v / 2, 1) for v in p] for p in fr['lat']]
 meta['size'] = [W // 2, H // 2]
-json.dump(meta, open(os.path.join(OUT, f'{RND}.json'), 'w'), indent=1)
+json.dump(meta, open(os.path.join(OUT, f'{RND}{"_bones" if BONES_ONLY else ""}.json'), 'w'), indent=1)
 print('done', RND)

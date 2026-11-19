@@ -9,8 +9,9 @@ import { MODEL_CREDIT, LAT_CREDIT } from '../../art/muscles';
 
 interface Row { id: MuscleId; role: Role | null; segs: { role: Role; g: Phaser.GameObjects.Graphics; t: Phaser.GameObjects.Text; x: number; y: number; w: number; h: number }[]; name: Phaser.GameObjects.Text; mark: Phaser.GameObjects.Graphics }
 type V = { x: number; y: number };
-interface MotionFrame { angle: number; pivot: number[]; handle: number[]; strain: Record<string, number>; labels?: Record<string, number[]>; lat?: number[][]; xray?: number[]; latx?: number[] }
-interface MotionMeta { round: string; size: [number, number]; angles: number[]; frames: MotionFrame[] }
+interface MotionPath { m: MuscleId; fid: string; w: number; pts: number[][] }
+interface MotionFrame { angle: number; pivot: number[]; handle: number[]; length: Record<string, number | null>; paths: MotionPath[] }
+interface MotionMeta { round: string; size: [number, number]; angles: number[]; frames: MotionFrame[]; rest: { labels: Record<string, number[]>; xray?: number[]; latx?: number[] } }
 
 const ROLE_KO: Record<Role, string> = { agonist: '주동근', antagonist: '길항근', none: '관여 안 함' };
 
@@ -23,7 +24,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
   constructor() { super('Motion'); }
 
   preload() {
-    // model-rendered pose frames (loaded on first use; ~2–3 MB)
+    // model-rendered frames (loaded on first use)
     for (const rk of ['elbow', 'shoulder']) {
       if (!this.cache.json.exists(`mo_${rk}`)) this.load.json(`mo_${rk}`, `assets/ch2/motion/${rk}.json`);
     }
@@ -34,7 +35,9 @@ export class MuscleMotionPuzzle extends PuzzleBase {
   queueFrames(rk: string) {
     const m = this.cache.json.get(`mo_${rk}`) as MotionMeta;
     const add = (k: string) => { if (!this.textures.exists(`mo_${rk}_${k}`)) this.load.image(`mo_${rk}_${k}`, `assets/ch2/motion/${rk}_${k}.webp`); };
-    add('n0'); m.frames.forEach((fr, i) => { add(`r${i}`); if (fr.xray) add(`x${i}`); if (fr.latx) add(`l${i}`); });
+    // n0/r0 = the real BodyParts3D muscle meshes, undeformed, at 0 deg; b<i> = bones only, moved rigidly per angle
+    add('n0'); add('r0'); m.frames.forEach((_, i) => add(`b${i}`));
+    if (m.rest.xray) add('x0'); if (m.rest.latx) add('l0');
   }
   round = 0;
   rows: Row[] = [];
@@ -50,7 +53,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
   create() {
     this.initView();
     this.round = 0; this.rows = []; this.ui = []; this.angle = 0; this.stage = 'assign'; this.dragging = false;
-    this.imgA = this.imgB = this.xA = this.xB = this.lA = undefined; this.readout = undefined; this.labels = [];
+    this.imgA = this.imgB = this.xA = this.xB = this.lA = this.inset = undefined; this.readout = undefined; this.labels = [];
     this.frame('운동 재현 장치 · 주동근과 길항근', '목표 움직임에 맞게 근육의 역할을 지정한 뒤, 팔을 직접 끌어 움직임을 실행하세요.', C.pink);
     const { W, H } = View; const portrait = H > W;
     const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.48 : this.ph - 180;
@@ -149,7 +152,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
   rk() { return this.R.id === 'elbowFlex' ? 'elbow' : 'shoulder'; }
   fit() {
     const m = this.meta(), v = this.view;
-    const top = 108, bot = 34;   // header + simplification notice
+    const top = 108, bot = 60;   // header + simplification notice / footer notice
     const sc = Math.min(v.w / m.size[0], (v.h - top - bot) / m.size[1]);
     return { sc, ox: v.x + (v.w - m.size[0] * sc) / 2, oy: v.y + top + (v.h - top - bot - m.size[1] * sc) / 2 };
   }
@@ -198,12 +201,21 @@ export class MuscleMotionPuzzle extends PuzzleBase {
   // ---------------- drawing ----------------
   roleOf(id: MuscleId): Role { return this.stage === 'assign' ? 'none' : (this.R.roles[id] ?? 'none'); }
   imgA?: Phaser.GameObjects.Image; imgB?: Phaser.GameObjects.Image; xA?: Phaser.GameObjects.Image; xB?: Phaser.GameObjects.Image; lA?: Phaser.GameObjects.Image;
+  inset?: Phaser.GameObjects.Image;
   labels: Phaser.GameObjects.Text[] = [];
   readout?: Phaser.GameObjects.Text;
 
   ensureImages() {
     const mk = () => this.add.image(0, 0, '__DEFAULT').setOrigin(0).setDepth(4).setVisible(false);
-    if (!this.imgA) { this.imgA = mk(); this.imgB = mk(); this.xA = mk().setDepth(4.5); this.xB = mk().setDepth(4.5); this.lA = mk().setDepth(4.4); }
+    if (!this.imgA) { this.imgA = mk(); this.imgB = mk(); this.xA = mk().setDepth(4.5); this.xB = mk().setDepth(4.5); this.lA = mk().setDepth(4.4); this.inset = mk().setDepth(6.5); }
+  }
+
+  /** colour of a path: role of its muscle; deltoid parts other than the middle fibres and brachioradialis = assisting */
+  pathColour(p: MotionPath): number {
+    if (this.stage === 'assign') return 0xd06a7a;
+    if (p.m === 'brachioradialis' || ((p.fid === 'FJ1468' || p.fid === 'FJ1513') && this.rk() === 'shoulder')) return 0xff9fb0;
+    const r = this.roleOf(p.m);
+    return r === 'agonist' ? 0xff4f7a : r === 'antagonist' ? 0x5fb8ff : 0x9a8f99;
   }
 
   redraw() {
@@ -214,24 +226,40 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     const adv = G.run.difficulty === 'adv';
     const nm = (id: MuscleId) => adv ? MUSCLES[id].en : MUSCLES[id].ko;
     const live = this.stage !== 'assign';
-    // frames: natural colours while assigning, role colours afterwards; cross-fade between neighbouring angles
-    // nearest rendered pose (frames every 10°): cross-fading two poses would show a double limb
-    const fi = this.fi(), i = Math.round(fi), j = i, t = 0;
-    const A = this.imgA!, B = this.imgB!;
-    A.setTexture(live ? `mo_${rk}_r${i}` : `mo_${rk}_n0`).setPosition(f.ox, f.oy).setScale(f.sc / 2).setVisible(true).setAlpha(1);
-    B.setTexture(`mo_${rk}_r${j}`).setPosition(f.ox, f.oy).setScale(f.sc / 2).setVisible(live && j !== i && t > 0.01).setAlpha(t);
-    // supraspinatus lies behind the clavicle/acromion in the anterior view: shown as an x-ray overlay
-    if (rk === 'shoulder') {
-      const xr = (k: number, im: Phaser.GameObjects.Image, al: number) => { const r = m.frames[k].xray!; im.setTexture(`mo_${rk}_x${k}`).setPosition(f.ox + r[0] * f.sc, f.oy + r[1] * f.sc).setScale(f.sc / 2).setAlpha(al).setVisible(al > 0.01); };
-      xr(i, this.xA!, live ? 0.75 * (1 - t) : 0.45); xr(j, this.xB!, live && j !== i ? 0.75 * t : 0);
-      // latissimus dorsi (BodyParts3D 3.0 mesh, CC BY-SA): lies behind the trunk/arm in this view -> x-ray overlay
-      const lr = m.frames[i].latx;
-      if (lr) this.lA!.setTexture(`mo_${rk}_l${i}`).setPosition(f.ox + lr[0] * f.sc, f.oy + lr[1] * f.sc).setScale(f.sc / 2).setAlpha(live ? 0.7 : 0.4).setVisible(true);
-      else this.lA!.setVisible(false);
-    } else { this.xA!.setVisible(false); this.xB!.setVisible(false); this.lA!.setVisible(false); }
+    const i = Math.round(this.fi());
+    // 0 deg: the real BodyParts3D muscles (undeformed). Moving: the bones (rigid, same model) + lines of action.
+    // The muscle meshes are NOT deformed (the earlier straight-line mesh deformation stretched/tore the meshes and
+    // pushed them through bone - see tools/anatomy3d/deform_audit.py).
+    const restA = Phaser.Math.Clamp(1 - this.angle / 6, 0, 1);
+    this.imgA!.setTexture(live ? `mo_${rk}_r0` : `mo_${rk}_n0`).setPosition(f.ox, f.oy).setScale(f.sc / 2).setVisible(restA > 0.01).setAlpha(restA);
+    this.imgB!.setTexture(`mo_${rk}_b${i}`).setPosition(f.ox, f.oy).setScale(f.sc / 2).setVisible(restA < 0.99).setAlpha(1 - restA);
+    const ov = (im: Phaser.GameObjects.Image, key: string, r: number[] | undefined, al: number) => {
+      if (!r || al < 0.01) { im.setVisible(false); return; }
+      im.setTexture(key).setPosition(f.ox + r[0] * f.sc, f.oy + r[1] * f.sc).setScale(f.sc / 2).setAlpha(al).setVisible(true);
+    };
+    ov(this.xA!, `mo_${rk}_x0`, m.rest.xray, (live ? 0.75 : 0.45) * restA);      // supraspinatus behind clavicle/acromion: x-ray
+    ov(this.lA!, `mo_${rk}_l0`, m.rest.latx, (live ? 0.7 : 0.4) * restA);        // latissimus behind trunk/arm: x-ray
+    this.xB!.setVisible(false);
+    // lines of action (measured centre lines, rigid per bone, wrapped at the joint)
+    const fr = m.frames[i];
+    const moving = restA < 0.99;
+    if (moving) {
+      for (const p of fr.paths) {
+        const pts = p.pts.map(q => this.toScreen(q)); const col = this.pathColour(p);
+        const wpx = Math.max(4, p.w * f.sc);
+        g.lineStyle(wpx, col, 0.42 * (1 - restA)); g.strokePoints(pts.map(q => new Phaser.Math.Vector2(q.x, q.y)), false);
+        g.lineStyle(2, col, 0.95 * (1 - restA)); g.strokePoints(pts.map(q => new Phaser.Math.Vector2(q.x, q.y)), false);
+        g.fillStyle(0xffffff, 0.9 * (1 - restA)); g.fillCircle(pts[0].x, pts[0].y, 3.5); g.fillCircle(pts[pts.length - 1].x, pts[pts.length - 1].y, 3.5);
+      }
+      // reference inset: the real (undeformed) muscles at 0 deg
+      const iw = this.view.w * 0.22, ih = iw * m.size[1] / m.size[0];
+      this.inset!.setTexture(live ? `mo_${rk}_r0` : `mo_${rk}_n0`).setOrigin(1, 0).setPosition(this.view.x + this.view.w - 12, this.view.y + 112).setDisplaySize(iw, ih).setAlpha(0.95 * (1 - restA)).setVisible(true);
+      g.lineStyle(1, 0xffb3c6, 0.6 * (1 - restA)); g.strokeRect(this.view.x + this.view.w - 12 - iw, this.view.y + 112, iw, ih);
+      this.labels.push(T(this, this.view.x + this.view.w - 12 - iw / 2, this.view.y + 116 + ih, '실제 근육 메시 (0°)', 11, '#ffb3c6').setOrigin(0.5, 0).setDepth(7).setAlpha(1 - restA));
+    } else this.inset!.setVisible(false);
     // range arc + handle
     const P = this.pivot();
-    const h = this.lerpP(fr => fr.handle)!; const H = this.toScreen(h);
+    const h = this.lerpP(q => q.handle)!; const H = this.toScreen(h);
     const r = Math.hypot(H.x - P.x, H.y - P.y);
     const a0 = this.handAngle(m.frames[0]), a1 = this.handAngle(m.frames[m.frames.length - 1]);
     const s0 = this.R.id === 'elbowFlex' ? Math.PI / 2 - Phaser.Math.DegToRad(a0) : Math.PI / 2 + Phaser.Math.DegToRad(a0);
@@ -239,15 +267,17 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     g.lineStyle(2, C.amber, 0.35); g.beginPath(); g.arc(P.x, P.y, r, s0, s1, this.R.id === 'elbowFlex'); g.strokePath();
     g.fillStyle(0xffe08a, 0.9); g.fillCircle(P.x, P.y, 4);
     if (live) {
-      // labels pushed out to the side of the limb with leader lines, de-overlapped vertically
-      const cur: Record<string, number[]> = { ...(m.frames[i].labels ?? {}) };
-      const xr = m.frames[i].xray;
-      if (xr && !cur.supraspinatus) cur.supraspinatus = [xr[0] + xr[2] * 0.55, xr[1] + xr[3] * 0.5];   // x-ray overlay centre
-      const lx = m.frames[i].latx;
-      if (lx && !cur.latissimus) cur.latissimus = [lx[0] + lx[2] * 0.62, lx[1] + lx[3] * 0.72];
+      // label anchors: on the real meshes at 0 deg, on the path (60 % along) while moving
+      const cur: Record<string, number[]> = {};
+      if (!moving) {
+        Object.assign(cur, m.rest.labels);
+        const xr = m.rest.xray, lx = m.rest.latx;
+        if (xr && !cur.supraspinatus) cur.supraspinatus = [xr[0] + xr[2] * 0.55, xr[1] + xr[3] * 0.5];
+        if (lx && !cur.latissimus) cur.latissimus = [lx[0] + lx[2] * 0.62, lx[1] + lx[3] * 0.72];
+      } else for (const p of fr.paths) if (!cur[p.m] && (p.fid !== 'FJ1468' && p.fid !== 'FJ1513')) cur[p.m] = p.pts[Math.floor(p.pts.length * 0.6)];
       const items = Object.entries(cur).map(([id, p]) => {
         const sp = this.toScreen(p);
-        const extra = id === 'brachioradialis' ? ' (보조 굴곡)' : id === 'supraspinatus' || id === 'latissimus' ? ' (뒤쪽 · 투시)' : id === 'deltoid' && rk === 'shoulder' ? ' (중간섬유)' : '';
+        const extra = id === 'brachioradialis' ? ' (보조 굴곡)' : (id === 'supraspinatus' || id === 'latissimus') && !moving ? ' (뒤쪽 · 투시)' : id === 'deltoid' && rk === 'shoulder' ? ' (중간섬유)' : '';
         return { id, sp, text: nm(id as MuscleId) + extra, role: (id === 'brachioradialis' ? 'agonist' : this.roleOf(id as MuscleId)) as Role };
       });
       const mx = items.reduce((a, b) => a + b.sp.x, 0) / Math.max(1, items.length);
@@ -265,20 +295,23 @@ export class MuscleMotionPuzzle extends PuzzleBase {
       }
     }
     this.handle(H);
-    // length read-out: DIRECTION only. The model's length numbers are an approximation (straight fibre lines between
-    // the measured attachments, constant volume) and are not validated against measurement, so no % is shown.
-    const st = m.frames[i].strain;
+    // length read-out: DIRECTION only (path-length change of the line of action; not validated against measurement)
+    const st = fr.length;
     const lines = this.R.cards.map(id => {
       const v = st[id];
-      if (v === undefined) return `${nm(id)}  —  (모델 없음)`;
+      if (v === undefined) return `${nm(id)}  —`;
+      // null = the simplified model's path disagrees with the textbook direction here -> say so instead of guessing
+      if (v === null) return `${nm(id)}  · 모델 한계로 생략`;
       return `${nm(id)}  ${v <= -0.02 ? '▼ 짧아짐' : v >= 0.02 ? '▲ 길어짐' : '－ 변화 없음'}`;
     });
     if (!this.readout) this.readout = T(this, 0, 0, '', 13, '#e8dce2', { lineSpacing: 4, backgroundColor: '#0a0410cc', padding: { x: 8, y: 6 } }).setDepth(7);
-    this.readout.setText(live ? `근육 길이 변화 (안정 자세 대비)\n${lines.join('\n')}` : '').setVisible(live).setPosition(this.view.x + 14, this.view.y + this.view.h - 30).setOrigin(0, 1);
-    this.labels.push(T(this, this.view.x + 14, this.view.y + this.view.h - 12, '근사 모델 · 물리 시뮬레이션 아님 (측정한 기시·정지 사이 경로, 부피 보존)', 11, '#c9a24a').setOrigin(0, 1).setDepth(7));
-    this.labels.push(T(this, this.view.x + this.view.w - 12, this.view.y + this.view.h - 30, rk === 'shoulder' ? `${MODEL_CREDIT}\n${LAT_CREDIT}` : MODEL_CREDIT, 10, '#8f7f88', { align: 'right' }).setOrigin(1, 1).setDepth(7));
+    this.readout.setText(live ? `근육 길이 변화 (안정 자세 대비)\n${lines.join('\n')}` : '').setVisible(live).setPosition(this.view.x + 14, this.view.y + this.view.h - 44).setOrigin(0, 1);
+    this.labels.push(T(this, this.view.x + 14, this.view.y + this.view.h - 10,
+      '움직이는 동안 근육은 실제 모양이 아닌 작용선(측정한 기시→정지 경로)으로 표시 · 뼈는 3D 모델을 관절축으로 회전 · 근육 수축 모양을 재현한 것이 아님',
+      11, '#c9a24a', { wordWrap: { width: this.view.w - 28 } }).setOrigin(0, 1).setDepth(7));
+    this.labels.push(T(this, this.view.x + this.view.w - 12, this.view.y + this.view.h - 44, rk === 'shoulder' ? `${MODEL_CREDIT}\n${LAT_CREDIT}` : MODEL_CREDIT, 10, '#8f7f88', { align: 'right' }).setOrigin(1, 1).setDepth(7));
     this.labels.push(T(this, this.view.x + 18, this.view.y + 66, rk === 'elbow' ? '오른팔 외측면  ← 뒤 · 앞 →' : '오른쪽 어깨 앞면  ← 외측', 12, '#ffb3c6').setDepth(7));
-    // kinematic simplifications, shown so the animation is not taken for the real joint motion (docs/ANATOMY_MODEL.md §5)
+    // kinematic simplifications, shown so the motion is not taken for the real joint motion (docs/ANATOMY_MODEL.md §6)
     this.labels.push(T(this, this.view.x + 18, this.view.y + 84, rk === 'elbow'
       ? '⚠ 단순화: 팔꿉관절 고정축 회전만 · 전완은 뒤침(회외) 자세 고정'
       : '⚠ 단순화 모델: 어깨뼈 회전을 1:3 비율로 근사 · 위팔뼈 가쪽돌림·빗장뼈 회전·관절면 미끄러짐 생략 → 실제 어깨 운동과 다릅니다',
