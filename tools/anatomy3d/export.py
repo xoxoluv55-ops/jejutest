@@ -19,7 +19,7 @@ for rk in ['elbow', 'shoulder']:
     for im in ims.values(): a |= np.asarray(im)[..., 3] > 8
     ys, xs = np.where(a); pad = 24
     W, H = ims['n0'].size
-    x0, y0 = max(0, xs.min() - pad), max(0, ys.min() - pad); x1, y1 = min(W, xs.max() + pad), min(H, ys.max() + pad)
+    x0, y0 = int(max(0, xs.min() - pad)), int(max(0, ys.min() - pad)); x1, y1 = int(min(W, xs.max() + pad)), int(min(H, ys.max() + pad))
     x0 -= x0 % 2; y0 -= y0 % 2; x1 += x1 % 2; y1 += y1 % 2
     for n, im in ims.items(): im.crop((x0, y0, x1, y1)).save(os.path.join(DST, 'motion', f'{rk}_{n}.webp'), quality=88, method=6)
     ox, oy = x0 / 2, y0 / 2
