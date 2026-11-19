@@ -245,6 +245,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     const moving = restA < 0.99;
     if (moving) {
       for (const p of fr.paths) {
+        if (fr.length[p.m] === null) continue;      // model limit at this angle (path not reliable) -> not drawn
         const pts = p.pts.map(q => this.toScreen(q)); const col = this.pathColour(p);
         const wpx = Math.max(4, p.w * f.sc);
         g.lineStyle(wpx, col, 0.42 * (1 - restA)); g.strokePoints(pts.map(q => new Phaser.Math.Vector2(q.x, q.y)), false);
@@ -274,7 +275,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
         const xr = m.rest.xray, lx = m.rest.latx;
         if (xr && !cur.supraspinatus) cur.supraspinatus = [xr[0] + xr[2] * 0.55, xr[1] + xr[3] * 0.5];
         if (lx && !cur.latissimus) cur.latissimus = [lx[0] + lx[2] * 0.62, lx[1] + lx[3] * 0.72];
-      } else for (const p of fr.paths) if (!cur[p.m] && (p.fid !== 'FJ1468' && p.fid !== 'FJ1513')) cur[p.m] = p.pts[Math.floor(p.pts.length * 0.6)];
+      } else for (const p of fr.paths) if (!cur[p.m] && fr.length[p.m] !== null && (p.fid !== 'FJ1468' && p.fid !== 'FJ1513')) cur[p.m] = p.pts[Math.floor(p.pts.length * 0.6)];
       const items = Object.entries(cur).map(([id, p]) => {
         const sp = this.toScreen(p);
         const extra = id === 'brachioradialis' ? ' (보조 굴곡)' : (id === 'supraspinatus' || id === 'latissimus') && !moving ? ' (뒤쪽 · 투시)' : id === 'deltoid' && rk === 'shoulder' ? ' (중간섬유)' : '';

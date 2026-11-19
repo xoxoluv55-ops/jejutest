@@ -20,12 +20,13 @@ CC BY-SA 2.1 JP), registered onto the 4.0 skeleton (`latissimus.py`), rendered o
 | render | `render/index.html`, `render/render.cjs` | three.js in headless Chromium: colour pass (2× supersampled), screen-space fibre-direction pass, id pass |
 | post | `post.py` | fibres by line-integral convolution along the rendered fibre field, tendon sheen, boundary lines |
 | plates | `plates.py` | `plate_full`, `plate_bones`, `mus_real_<id>`, `mus_glow_<id>`, `plates.json` (layer rects, label points) |
-| motion | `motion.py`, `motion_render.py` | posed frames for elbow flexion (0–140°, lateral view) and shoulder abduction (0–90°, anterior view) |
+| motion | `motion.py`, `motion_render.py --bones-only`, `paths.py`, `paths_render.py`, `export_motion.py` | rigid bone frames per 10°, muscle lines of action (measured centre lines, cylinder wrapping), real undeformed meshes at 0°. The earlier mesh deformation was withdrawn (`deform_audit.py`) |
 | latissimus | `latissimus.py`, `lat_render.py` | 3.0 mesh → rigid ICP on 14 shared bones → layers, visible-part overlay, posed x-ray frames |
 | export | `export.py`, `update_strain.py` | crops motion frames, copies everything to `app/public/assets/ch2/`, writes fibre-mean length change (sign used in game) |
 | verify | `verify.py`, `landmarks.py`, `excursion.py` | contacts, textbook landmark regions, length / moment-arm estimates → `docs/ANATOMY_MODEL.md` |
 
-### Motion model
+### Motion model (v2)
+Muscle meshes are NOT deformed. See docs/ANATOMY_MODEL.md §7 (old method audit, new path audit, alternatives).
 * Bones move rigidly by segment. Elbow: rotation about the measured flexion axis (epicondyle line through the
   trochlea/capitulum centre). Shoulder: scapulohumeral rhythm 1 : 3 (girdle about the sternoclavicular joint,
   humerus about the fitted humeral-head centre).

@@ -126,6 +126,9 @@ class Path:
     def __init__(self, g, fid):
         self.e = Elem(g, fid); self.g, self.fid = g, fid
         L, self.width = centreline(self.e)
+        self.width = min(self.width, 35.0)            # display band width cap (two-headed / fanned muscles)
+        for _ in range(2):                            # light smoothing, ends pinned to the measured attachments
+            L[1:-1] = 0.5 * L[1:-1] + 0.25 * (L[:-2] + L[2:])
         seg = segments(L, self.e)
         ec, eax = elbow_axis(); gh = gh_centre()
         if fid in KEEP_ALL:
