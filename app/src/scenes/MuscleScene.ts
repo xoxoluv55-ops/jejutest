@@ -41,6 +41,78 @@ export class MuscleScene extends GameScene {
   create() { this.overloadLeft = 0; this.coresInWorld = {}; super.create(); }
 
   floorTint(floor: string) { return floor === 'floor_tile' ? 0x9a8fae : floor === 'floor_grate' ? 0x8e94b0 : 0x86809e; }
+  /** CH2 = rose-steel clinical walls (CH1 walls are untinted grey-blue). */
+  wallTint() { return 0xd9b2c4; }
+
+  // ---------------- CH2 props ----------------
+  // Dedicated CH2 art drops in through public/assets/ch2/props/manifest.json (texture key `ch2p_<key>`, see
+  // docs/ASSETS.md). Until it is supplied, each prop is assembled from existing world art + the model-rendered muscles.
+  ch2Has(key: string) { return this.textures.exists(`ch2p_${key}`); }
+  ch2Image(key: string, x: number, y: number, h: number, col?: [number, number]) {
+    const img = this.add.image(x, y, `ch2p_${key}`).setOrigin(0.5, 1);
+    img.setScale(h / img.height).setDepth(y);
+    if (col) this.solid(x - col[0] / 2, y - col[1], col[0], col[1]);
+    return img;
+  }
+
+  /** 근육 표본 캡슐: a glass capsule holding one muscle (the BodyParts3D layer of that muscle). */
+  specimenCapsule(id: MuscleId, x: number, y: number) {
+    if (this.ch2Has(`capsule_${id}`)) return this.ch2Image(`capsule_${id}`, x, y, 150, [96, 36]);
+    if (this.ch2Has('capsule')) this.ch2Image('capsule', x, y, 150, [96, 36]);
+    const cap = this.ch2Has('capsule') ? null : this.prop('capsule', x, y, { col: [96, 36] });
+    const ch = cap ? cap.displayHeight : 150, cw = cap ? cap.displayWidth : 90;
+    // preservation fluid fills the glass (hides the generic capsule's skeleton hologram), specimen floats in it
+    const fl = this.add.graphics().setDepth(y + 0.3);
+    const gw = cw * 0.64, gt = y - ch * 0.80, gb = y - ch * 0.24;
+    fl.fillGradientStyle(0x5a1428, 0x5a1428, 0x2a0612, 0x2a0612, 0.92, 0.92, 0.95, 0.95); fl.fillRoundedRect(x - gw / 2, gt, gw, gb - gt, 10);
+    fl.lineStyle(1.5, 0xffb3c6, 0.35); fl.strokeRoundedRect(x - gw / 2, gt, gw, gb - gt, 10);
+    for (let k = 0; k < 4; k++) {
+      const b = this.add.circle(x - gw * 0.3 + Math.random() * gw * 0.6, gb - 6, 1.6 + Math.random() * 1.5, 0xffd0dc, 0.5).setDepth(y + 0.6);
+      this.tweens.add({ targets: b, y: gt + 8, alpha: 0, duration: 2600 + Math.random() * 2000, repeat: -1, delay: Math.random() * 2000 });
+    }
+    const mt = makeMuscleTexture(this, id, 'real');
+    const m = this.add.image(x, (gt + gb) / 2, mt.key);
+    m.setScale(Math.min((gb - gt - 12) / m.height, (gw - 12) / m.width)).setDepth(y + 0.5);
+    const glow = this.add.image(x, (gt + gb) / 2, 'light').setScale(0.35, 0.5).setTint(0xff5c84).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.35).setDepth(y + 0.4);
+    this.tweens.add({ targets: glow, alpha: 0.15, duration: 1600 + Math.random() * 600, yoyo: true, repeat: -1 });
+    T(this, x, y + 10, MUSCLES[id].ko, 11, '#ffc2d2', { weight: '700', backgroundColor: '#14070dcc', padding: { x: 4, y: 1 } }).setOrigin(0.5, 0).setDepth(y + 1).setAlpha(0.9);
+    return m;
+  }
+
+  /** 해부도 패널: wall-mounted holo screen showing the model plate. */
+  anatomyPanel(x: number, wallY: number, which: 'full' | 'bones' = 'full') {
+    if (this.ch2Has('anatomy_panel')) return this.ch2Image('anatomy_panel', x, wallY + 140, 96);
+    const fy = wallY + 36 + 6;                     // top of the wall face
+    const frame = this.add.graphics().setDepth(wallY + 146);
+    frame.fillStyle(0x0a0410, 0.85); frame.fillRoundedRect(x - 40, fy, 80, 96, 6);
+    frame.lineStyle(1.5, 0xff5c84, 0.8); frame.strokeRoundedRect(x - 40, fy, 80, 96, 6);
+    const img = this.add.image(x, fy + 48, which === 'full' ? 'ch2_plate_full' : 'ch2_plate_bones').setDepth(wallY + 146.5).setAlpha(0.95);
+    img.setScale(90 / img.height);
+    const scan = this.add.rectangle(x, fy + 4, 76, 3, 0xff8fb0, 0.5).setDepth(wallY + 147).setBlendMode(Phaser.BlendModes.ADD);
+    this.tweens.add({ targets: scan, y: fy + 92, duration: 2200, repeat: -1 });
+    return img;
+  }
+
+  /** 전기자극 장치: stimulator unit with electrode leads (existing tech box + console art, live spark). */
+  stimulator(x: number, y: number) {
+    if (this.ch2Has('stimulator')) return this.ch2Image('stimulator', x, y, 120, [90, 30]);
+    const box = this.prop('p_techbox', x, y, { col: [70, 26] });
+    this.add.image(x + 40, y + 20, 'cables').setDepth(-940).setAlpha(0.9).setScale(0.6);
+    const sp = this.add.image(x, y - 40, 'light').setScale(0.2).setTint(0x9fd8ff).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setDepth(y + 1);
+    this.tweens.add({ targets: sp, alpha: { from: 0, to: 0.9 }, duration: 90, yoyo: true, repeat: -1, repeatDelay: 1400 + Math.random() * 1600 });
+    return box;
+  }
+
+  /** 근수축 실험 장비: contraction test stand — rig + the model biceps hologram (no fake deformation). */
+  contractionRig(id: MuscleId, x: number, y: number) {
+    if (this.ch2Has('contraction_rig')) return this.ch2Image('contraction_rig', x, y, 150, [120, 40]);
+    const rig = this.prop('p_trolley', x, y, { col: [60, 24] });
+    const mt = makeMuscleTexture(this, id, 'glow');
+    const h = this.add.image(x, y - 70, mt.key).setDepth(y + 1).setAlpha(0.75).setBlendMode(Phaser.BlendModes.ADD);
+    h.setScale(60 / h.height);
+    this.tweens.add({ targets: h, alpha: 0.35, duration: 1300, yoyo: true, repeat: -1 });
+    return rig;
+  }
 
   decals() {
     this.add.image(1000, 1500, 'puddle').setDepth(-950);
@@ -57,7 +129,9 @@ export class MuscleScene extends GameScene {
     const env = this.textures.exists('env');
     this.buildGate();
     // ---- M-01 hub ----
-    for (const x of [900, 1680, 1820]) this.prop('capsule', x, 905, { col: [96, 36] });
+    // specimen capsules (one muscle each, model-rendered) along the north wall of M-01
+    (['deltoid', 'pecmajor', 'brachialis'] as MuscleId[]).forEach((id, k) => this.specimenCapsule(id, [900, 1680, 1820][k], 905));
+    this.anatomyPanel(1260, 654); this.anatomyPanel(1460, 654, 'bones');
     this.prop('capsule_broken', 1040, 905, { col: [96, 36] });
     if (env) {
       this.prop('x_fan', 1110, 776, { depth: 799 }); this.prop('x_glass', 1600, 772, { depth: 799 }); this.prop('x_pipes', 1860, 790, { depth: 799 });
@@ -101,9 +175,12 @@ export class MuscleScene extends GameScene {
     });
     this.locker = this.prop('cabinet', 640, 1010, { col: [86, 30] });
     this.prop('rack', 210, 1000, { col: [60, 30] });
+    this.specimenCapsule('supraspinatus', 260, 1250); this.specimenCapsule('triceps', 560, 1250);
+    this.anatomyPanel(440, 704);
     // ---- M-04 stimulator control ----
     this.prop('breaker', 1060, 1870, { col: [80, 24] });
     this.prop('rack', 940, 1858, { col: [60, 30] }); this.prop('console_red', 1500, 1900, { col: [130, 40] });
+    this.stimulator(1260, 1900); this.stimulator(1620, 2150);
     this.addInter({
       id: 'lever', x: 1060, y: 1880, r: 110, icon: 'bolt',
       label: () => G.run.flags.stabilized ? '전기자극 장치 (안정화됨)' : '전기자극 방전 레버',
@@ -113,6 +190,8 @@ export class MuscleScene extends GameScene {
     // ---- M-03 motion room ----
     this.prop('joint_rig', 2320, 1250, { col: [180, 60] });
     this.prop('rack', 2580, 1000, { col: [60, 30] }); this.prop('p_techbox', 2100, 1000, { col: [70, 26] });
+    this.contractionRig('biceps', 2100, 1420); this.contractionRig('deltoid', 2540, 1300);
+    this.anatomyPanel(2420, 854);
     this.addInter({
       id: 'motion', x: 2320, y: 1250, r: 140, icon: 'rotate',
       label: () => G.run.flags.motion ? '운동 재현 장치 (검증 완료)' : '운동 재현 장치',

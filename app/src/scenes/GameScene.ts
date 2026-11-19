@@ -187,9 +187,9 @@ export class GameScene extends Phaser.Scene {
     const { HWALLS, VWALLS } = this.map;
     for (const w of HWALLS) {
       const bottom = w.y + WALL_CAP + (w.face ? WALL_FACE : 0);
-      this.add.tileSprite(w.x, w.y, w.w, WALL_CAP, 'wall_top').setOrigin(0).setTileScale(0.5).setDepth(bottom);
+      this.add.tileSprite(w.x, w.y, w.w, WALL_CAP, 'wall_top').setOrigin(0).setTileScale(0.5).setDepth(bottom).setTint(this.wallTint());
       if (w.face) {
-        this.add.tileSprite(w.x, w.y + WALL_CAP, w.w, WALL_FACE, 'wall_face').setOrigin(0).setTileScale(0.5).setDepth(bottom - 1);
+        this.add.tileSprite(w.x, w.y + WALL_CAP, w.w, WALL_FACE, 'wall_face').setOrigin(0).setTileScale(0.5).setDepth(bottom - 1).setTint(this.wallTint());
         this.add.tileSprite(w.x, w.y + WALL_CAP - 14, w.w, 40, 'pipes').setOrigin(0).setTileScale(0.5).setDepth(bottom).setAlpha(0.85);
       }
       const g = this.add.graphics().setDepth(bottom);
@@ -199,13 +199,16 @@ export class GameScene extends Phaser.Scene {
     for (const v of VWALLS) {
       for (let y = v.y; y < v.y + v.h; y += 60) {
         const h = Math.min(60, v.y + v.h - y);
-        this.add.tileSprite(v.x, y, WALL_CAP, h, 'wall_top_v').setOrigin(0).setTileScale(0.5).setTilePosition(0, (y - v.y) * 2).setDepth(y + h);
+        this.add.tileSprite(v.x, y, WALL_CAP, h, 'wall_top_v').setOrigin(0).setTileScale(0.5).setTilePosition(0, (y - v.y) * 2).setDepth(y + h).setTint(this.wallTint());
       }
       const g = this.add.graphics().setDepth(v.y + v.h);
       g.lineStyle(2, 0x5a6c96, 0.4); g.lineBetween(v.x + 1, v.y, v.x + 1, v.y + v.h); g.lineBetween(v.x + WALL_CAP - 1, v.y, v.x + WALL_CAP - 1, v.y + v.h);
       this.solid(v.x, v.y, WALL_CAP, v.h);
     }
   }
+
+  /** Chapter hook: multiply tint for wall tiles (CH1 = untinted). */
+  wallTint(): number { return 0xffffff; }
 
   prop(key: string, x: number, y: number, o: { col?: [number, number]; scale?: number; depth?: number; flip?: boolean; alpha?: number } = {}) {
     const envKey = ENV_MAP[key] ?? (key.startsWith('p_') || key.startsWith('x_') || key.startsWith('d_') ? key : null);

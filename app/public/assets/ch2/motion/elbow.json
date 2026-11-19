@@ -79,8 +79,8 @@
     "deltoid": 0.0,
     "biceps": -0.01,
     "brachialis": -0.01,
-    "triceps": 0.019,
-    "brachioradialis": -0.007,
+    "triceps": 0.015,
+    "brachioradialis": -0.006,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -120,8 +120,8 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.023,
-    "brachialis": -0.026,
-    "triceps": 0.037,
+    "brachialis": -0.024,
+    "triceps": 0.03,
     "brachioradialis": -0.018,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
@@ -162,8 +162,8 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.039,
-    "brachialis": -0.048,
-    "triceps": 0.056,
+    "brachialis": -0.042,
+    "triceps": 0.045,
     "brachioradialis": -0.035,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
@@ -204,9 +204,9 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.057,
-    "brachialis": -0.076,
-    "triceps": 0.075,
-    "brachioradialis": -0.057,
+    "brachialis": -0.064,
+    "triceps": 0.06,
+    "brachioradialis": -0.056,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -246,9 +246,9 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.077,
-    "brachialis": -0.108,
-    "triceps": 0.093,
-    "brachioradialis": -0.084,
+    "brachialis": -0.09,
+    "triceps": 0.076,
+    "brachioradialis": -0.081,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -288,9 +288,9 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.099,
-    "brachialis": -0.146,
-    "triceps": 0.112,
-    "brachioradialis": -0.114,
+    "brachialis": -0.119,
+    "triceps": 0.091,
+    "brachioradialis": -0.111,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -330,9 +330,9 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.122,
-    "brachialis": -0.187,
-    "triceps": 0.131,
-    "brachioradialis": -0.148,
+    "brachialis": -0.15,
+    "triceps": 0.106,
+    "brachioradialis": -0.144,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -372,9 +372,9 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.145,
-    "brachialis": -0.232,
-    "triceps": 0.149,
-    "brachioradialis": -0.184,
+    "brachialis": -0.182,
+    "triceps": 0.121,
+    "brachioradialis": -0.18,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -414,9 +414,9 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.168,
-    "brachialis": -0.279,
-    "triceps": 0.168,
-    "brachioradialis": -0.223,
+    "brachialis": -0.216,
+    "triceps": 0.136,
+    "brachioradialis": -0.218,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -456,9 +456,9 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.19,
-    "brachialis": -0.328,
-    "triceps": 0.187,
-    "brachioradialis": -0.263,
+    "brachialis": -0.25,
+    "triceps": 0.152,
+    "brachioradialis": -0.257,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -498,9 +498,9 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.21,
-    "brachialis": -0.377,
-    "triceps": 0.205,
-    "brachioradialis": -0.303,
+    "brachialis": -0.283,
+    "triceps": 0.167,
+    "brachioradialis": -0.297,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -540,9 +540,9 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.227,
-    "brachialis": -0.425,
-    "triceps": 0.224,
-    "brachioradialis": -0.341,
+    "brachialis": -0.315,
+    "triceps": 0.182,
+    "brachioradialis": -0.336,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -582,9 +582,9 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.241,
-    "brachialis": -0.469,
-    "triceps": 0.243,
-    "brachioradialis": -0.377,
+    "brachialis": -0.344,
+    "triceps": 0.198,
+    "brachioradialis": -0.372,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -624,9 +624,9 @@
    "strain": {
     "deltoid": 0.0,
     "biceps": -0.251,
-    "brachialis": -0.507,
-    "triceps": 0.261,
-    "brachioradialis": -0.408,
+    "brachialis": -0.369,
+    "triceps": 0.213,
+    "brachioradialis": -0.404,
     "coracobrachialis": 0.0,
     "supraspinatus": 0.0
    },
@@ -653,5 +653,6 @@
     ]
    }
   }
- ]
+ ],
+ "strain_note": "approximation: mean straight fibre line from every origin-contact vertex to the insertion; not validated against measurement"
 }

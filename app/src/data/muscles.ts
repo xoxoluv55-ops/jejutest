@@ -11,8 +11,9 @@ export interface Att { id: AttId; ko: string; en: string; x: number; y: number; 
 /**
  * Attachment sites (frame coordinates). Measured on the BodyParts3D model (tools/anatomy3d/atts.py): centroid of the
  * muscle-mesh vertices touching the bone surface (<2.5 mm), projected into the anterior plate. Exceptions: medEpi =
- * most medial point of the distal humerus; grooveFloor = midpoint of the measured pectoralis major / teres major
- * insertions (latissimus is not in the model); thoracolumbar = schematic posterior midline point.
+ * most medial point of the distal humerus. grooveFloor / thoracolumbar = humeral and vertebral (T7–T11, lumbosacral)
+ * contacts of the latissimus mesh from BodyParts3D 3.0 registered onto the 4.0 skeleton (tools/anatomy3d/latissimus.py).
+ * Each site is also checked against its textbook landmark region (tools/anatomy3d/landmarks.py).
  * `posterior` = lies behind in this anterior view (drawn dashed).
  */
 export const ATT: Record<AttId, Att> = {
@@ -27,7 +28,7 @@ export const ATT: Record<AttId, Att> = {
   supraFossa: { id: 'supraFossa', ko: '극상와', en: 'Supraspinous fossa', x: 486, y: 196, posterior: true, on: '극상근의 기시부입니다. 견갑극 위의 오목으로 뒤쪽에 있어요.' },
   greater: { id: 'greater', ko: '대결절', en: 'Greater tubercle', x: 322, y: 185, on: '극상근·극하근·소원근의 정지부입니다.' },
   groove: { id: 'groove', ko: '결절간구 외측순', en: 'Lateral lip of intertubercular groove', x: 321, y: 298, on: '대흉근의 정지부입니다.' },
-  grooveFloor: { id: 'grooveFloor', ko: '결절간구 바닥', en: 'Floor of intertubercular groove', x: 334, y: 287, on: '광배근의 정지부입니다.' },
+  grooveFloor: { id: 'grooveFloor', ko: '결절간구 바닥', en: 'Floor of intertubercular groove', x: 340, y: 301, on: '광배근의 정지부입니다.' },
   deltTub: { id: 'deltTub', ko: '삼각근조면', en: 'Deltoid tuberosity', x: 285, y: 391, on: '삼각근의 정지부입니다(상완골 몸통 외측 중간).' },
   humMed: { id: 'humMed', ko: '상완골 몸통 내측 중간', en: 'Medial shaft of humerus (middle)', x: 313, y: 433, on: '오훼완근의 정지부입니다.' },
   humAnt: { id: 'humAnt', ko: '상완골 앞면 원위 1/2', en: 'Distal half of anterior humerus', x: 287, y: 527, on: '상완근의 기시부입니다.' },
@@ -37,7 +38,7 @@ export const ATT: Record<AttId, Att> = {
   ulnTub: { id: 'ulnTub', ko: '척골조면 · 구상돌기', en: 'Ulnar tuberosity & coronoid', x: 270, y: 725, on: '상완근의 정지부입니다.' },
   olecranon: { id: 'olecranon', ko: '주두', en: 'Olecranon', x: 271, y: 679, posterior: true, on: '상완삼두근의 정지부입니다. 팔꿈치 뒤쪽 끝이에요.' },
   radStyloid: { id: 'radStyloid', ko: '요골 경상돌기 기저부', en: 'Base of radial styloid', x: 155, y: 1070, on: '상완요골근의 정지부입니다.' },
-  thoracolumbar: { id: 'thoracolumbar', ko: '흉요근막 · 하위 흉추', en: 'Thoracolumbar fascia, T7–L5', x: 626, y: 681, posterior: true, on: '광배근의 기시부입니다.' },
+  thoracolumbar: { id: 'thoracolumbar', ko: '흉요근막 · 하위 흉추', en: 'Thoracolumbar fascia, T7–L5', x: 633, y: 719, posterior: true, on: '광배근의 기시부입니다.' },
 };
 
 export type MuscleId = 'deltoid' | 'pecmajor' | 'biceps' | 'brachialis' | 'coracobrachialis' | 'brachioradialis' | 'triceps' | 'supraspinatus' | 'latissimus';

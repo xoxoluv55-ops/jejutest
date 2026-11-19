@@ -27,6 +27,7 @@ EXPECT = {   # element: (textbook origin bone(s), insertion bone)
     'FJ1477': ('triceps · lateral head', ['humerus'], 'ulna'),
     'FJ1480': ('triceps · medial head', ['humerus'], 'ulna'),
     'FJ1506': ('supraspinatus', ['scapula'], 'humerus'),
+    'LAT3': ('latissimus dorsi (BodyParts3D 3.0, registered)', ['ribs', 'scapula'], 'humerus'),
 }
 SITE_BONE = {'clavLat': 'clavicle', 'acromion': 'scapula', 'spine': 'scapula', 'deltTub': 'humerus', 'clavMed': 'clavicle',
              'sternum': 'sternum', 'groove': 'humerus', 'coracoid': 'scapula', 'supraglenoid': 'scapula', 'infraglenoid': 'scapula',
@@ -57,7 +58,7 @@ for k, (p, n) in A.items():
 
 md = sys.argv[1] if len(sys.argv) > 1 else None
 if md:
-    print('\n## 3. Muscle length in the posed frames (relative to rest)\n')
+    print('\n## 3. Muscle length in the posed frames (relative to rest) — model approximation, not shown as numbers in the game\n')
     for rk in ['elbow', 'shoulder']:
         m = json.load(open(os.path.join(md, rk + '.json')))
         keys = list(m['frames'][0]['strain'].keys())

@@ -31,6 +31,7 @@ export class BootScene extends BaseScene {
     preloadMuscleArt(this.load);   // CH2 anatomy plates rendered from the BodyParts3D model
     // Optional hand-made art overrides (see docs/ASSETS.md)
     this.load.json('art_manifest', 'assets/art/manifest.json');
+    this.load.json('ch2_props', 'assets/ch2/props/manifest.json');   // dedicated CH2 prop art (optional, see docs/ASSETS.md)
   }
 
   drawBar(v: number) {
@@ -42,8 +43,10 @@ export class BootScene extends BaseScene {
 
   async create() {
     const man = this.cache.json.get('art_manifest') as string[] | undefined;
-    if (Array.isArray(man) && man.length) {
-      for (const k of man) { this.load.image(k, `assets/art/${k}.png`); USER_ART.add(k); }
+    const p2 = this.cache.json.get('ch2_props') as string[] | undefined;
+    if (Array.isArray(p2)) for (const k of p2) this.load.image(`ch2p_${k}`, `assets/ch2/props/${k}.png`);
+    if ((Array.isArray(man) && man.length) || (Array.isArray(p2) && p2.length)) {
+      for (const k of man ?? []) { this.load.image(k, `assets/art/${k}.png`); USER_ART.add(k); }
       await new Promise<void>(r => { this.load.once('complete', () => r()); this.load.start(); });
     }
     this.status.setText('구조 데이터 렌더링…');

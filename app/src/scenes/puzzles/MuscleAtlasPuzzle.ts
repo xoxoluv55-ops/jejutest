@@ -4,7 +4,7 @@ import { View } from '../../core/view';
 import { Audio } from '../../core/audio';
 import { G } from '../../game/state';
 import { MUSCLES, MuscleId, ATLAS_TARGETS, ATLAS_DECOYS_BASIC, ATLAS_DECOYS_ADV } from '../../data/muscles';
-import { plateKey, makeMuscleTexture, labelPoint, MODEL_CREDIT } from '../../art/muscles';
+import { plateKey, makeMuscleTexture, labelPoint, addPlateOverlays, MODEL_CREDIT, LAT_CREDIT } from '../../art/muscles';
 import { DENSITY } from '../../art/bones';
 import { T, C, Button } from '../../ui/widgets';
 
@@ -40,8 +40,9 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
     const img = this.add.image(this.fx, this.fy, plateKey('full')).setOrigin(0).setScale(this.s / DENSITY);
     const mask = this.make.graphics({}, false); mask.fillRect(this.fx + crop.x * this.s, this.fy + crop.y * this.s, crop.w * this.s, crop.h * this.s);
     img.setMask(mask.createGeometryMask());
+    for (const o of addPlateOverlays(this, this.fx, this.fy, this.s)) o.setMask(mask.createGeometryMask());   // latissimus (separate licence)
     T(this, this.fx + crop.x * this.s + 8, this.fy + crop.y * this.s + 6, '오른팔 · 앞면 (Anterior)', 14, C.pinkS, { weight: '700' });
-    T(this, this.fx + (crop.x + crop.w) * this.s, this.fy + (crop.y + crop.h) * this.s + 16, MODEL_CREDIT, 11, '#8f7f88').setOrigin(1, 0.5);
+    T(this, this.fx + (crop.x + crop.w) * this.s, this.fy + (crop.y + crop.h) * this.s + 16, `${MODEL_CREDIT} · ${LAT_CREDIT}`, 10, '#8f7f88').setOrigin(1, 0.5);
     T(this, this.fx + crop.x * this.s + 8, this.fy + (crop.y + crop.h) * this.s - 24, '← 외측', 13, '#ffb3c6', { weight: '700' });
     T(this, this.fx + (crop.x + crop.w) * this.s - 8, this.fy + (crop.y + crop.h) * this.s - 24, '내측 →', 13, '#ffb3c6', { weight: '700' }).setOrigin(1, 0);
     // numbered markers (random numbering)

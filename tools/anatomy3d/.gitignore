@@ -4,3 +4,6 @@ part?
 out/
 render/node_modules/
 __pycache__/
+bp3.zip
+lat_v4.npz
+lat_insertion.npy

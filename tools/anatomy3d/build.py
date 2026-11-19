@@ -29,6 +29,7 @@ ELEM = {
     'FJ1477': ('humerus', None, 'ulna', None),
     'FJ1480': ('humerus', None, 'ulna', None),
     'FJ1506': ('scapula', None, 'humerus', None),
+    'LAT3': ('ribs', None, 'humerus', None),          # latissimus dorsi (release 3.0 mesh, CC BY-SA 2.1 JP)
 }
 
 def ends(fid, V):

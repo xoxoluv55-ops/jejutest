@@ -5,11 +5,11 @@ import { Audio } from '../../core/audio';
 import { G } from '../../game/state';
 import { MUSCLES, MuscleId, MOTION_ROUNDS, MotionRound, Role } from '../../data/muscles';
 import { T, C, Button } from '../../ui/widgets';
-import { MODEL_CREDIT } from '../../art/muscles';
+import { MODEL_CREDIT, LAT_CREDIT } from '../../art/muscles';
 
 interface Row { id: MuscleId; role: Role | null; segs: { role: Role; g: Phaser.GameObjects.Graphics; t: Phaser.GameObjects.Text; x: number; y: number; w: number; h: number }[]; name: Phaser.GameObjects.Text; mark: Phaser.GameObjects.Graphics }
 type V = { x: number; y: number };
-interface MotionFrame { angle: number; pivot: number[]; handle: number[]; strain: Record<string, number>; labels?: Record<string, number[]>; lat?: number[][]; xray?: number[] }
+interface MotionFrame { angle: number; pivot: number[]; handle: number[]; strain: Record<string, number>; labels?: Record<string, number[]>; lat?: number[][]; xray?: number[]; latx?: number[] }
 interface MotionMeta { round: string; size: [number, number]; angles: number[]; frames: MotionFrame[] }
 
 const ROLE_KO: Record<Role, string> = { agonist: '주동근', antagonist: '길항근', none: '관여 안 함' };
@@ -34,7 +34,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
   queueFrames(rk: string) {
     const m = this.cache.json.get(`mo_${rk}`) as MotionMeta;
     const add = (k: string) => { if (!this.textures.exists(`mo_${rk}_${k}`)) this.load.image(`mo_${rk}_${k}`, `assets/ch2/motion/${rk}_${k}.webp`); };
-    add('n0'); m.frames.forEach((fr, i) => { add(`r${i}`); if (fr.xray) add(`x${i}`); });
+    add('n0'); m.frames.forEach((fr, i) => { add(`r${i}`); if (fr.xray) add(`x${i}`); if (fr.latx) add(`l${i}`); });
   }
   round = 0;
   rows: Row[] = [];
@@ -50,7 +50,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
   create() {
     this.initView();
     this.round = 0; this.rows = []; this.ui = []; this.angle = 0; this.stage = 'assign'; this.dragging = false;
-    this.imgA = this.imgB = this.xA = this.xB = undefined; this.readout = undefined; this.labels = [];
+    this.imgA = this.imgB = this.xA = this.xB = this.lA = undefined; this.readout = undefined; this.labels = [];
     this.frame('운동 재현 장치 · 주동근과 길항근', '목표 움직임에 맞게 근육의 역할을 지정한 뒤, 팔을 직접 끌어 움직임을 실행하세요.', C.pink);
     const { W, H } = View; const portrait = H > W;
     const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.48 : this.ph - 180;
@@ -195,13 +195,13 @@ export class MuscleMotionPuzzle extends PuzzleBase {
 
   // ---------------- drawing ----------------
   roleOf(id: MuscleId): Role { return this.stage === 'assign' ? 'none' : (this.R.roles[id] ?? 'none'); }
-  imgA?: Phaser.GameObjects.Image; imgB?: Phaser.GameObjects.Image; xA?: Phaser.GameObjects.Image; xB?: Phaser.GameObjects.Image;
+  imgA?: Phaser.GameObjects.Image; imgB?: Phaser.GameObjects.Image; xA?: Phaser.GameObjects.Image; xB?: Phaser.GameObjects.Image; lA?: Phaser.GameObjects.Image;
   labels: Phaser.GameObjects.Text[] = [];
   readout?: Phaser.GameObjects.Text;
 
   ensureImages() {
     const mk = () => this.add.image(0, 0, '__DEFAULT').setOrigin(0).setDepth(4).setVisible(false);
-    if (!this.imgA) { this.imgA = mk(); this.imgB = mk(); this.xA = mk().setDepth(4.5); this.xB = mk().setDepth(4.5); }
+    if (!this.imgA) { this.imgA = mk(); this.imgB = mk(); this.xA = mk().setDepth(4.5); this.xB = mk().setDepth(4.5); this.lA = mk().setDepth(4.4); }
   }
 
   redraw() {
@@ -222,16 +222,11 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     if (rk === 'shoulder') {
       const xr = (k: number, im: Phaser.GameObjects.Image, al: number) => { const r = m.frames[k].xray!; im.setTexture(`mo_${rk}_x${k}`).setPosition(f.ox + r[0] * f.sc, f.oy + r[1] * f.sc).setScale(f.sc / 2).setAlpha(al).setVisible(al > 0.01); };
       xr(i, this.xA!, live ? 0.75 * (1 - t) : 0.45); xr(j, this.xB!, live && j !== i ? 0.75 * t : 0);
-      // latissimus dorsi is not in the model: dashed line of action (posterior), lateral ribcage -> intertubercular groove
-      const lat = this.lerpP(fr => fr.lat ? [...fr.lat[0], ...fr.lat[1]] : undefined);
-      if (lat) {
-        const p0 = this.toScreen([lat[0], lat[1]]), p1 = this.toScreen([lat[2], lat[3]]);
-        const col = live ? 0x5fb8ff : 0xd0a0b0; g.lineStyle(3, col, 0.9);
-        const n = 14; for (let k = 0; k < n; k += 2) { const a = k / n, b = (k + 1) / n; g.lineBetween(p0.x + (p1.x - p0.x) * a, p0.y + (p1.y - p0.y) * a, p0.x + (p1.x - p0.x) * b, p0.y + (p1.y - p0.y) * b); }
-        g.fillStyle(col, 1); g.fillCircle(p1.x, p1.y, 4);
-        if (live) this.label(`${nm('latissimus')} (뒤쪽 · 작용선)`, { x: (p0.x + p1.x) / 2 + 30, y: (p0.y + p1.y) / 2 + 20 }, this.roleOf('latissimus'));
-      }
-    } else { this.xA!.setVisible(false); this.xB!.setVisible(false); }
+      // latissimus dorsi (BodyParts3D 3.0 mesh, CC BY-SA): lies behind the trunk/arm in this view -> x-ray overlay
+      const lr = m.frames[i].latx;
+      if (lr) this.lA!.setTexture(`mo_${rk}_l${i}`).setPosition(f.ox + lr[0] * f.sc, f.oy + lr[1] * f.sc).setScale(f.sc / 2).setAlpha(live ? 0.7 : 0.4).setVisible(true);
+      else this.lA!.setVisible(false);
+    } else { this.xA!.setVisible(false); this.xB!.setVisible(false); this.lA!.setVisible(false); }
     // range arc + handle
     const P = this.pivot();
     const h = this.lerpP(fr => fr.handle)!; const H = this.toScreen(h);
@@ -246,9 +241,11 @@ export class MuscleMotionPuzzle extends PuzzleBase {
       const cur: Record<string, number[]> = { ...(m.frames[i].labels ?? {}) };
       const xr = m.frames[i].xray;
       if (xr && !cur.supraspinatus) cur.supraspinatus = [xr[0] + xr[2] * 0.55, xr[1] + xr[3] * 0.5];   // x-ray overlay centre
+      const lx = m.frames[i].latx;
+      if (lx && !cur.latissimus) cur.latissimus = [lx[0] + lx[2] * 0.62, lx[1] + lx[3] * 0.72];
       const items = Object.entries(cur).map(([id, p]) => {
         const sp = this.toScreen(p);
-        const extra = id === 'brachioradialis' ? ' (보조 굴곡)' : id === 'supraspinatus' ? ' (뒤쪽 · 투시)' : id === 'deltoid' && rk === 'shoulder' ? ' (중간섬유)' : '';
+        const extra = id === 'brachioradialis' ? ' (보조 굴곡)' : id === 'supraspinatus' || id === 'latissimus' ? ' (뒤쪽 · 투시)' : id === 'deltoid' && rk === 'shoulder' ? ' (중간섬유)' : '';
         return { id, sp, text: nm(id as MuscleId) + extra, role: (id === 'brachioradialis' ? 'agonist' : this.roleOf(id as MuscleId)) as Role };
       });
       const mx = items.reduce((a, b) => a + b.sp.x, 0) / Math.max(1, items.length);
@@ -266,17 +263,18 @@ export class MuscleMotionPuzzle extends PuzzleBase {
       }
     }
     this.handle(H);
-    // length read-out measured on the posed model
+    // length read-out: DIRECTION only. The model's length numbers are an approximation (straight fibre lines between
+    // the measured attachments, constant volume) and are not validated against measurement, so no % is shown.
     const st = m.frames[i].strain;
     const lines = this.R.cards.map(id => {
       const v = st[id];
-      if (v === undefined) return `${nm(id)}  모델 없음`;
-      const pct = Math.round(v * 100);
-      return `${nm(id)}  ${pct > 0 ? '+' : ''}${pct}%  ${pct <= -3 ? '짧아짐' : pct >= 3 ? '길어짐' : '변화 없음'}`;
+      if (v === undefined) return `${nm(id)}  —  (모델 없음)`;
+      return `${nm(id)}  ${v <= -0.02 ? '▼ 짧아짐' : v >= 0.02 ? '▲ 길어짐' : '－ 변화 없음'}`;
     });
     if (!this.readout) this.readout = T(this, 0, 0, '', 13, '#e8dce2', { lineSpacing: 4, backgroundColor: '#0a0410cc', padding: { x: 8, y: 6 } }).setDepth(7);
-    this.readout.setText(live ? `근육 길이 (안정 시 대비)\n${lines.join('\n')}` : '').setVisible(live).setPosition(this.view.x + 14, this.view.y + this.view.h - 14).setOrigin(0, 1);
-    this.labels.push(T(this, this.view.x + this.view.w - 12, this.view.y + this.view.h - 12, MODEL_CREDIT, 11, '#8f7f88').setOrigin(1, 1).setDepth(7));
+    this.readout.setText(live ? `근육 길이 변화 (안정 자세 대비)\n${lines.join('\n')}` : '').setVisible(live).setPosition(this.view.x + 14, this.view.y + this.view.h - 30).setOrigin(0, 1);
+    this.labels.push(T(this, this.view.x + 14, this.view.y + this.view.h - 12, '근사 모델 · 물리 시뮬레이션 아님 (측정한 기시·정지 사이 경로, 부피 보존)', 11, '#c9a24a').setOrigin(0, 1).setDepth(7));
+    this.labels.push(T(this, this.view.x + this.view.w - 12, this.view.y + this.view.h - 30, rk === 'shoulder' ? `${MODEL_CREDIT}\n${LAT_CREDIT}` : MODEL_CREDIT, 10, '#8f7f88', { align: 'right' }).setOrigin(1, 1).setDepth(7));
     this.labels.push(T(this, this.view.x + 18, this.view.y + 66, rk === 'elbow' ? '오른팔 외측면  ← 뒤 · 앞 →' : '오른쪽 어깨 앞면  ← 외측', 12, '#ffb3c6').setDepth(7));
     this.angT.setText(this.stage === 'assign' ? '' : `${Math.round(this.angle)}° / ${this.R.range}°`);
   }

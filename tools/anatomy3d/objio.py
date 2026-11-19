@@ -19,7 +19,11 @@ def all_ids():
 
 @functools.lru_cache(maxsize=None)
 def load(fid):
-    """-> (V float64 (N,3), F int (M,3))"""
+    """-> (V float64 (N,3), F int (M,3)). 'LAT3' = latissimus dorsi from BodyParts3D 3.0 (CC BY-SA 2.1 JP),
+    registered onto the 4.0 skeleton by latissimus.py"""
+    if fid == 'LAT3':
+        d = np.load(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lat_v4.npz'))
+        return d['V'].astype(float), d['F'].astype(np.int64)
     txt = z().read(_names[fid]).decode('latin1')
     V = []; F = []
     for line in txt.splitlines():
