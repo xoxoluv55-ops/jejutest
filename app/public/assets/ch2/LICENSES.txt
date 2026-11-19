@@ -1,0 +1,13 @@
+CH2 anatomy images in this folder are rendered from BodyParts3D (Database Center for Life Science, DBCLS).
+
+* All files EXCEPT the latissimus files below:
+  "BodyParts3D, (c) The Database Center for Life Science licensed under CC Attribution 4.0 International"
+  https://creativecommons.org/licenses/by/4.0/
+
+* mus_real_latissimus.webp, mus_glow_latissimus.webp, mus_vis_latissimus.webp, motion/shoulder_l*.webp
+  derived from BodyParts3D release 3.0 (FMA13358 right latissimus dorsi):
+  "BodyParts3D, Copyright (c) The Database Center for Life Science licensed by CC Attribution-Share Alike 2.1 Japan"
+  https://creativecommons.org/licenses/by-sa/2.1/jp/
+  These derived images are themselves distributed under CC BY-SA 2.1 JP.
+
+Rendering pipeline: tools/anatomy3d (see README.md there).

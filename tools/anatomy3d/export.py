@@ -28,6 +28,9 @@ for rk in ['elbow', 'shoulder']:
         fr['pivot'] = sh(fr['pivot']); fr['handle'] = sh(fr['handle'])
         if 'lat' in fr: fr['lat'] = [sh(p) for p in fr['lat']]
         if 'labels' in fr: fr['labels'] = {k: sh(v) for k, v in fr['labels'].items()}
+        if 'latx' in fr:
+            r = fr['latx']; fr['latx'] = [round(r[0] - ox, 1), round(r[1] - oy, 1), r[2], r[3]]
+            shutil.copy(os.path.join(md, f'{rk}_l{i}.webp'), os.path.join(DST, 'motion', f'{rk}_l{i}.webp'))
         if 'xray' in fr:
             r = fr['xray']; fr['xray'] = [round(r[0] - ox, 1), round(r[1] - oy, 1), r[2], r[3]]
             shutil.copy(os.path.join(md, f'{rk}_x{i}.webp'), os.path.join(DST, 'motion', f'{rk}_x{i}.webp'))

@@ -55,10 +55,13 @@ k = lnames.index('latissimus') + 1; vis = lab == k
 # really visible from the front.
 cage_ids = [lnames.index(g) + 1 for g in lnames if g in ('bone:ribs', 'bone:cartilage', 'bone:sternum', 'intercostal', 'serratus')]
 cage = ndi.binary_closing(np.isin(lab, cage_ids), iterations=6)
-left = np.full(cage.shape[0], cage.shape[1]); rows = np.where(cage.any(1))[0]
+left = np.full(cage.shape[0], -1); rows = np.where(cage.any(1))[0]
 left[rows] = cage[rows].argmax(1)
+left = ndi.median_filter(left, size=41)                     # smooth the cut line (no row-to-row striping)
+left[rows.max() - 20:] = -1                                 # below the rib cage nothing is anterior to the back
 xs = np.arange(cage.shape[1])[None, :]
 vis &= xs < left[:, None] + 4
+vis = ndi.binary_opening(vis, iterations=3)
 vimg = img.copy(); vimg[..., 3] *= vis
 vc, (x0, y0, x1, y1) = crop(vimg)
 save(vc, os.path.join(OUT, 'plates', 'mus_vis_latissimus.webp'))

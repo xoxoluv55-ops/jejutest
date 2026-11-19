@@ -52,6 +52,12 @@
    "y": 149.0,
    "w": 224.0,
    "h": 67.0
+  },
+  "latissimus": {
+   "x": 327.0,
+   "y": 272.0,
+   "w": 320.0,
+   "h": 704.0
   }
  },
  "labels": {
@@ -94,6 +100,23 @@
    "x": 467.0,
    "y": 169.5,
    "visible": 552
+  },
+  "latissimus": {
+   "x": 374.5,
+   "y": 405.5,
+   "visible": 19168
   }
+ },
+ "overlays": {
+  "latissimus": {
+   "x": 354.0,
+   "y": 348.0,
+   "w": 58.0,
+   "h": 261.0
+  }
+ },
+ "licenses": {
+  "default": "BodyParts3D 4.0, (c) DBCLS, CC BY 4.0",
+  "latissimus": "BodyParts3D 3.0, (c) DBCLS, CC BY-SA 2.1 JP (mus_*_latissimus)"
  }
 }

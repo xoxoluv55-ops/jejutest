@@ -1,37 +1,40 @@
 {
  "round": "shoulder",
  "size": [
-  686,
+  688,
   704
  ],
  "density": 2,
  "angles": [
   0,
-  15,
+  10,
+  20,
   30,
-  45,
+  40,
+  50,
   60,
-  75,
+  70,
+  80,
   90
  ],
  "frames": [
   {
    "angle": 0,
    "pivot": [
-    524.3,
+    526.3,
     181.5
    ],
    "handle": [
-    458.7,
+    460.7,
     579.0
    ],
    "lat": [
     [
-     560.8,
+     562.8,
      351.4
     ],
     [
-     516.9,
+     518.9,
      219.6
     ]
    ],
@@ -43,338 +46,563 @@
     "coracobrachialis": 0.0,
     "brachioradialis": 0.0,
     "triceps": 0.0,
-    "supraspinatus": 0.0
+    "supraspinatus": 0.0,
+    "latissimus": 0.0
    },
    "labels": {
     "deltoid": [
-     507.0,
+     509.0,
      190.5
     ],
     "supraspinatus": [
-     576.0,
+     578.0,
      167.0
     ],
     "pecmajor": [
-     596.0,
+     598.0,
      255.5
     ],
     "brachialis": [
-     475.0,
+     477.0,
      361.5
     ]
    },
    "xray": [
-    504.0,
+    506.0,
     157.0,
     101.0,
     32.0
+   ],
+   "latx": [
+    515.0,
+    212.0,
+    143.0,
+    313.0
    ]
   },
   {
-   "angle": 15,
+   "angle": 10,
    "pivot": [
-    524.4,
-    173.6
+    526.3,
+    176.2
    ],
    "handle": [
-    358.1,
-    540.6
+    392.6,
+    556.3
    ],
    "lat": [
     [
-     560.8,
+     562.8,
      351.4
     ],
     [
-     507.4,
-     208.4
+     512.4,
+     212.4
     ]
    ],
    "strain": {
-    "deltoid": -0.007,
-    "pecmajor": 0.063,
-    "biceps": 0.013,
+    "deltoid": -0.004,
+    "pecmajor": 0.041,
+    "biceps": 0.009,
     "brachialis": 0.0,
-    "coracobrachialis": 0.032,
-    "brachioradialis": 0.0,
+    "coracobrachialis": 0.022,
+    "brachioradialis": -0.0,
     "triceps": 0.007,
-    "supraspinatus": -0.014
+    "supraspinatus": -0.009,
+    "latissimus": 0.052
    },
    "labels": {
     "deltoid": [
-     496.5,
-     183.0
+     518.0,
+     170.0
     ],
     "pecmajor": [
-     596.0,
+     598.0,
      255.5
     ],
     "brachialis": [
-     430.5,
-     331.0
+     446.0,
+     350.0
     ]
    },
    "xray": [
-    507.0,
-    148.0,
-    98.0,
-    38.0
+    508.0,
+    151.0,
+    99.0,
+    36.0
+   ],
+   "latx": [
+    506.0,
+    205.0,
+    153.0,
+    319.0
+   ]
+  },
+  {
+   "angle": 20,
+   "pivot": [
+    526.5,
+    170.9
+   ],
+   "handle": [
+    328.9,
+    522.1
+   ],
+   "lat": [
+    [
+     562.8,
+     351.4
+    ],
+    [
+     506.5,
+     204.2
+    ]
+   ],
+   "strain": {
+    "deltoid": -0.011,
+    "pecmajor": 0.082,
+    "biceps": 0.016,
+    "brachialis": -0.0,
+    "coracobrachialis": 0.041,
+    "brachioradialis": 0.0,
+    "triceps": 0.015,
+    "supraspinatus": -0.02,
+    "latissimus": 0.111
+   },
+   "labels": {
+    "deltoid": [
+     498.5,
+     174.0
+    ],
+    "pecmajor": [
+     598.0,
+     255.0
+    ],
+    "brachialis": [
+     437.5,
+     340.5
+    ]
+   },
+   "xray": [
+    510.0,
+    145.0,
+    97.0,
+    40.0
+   ],
+   "latx": [
+    497.0,
+    198.0,
+    164.0,
+    324.0
    ]
   },
   {
    "angle": 30,
    "pivot": [
-    525.0,
+    527.0,
     165.8
    ],
    "handle": [
-    269.4,
+    271.4,
     477.2
    ],
    "lat": [
     [
-     560.8,
+     562.8,
      351.4
     ],
     [
-     499.5,
+     501.5,
      195.0
     ]
    ],
    "strain": {
     "deltoid": -0.02,
-    "pecmajor": 0.126,
-    "biceps": 0.023,
-    "brachialis": 0.0,
+    "pecmajor": 0.123,
+    "biceps": 0.022,
+    "brachialis": -0.0,
     "coracobrachialis": 0.059,
     "brachioradialis": 0.0,
-    "triceps": 0.015,
-    "supraspinatus": -0.031
+    "triceps": 0.023,
+    "supraspinatus": -0.032,
+    "latissimus": 0.174
    },
    "labels": {
     "deltoid": [
-     486.5,
+     488.5,
      170.5
     ],
     "pecmajor": [
-     596.0,
+     598.0,
      255.0
     ],
     "brachialis": [
-     407.5,
+     409.5,
      317.0
     ]
    },
    "xray": [
-    510.0,
+    512.0,
     140.0,
     95.0,
     43.0
+   ],
+   "latx": [
+    489.0,
+    190.0,
+    174.0,
+    332.0
    ]
   },
   {
-   "angle": 45,
+   "angle": 40,
    "pivot": [
-    526.0,
-    157.9
+    527.6,
+    160.5
    ],
    "handle": [
-    198.6,
-    392.6
+    221.9,
+    422.9
    ],
    "lat": [
     [
-     560.8,
+     562.8,
      351.4
     ],
     [
-     493.9,
-     179.6
+     497.5,
+     184.9
     ]
    ],
    "strain": {
-    "deltoid": -0.039,
-    "pecmajor": 0.185,
-    "biceps": 0.03,
+    "deltoid": -0.032,
+    "pecmajor": 0.164,
+    "biceps": 0.028,
     "brachialis": 0.0,
-    "coracobrachialis": 0.081,
+    "coracobrachialis": 0.074,
     "brachioradialis": 0.0,
-    "triceps": 0.024,
-    "supraspinatus": -0.052
+    "triceps": 0.032,
+    "supraspinatus": -0.045,
+    "latissimus": 0.241
    },
    "labels": {
     "deltoid": [
-     501.5,
-     142.5
+     504.0,
+     147.5
     ],
     "pecmajor": [
-     596.5,
+     598.5,
      254.0
     ],
     "brachialis": [
-     377.0,
-     272.0
+     392.0,
+     286.0
     ]
    },
    "xray": [
     515.0,
-    132.0,
-    90.0,
-    48.0
+    135.0,
+    92.0,
+    46.0
+   ],
+   "latx": [
+    482.0,
+    181.0,
+    181.0,
+    341.0
+   ]
+  },
+  {
+   "angle": 50,
+   "pivot": [
+    528.5,
+    155.3
+   ],
+   "handle": [
+    181.9,
+    360.6
+   ],
+   "lat": [
+    [
+     562.8,
+     351.4
+    ],
+    [
+     494.6,
+     174.2
+    ]
+   ],
+   "strain": {
+    "deltoid": -0.047,
+    "pecmajor": 0.203,
+    "biceps": 0.031,
+    "brachialis": 0.0,
+    "coracobrachialis": 0.087,
+    "brachioradialis": 0.0,
+    "triceps": 0.04,
+    "supraspinatus": -0.059,
+    "latissimus": 0.309
+   },
+   "labels": {
+    "deltoid": [
+     506.0,
+     136.5
+    ],
+    "pecmajor": [
+     603.5,
+     241.0
+    ],
+    "brachialis": [
+     371.5,
+     255.5
+    ]
+   },
+   "xray": [
+    519.0,
+    130.0,
+    88.0,
+    49.0
+   ],
+   "latx": [
+    477.0,
+    171.0,
+    186.0,
+    351.0
    ]
   },
   {
    "angle": 60,
    "pivot": [
-    527.7,
+    529.7,
     150.2
    ],
    "handle": [
-    150.6,
+    152.6,
     292.1
    ],
    "lat": [
     [
-     560.8,
+     562.8,
      351.4
     ],
     [
-     491.0,
+     493.0,
      162.8
     ]
    ],
    "strain": {
     "deltoid": -0.064,
-    "pecmajor": 0.24,
+    "pecmajor": 0.239,
     "biceps": 0.034,
     "brachialis": 0.0,
     "coracobrachialis": 0.096,
     "brachioradialis": 0.0,
-    "triceps": 0.032,
-    "supraspinatus": -0.075
+    "triceps": 0.049,
+    "supraspinatus": -0.074,
+    "latissimus": 0.379
    },
    "labels": {
     "deltoid": [
-     502.0,
+     504.0,
      126.5
     ],
     "pecmajor": [
-     601.5,
+     603.5,
      241.0
     ],
     "brachialis": [
-     356.5,
+     358.5,
      221.0
     ]
    },
    "xray": [
-    520.0,
+    522.0,
     126.0,
     85.0,
     51.0
+   ],
+   "latx": [
+    474.0,
+    160.0,
+    187.0,
+    363.0
    ]
   },
   {
-   "angle": 75,
+   "angle": 70,
    "pivot": [
-    529.8,
-    142.6
+    531.0,
+    145.1
    ],
    "handle": [
-    128.8,
-    182.1
+    135.1,
+    219.4
    ],
    "lat": [
     [
-     560.8,
+     562.8,
      351.4
     ],
     [
-     491.1,
-     145.3
+     492.7,
+     151.2
     ]
    ],
    "strain": {
-    "deltoid": -0.094,
-    "pecmajor": 0.289,
+    "deltoid": -0.083,
+    "pecmajor": 0.274,
     "biceps": 0.035,
     "brachialis": 0.0,
-    "coracobrachialis": 0.106,
+    "coracobrachialis": 0.104,
     "brachioradialis": 0.0,
-    "triceps": 0.04,
-    "supraspinatus": -0.1
+    "triceps": 0.057,
+    "supraspinatus": -0.09,
+    "latissimus": 0.448
    },
    "labels": {
     "deltoid": [
-     502.0,
-     110.0
+     506.0,
+     115.5
     ],
     "pecmajor": [
-     598.5,
+     600.5,
      249.0
     ],
     "brachialis": [
-     341.0,
-     165.5
+     349.5,
+     185.0
     ]
    },
    "xray": [
     526.0,
-    120.0,
-    80.0,
-    55.0
+    122.0,
+    82.0,
+    54.0
+   ],
+   "latx": [
+    472.0,
+    147.0,
+    187.0,
+    377.0
+   ]
+  },
+  {
+   "angle": 80,
+   "pivot": [
+    532.6,
+    140.1
+   ],
+   "handle": [
+    129.7,
+    144.5
+   ],
+   "lat": [
+    [
+     562.8,
+     351.4
+    ],
+    [
+     493.8,
+     139.4
+    ]
+   ],
+   "strain": {
+    "deltoid": -0.104,
+    "pecmajor": 0.306,
+    "biceps": 0.034,
+    "brachialis": 0.0,
+    "coracobrachialis": 0.108,
+    "brachioradialis": 0.0,
+    "triceps": 0.065,
+    "supraspinatus": -0.106,
+    "latissimus": 0.516
+   },
+   "labels": {
+    "deltoid": [
+     500.0,
+     105.0
+    ],
+    "pecmajor": [
+     603.5,
+     234.0
+    ],
+    "brachialis": [
+     345.0,
+     147.0
+    ]
+   },
+   "xray": [
+    530.0,
+    118.0,
+    78.0,
+    56.0
+   ],
+   "latx": [
+    472.0,
+    135.0,
+    186.0,
+    391.0
    ]
   },
   {
    "angle": 90,
    "pivot": [
-    532.4,
+    534.4,
     135.2
    ],
    "handle": [
-    134.8,
+    136.8,
     69.5
    ],
    "lat": [
     [
-     560.8,
+     562.8,
      351.4
     ],
     [
-     494.3,
+     496.3,
      127.8
     ]
    ],
    "strain": {
-    "deltoid": -0.128,
-    "pecmajor": 0.331,
+    "deltoid": -0.127,
+    "pecmajor": 0.334,
     "biceps": 0.033,
     "brachialis": 0.0,
     "coracobrachialis": 0.109,
     "brachioradialis": 0.0,
-    "triceps": 0.048,
-    "supraspinatus": -0.125
+    "triceps": 0.072,
+    "supraspinatus": -0.122,
+    "latissimus": 0.581
    },
    "labels": {
     "deltoid": [
-     505.0,
+     507.0,
      93.0
     ],
     "pecmajor": [
-     602.0,
+     604.0,
      233.0
     ],
     "brachialis": [
-     347.5,
+     349.5,
      109.5
     ]
    },
    "xray": [
-    532.0,
+    534.0,
     115.0,
     75.0,
     57.0
+   ],
+   "latx": [
+    474.0,
+    123.0,
+    184.0,
+    404.0
    ]
   }
- ]
+ ],
+ "strain_lat_note": "latissimus: BodyParts3D 3.0 mesh (CC BY-SA 2.1 JP) registered to 4.0",
+ "strain_note": "approximation: mean straight fibre line from every origin-contact vertex to the insertion; not validated against measurement"
 }

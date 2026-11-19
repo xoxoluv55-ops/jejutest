@@ -5,8 +5,9 @@ All muscle and bone art in Chapter 2 (근육 연결실) is rendered from **BodyP
 The game shows that credit next to every model render (`MODEL_CREDIT` in `app/src/art/muscles.ts`).
 
 Nothing is drawn by hand or by an image generator: shapes, attachments, depth order, tendons and poses all come
-from the model's meshes. Exception: **latissimus dorsi is not in BodyParts3D 4.0**. It appears only as a dashed
-schematic (archive, link puzzle decoys) or a dashed line of action (shoulder motion round), always labelled as such.
+from the model's meshes. **Latissimus dorsi is not in BodyParts3D 4.0**: it comes from release 3.0 (same source body,
+CC BY-SA 2.1 JP), registered onto the 4.0 skeleton (`latissimus.py`), rendered only into separate files
+(`lat_render.py`) with its own credit (`LAT_CREDIT`). See `app/public/assets/ch2/LICENSES.txt`.
 
 ## Pipeline
 
@@ -20,7 +21,9 @@ schematic (archive, link puzzle decoys) or a dashed line of action (shoulder mot
 | post | `post.py` | fibres by line-integral convolution along the rendered fibre field, tendon sheen, boundary lines |
 | plates | `plates.py` | `plate_full`, `plate_bones`, `mus_real_<id>`, `mus_glow_<id>`, `plates.json` (layer rects, label points) |
 | motion | `motion.py`, `motion_render.py` | posed frames for elbow flexion (0–140°, lateral view) and shoulder abduction (0–90°, anterior view) |
-| export | `export.py` | crops motion frames, copies everything to `app/public/assets/ch2/` |
+| latissimus | `latissimus.py`, `lat_render.py` | 3.0 mesh → rigid ICP on 14 shared bones → layers, visible-part overlay, posed x-ray frames |
+| export | `export.py`, `update_strain.py` | crops motion frames, copies everything to `app/public/assets/ch2/`, writes fibre-mean length change (sign used in game) |
+| verify | `verify.py`, `landmarks.py`, `excursion.py` | contacts, textbook landmark regions, length / moment-arm estimates → `docs/ANATOMY_MODEL.md` |
 
 ### Motion model
 * Bones move rigidly by segment. Elbow: rotation about the measured flexion axis (epicondyle line through the
@@ -40,6 +43,11 @@ python3 build.py anterior out/scene_ant.json
 python3 plates.py out/plates
 python3 motion_render.py elbow out/motion
 python3 motion_render.py shoulder out/motion
+# latissimus: save https://dbarchive.biosciencedbc.jp/data/bodyparts3d/20110915/BodyParts3D_3.0_obj_99.zip here as bp3.zip
+python3 latissimus.py
+python3 lat_render.py out
 python3 export.py out ../../app/public/assets/ch2
+python3 update_strain.py ../../app/public/assets/ch2/motion
+python3 verify.py ../../app/public/assets/ch2/motion; python3 landmarks.py; python3 excursion.py
 ```
 Python needs numpy, scipy, Pillow; rendering needs Node + Playwright's Chromium.
