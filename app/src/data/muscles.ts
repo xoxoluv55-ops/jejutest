@@ -134,7 +134,7 @@ export const MOTION_ROUNDS: MotionRound[] = [
     },
   },
   {
-    id: 'shoulderAbd', ko: '어깨 벌림', en: 'Shoulder abduction (0–90°)', joint: '오목위팔관절 (절구관절)', plane: '관상면 · 전후축', range: 90,
+    id: 'shoulderAbd', ko: '어깨 벌림', en: 'Shoulder abduction (0–90°)', joint: '오목위팔관절 (절절구관절)', plane: '관상면 · 전후축', range: 90,
     cards: ['deltoid', 'supraspinatus', 'pecmajor', 'latissimus', 'brachialis'],
     roles: { deltoid: 'agonist', supraspinatus: 'agonist', pecmajor: 'antagonist', latissimus: 'antagonist' },
     why: {

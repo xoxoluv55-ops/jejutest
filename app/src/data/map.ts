@@ -6,7 +6,7 @@ export const WORLD = { x: 0, y: 200, w: 2800, h: 2300 };
 export interface Room { id: string; name: string; code: string; x: number; y: number; w: number; h: number; floor: 'floor_lab' | 'floor_grate' | 'floor_tile'; }
 export const ROOMS: Room[] = [
   { id: 'lift', name: '탈출 승강기', code: 'EXIT', x: 1220, y: 420, w: 280, h: 234, floor: 'floor_grate' },
-  { id: 'lab', name: '골격 복구실', code: 'A-01', x: 760, y: 800, w: 1200, h: 900, floor: 'floor_lab' },
+  { id: 'lab', name: '뼈대 복구실', code: 'A-01', x: 760, y: 800, w: 1200, h: 900, floor: 'floor_lab' },
   { id: 'corr', name: '격리 통로', code: 'B-02', x: 160, y: 1250, w: 600, h: 300, floor: 'floor_grate' },
   { id: 'joint', name: '관절 보정실', code: 'J-03', x: 900, y: 1846, w: 800, h: 454, floor: 'floor_tile' },
   { id: 'xray', name: '영상 판독실', code: 'X-04', x: 1996, y: 800, w: 644, h: 500, floor: 'floor_tile' },

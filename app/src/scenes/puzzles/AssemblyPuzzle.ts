@@ -10,7 +10,7 @@ import { T, C, drawIcon } from '../../ui/widgets';
 interface Piece { id: BoneId; img: Phaser.GameObjects.Image; home: { x: number; y: number; s: number }; placed: boolean; label: Phaser.GameObjects.Text; card: Phaser.GameObjects.Graphics }
 
 /**
- * PUZZLE 1 — 팔 골격 조립 (right upper limb, anterior view).
+ * PUZZLE 1 — 팔 뼈대 조립 (right upper limb, anterior view).
  * Drag each recovered specimen onto its anatomical position. Detect & discard the contaminated specimen (fibula).
  */
 export class AssemblyPuzzle extends PuzzleBase {
@@ -27,7 +27,7 @@ export class AssemblyPuzzle extends PuzzleBase {
     this.initView();
     this.pieces = []; this.discarded = false; this.ghosts = {}; this.nodes = {};
     const adv = G.run.difficulty === 'adv';
-    this.frame('골격 복구 테이블 · 팔 골격 재조립', adv ? '오른쪽 팔, 앞면 — 표본의 형태만 보고 제자리를 찾으세요. 오염 표본은 폐기함으로.' : '오른쪽 팔을 앞에서 본 모습입니다. 표본을 끌어 윤곽에 맞춰 놓으세요. 팔이 아닌 표본은 폐기함으로!');
+    this.frame('뼈대 복구 테이블 · 팔 뼈대 재조립', adv ? '오른쪽 팔, 앞면 — 표본의 형태만 보고 제자리를 찾으세요. 오염 표본은 폐기함으로.' : '오른쪽 팔을 앞에서 본 모습입니다. 표본을 끌어 윤곽에 맞춰 놓으세요. 팔이 아닌 표본은 폐기함으로!');
     const { W, H } = View;
     const portrait = H > W;
     // ---- frame area (left) ----
@@ -62,7 +62,7 @@ export class AssemblyPuzzle extends PuzzleBase {
     // ---- tray (right) ----
     const tx = portrait ? this.px + 30 : this.px + this.pw * 0.58, ty = portrait ? this.fy + FRAME.h * this.fs + 24 : this.py + 90;
     const tw = portrait ? this.pw - 60 : this.pw * 0.42 - 40;
-    T(this, tx, ty, adv ? '회수한 표본 (미분류)' : '회수한 골격 표본', 18, C.cyanS, { weight: '700' });
+    T(this, tx, ty, adv ? '회수한 표본 (미분류)' : '회수한 뼈대 표본', 18, C.cyanS, { weight: '700' });
     this.progressT = T(this, tx + tw, ty, '', 16, C.dim, { weight: '700' }).setOrigin(1, 0);
     const cols = portrait ? 6 : 3, gap = 12;
     const cw = (tw - gap * (cols - 1)) / cols, ch = portrait ? Math.min(170, cw * 1.4) : Math.min(190, (this.ph - 300) / 2 - gap);
@@ -86,7 +86,7 @@ export class AssemblyPuzzle extends PuzzleBase {
     this.bin = { x: tx, y: by, w: bw, h: bh, g: bg };
     this.drawBin(false);
     T(this, tx + 70, by + bh / 2 - 10, '오염 표본 폐기함', 18, C.redS, { weight: '700' }).setOrigin(0, 0.5);
-    T(this, tx + 70, by + bh / 2 + 14, '팔 골격이 아닌 표본을 여기에 버리세요', 13, C.dim).setOrigin(0, 0.5);
+    T(this, tx + 70, by + bh / 2 + 14, '팔 뼈대가 아닌 표본을 여기에 버리세요', 13, C.dim).setOrigin(0, 0.5);
     this.updateProgress();
     this.setFeedback(adv ? '각 표본을 드래그해 해당 위치에 놓으세요. 위치를 표시한 링은 관절 기준점입니다.' : '표본을 드래그해서 같은 모양의 점선 윤곽에 놓으세요. 이름과 위치 관계(가쪽·안쪽)를 함께 기억하세요.', 'info', tx, Math.min(tw, this.pw - 60));
     // ---- drag logic ----
@@ -140,7 +140,7 @@ export class AssemblyPuzzle extends PuzzleBase {
         this.updateProgress(); this.check();
       } else {
         Audio.play('error'); this.mistake(); G.run.stats.assembly++;
-        this.setFeedback(`${G.run.difficulty === 'adv' ? '이 표본' : b.ko}은(는) 팔 골격입니다. 폐기하면 안 돼요!`, 'err', fbx, fbw);
+        this.setFeedback(`${G.run.difficulty === 'adv' ? '이 표본' : b.ko}은(는) 팔 뼈대입니다. 폐기하면 안 돼요!`, 'err', fbx, fbw);
         this.back(pc);
       }
       return;
@@ -183,7 +183,7 @@ export class AssemblyPuzzle extends PuzzleBase {
       const h = this.add.image(this.fx + bb.cx * this.fs, this.fy + bb.cy * this.fs, `bone_holo_${id}`).setScale(this.fs / DENSITY).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
       this.tweens.add({ targets: h, alpha: 0.9, duration: 300, delay: UPPER_ORDER.indexOf(id) * 140, yoyo: true, hold: 300 });
     }
-    this.setFeedback('팔 골격 재조립 완료! 복장빗장관절 → 봉우리빗장관절 → 오목위팔관절 → 팔꿉관절로 이어지는 사슬이 복구되었습니다.', 'ok');
-    this.success('c_girdle', '팔은 복장빗장관절로만 몸통 골격과 이어진다', 1800);
+    this.setFeedback('팔 뼈대 재조립 완료! 복장빗장관절 → 봉우리빗장관절 → 오목위팔관절 → 팔꿉관절로 이어지는 사슬이 복구되었습니다.', 'ok');
+    this.success('c_girdle', '팔은 복장빗장관절로만 몸통 뼈대와 이어진다', 1800);
   }
 }

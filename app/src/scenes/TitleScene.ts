@@ -175,7 +175,7 @@ export class TitleScene extends BaseScene {
     const g = this.add.graphics(); drawPanel(g, px, py, pw, ph, { accent: C.cyan, header: 58 }); m.add(g);
     const head = T(this, px + 34, py + 29, '', 22, C.white, { weight: '700' }).setOrigin(0, 0.5); m.add(head);
     // chapter selector (CH2 unlocks after clearing CH1)
-    const chs: [number, string][] = [[1, 'CH1 골격'], [2, 'CH2 근육']];
+    const chs: [number, string][] = [[1, 'CH1 뼈대'], [2, 'CH2 근육']];
     const chBtns: { g: Phaser.GameObjects.Graphics; n: number; x: number; t: Phaser.GameObjects.Text }[] = [];
     chs.forEach(([n, label], i) => {
       const x = px + pw - 34 - (2 - i) * 150 - (1 - i) * 10, y = py + 10;
@@ -218,13 +218,13 @@ export class TitleScene extends BaseScene {
       cBtns.push({ g: gg, c, img });
     });
     const STORY: Record<number, string> = {
-      1: '인체 구조를 연구하던 지하 시설 BODY LAB.\n중앙 AI의 오작동으로 모든 격벽이 봉쇄됐다.\n\n흩어진 골격 표본을 찾아 복구하고\n탈출 게이트의 잠금 3개를 해제하라.',
-      2: '골격실을 탈출한 실험체는 하부 연구동의\n근육 연결실에 도착했다.\n\n끊어진 근육의 이는곳과 닿는곳을 다시 잇고\n주작용근과 대항근으로 움직임을 되살려라.',
+      1: '인체 구조를 연구하던 지하 시설 BODY LAB.\n중앙 AI의 오작동으로 모든 격벽이 봉쇄됐다.\n\n흩어진 뼈대 표본을 찾아 복구하고\n탈출 게이트의 잠금 3개를 해제하라.',
+      2: '뼈대실을 탈출한 실험체는 하부 연구동의\n근육 연결실에 도착했다.\n\n끊어진 근육의 이는곳과 닿는곳을 다시 잇고\n주작용근과 대항근으로 움직임을 되살려라.',
     };
     const story = T(this, px + 34 + 4 * (cw + 14) + 10, py + 268, STORY[chapter], 16, '#c9d6ee', { lineSpacing: 6, wordWrap: { width: Math.max(160, px + pw - (px + 34 + 4 * (cw + 14) + 10) - 30) } });
     m.add(story);
     const redraw = () => {
-      head.setText(chapter === 1 ? 'MISSION BRIEFING · CHAPTER 1 골격 복구실' : 'MISSION BRIEFING · CHAPTER 2 근육 연결실');
+      head.setText(chapter === 1 ? 'MISSION BRIEFING · CHAPTER 1 뼈대 복구실' : 'MISSION BRIEFING · CHAPTER 2 근육 연결실');
       story.setText(STORY[chapter]);
       chBtns.forEach(({ g: g2, n, x }) => {
         const on = n === chapter; g2.clear();

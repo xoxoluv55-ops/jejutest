@@ -1,7 +1,7 @@
 # ANATOMY ESCAPE — 해부학 탈출 프로젝트
 
 폐쇄된 지하 인체 연구시설 **BODY LAB**을 탐험하며 해부학 퍼즐을 풀고 탈출하는 2D 탑다운 미스터리 방탈출 게임입니다.
-현재 버전은 **PHASE 1 플레이어블 데모 (CHAPTER 1 · 골격 복구실)** 입니다.
+현재 버전은 **PHASE 1 플레이어블 데모 (CHAPTER 1 · 뼈대 복구실)** 입니다.
 
 - iPad Safari 우선 (가상 조이스틱·터치 버튼), PC 브라우저 지원 (WASD / Shift 달리기 / E 조작 / Space 스캔 / Tab 인벤토리 / M 지도 / Esc 일시정지)
 - 설계 문서: [`docs/DESIGN.md`](docs/DESIGN.md) · 이미지 요청 목록: [`docs/ASSETS.md`](docs/ASSETS.md)

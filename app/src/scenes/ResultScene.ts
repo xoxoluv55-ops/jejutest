@@ -35,7 +35,7 @@ export class ResultScene extends BaseScene {
     const title = T(this, W / 2, 80, 'ESCAPE SUCCESS', 64, '#ffffff', { display: true, weight: '900' }).setOrigin(0.5);
     title.setShadow(0, 0, '#3dffa2', 24, true, true);
     const ch2 = r.chapter === 2;
-    T(this, W / 2, 140, ch2 ? 'CHAPTER 2 · 근육 연결실 탈출 완료' : 'CHAPTER 1 · 골격 복구실 탈출 완료', 22, C.greenS, { weight: '700' }).setOrigin(0.5);
+    T(this, W / 2, 140, ch2 ? 'CHAPTER 2 · 근육 연결실 탈출 완료' : 'CHAPTER 1 · 뼈대 복구실 탈출 완료', 22, C.greenS, { weight: '700' }).setOrigin(0.5);
     const pw = Math.min(760, W * 0.58), px = Math.max(W * 0.36, W / 2 - pw / 2), py = 190, ph = H - 300;
     const g = this.add.graphics(); drawPanel(g, px, py, pw, ph, { accent: C.green, header: 52 });
     T(this, px + 28, py + 26, '연구 기록 · 결과 보고서', 20, C.white, { weight: '700' }).setOrigin(0, 0.5);
@@ -48,7 +48,7 @@ export class ResultScene extends BaseScene {
         ['이는곳·닿는곳 연결 오답', `${r.stats.link}회  (정확도 ${acc(r.stats.link)}%)`],
         ['운동 재현 역할 오답', `${r.stats.motion}회  (정확도 ${acc(r.stats.motion)}%)`],
       ] as [string, string][] : [
-        ['골격 조립 오답', `${r.stats.assembly}회  (정확도 ${acc(r.stats.assembly)}%)`],
+        ['뼈대 조립 오답', `${r.stats.assembly}회  (정확도 ${acc(r.stats.assembly)}%)`],
         ['관절 정렬 재검증', `${r.stats.align}회  (정확도 ${acc(r.stats.align)}%)`],
         ['X-ray 판독 오답', `${r.stats.xray}회  (정확도 ${acc(r.stats.xray)}%)`],
       ] as [string, string][]),
@@ -64,7 +64,7 @@ export class ResultScene extends BaseScene {
     r.learned.forEach((id, i) => { const e = ARCHIVE.find(a => a.id === id); if (e) T(this, px + 34, ly + 34 + i * 30, `◆ ${e.title} — ${e.en}`, 17, '#d3def3'); });
     const weak: [string, string][] = ch2
       ? [['atlas', '어깨·위팔 표층 근육의 위치'], ['link', '근육의 이는곳과 닿는곳(부착 위치)'], ['motion', '주작용근·대항근과 관절을 지나는 위치']]
-      : [['assembly', '팔 골격의 위치 관계(노뼈=가쪽, 자뼈=안쪽)'], ['align', '관절면의 방향(몸쪽/먼쪽, 안쪽/가쪽 지표)'], ['xray', '어깨 방사선 영상의 지표 구조']];
+      : [['assembly', '팔 뼈대의 위치 관계(노뼈=가쪽, 자뼈=안쪽)'], ['align', '관절면의 방향(몸쪽/먼쪽, 안쪽/가쪽 지표)'], ['xray', '어깨 방사선 영상의 지표 구조']];
     const worst = weak.filter(([k]) => r.stats[k] >= 2).map(([, s]) => s);
     if (worst.length) T(this, px + 34, py + ph - 40, `복습 추천: ${worst.join(', ')}`, 15, C.redS, { wordWrap: { width: pw - 68 } }).setOrigin(0, 0.5);
     const by = H - 56;

@@ -361,7 +361,7 @@ export class GameScene extends Phaser.Scene {
       const c = this.boneSprite(id, s.x, s.y);
       if (s.hidden) c.setVisible(false).setAlpha(0);
       this.bonesInWorld[id] = c;
-      this.addInter({ id: `bone_${id}`, x: s.x, y: s.y, r: 80, hidden: s.hidden, icon: 'hand', label: () => '골격 표본 회수', act: () => this.pickupBone(id) });
+      this.addInter({ id: `bone_${id}`, x: s.x, y: s.y, r: 80, hidden: s.hidden, icon: 'hand', label: () => '뼈대 표본 회수', act: () => this.pickupBone(id) });
     });
   }
 
@@ -374,8 +374,8 @@ export class GameScene extends Phaser.Scene {
     tag.setShadow(0, 0, '#3fd4ff', 8, true, true);
     this.addInter({
       id: 'assembly', x: 1360, y: 1300, r: 150, icon: 'bone',
-      label: () => G.run.flags.assembled ? '골격 홀로그램 (복구 완료)' : '골격 복구 테이블',
-      locked: () => G.run.flags.assembled ? '이미 복구한 구조입니다.' : G.run.bones.length < 6 ? `골격 표본이 부족합니다 (${G.run.bones.length}/6). 시설 곳곳을 탐색하고 SCAN을 사용하세요.` : null,
+      label: () => G.run.flags.assembled ? '뼈대 홀로그램 (복구 완료)' : '뼈대 복구 테이블',
+      locked: () => G.run.flags.assembled ? '이미 복구한 구조입니다.' : G.run.bones.length < 6 ? `뼈대 표본이 부족합니다 (${G.run.bones.length}/6). 시설 곳곳을 탐색하고 SCAN을 사용하세요.` : null,
       act: () => this.openPuzzle('Assembly'),
     });
     // joint rig (J-03)
@@ -396,7 +396,7 @@ export class GameScene extends Phaser.Scene {
     this.addInter({
       id: 'align', x: 1480, y: 2010, r: 140, icon: 'rotate',
       label: () => G.run.flags.aligned ? '관절 보정 장치 (정렬 완료)' : '관절 보정 장치',
-      locked: () => G.run.flags.aligned ? '이미 정렬이 완료되었습니다.' : !G.run.flags.assembled ? '골격 데이터가 없습니다. 먼저 골격 복구 테이블에서 골격을 조립하세요.' : !G.run.flags.power ? '전력이 차단되어 있습니다. 차단기로 보조 전원을 복구하세요.' : null,
+      locked: () => G.run.flags.aligned ? '이미 정렬이 완료되었습니다.' : !G.run.flags.assembled ? '뼈대 데이터가 없습니다. 먼저 뼈대 복구 테이블에서 뼈대를 조립하세요.' : !G.run.flags.power ? '전력이 차단되어 있습니다. 차단기로 보조 전원을 복구하세요.' : null,
       act: () => this.openPuzzle('Align'),
     });
     // breaker (J-03 north wall)
@@ -420,7 +420,7 @@ export class GameScene extends Phaser.Scene {
       id: 'xdoor', x: 1930, y: 1060, r: 90, icon: 'lock',
       enabled: () => !G.run.flags.power,
       label: () => '영상 판독실 출입문',
-      locked: () => G.run.flags.blackout ? '전력이 없어 문이 열리지 않습니다. 보조 전원을 복구하세요.' : '격벽 잠금 상태. 골격 복구 이후 전력 재분배가 필요합니다.',
+      locked: () => G.run.flags.blackout ? '전력이 없어 문이 열리지 않습니다. 보조 전원을 복구하세요.' : '격벽 잠금 상태. 뼈대 복구 이후 전력 재분배가 필요합니다.',
       act: () => { /* locked only */ },
     });
     // gate
@@ -430,7 +430,7 @@ export class GameScene extends Phaser.Scene {
       label: () => '탈출 게이트 · 코어 인증',
       locked: () => {
         const f = G.run.flags; const n = [f.assembled, f.aligned, f.xray].filter(Boolean).length;
-        return n < 3 ? `게이트 잠금 ${n}/3 해제됨. 골격 조립 · 관절면 정렬 · X-ray 판독을 모두 완료해야 합니다.` : null;
+        return n < 3 ? `게이트 잠금 ${n}/3 해제됨. 뼈대 조립 · 관절면 정렬 · X-ray 판독을 모두 완료해야 합니다.` : null;
       },
       act: () => this.openGate(),
     });
@@ -506,7 +506,7 @@ export class GameScene extends Phaser.Scene {
     const seq: [number, () => void][] = [
       [600, () => { Audio.play('glitch'); this.ai('경고: 구조 무결성 손상. 프로토콜 LOCKDOWN 실행.', 'warn', 3200); }],
       [3800, () => this.ai('모든 격벽이 봉쇄되었습니다. 인체 구조 복구가 필요합니다.', 'ai', 3400)],
-      [7400, () => { this.ai('손상된 골격 표본 6개 감지. 회수 후 복구 테이블(A-01)에서 재조립하십시오.', 'ai', 4200); Audio.alarm(false); }],
+      [7400, () => { this.ai('손상된 뼈대 표본 6개 감지. 회수 후 복구 테이블(A-01)에서 재조립하십시오.', 'ai', 4200); Audio.alarm(false); }],
       [9000, () => {
         this.busy = false; this.player.frozen = false; G.run.flags.intro = true; Bus.emit('mission');
         this.toast(this.sys.game.device.input.touch ? '왼쪽 조이스틱으로 이동 · 오른쪽 버튼으로 조작/스캔' : '이동 WASD · 달리기 Shift · 상호작용 E · 스캔 Space', 'info');
@@ -519,8 +519,8 @@ export class GameScene extends Phaser.Scene {
   missions(): Mission[] {
     const f = G.run.flags, n = G.run.bones.length;
     const list: Mission[] = [
-      { text: `골격 표본 회수 (${n}/6)`, done: n >= 6, active: n < 6 },
-      { text: '골격 조립 · 복구 테이블', done: f.assembled, active: n >= 6 && !f.assembled, tag: 'LOCK 1' },
+      { text: `뼈대 표본 회수 (${n}/6)`, done: n >= 6, active: n < 6 },
+      { text: '뼈대 조립 · 복구 테이블', done: f.assembled, active: n >= 6 && !f.assembled, tag: 'LOCK 1' },
     ];
     if (f.blackout || f.power) list.push({ text: '보조 전원 복구 · 차단기', done: f.power, active: f.blackout && !f.power });
     list.push({ text: '관절면 정렬 · J-03', done: f.aligned, active: f.power && !f.aligned, tag: 'LOCK 2' });
@@ -563,7 +563,7 @@ export class GameScene extends Phaser.Scene {
     const c = this.boneSprite(id, s.x, s.y + (via === 'cabinet' ? 50 : 60));
     c.setScale(0.2); this.tweens.add({ targets: c, scale: 1, duration: 400, ease: 'Back.out' });
     this.bonesInWorld[id] = c;
-    this.addInter({ id: `bone_${id}`, x: c.x, y: c.y, r: 90, icon: 'hand', label: () => '골격 표본 회수', act: () => this.pickupBone(id) });
+    this.addInter({ id: `bone_${id}`, x: c.x, y: c.y, r: 90, icon: 'hand', label: () => '뼈대 표본 회수', act: () => this.pickupBone(id) });
   }
 
   pickupBone(id: BoneId) {
@@ -581,7 +581,7 @@ export class GameScene extends Phaser.Scene {
     Bus.emit('pickup', id);
     this.toast(`${b.ko} · ${b.en} 획득 — ${run.bones.length}/6`, 'ok');
     Bus.emit('mission');
-    if (run.bones.length === 6) this.time.delayedCall(900, () => this.ai('모든 표본 회수 확인. 골격 복구 테이블(A-01)로 이동하십시오.', 'ok'));
+    if (run.bones.length === 6) this.time.delayedCall(900, () => this.ai('모든 표본 회수 확인. 뼈대 복구 테이블(A-01)로 이동하십시오.', 'ok'));
   }
 
   readLog(id: string) {
@@ -644,7 +644,7 @@ export class GameScene extends Phaser.Scene {
     this.light.setBlackout(true);
     this.holoProj.setVisible(false);
     this.blackoutLeft = 90;
-    this.ai('경고: 골격 데이터 재기동 중 전력 과부하. 주 전원 차단.', 'warn', 3600);
+    this.ai('경고: 뼈대 데이터 재기동 중 전력 과부하. 주 전원 차단.', 'warn', 3600);
     this.time.delayedCall(3800, () => this.ai('비상 전력 잔량 90초. 관절 보정실(J-03) 차단기로 보조 전원을 복구하십시오.', 'warn', 4800));
     Bus.emit('mission'); Bus.emit('blackout', true);
   }
@@ -845,16 +845,16 @@ export class GameScene extends Phaser.Scene {
   }
 
   timerLabel() { return '비상 전력'; }
-  chapterName() { return '골격 복구실'; }
+  chapterName() { return '뼈대 복구실'; }
   locksOpen() { const f = G.run.flags; return [f.assembled, f.aligned, f.xray].filter(Boolean).length; }
   floorName() { return 'BODY LAB · B4'; }
 
   // inventory shown by the HUD
-  invTitle() { return '골격 표본'; }
+  invTitle() { return '뼈대 표본'; }
   invTotal() { return 6; }
   invIcon(): IconName { return 'bone'; }
   invItems(): InvItem[] {
-    return G.run.bones.map(id => { const b = BONES[id]; return { id, tex: `bone_bone_${id}`, title: b.ko, en: b.en, info: b.info, tag: b.region === 'upper' ? '분류: 팔 골격' : '분류: 다리 골격', angle: id === 'humerus' || id === 'radius' || id === 'ulna' || id === 'fibula' ? 35 : 0 }; });
+    return G.run.bones.map(id => { const b = BONES[id]; return { id, tex: `bone_bone_${id}`, title: b.ko, en: b.en, info: b.info, tag: b.region === 'upper' ? '분류: 팔 뼈대' : '분류: 다리 뼈대', angle: id === 'humerus' || id === 'radius' || id === 'ulna' || id === 'fibula' ? 35 : 0 }; });
   }
 
   /** Shown as locked on the full map. */
