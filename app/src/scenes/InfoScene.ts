@@ -67,14 +67,18 @@ export class InfoScene extends BaseScene {
       z.on('pointerup', () => { persist(); Audio.play('beep'); });
     });
     const toggles: [string, string, () => string, () => void][] = [
+      ['음소거', '모든 소리 끄기 (음량 설정은 유지)', () => Save.settings.muted ? '켜짐' : '꺼짐', () => { Save.settings.muted = !Save.settings.muted; persist(); Audio.unlock(); Audio.applyVolumes(); }],
+      ['효과음', '효과음만 켜기/끄기 (배경 음악은 유지)', () => Save.settings.sfxOn ? '켜짐' : '꺼짐', () => { Save.settings.sfxOn = !Save.settings.sfxOn; persist(); Audio.unlock(); Audio.applyVolumes(); if (Save.settings.sfxOn) Audio.play('beep'); }],
       ['그래픽 품질', '낮음: 해상도·파티클 축소 (구형 iPad 권장)', () => Save.settings.quality === 'high' ? '높음' : '낮음', () => { Save.settings.quality = Save.settings.quality === 'high' ? 'low' : 'high'; persist(); viewEvents.emit('quality'); }],
       ['목표 안내 화살표', '다음 목표 방향 표시 및 숨은 표본 안내', () => Save.settings.hints ? '켜짐' : '꺼짐', () => { Save.settings.hints = !Save.settings.hints; persist(); }],
     ];
+    // two columns so four toggles fit the panel
+    const cw = (w - 60) / 2;
     toggles.forEach(([label, sub, get, fn], i) => {
-      const ry = y + 360 + i * 90;
-      T(this, x + 40, ry - 10, label, 19, C.white, { weight: '700' }).setOrigin(0, 0.5);
-      T(this, x + 40, ry + 16, sub, 14, C.dim).setOrigin(0, 0.5);
-      const b = new Button(this, x + w - 140, ry, get(), () => { fn(); b.setText(get()); }, { w: 180, h: 54 });
+      const cx = x + 30 + (i % 2) * cw, ry = y + 360 + Math.floor(i / 2) * 96;
+      T(this, cx + 10, ry - 12, label, 18, C.white, { weight: '700' }).setOrigin(0, 0.5);
+      T(this, cx + 10, ry + 14, sub, 12, C.dim, { wordWrap: { width: cw - 150 } }).setOrigin(0, 0.5);
+      const b = new Button(this, cx + cw - 70, ry, get(), () => { fn(); b.setText(get()); }, { w: 120, h: 50 });
     });
   }
 

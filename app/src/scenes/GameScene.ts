@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { View, viewEvents } from '../core/view';
-import { Audio } from '../core/audio';
+import { Audio, MusicMode } from '../core/audio';
 import { Save, unlock } from '../core/save';
 import { G, Bus } from '../game/state';
 import { Pad } from '../game/input';
@@ -206,6 +206,9 @@ export class GameScene extends Phaser.Scene {
       this.solid(v.x, v.y, WALL_CAP, v.h);
     }
   }
+
+  /** Chapter hook: background music mode while exploring. */
+  bgm(): MusicMode { return 'ambient'; }
 
   /** Chapter hook: multiply tint for wall tiles (CH1 = untinted). */
   wallTint(): number { return 0xffffff; }
@@ -507,7 +510,7 @@ export class GameScene extends Phaser.Scene {
       [9000, () => {
         this.busy = false; this.player.frozen = false; G.run.flags.intro = true; Bus.emit('mission');
         this.toast(this.sys.game.device.input.touch ? '왼쪽 조이스틱으로 이동 · 오른쪽 버튼으로 조작/스캔' : '이동 WASD · 달리기 Shift · 상호작용 E · 스캔 Space', 'info');
-        Audio.setMusic('ambient');
+        Audio.setMusic(this.bgm());
       }],
     ];
     for (const [t, fn] of seq) this.time.delayedCall(t, fn);
@@ -658,7 +661,7 @@ export class GameScene extends Phaser.Scene {
       this.busy = false; this.player.frozen = false;
       this.light.setBlackout(false);
       this.holoProj.setVisible(true);
-      Audio.play('powerup'); Audio.alarm(false); Audio.setMusic('ambient'); Audio.heartbeat(false);
+      Audio.play('powerup'); Audio.alarm(false); Audio.setMusic(this.bgm()); Audio.heartbeat(false);
       this.blackoutLeft = 0;
       // unlock x-ray door
       this.time.delayedCall(900, () => {
@@ -703,7 +706,7 @@ export class GameScene extends Phaser.Scene {
         this.busy = false; this.player.frozen = false;
         this.ai('게이트 개방. 승강기에 탑승하십시오.', 'ok');
         Bus.emit('mission');
-        Audio.setMusic('ambient');
+        Audio.setMusic(this.bgm());
       });
     });
   }

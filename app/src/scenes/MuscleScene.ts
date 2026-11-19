@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { Audio } from '../core/audio';
+import { Audio, MusicMode } from '../core/audio';
 import { Save, unlock } from '../core/save';
 import { G, Bus } from '../game/state';
 import { MAP2 } from '../data/map2';
@@ -41,6 +41,9 @@ export class MuscleScene extends GameScene {
   create() { this.overloadLeft = 0; this.coresInWorld = {}; super.create(); }
 
   floorTint(floor: string) { return floor === 'floor_tile' ? 0x9a8fae : floor === 'floor_grate' ? 0x8e94b0 : 0x86809e; }
+  /** CH2 has its own exploration music (Dorian pulse) — CH1 uses 'ambient'. */
+  bgm(): MusicMode { return 'lab2'; }
+
   /** CH2 = rose-steel clinical walls (CH1 walls are untinted grey-blue). */
   wallTint() { return 0xd9b2c4; }
 
@@ -299,7 +302,7 @@ export class MuscleScene extends GameScene {
       [9400, () => {
         this.busy = false; this.player.frozen = false; G.run.flags.intro = true; Bus.emit('mission');
         this.toast('CHAPTER 2 · 근육 연결실', 'info');
-        Audio.setMusic('ambient');
+        Audio.setMusic(this.bgm());
       }],
     ];
     for (const [t, fn] of seq) this.time.delayedCall(t, fn);
@@ -378,7 +381,7 @@ export class MuscleScene extends GameScene {
     this.time.delayedCall(1900, () => {
       const f = G.run.flags; f.stabilized = true; f.overload = false;
       this.busy = false; this.player.frozen = false;
-      Audio.play('powerup'); Audio.alarm(false); Audio.setMusic('ambient'); Audio.heartbeat(false);
+      Audio.play('powerup'); Audio.alarm(false); Audio.setMusic(this.bgm()); Audio.heartbeat(false);
       this.overloadLeft = 0; this.redWash.fillAlpha = 0;
       this.time.delayedCall(900, () => {
         Audio.play('door');

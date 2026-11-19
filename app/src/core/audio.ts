@@ -3,6 +3,7 @@
 import { Save } from './save';
 
 type Bus = 'sfx' | 'music';
+export type MusicMode = 'none' | 'ambient' | 'lab2' | 'tension' | 'title';
 
 class AudioEngine {
   ctx: AudioContext | null = null;
@@ -13,7 +14,9 @@ class AudioEngine {
   private droneNodes: AudioNode[] = [];
   private alarmTimer: number | null = null;
   private musicTimer: number | null = null;
-  private musicMode: 'none' | 'ambient' | 'tension' | 'title' = 'none';
+  private musicMode: MusicMode = 'none';
+  /** how many times each sound / music mode has been triggered (QA instrumentation, read by tests) */
+  played: Record<string, number> = {};
   private heartbeatTimer: number | null = null;
 
   unlock() {
@@ -39,9 +42,9 @@ class AudioEngine {
   applyVolumes() {
     if (!this.ctx) return;
     const s = Save.settings;
-    this.master.gain.value = s.master;
+    this.master.gain.value = s.muted ? 0 : s.master;
     this.music.gain.value = s.music * 0.55;
-    this.sfx.gain.value = s.sfx;
+    this.sfx.gain.value = s.sfxOn ? s.sfx : 0;
   }
 
   private get t() { return this.ctx!.currentTime; }
@@ -74,6 +77,7 @@ class AudioEngine {
 
   // ---------- SFX ----------
   play(name: string) {
+    this.played[name] = (this.played[name] ?? 0) + 1;
     if (!this.ctx) return;
     const t = this.t;
     switch (name) {
@@ -158,11 +162,13 @@ class AudioEngine {
     this.droneNodes = [];
   }
 
-  setMusic(mode: 'none' | 'ambient' | 'tension' | 'title') {
+  setMusic(mode: MusicMode) {
+    this.played['music:' + mode] = (this.played['music:' + mode] ?? 0) + 1;
     if (!this.ctx || mode === this.musicMode) return;
     this.musicMode = mode;
     if (this.musicTimer) { clearInterval(this.musicTimer); this.musicTimer = null; }
     if (mode === 'none') return;
+    if (mode === 'lab2') { this.lab2Music(); return; }
     // Minor-key generative arpeggio / pulse.
     const scale = [0, 3, 5, 7, 10, 12, 15];
     const root = mode === 'tension' ? 55 : 49;
@@ -190,6 +196,29 @@ class AudioEngine {
       step++;
     }, iv * 1000);
   }
+
+  /** CH2 (근육 연결실): Dorian, slower pulse, low "muscle twitch" thump + breathy pad — distinct from CH1's minor arpeggio. */
+  private lab2Music() {
+    const scale = [0, 2, 3, 7, 9, 12, 14];
+    const root = 58.27;   // Bb1
+    const iv = 60 / 76 / 2;
+    let step = 0;
+    this.musicTimer = window.setInterval(() => {
+      if (!this.ctx) return;
+      const t = this.t + 0.05;
+      if (step % 4 === 0) { this.osc('sine', root, t, 0.22, 0.16, 'music', root * 0.7); this.osc('sine', root * 1.5, t + 0.12, 0.18, 0.08, 'music', root); }
+      if (step % 3 === 1 && Math.random() < 0.8) {
+        const n = scale[(step * 5 + Math.floor(Math.random() * 3)) % scale.length];
+        this.osc('triangle', root * 8 * Math.pow(2, n / 12), t, 0.35, 0.022, 'music', undefined, 0.01);
+      }
+      if (step % 16 === 8) this.noise(t, 2.4, 0.018, 'bandpass', 900, 3, 'music', 400);
+      if (step % 32 === 0) this.osc('sawtooth', root * 2, t, 4.0, 0.02, 'music', root * 2.02, 1.2);
+      step++;
+    }, iv * 1000);
+  }
+
+  /** iOS Safari can suspend/interrupt the context (lock screen, call, tab switch): resume on the next gesture. */
+  resumeIfNeeded() { if (this.ctx && this.ctx.state !== 'running') this.ctx.resume().catch(() => { /* needs a gesture */ }); }
 
   alarm(on: boolean) {
     if (this.alarmTimer) { clearInterval(this.alarmTimer); this.alarmTimer = null; }

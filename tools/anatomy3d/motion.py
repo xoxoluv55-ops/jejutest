@@ -122,6 +122,9 @@ class Elem:
         belly = 1 - np.clip(tenb, 0, 1)
         self.cum = np.concatenate([[0], np.cumsum(belly)]) / max(belly.sum(), 1e-6)
         self.bfrac = belly.mean()
+        # fibre origins: every vertex touching the origin bone(s) -> fibre-mean length (as in excursion.py)
+        P0 = np.concatenate([np.asarray(V0)[btree(b).query(V0)[0] < 2.5] for b in ob for V0 in [merge([fid])[0]]])
+        self.P0 = P0 if len(P0) else self.O[None]
 
     def pose(self, P):
         TO, TI = P[self.oseg], P[self.iseg]
@@ -140,8 +143,14 @@ class Elem:
         cb = np.interp(tc, np.linspace(0, 1, len(self.cum)), self.cum)
         dL = L1 - self.L0
         s_new = t * self.L0 + dL * cb
-        Lb0 = self.bfrac * self.L0; Lb1 = max(Lb0 + dL, 0.25 * Lb0)
-        k = math.sqrt(Lb0 / Lb1)
+        # cross-section from constant volume of the BELLY, using the fibre-mean length change (not the origin
+        # centroid, which made short broad muscles like brachialis bulge up to ~2x), capped at +-25 % thickness
+        # (ultrasound: muscle thickness changes by roughly 10-30 % between relaxed and contracted states)
+        Lf0 = np.linalg.norm(self.P0 - self.I, axis=1).mean()
+        Lf1 = np.linalg.norm(apply(TO, self.P0) - I1, axis=1).mean()
+        dLf = Lf1 - Lf0
+        Lb0 = self.bfrac * Lf0; Lb1 = max(Lb0 + dLf, 0.4 * Lb0)
+        k = min(1.25, max(0.85, math.sqrt(Lb0 / Lb1)))
         bell = np.sin(np.pi * tc) ** 0.7
         sc = 1 + (k - 1) * bell * (1 - np.clip(self.ten, 0, 1))
         m = O1 + np.outer(s_new, a1) + (r @ R.T) * sc[:, None]

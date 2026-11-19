@@ -1,4 +1,4 @@
-export interface Settings { master: number; music: number; sfx: number; quality: 'high' | 'low'; hints: boolean; }
+export interface Settings { master: number; music: number; sfx: number; muted: boolean; sfxOn: boolean; quality: 'high' | 'low'; hints: boolean; }
 export interface SaveData {
   settings: Settings;
   archive: string[];          // unlocked archive entry ids
@@ -9,7 +9,7 @@ export interface SaveData {
   color: string;              // chosen bot color
 }
 const KEY = 'anatomy-escape-save-v1';
-const DEF: SaveData = { settings: { master: 0.8, music: 0.6, sfx: 0.8, quality: 'high', hints: true }, archive: [], clears: 0, cleared: [], best: {}, color: 'red' };
+const DEF: SaveData = { settings: { master: 0.8, music: 0.6, sfx: 0.8, muted: false, sfxOn: true, quality: 'high', hints: true }, archive: [], clears: 0, cleared: [], best: {}, color: 'red' };
 
 function read(): SaveData {
   try {

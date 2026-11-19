@@ -57,5 +57,10 @@ viewEvents.on('quality', () => { View.quality = Save.settings.quality; onResize(
 (window as any).__game = game;
 import { G, Bus, newRun, startWorld } from './game/state';
 import { View as _V } from './core/view';
-(window as any).__dbg = { G, Bus, View: _V, newRun, startWorld };
+import { Audio } from './core/audio';
+(window as any).__dbg = { G, Bus, View: _V, newRun, startWorld, Audio };
+// iOS Safari only lets an AudioContext start/resume inside a real user-gesture handler (touchend / click / keydown).
+// Phaser input callbacks may run outside it, so unlock from native listeners as well.
+for (const ev of ['touchend', 'pointerup', 'click', 'keydown']) document.addEventListener(ev, () => { Audio.unlock(); Audio.resumeIfNeeded(); }, { capture: true, passive: true });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) Audio.resumeIfNeeded(); });
 document.addEventListener('gesturestart', e => e.preventDefault());

@@ -17,6 +17,12 @@ export class PuzzleBase extends BaseScene {
   frame(title: string, sub: string, accent = C.cyan) {
     const { W, H } = View;
     this.solved = false;
+    // Phaser reuses the scene instance when a puzzle is reopened: drop objects cached from the previous session
+    // (they were destroyed on shutdown; writing to them crashed the second visit).
+    this.fbBg = undefined as unknown as Phaser.GameObjects.Graphics; this.feedback = undefined as unknown as Phaser.GameObjects.Text;
+    // New interactive objects only become hit-testable at the input plugin's next preUpdate; flush once create() is
+    // done so a tap in the very first frame is not lost.
+    this.events.once('create', () => this.flushInput());
     this.add.rectangle(W / 2, H / 2, W, H, 0x010207, 0.9).setInteractive();
     // subtle grid
     const grid = this.add.graphics(); grid.lineStyle(1, accent, 0.05);
@@ -34,6 +40,9 @@ export class PuzzleBase extends BaseScene {
     this.cameras.main.fadeIn(250, 0, 0, 0);
     this.input.keyboard?.on('keydown-ESC', () => this.exit());
   }
+
+  /** Make interactive objects created this frame tappable immediately (Phaser queues them until the next frame). */
+  flushInput() { (this.input as unknown as { preUpdate(): void }).preUpdate(); }
 
   /** feedback banner at bottom of the panel */
   setFeedback(text: string, kind: 'info' | 'ok' | 'err' | 'warn' = 'info', x?: number, w?: number) {

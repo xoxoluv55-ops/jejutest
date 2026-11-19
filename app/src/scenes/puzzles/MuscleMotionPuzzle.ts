@@ -104,6 +104,8 @@ export class MuscleMotionPuzzle extends PuzzleBase {
       : '단서: 팔을 옆으로 드는 근육(외전근)과, 팔을 몸쪽으로 모으는 근육(내전근)을 구별하세요.', 14, '#e3cfd8', { wordWrap: { width: this.cw }, lineSpacing: 5 }));
     this.setFeedback(`${R.ko}: 수축해서 움직임을 만드는 근육 = 주동근, 반대 작용을 하며 늘어나는 근육 = 길항근.`, 'info');
     this.redraw();
+    // the role buttons were just rebuilt: without this a tap in the same frame as the round change was dropped
+    this.flushInput();
   }
 
   drawRow(row: Row) {
@@ -147,7 +149,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
   rk() { return this.R.id === 'elbowFlex' ? 'elbow' : 'shoulder'; }
   fit() {
     const m = this.meta(), v = this.view;
-    const top = 74, bot = 34;
+    const top = 108, bot = 34;   // header + simplification notice
     const sc = Math.min(v.w / m.size[0], (v.h - top - bot) / m.size[1]);
     return { sc, ox: v.x + (v.w - m.size[0] * sc) / 2, oy: v.y + top + (v.h - top - bot - m.size[1] * sc) / 2 };
   }
@@ -276,6 +278,11 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     this.labels.push(T(this, this.view.x + 14, this.view.y + this.view.h - 12, '근사 모델 · 물리 시뮬레이션 아님 (측정한 기시·정지 사이 경로, 부피 보존)', 11, '#c9a24a').setOrigin(0, 1).setDepth(7));
     this.labels.push(T(this, this.view.x + this.view.w - 12, this.view.y + this.view.h - 30, rk === 'shoulder' ? `${MODEL_CREDIT}\n${LAT_CREDIT}` : MODEL_CREDIT, 10, '#8f7f88', { align: 'right' }).setOrigin(1, 1).setDepth(7));
     this.labels.push(T(this, this.view.x + 18, this.view.y + 66, rk === 'elbow' ? '오른팔 외측면  ← 뒤 · 앞 →' : '오른쪽 어깨 앞면  ← 외측', 12, '#ffb3c6').setDepth(7));
+    // kinematic simplifications, shown so the animation is not taken for the real joint motion (docs/ANATOMY_MODEL.md §5)
+    this.labels.push(T(this, this.view.x + 18, this.view.y + 84, rk === 'elbow'
+      ? '⚠ 단순화: 팔꿉관절 고정축 회전만 · 전완은 뒤침(회외) 자세 고정'
+      : '⚠ 단순화 모델: 어깨뼈 회전을 1:3 비율로 근사 · 위팔뼈 가쪽돌림·빗장뼈 회전·관절면 미끄러짐 생략 → 실제 어깨 운동과 다릅니다',
+      11, '#e8c070', { wordWrap: { width: this.view.w - 36 } }).setDepth(7));
     this.angT.setText(this.stage === 'assign' ? '' : `${Math.round(this.angle)}° / ${this.R.range}°`);
   }
 
