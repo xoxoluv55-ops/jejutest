@@ -112,28 +112,30 @@ for fi, ang in enumerate(ANG):
     meta['frames'].append(fr)
     print('frame', fi, ang, fr['strain'], flush=True)
 
-scene = os.path.join(TMP, 'scene.json')
-json.dump(dict(meshes=meshes), open(scene, 'w'))
 IDS = {}
 for m in meshes:
     g = m['name'].split(':', 1)[1]; g = g if g.startswith('bone:') else g.split(':')[0]
     IDS[m['name']] = PAL[g]
 VIEW = [0, 0, W, H]
+# one scene file per pose: all poses together exceed what the browser can parse in one JSON string
 for fi in range(len(ANG)):
+    fm = [m for m in meshes if m['name'].startswith(f'f{fi}')]
+    jobs = []
     for variant in (['n', 'r'] if fi == 0 else ['r']):
-        ms = [m['name'] for m in meshes if m['name'].startswith(f'f{fi}{variant}:') or m['name'].startswith(f'f{fi}b:')]
+        ms = [m['name'] for m in fm if m['name'].startswith(f'f{fi}{variant}:') or m['name'].startswith(f'f{fi}b:')]
         nm = f'f{fi}{variant}'
         jobs += [dict(name=nm + '_c', size=[W * 2, H * 2], view=VIEW, meshes=ms),
                  dict(name=nm + '_d', size=[W, H], view=VIEW, meshes=ms, mode='dir'),
                  dict(name=nm + '_i', size=[W, H], view=VIEW, meshes=ms, mode='id', ids=IDS)]
     if RND == 'shoulder':   # supraspinatus alone (x-ray overlay: it lies behind the clavicle/acromion in this view)
-        ms = [m['name'] for m in meshes if m['name'].startswith(f'f{fi}r:supraspinatus:')]
+        ms = [m['name'] for m in fm if m['name'].startswith(f'f{fi}r:supraspinatus:')]
         jobs += [dict(name=f'f{fi}x_c', size=[W * 2, H * 2], view=VIEW, meshes=ms),
                  dict(name=f'f{fi}x_d', size=[W, H], view=VIEW, meshes=ms, mode='dir'),
                  dict(name=f'f{fi}x_i', size=[W, H], view=VIEW, meshes=ms, mode='id', ids=IDS)]
-json.dump(jobs, open(os.path.join(TMP, 'jobs.json'), 'w'))
-if '--norender' not in sys.argv:
-    subprocess.run(['node', os.path.join(RENDER, 'render.cjs'), scene, os.path.join(TMP, 'jobs.json'), TMP], check=True)
+    scene = os.path.join(TMP, 'scene.json'); jf = os.path.join(TMP, 'jobs.json')
+    json.dump(dict(meshes=fm), open(scene, 'w')); json.dump(jobs, open(jf, 'w'))
+    if '--norender' not in sys.argv:
+        subprocess.run(['node', os.path.join(RENDER, 'render.cjs'), scene, jf, TMP], check=True)
 
 MG = [g for g in groups if not g.startswith('bone:')]
 def proc(nm, seed):
