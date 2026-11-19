@@ -2,10 +2,9 @@ import Phaser from 'phaser';
 import { BaseScene } from './Base';
 import { View } from '../core/view';
 import { Audio } from '../core/audio';
-import { G, Bus } from '../game/state';
+import { G, Bus, worldKey } from '../game/state';
 import { Pad } from '../game/input';
-import { ROOMS, PASSAGES } from '../data/map';
-import { BONES, BoneId } from '../data/anatomy';
+
 import { T, C, drawPanel, drawIcon, RoundButton, Button, IconName } from '../ui/widgets';
 import type { GameScene, Mission } from './GameScene';
 
@@ -30,7 +29,7 @@ export class HUDScene extends BaseScene {
 
   create() {
     this.initView();
-    this.game2 = this.scene.get('Game') as GameScene;
+    this.game2 = this.scene.get(worldKey()) as GameScene;
     this.toasts = []; this.overlay = undefined; this.aiC = undefined; this.joyId = -1; this.hidden = false;
     this.build();
     const on = (ev: string, fn: (...a: any[]) => void) => { Bus.on(ev, fn, this); this.events.once('shutdown', () => Bus.off(ev, fn, this)); };
@@ -39,7 +38,7 @@ export class HUDScene extends BaseScene {
     on('toast', (t: any) => this.toast(t.text, t.kind));
     on('ai', (a: any) => this.ai(a.text, a.kind, a.dur));
     on('pickup', () => this.drawInventory(true));
-    on('timer', (s: number) => { this.timerT.setVisible(true).setText(`비상 전력  ${String(Math.max(0, Math.ceil(s))).padStart(2, '0')}s`); this.timerT.setColor(s < 20 ? '#ff5d74' : '#ffc24d'); });
+    on('timer', (s: number) => { this.timerT.setVisible(true).setText(`${this.game2.timerLabel()}  ${String(Math.max(0, Math.ceil(s))).padStart(2, '0')}s`); this.timerT.setColor(s < 20 ? '#ff5d74' : '#ffc24d'); });
     on('blackout', (v: boolean) => { if (!v) this.timerT.setVisible(false); });
     on('channel', (c: any) => this.channel(c.label, c.dur));
     on('tick', (t: any) => { this.lastTick = t; });
@@ -77,9 +76,9 @@ export class HUDScene extends BaseScene {
     const s = Math.min((mw - 24) / bw, (mh - 30) / bh);
     this.mapRect.s = s; this.mapRect.ox = this.mapRect.x + (mw - bw * s) / 2 - bx0 * s; this.mapRect.oy = this.mapRect.y + 22 + (mh - 26 - bh * s) / 2 - by0 * s;
     const R = this.mapRect;
-    for (const r of [...ROOMS, ...PASSAGES]) { mg.fillStyle(0x16304a, 0.95); mg.fillRect(R.ox + r.x * s, R.oy + r.y * s, r.w * s, r.h * s); }
-    for (const r of ROOMS) { mg.lineStyle(1, C.cyan, 0.5); mg.strokeRect(R.ox + r.x * s, R.oy + r.y * s, r.w * s, r.h * s); }
-    T(this, R.x + 16, R.y + 12, 'BODY LAB · B4', 12, C.cyanS, { display: true }).setOrigin(0, 0.5);
+    for (const r of [...this.game2.map.ROOMS, ...this.game2.map.PASSAGES]) { mg.fillStyle(0x16304a, 0.95); mg.fillRect(R.ox + r.x * s, R.oy + r.y * s, r.w * s, r.h * s); }
+    for (const r of this.game2.map.ROOMS) { mg.lineStyle(1, C.cyan, 0.5); mg.strokeRect(R.ox + r.x * s, R.oy + r.y * s, r.w * s, r.h * s); }
+    T(this, R.x + 16, R.y + 12, this.game2.floorName(), 12, C.cyanS, { display: true }).setOrigin(0, 0.5);
     this.mapDot = this.add.graphics();
     const mz = this.add.zone(R.x, R.y, mw, mh).setOrigin(0).setInteractive({ useHandCursor: true });
     mz.on('pointerup', () => this.openMap());
@@ -122,9 +121,9 @@ export class HUDScene extends BaseScene {
     const h = 62 + ms.length * lh + 12;
     this.missionW = w; this.missionH = h;
     const g = this.add.graphics(); drawPanel(g, 0, 0, w, h, { accent: C.red, alpha: 0.78, header: 44 }); c.add(g);
-    c.add(T(this, 18, 22, 'CH.1', 15, C.redS, { display: true, weight: '900' }).setOrigin(0, 0.5));
-    c.add(T(this, 68, 22, '골격 복구실 — 미션', 18, C.white, { weight: '700' }).setOrigin(0, 0.5));
-    const f = G.run.flags; const n = [f.assembled, f.aligned, f.xray].filter(Boolean).length;
+    c.add(T(this, 18, 22, `CH.${G.run.chapter}`, 15, C.redS, { display: true, weight: '900' }).setOrigin(0, 0.5));
+    c.add(T(this, 68, 22, `${this.game2.chapterName()} — 미션`, 18, C.white, { weight: '700' }).setOrigin(0, 0.5));
+    const n = this.game2.locksOpen();
     for (let i = 0; i < 3; i++) { const lit = i < n; g.fillStyle(lit ? C.green : C.red, lit ? 1 : 0.6); g.fillCircle(w - 66 + i * 20, 22, 6); g.lineStyle(1, 0xffffff, 0.3); g.strokeCircle(w - 66 + i * 20, 22, 6); }
     ms.forEach((m, i) => {
       const y = 62 + i * lh;
@@ -142,24 +141,24 @@ export class HUDScene extends BaseScene {
   // ------------------------------------------------------------ inventory
   drawInventory(flash: boolean) {
     const c = this.invC; c.removeAll(true);
-    const ids: BoneId[] = G.run.bones;
-    const slot = 64, gap = 8, n = 6;
+    const items = this.game2.invItems(); const n = this.game2.invTotal();
+    const slot = 64, gap = 8;
     const w = n * slot + (n - 1) * gap + 24;
     const g = this.add.graphics(); drawPanel(g, -w / 2, -slot / 2 - 12, w, slot + 24, { accent: C.amber, alpha: 0.7, cut: 10 }); c.add(g);
     for (let i = 0; i < n; i++) {
       const x = -w / 2 + 12 + i * (slot + gap) + slot / 2;
+      const it = items[i];
       g.fillStyle(0x050810, 0.9); g.fillRoundedRect(x - slot / 2, -slot / 2, slot, slot, 6);
-      g.lineStyle(1, ids[i] ? C.amber : 0x2a3654, ids[i] ? 0.8 : 1); g.strokeRoundedRect(x - slot / 2, -slot / 2, slot, slot, 6);
-      const id = ids[i];
-      if (id) {
-        const im = this.add.image(x, 0, `bone_bone_${id}`); const s = (slot - 10) / Math.max(im.width, im.height); im.setScale(s);
-        if (BONES[id].prims.length && (id === 'humerus' || id === 'radius' || id === 'ulna' || id === 'fibula')) im.setAngle(35);
+      g.lineStyle(1, it ? C.amber : 0x2a3654, it ? 0.8 : 1); g.strokeRoundedRect(x - slot / 2, -slot / 2, slot, slot, 6);
+      if (it) {
+        const im = this.add.image(x, 0, it.tex); const s = (slot - 10) / Math.max(im.width, im.height); im.setScale(s);
+        if (it.angle) im.setAngle(it.angle);
         c.add(im);
         const z = this.add.zone(x, 0, slot, slot).setInteractive({ useHandCursor: true });
-        z.on('pointerup', () => this.openInventory(id)); c.add(z);
-        if (flash && i === ids.length - 1) { im.setScale(s * 2); this.tweens.add({ targets: im, scale: s, duration: 400, ease: 'Back.out' }); }
+        z.on('pointerup', () => this.openInventory(it.id)); c.add(z);
+        if (flash && i === items.length - 1) { im.setScale(s * 2); this.tweens.add({ targets: im, scale: s, duration: 400, ease: 'Back.out' }); }
       } else {
-        drawIcon(g, 'bone', x, 0, 22, 0x2a3654);
+        drawIcon(g, this.game2.invIcon(), x, 0, 22, 0x2a3654);
       }
     }
   }
@@ -248,48 +247,47 @@ export class HUDScene extends BaseScene {
   }
   closeOverlay() { if (!this.overlay) return; const c = this.overlay; this.overlay = undefined; this.game2.busy = false; Audio.play('close'); this.tweens.add({ targets: c, alpha: 0, duration: 140, onComplete: () => c.destroy() }); }
 
-  openInventory(sel?: BoneId) {
+  openInventory(sel?: string) {
     if (this.overlay || this.game2.player?.frozen) return;
-    const ids = G.run.bones;
-    const m = this.modal(`인벤토리 · 골격 표본 (${ids.length}/6)`, 900, 560, C.amber);
-    let cur: BoneId | undefined = sel ?? ids[ids.length - 1];
+    const items = this.game2.invItems();
+    const m = this.modal(`인벤토리 · ${this.game2.invTitle()} (${items.length}/${this.game2.invTotal()})`, 900, 560, C.amber);
+    let cur = items.find(i => i.id === sel) ?? items[items.length - 1];
     const detail = this.add.container(0, 0); m.c.add(detail);
     const show = () => {
       detail.removeAll(true);
       if (!cur) { detail.add(T(this, m.x + m.w / 2, m.y + m.h / 2, '아직 회수한 표본이 없습니다.\nSCAN으로 숨겨진 표본을 찾아보세요.', 18, C.dim, { align: 'center' }).setOrigin(0.5)); return; }
-      const b = BONES[cur];
       const gx = m.x + 300;
-      const im = this.add.image(gx + 150, m.y + 300, `bone_bone_${cur}`); im.setScale(Math.min(380 / im.height, 260 / im.width)); detail.add(im);
+      const im = this.add.image(gx + 150, m.y + 300, cur.tex); im.setScale(Math.min(380 / im.height, 260 / im.width, 1.2)); detail.add(im);
       const tx = gx + 320;
-      detail.add(T(this, tx, m.y + 90, `${b.ko} (${b.alt})`, 28, C.white, { weight: '700' }));
-      detail.add(T(this, tx, m.y + 130, b.en, 18, C.amberS, { display: true }));
-      detail.add(T(this, tx, m.y + 170, b.info, 17, '#c9d6ee', { wordWrap: { width: m.x + m.w - tx - 30 }, lineSpacing: 6 }));
-      detail.add(T(this, tx, m.y + m.h - 50, b.region === 'upper' ? '분류: 상지 골격' : '분류: 하지 골격', 15, C.dim));
+      detail.add(T(this, tx, m.y + 90, cur.title, 28, C.white, { weight: '700' }));
+      detail.add(T(this, tx, m.y + 130, cur.en, 18, C.amberS, { display: true }));
+      detail.add(T(this, tx, m.y + 170, cur.info, 17, '#c9d6ee', { wordWrap: { width: m.x + m.w - tx - 30 }, lineSpacing: 6 }));
+      detail.add(T(this, tx, m.y + m.h - 50, cur.tag, 15, C.dim));
     };
-    ids.forEach((id, i) => {
-      const bx = m.x + 30, by = m.y + 76 + i * 72;
+    const rowH = Math.min(72, Math.floor((m.h - 100) / Math.max(1, items.length)));
+    items.forEach((it, i) => {
+      const bx = m.x + 30, by = m.y + 76 + i * rowH;
       const g = this.add.graphics(); m.c.add(g);
-      const on = id === cur;
-      g.fillStyle(on ? C.amber : 0x0a1222, on ? 0.18 : 0.9); g.fillRoundedRect(bx, by, 240, 62, 8); g.lineStyle(1, on ? C.amber : C.line, 1); g.strokeRoundedRect(bx, by, 240, 62, 8);
-      const im = this.add.image(bx + 34, by + 31, `bone_bone_${id}`); im.setScale(52 / Math.max(im.width, im.height)); m.c.add(im);
-      m.c.add(T(this, bx + 70, by + 31, `${BONES[id].ko} · ${BONES[id].en}`, 16, C.white, { weight: '700' }).setOrigin(0, 0.5));
-      const z = this.add.zone(bx, by, 240, 62).setOrigin(0).setInteractive({ useHandCursor: true }); m.c.add(z);
-      z.on('pointerup', () => { this.closeOverlay(); this.time.delayedCall(150, () => this.openInventory(id)); });
+      const on = it === cur;
+      g.fillStyle(on ? C.amber : 0x0a1222, on ? 0.18 : 0.9); g.fillRoundedRect(bx, by, 240, rowH - 10, 8); g.lineStyle(1, on ? C.amber : C.line, 1); g.strokeRoundedRect(bx, by, 240, rowH - 10, 8);
+      const im = this.add.image(bx + 34, by + (rowH - 10) / 2, it.tex); im.setScale((rowH - 20) / Math.max(im.width, im.height)); m.c.add(im);
+      m.c.add(T(this, bx + 70, by + (rowH - 10) / 2, `${it.title.split(' (')[0]} · ${it.en}`, 15, C.white, { weight: '700' }).setOrigin(0, 0.5));
+      const z = this.add.zone(bx, by, 240, rowH - 10).setOrigin(0).setInteractive({ useHandCursor: true }); m.c.add(z);
+      z.on('pointerup', () => { this.closeOverlay(); this.time.delayedCall(150, () => this.openInventory(it.id)); });
     });
     show();
   }
 
   openMap() {
     if (this.overlay || this.game2.player?.frozen) return;
-    const m = this.modal('시설 지도 · BODY LAB 지하 4층', 1100, 760);
+    const m = this.modal(`시설 지도 · ${this.game2.floorName()}`, 1100, 760);
     const bx0 = 100, by0 = 250, bw = 2720 - bx0, bh = 2360 - by0;
     const s = Math.min((m.w - 60) / bw, (m.h - 100) / bh);
     const ox = m.x + (m.w - bw * s) / 2 - bx0 * s, oy = m.y + 70 + (m.h - 90 - bh * s) / 2 - by0 * s;
     const g = this.add.graphics(); m.c.add(g);
-    for (const r of [...ROOMS, ...PASSAGES]) { g.fillStyle(0x16304a, 1); g.fillRect(ox + r.x * s, oy + r.y * s, r.w * s, r.h * s); }
-    const f = G.run.flags;
-    for (const r of ROOMS) {
-      const locked = (r.id === 'xray' && !f.power) || (r.id === 'lift' && !f.gate);
+    for (const r of [...this.game2.map.ROOMS, ...this.game2.map.PASSAGES]) { g.fillStyle(0x16304a, 1); g.fillRect(ox + r.x * s, oy + r.y * s, r.w * s, r.h * s); }
+    for (const r of this.game2.map.ROOMS) {
+      const locked = this.game2.roomLocked(r.id);
       g.lineStyle(2, locked ? C.red : C.cyan, 0.8); g.strokeRect(ox + r.x * s, oy + r.y * s, r.w * s, r.h * s);
       m.c.add(T(this, ox + (r.x + r.w / 2) * s, oy + (r.y + r.h / 2) * s - 10, r.code, 15, locked ? C.redS : C.cyanS, { display: true }).setOrigin(0.5));
       m.c.add(T(this, ox + (r.x + r.w / 2) * s, oy + (r.y + r.h / 2) * s + 12, r.name + (locked ? ' 🔒' : ''), 14, C.white).setOrigin(0.5));
@@ -308,7 +306,7 @@ export class HUDScene extends BaseScene {
     const cx = m.x + m.w / 2;
     const items: [string, IconName, () => void][] = [
       ['계속하기', 'play', () => this.closeOverlay()],
-      ['해부학 도감', 'book', () => { this.closeOverlay(); this.scene.launch('Archive', { from: 'Game' }); this.game2.busy = true; this.scene.pause('Game'); this.scene.sleep(); }],
+      ['해부학 도감', 'book', () => { this.closeOverlay(); this.scene.launch('Archive', { from: 'Game' }); this.game2.busy = true; this.scene.pause(worldKey()); this.scene.sleep(); }],
       ['설정', 'gear', () => { this.closeOverlay(); this.scene.launch('Info', { mode: 'settings', from: 'Game' }); }],
       ['타이틀로 나가기', 'back', () => { this.closeOverlay(); Audio.alarm(false); Audio.heartbeat(false); Audio.setMusic('none'); Bus.emit('game:quit'); }],
     ];

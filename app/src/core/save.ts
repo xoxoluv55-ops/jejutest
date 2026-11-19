@@ -4,10 +4,12 @@ export interface SaveData {
   archive: string[];          // unlocked archive entry ids
   bestTime?: number;          // seconds, chapter 1
   clears: number;
+  cleared: number[];          // chapters cleared at least once
+  best: Record<string, number>; // best time per chapter (seconds)
   color: string;              // chosen bot color
 }
 const KEY = 'anatomy-escape-save-v1';
-const DEF: SaveData = { settings: { master: 0.8, music: 0.6, sfx: 0.8, quality: 'high', hints: true }, archive: [], clears: 0, color: 'red' };
+const DEF: SaveData = { settings: { master: 0.8, music: 0.6, sfx: 0.8, quality: 'high', hints: true }, archive: [], clears: 0, cleared: [], best: {}, color: 'red' };
 
 function read(): SaveData {
   try {

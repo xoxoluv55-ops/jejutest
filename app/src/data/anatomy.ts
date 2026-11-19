@@ -1,3 +1,5 @@
+import { MUSCLES, MuscleId } from './muscles';
+
 // Anatomy content for Chapter 1. Geometry is the RIGHT upper limb in ANTERIOR view
 // (anatomical position, palms forward). Viewer's LEFT = patient's LATERAL side.
 // Frame: 760 x 1260 logical units. Sternum (midline) at x = 640.
@@ -162,7 +164,7 @@ export const ALIGN_HINTS: Record<'humerus' | 'ulna' | 'radius', { flip: string; 
   },
 };
 
-export interface ArchiveEntry { id: string; title: string; en: string; cat: '뼈' | '개념' | '기록'; bone?: BoneId; body: string; }
+export interface ArchiveEntry { id: string; title: string; en: string; cat: '뼈' | '근육' | '개념' | '기록'; bone?: BoneId; muscle?: MuscleId; body: string; }
 export const ARCHIVE: ArchiveEntry[] = [
   { id: 'bone_clavicle', title: '쇄골 (빗장뼈)', en: 'Clavicle', cat: '뼈', bone: 'clavicle', body: BONES.clavicle.info + '\n\n임상: 낙상 시 가장 흔히 골절되는 뼈 중 하나로, 중간 1/3 부위 골절이 가장 많다.' },
   { id: 'bone_scapula', title: '견갑골 (어깨뼈)', en: 'Scapula', cat: '뼈', bone: 'scapula', body: BONES.scapula.info + '\n\n주요 구조: 관절와, 견봉, 오구돌기, 견갑극, 상각·하각.' },
@@ -176,4 +178,15 @@ export const ARCHIVE: ArchiveEntry[] = [
   { id: 'log_1', title: '연구일지 #031', en: 'Research log', cat: '기록', body: '피험 유닛 B-계열은 해부학 구조 데이터를 직접 "조립"하며 학습한다. 중앙 AI "MERIDIAN"에게 구조 복원 권한을 위임했다. — 책임연구원 H.' },
   { id: 'log_2', title: 'MERIDIAN 시스템 로그', en: 'AI log', cat: '기록', body: '[03:12:44] 구조 무결성 검사 실패.\n[03:12:45] 골격 데이터 손상률 71%.\n[03:12:45] 프로토콜 LOCKDOWN 실행. 복구 전까지 모든 격벽 봉쇄.\n[03:12:46] 인체 구조 복구가 필요합니다.' },
   { id: 'log_3', title: '피험체 프로토콜', en: 'Unit protocol', cat: '기록', body: '각 실험체는 SCAN 모듈로 숨겨진 구조 데이터를 탐지할 수 있다. 데이터는 실물 표본 형태로 저장되며, 복구 테이블에서 재조립해야 한다.\n\n주의: 오염된 표본(다른 부위의 뼈)이 섞여 있을 수 있음.' },
+  // ---------------- CHAPTER 2 ----------------
+  ...(Object.values(MUSCLES).map(m => ({
+    id: `mus_${m.id}`, title: `${m.ko} (${m.alt})`, en: m.en, cat: '근육' as const, muscle: m.id,
+    body: `기시: ${m.originText}\n정지: ${m.insertionText}\n작용: ${m.action}\n신경: ${m.nerve}`,
+  }))),
+  { id: 'c_mmap', title: '어깨·위팔의 표층 근육', en: 'Superficial muscles of the shoulder & arm', cat: '개념', body: '앞에서 보면 삼각근이 어깨를 덮고, 대흉근이 가슴에서 부채꼴로 모여 상완골 결절간구 외측순에 붙는다. 두 근육 사이의 홈이 삼각흉근고랑(deltopectoral groove)이다.\n\n위팔 앞쪽: 상완이두근(표층) · 상완근(깊은층) · 오훼완근(위 안쪽).\n위팔 뒤쪽: 상완삼두근.\n전완 바깥쪽 위: 상완요골근.' },
+  { id: 'c_origin', title: '기시와 정지', en: 'Origin & insertion', cat: '개념', body: '기시(origin)는 근육이 수축할 때 비교적 고정되는 몸쪽(근위) 부착부, 정지(insertion)는 끌려와 움직이는 먼쪽(원위) 부착부이다. 근육은 항상 정지를 기시 쪽으로 당긴다.\n\n근육의 작용은 "어느 관절의 어느 쪽을 지나가는가"로 결정된다. 팔꿉관절 앞을 지나는 상완이두근·상완근은 굴곡, 뒤를 지나는 상완삼두근은 신전.\n\n상완이두근은 두 갈래(장두: 관절상결절, 단두: 오구돌기)에서 시작하는 이관절근으로, 어깨와 팔꿈치를 모두 지난다.' },
+  { id: 'c_agonist', title: '주동근과 길항근', en: 'Agonist & antagonist', cat: '개념', body: '주동근(agonist)은 움직임을 직접 만드는 근육, 길항근(antagonist)은 반대 작용을 하는 근육으로 움직이는 동안 이완하며 길어진다(상호억제). 협력근(synergist)은 주동근을 돕는다.\n\n팔꿈치 굽힘: 주동근 상완근·상완이두근(+상완요골근) / 길항근 상완삼두근.\n어깨 외전: 극상근이 외전을 시작(0–15°)하고 상완골두를 관절와에 고정, 삼각근 중간섬유가 이어서 들어 올린다. 길항근은 대흉근·광배근(내전근).' },
+  { id: 'log_4', title: '근육 연결실 운영 기록', en: 'Muscle lab log', cat: '기록', body: '근육 데이터는 "기시–정지" 한 쌍으로 저장된다. 부착 좌표가 하나라도 어긋나면 해당 근육은 수축 신호를 받아도 관절을 움직이지 못한다. — 운영팀' },
+  { id: 'log_5', title: 'MERIDIAN 시스템 로그 #2', en: 'AI log', cat: '기록', body: '[04:02:10] 골격 구조 복구 확인.\n[04:02:12] 근육 연결 데이터 손상률 64%.\n[04:02:13] 경고: 전기자극 장치가 근육 신호 없이 출력을 올리고 있음.\n[04:02:14] 근육 연결실 봉쇄 유지.' },
+  { id: 'log_6', title: '자극 제어 매뉴얼', en: 'Stimulator manual', cat: '기록', body: '근육 연결이 복구되면 전기자극 장치가 재가동된다. 과부하가 발생하면 자극 제어실(M-04)의 방전 레버로 잔류 전하를 빼야 한다. 방전 전에는 운동 재현실 출입문이 열리지 않는다.' },
 ];

@@ -13,6 +13,10 @@ import { HUDScene } from './scenes/HUDScene';
 import { AssemblyPuzzle } from './scenes/puzzles/AssemblyPuzzle';
 import { AlignPuzzle } from './scenes/puzzles/AlignPuzzle';
 import { XrayPuzzle } from './scenes/puzzles/XrayPuzzle';
+import { MuscleScene } from './scenes/MuscleScene';
+import { MuscleAtlasPuzzle } from './scenes/puzzles/MuscleAtlasPuzzle';
+import { MuscleLinkPuzzle } from './scenes/puzzles/MuscleLinkPuzzle';
+import { MuscleMotionPuzzle } from './scenes/puzzles/MuscleMotionPuzzle';
 import { ArchiveScene } from './scenes/ArchiveScene';
 import { ResultScene } from './scenes/ResultScene';
 import { InfoScene } from './scenes/InfoScene';
@@ -34,7 +38,7 @@ const game = new Phaser.Game({
   input: { activePointers: 4 },
   fps: { target: 60, smoothStep: true },
   physics: { default: 'arcade', arcade: { debug: false } },
-  scene: [BootScene, TitleScene, GameScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, ArchiveScene, ResultScene, InfoScene],
+  scene: [BootScene, TitleScene, GameScene, MuscleScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene],
 });
 
 let rt: number | undefined;
@@ -51,7 +55,7 @@ window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', onResize);
 viewEvents.on('quality', () => { View.quality = Save.settings.quality; onResize(); });
 (window as any).__game = game;
-import { G, Bus } from './game/state';
+import { G, Bus, newRun, startWorld } from './game/state';
 import { View as _V } from './core/view';
-(window as any).__dbg = { G, Bus, View: _V };
+(window as any).__dbg = { G, Bus, View: _V, newRun, startWorld };
 document.addEventListener('gesturestart', e => e.preventDefault());

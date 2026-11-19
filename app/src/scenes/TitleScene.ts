@@ -5,7 +5,7 @@ import { Audio } from '../core/audio';
 import { Save, persist } from '../core/save';
 import { T, C, Button, drawPanel, drawIcon } from '../ui/widgets';
 import { BOT_COLORS, BOT_HEX } from './BootScene';
-import { G, newRun, Difficulty } from '../game/state';
+import { G, newRun, Difficulty, startWorld } from '../game/state';
 
 let entered = false;
 
@@ -164,6 +164,8 @@ export class TitleScene extends BaseScene {
     const { W, H } = View;
     let diff: Difficulty = 'basic';
     let color = Save.color;
+    const ch1Done = Save.cleared.includes(1) || Save.clears > 0;
+    let chapter = ch1Done && !Save.cleared.includes(2) ? 2 : 1;
     const m = this.add.container(0, 0).setDepth(300);
     this.modal = m;
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setInteractive();
@@ -171,7 +173,22 @@ export class TitleScene extends BaseScene {
     const pw = Math.min(980, W - 40), ph = 640;
     const px = W / 2 - pw / 2, py = H / 2 - ph / 2;
     const g = this.add.graphics(); drawPanel(g, px, py, pw, ph, { accent: C.cyan, header: 58 }); m.add(g);
-    m.add(T(this, px + 34, py + 29, 'MISSION BRIEFING · CHAPTER 1 골격 복구실', 22, C.white, { weight: '700' }).setOrigin(0, 0.5));
+    const head = T(this, px + 34, py + 29, '', 22, C.white, { weight: '700' }).setOrigin(0, 0.5); m.add(head);
+    // chapter selector (CH2 unlocks after clearing CH1)
+    const chs: [number, string][] = [[1, 'CH1 골격'], [2, 'CH2 근육']];
+    const chBtns: { g: Phaser.GameObjects.Graphics; n: number; x: number; t: Phaser.GameObjects.Text }[] = [];
+    chs.forEach(([n, label], i) => {
+      const x = px + pw - 34 - (2 - i) * 150 - (1 - i) * 10, y = py + 10;
+      const g2 = this.add.graphics(); m.add(g2);
+      const locked = n === 2 && !ch1Done;
+      const t = T(this, x + 70, y + 19, locked ? `${label} 🔒` : label, 16, locked ? '#5a6782' : C.white, { weight: '700' }).setOrigin(0.5); m.add(t);
+      const z = this.add.zone(x, y, 140, 38).setOrigin(0).setInteractive({ useHandCursor: true });
+      z.on('pointerup', () => {
+        if (locked) { Audio.play('error'); story.setText('CHAPTER 2 근육 연결실은 CHAPTER 1을 한 번 탈출하면 열립니다.'); return; }
+        chapter = n; Audio.play('click'); redraw();
+      });
+      m.add(z); chBtns.push({ g: g2, n, x, t });
+    });
     m.add(T(this, px + 34, py + 86, '난이도 선택', 18, C.cyanS, { weight: '700' }));
     const diffs: [Difficulty, string, string][] = [
       ['basic', '기초 · 1학년', '뼈 이름과 윤곽 가이드 표시, X-ray 라벨 한·영 병기'],
@@ -200,10 +217,20 @@ export class TitleScene extends BaseScene {
       m.add(z);
       cBtns.push({ g: gg, c, img });
     });
-    const story = T(this, px + 34 + 4 * (cw + 14) + 10, py + 268,
-      '인체 구조를 연구하던 지하 시설 BODY LAB.\n중앙 AI의 오작동으로 모든 격벽이 봉쇄됐다.\n\n흩어진 골격 표본을 찾아 복구하고\n탈출 게이트의 잠금 3개를 해제하라.', 16, '#c9d6ee', { lineSpacing: 6, wordWrap: { width: Math.max(160, px + pw - (px + 34 + 4 * (cw + 14) + 10) - 30) } });
+    const STORY: Record<number, string> = {
+      1: '인체 구조를 연구하던 지하 시설 BODY LAB.\n중앙 AI의 오작동으로 모든 격벽이 봉쇄됐다.\n\n흩어진 골격 표본을 찾아 복구하고\n탈출 게이트의 잠금 3개를 해제하라.',
+      2: '골격실을 탈출한 실험체는 하부 연구동의\n근육 연결실에 도착했다.\n\n끊어진 근육의 기시와 정지를 다시 잇고\n주동근과 길항근으로 움직임을 되살려라.',
+    };
+    const story = T(this, px + 34 + 4 * (cw + 14) + 10, py + 268, STORY[chapter], 16, '#c9d6ee', { lineSpacing: 6, wordWrap: { width: Math.max(160, px + pw - (px + 34 + 4 * (cw + 14) + 10) - 30) } });
     m.add(story);
     const redraw = () => {
+      head.setText(chapter === 1 ? 'MISSION BRIEFING · CHAPTER 1 골격 복구실' : 'MISSION BRIEFING · CHAPTER 2 근육 연결실');
+      story.setText(STORY[chapter]);
+      chBtns.forEach(({ g: g2, n, x }) => {
+        const on = n === chapter; g2.clear();
+        g2.fillStyle(on ? C.cyan : 0x0a1222, on ? 0.25 : 0.85); g2.fillRoundedRect(x, py + 10, 140, 38, 8);
+        g2.lineStyle(on ? 2 : 1, on ? C.cyan : C.line, 1); g2.strokeRoundedRect(x, py + 10, 140, 38, 8);
+      });
       dBtns.forEach((bg, i) => {
         const x = px + 34 + i * (dw + 20), y = py + 118; const on = diffs[i][0] === diff;
         bg.clear(); bg.fillStyle(on ? C.cyan : 0x0a1222, on ? 0.18 : 0.8); bg.fillRoundedRect(x, y, dw, 92, 8);
@@ -220,10 +247,10 @@ export class TitleScene extends BaseScene {
     const by = py + ph - 52;
     const start = new Button(this, px + pw - 170, by, '연구시설 진입', () => {
       Save.color = color; persist();
-      G.run = newRun(diff, color);
+      G.run = newRun(diff, color, chapter);
       Audio.play('glitch'); Audio.setMusic('none');
       this.cameras.main.fadeOut(500, 0, 0, 0);
-      this.cameras.main.once('camerafadeoutcomplete', () => { this.scene.start('Game'); });
+      this.cameras.main.once('camerafadeoutcomplete', () => { startWorld(this.scene); });
     }, { w: 280, h: 62, accent: C.red, primary: true, icon: 'play', size: 22 });
     const cancel = new Button(this, px + 150, by, '돌아가기', () => { m.destroy(); this.modal = undefined; }, { w: 220, h: 56, icon: 'back' });
     m.add([start, cancel]);

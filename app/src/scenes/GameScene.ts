@@ -6,7 +6,7 @@ import { G, Bus } from '../game/state';
 import { Pad } from '../game/input';
 import { Player } from '../game/Player';
 import { Lighting } from '../game/Lighting';
-import { ROOMS, PASSAGES, HWALLS, VWALLS, WALL_CAP, WALL_FACE, WORLD, LIGHTS } from '../data/map';
+import { WALL_CAP, WALL_FACE, MAP1, ChapterMap } from '../data/map';
 import { BONES, BoneId } from '../data/anatomy';
 import { T } from '../ui/widgets';
 import type { IconName } from '../ui/widgets';
@@ -21,6 +21,8 @@ export interface Interactable {
   marker?: Phaser.GameObjects.Image;
   gone?: boolean;
 }
+
+export interface InvItem { id: string; tex: string; title: string; en: string; info: string; tag: string; angle?: number }
 
 export interface Mission { text: string; done: boolean; active: boolean; tag?: string }
 
@@ -44,14 +46,17 @@ const BONE_SPOTS: Record<BoneId, { x: number; y: number; hidden?: boolean; via?:
 };
 
 export class GameScene extends Phaser.Scene {
-  constructor() { super('Game'); }
+  constructor(key = 'Game') { super(key); }
+  map: ChapterMap = MAP1;
+  /** world objects revealed by SCAN, keyed by interactable id */
+  reveal: Record<string, Phaser.GameObjects.GameObject & { setVisible(v: boolean): any; alpha: number }> = {};
   player!: Player;
   light!: Lighting;
   walls!: Phaser.Physics.Arcade.StaticGroup;
   inter: Interactable[] = [];
   focus: Interactable | null = null;
   keys!: Record<string, Phaser.Input.Keyboard.Key>;
-  hazards: { x: number; y: number; r: number; kind: 'spark' | 'steam'; period: number; on: number; phase: number; fx?: Phaser.GameObjects.Particles.ParticleEmitter; warned?: boolean; active?: boolean }[] = [];
+  hazards: { x: number; y: number; r: number; kind: 'spark' | 'steam'; period: number; on: number; phase: number; fx?: Phaser.GameObjects.Particles.ParticleEmitter; warned?: boolean; active?: boolean; only?: () => boolean }[] = [];
   gateL!: Phaser.GameObjects.Image; gateR!: Phaser.GameObjects.Image; gateOpenImg?: Phaser.GameObjects.Image;
   gateBlock!: Phaser.GameObjects.Zone;
   xrayDoor!: Phaser.GameObjects.Image; xrayDoorBlock!: Phaser.GameObjects.Zone;
@@ -81,8 +86,9 @@ export class GameScene extends Phaser.Scene {
   create() {
     const run = G.run;
     run.startTime = this.time.now;
-    this.inter = []; this.hazards = []; this.locks = []; this.holoSkel = []; this.bonesInWorld = {};
+    this.inter = []; this.hazards = []; this.locks = []; this.holoSkel = []; this.bonesInWorld = {}; this.reveal = {};
     this.busy = false; this.cabinetOpen = false; this.capsuleOpen = false; this.blackoutLeft = 0; this.focus = null;
+    const { WORLD } = this.map;
     this.physics.world.setBounds(WORLD.x, WORLD.y, WORLD.w, WORLD.h);
     this.cameras.main.setBackgroundColor('#020308');
     this.fitCam();
@@ -92,16 +98,13 @@ export class GameScene extends Phaser.Scene {
     this.walls = this.physics.add.staticGroup();
     this.buildFloors();
     this.buildWalls();
-    this.buildProps();
-    this.buildDoors();
-    this.buildBones();
-    this.buildStations();
-    this.buildHazards();
+    this.initHazardFx();
+    this.buildContent();
     this.buildFx();
 
-    this.player = new Player(this, 300, 1420, run.color);
+    this.player = new Player(this, this.map.spawn.x, this.map.spawn.y, run.color);
     this.physics.add.collider(this.player.phys, this.walls);
-    this.light = new Lighting(this, LIGHTS);
+    this.light = new Lighting(this, this.map.LIGHTS);
     this.cameras.main.startFollow(this.player.root, true, 0.12, 0.12, 0, 40);
     this.cameras.main.setBounds(WORLD.x - 200, WORLD.y - 200, WORLD.w + 400, WORLD.h + 400);
 
@@ -134,10 +137,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------- world building
+  /** Chapter content: props, doors, pickups, stations, hazards. */
+  buildContent() {
+    this.buildProps();
+    this.buildDoors();
+    this.buildBones();
+    this.buildStations();
+    this.buildHazards();
+  }
+
+  floorTint(floor: string): number { return floor === 'floor_lab' ? 0x7c88a6 : floor === 'floor_grate' ? 0x8e98b4 : 0x9094b0; }
+
   buildFloors() {
+    const { ROOMS, PASSAGES, HWALLS, VWALLS } = this.map;
     const all = [...ROOMS, ...PASSAGES];
     for (const r of all) {
-      this.add.tileSprite(r.x, r.y, r.w, r.h, r.floor).setOrigin(0).setTileScale(0.5).setDepth(-1000).setTint(r.floor === 'floor_lab' ? 0x7c88a6 : r.floor === 'floor_grate' ? 0x8e98b4 : 0x9094b0);
+      this.add.tileSprite(r.x, r.y, r.w, r.h, r.floor).setOrigin(0).setTileScale(0.5).setDepth(-1000).setTint(this.floorTint(r.floor));
     }
     // ambient occlusion strips under wall faces and along vertical walls
     const ao = this.add.graphics().setDepth(-900);
@@ -147,7 +162,10 @@ export class GameScene extends Phaser.Scene {
       ao.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0.45, 0, 0.45); ao.fillRect(v.x - 34, v.y, 34, v.h);
       ao.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0.45, 0, 0.45, 0); ao.fillRect(v.x + WALL_CAP, v.y, 34, v.h);
     }
-    // decals
+    this.decals();
+  }
+
+  decals() {
     this.add.image(1360, 1560, 'decal_text').setDepth(-950).setAlpha(0.9);
     this.add.image(1000, 1500, 'puddle').setDepth(-950);
     this.add.image(2240, 1220, 'puddle').setDepth(-950).setScale(0.8);
@@ -166,6 +184,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   buildWalls() {
+    const { HWALLS, VWALLS } = this.map;
     for (const w of HWALLS) {
       const bottom = w.y + WALL_CAP + (w.face ? WALL_FACE : 0);
       this.add.tileSprite(w.x, w.y, w.w, WALL_CAP, 'wall_top').setOrigin(0).setTileScale(0.5).setDepth(bottom);
@@ -273,29 +292,34 @@ export class GameScene extends Phaser.Scene {
     if (this.textures.exists('env')) { this.prop('t_glow', 1360, 600, { depth: -930, scale: 1.3 }); } else this.add.image(1360, 540, 'elevator_pad').setScale(0.5).setDepth(-930);
   }
 
-  buildDoors() {
-    // Exit gate on lab north wall
+  /** Exit gate (LOCK shutter + 3 lock lights) on the hub north wall, at map.gateX. */
+  buildGate() {
+    const gx = this.map.gateX;
     const illus = this.textures.exists('env');
     if (illus) {
       // illustrated blast gate: LOCK shutter -> open (cross-fade during the opening cinematic)
-      this.gateOpenImg = this.add.image(1360, 802, 'env', 'd_gate_open').setOrigin(0.5, 1).setScale(0.5).setDepth(801).setAlpha(0);
-      this.gateL = this.add.image(1360, 802, 'env', 'd_gate_lock').setOrigin(0.5, 1).setScale(0.5).setDepth(802);
+      this.gateOpenImg = this.add.image(gx, 802, 'env', 'd_gate_open').setOrigin(0.5, 1).setScale(0.5).setDepth(801).setAlpha(0);
+      this.gateL = this.add.image(gx, 802, 'env', 'd_gate_lock').setOrigin(0.5, 1).setScale(0.5).setDepth(802);
       this.gateR = this.gateL;
-      this.prop('x_beacon', 1222, 742, { depth: 803 }); this.prop('x_beacon', 1498, 742, { depth: 803 });
-      // open service door between A-01 and J-03 (decorative frame around the doorway)
-      this.prop('d_door_3', 1320, 1846, { depth: 1700 });
+      this.prop('x_beacon', gx - 138, 742, { depth: 803 }); this.prop('x_beacon', gx + 138, 742, { depth: 803 });
     } else {
-      this.add.image(1360, 800, 'gate_frame').setOrigin(0.5, 1).setScale(0.5).setDepth(801);
-      this.gateL = this.add.image(1360, 797, 'gate_leaf').setOrigin(1, 1).setScale(0.5).setDepth(800);
-      this.gateR = this.add.image(1360, 797, 'gate_leaf').setOrigin(1, 1).setScale(0.5).setFlipX(true).setDepth(800);
+      this.add.image(gx, 800, 'gate_frame').setOrigin(0.5, 1).setScale(0.5).setDepth(801);
+      this.gateL = this.add.image(gx, 797, 'gate_leaf').setOrigin(1, 1).setScale(0.5).setDepth(800);
+      this.gateR = this.add.image(gx, 797, 'gate_leaf').setOrigin(1, 1).setScale(0.5).setFlipX(true).setDepth(800);
       this.gateR.setOrigin(0, 1);
     }
-    this.gateBlock = this.solid(1290, 654, 140, 134);
+    this.gateBlock = this.solid(gx - 70, 654, 140, 134);
     for (let i = 0; i < 3; i++) {
-      const l = this.add.image(1320 + i * 40, illus ? 648 : 716, 'lock_red').setScale(1.1).setDepth(802).setBlendMode(Phaser.BlendModes.ADD);
+      const l = this.add.image(gx - 40 + i * 40, illus ? 648 : 716, 'lock_red').setScale(1.1).setDepth(802).setBlendMode(Phaser.BlendModes.ADD);
       this.locks.push(l);
       this.tweens.add({ targets: l, alpha: 0.5, duration: 500, yoyo: true, repeat: -1, delay: i * 120 });
     }
+  }
+
+  buildDoors() {
+    this.buildGate();
+    // open service door between A-01 and J-03 (decorative frame around the doorway)
+    if (this.textures.exists('env')) this.prop('d_door_3', 1320, 1846, { depth: 1700 });
     // X-ray room sliding door (locked until power restored)
     this.xrayDoor = this.textures.exists('env') && this.textures.get('env').has('d_side_closed')
       ? this.add.image(1978, 1142, 'env', 'd_side_closed').setOrigin(0.5, 1).setScale(0.5).setDepth(1142)
@@ -412,7 +436,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  buildHazards() {
+  initHazardFx() {
     this.sparks = this.add.particles(0, 0, 'spark', {
       lifespan: { min: 200, max: 520 }, speed: { min: 120, max: 420 }, angle: { min: 200, max: 340 }, gravityY: 900,
       scale: { start: 0.9, end: 0.2 }, alpha: { start: 1, end: 0 }, rotate: { onEmit: (_p: any, _k: any, v: number) => v } as any,
@@ -424,14 +448,19 @@ export class GameScene extends Phaser.Scene {
       lifespan: 1300, speedY: { min: -120, max: -60 }, speedX: { min: -30, max: 30 }, scale: { start: 0.3, end: 1.4 },
       alpha: { start: 0.45, end: 0 }, tint: 0xcfe6ff, emitting: false,
     }).setDepth(6001);
-    const add = (kind: 'spark' | 'steam', x: number, y: number, r: number, period: number, on: number, phase: number) => {
-      if (kind === 'spark') {
-        if (this.textures.exists('env') && this.textures.get('env').has('x_floor_hole')) this.prop('x_floor_hole', x, y + 40, { depth: -925 });
-        else if (this.textures.exists('env')) { this.prop('t_hazard', x, y + 46, { depth: -925 }); this.add.image(x, y, 'spark_panel').setScale(0.32).setDepth(-924).setAlpha(0.9); }
-        else this.prop('spark_panel', x, y + 30, { depth: -925 });
-      } else if (this.textures.exists('env')) this.prop('t_grate', x, y + 46, { depth: -926 });
-      this.hazards.push({ kind, x, y, r, period, on, phase });
-    };
+  }
+
+  addHazard(kind: 'spark' | 'steam', x: number, y: number, r: number, period: number, on: number, phase: number, only?: () => boolean) {
+    if (kind === 'spark') {
+      if (this.textures.exists('env') && this.textures.get('env').has('x_floor_hole')) this.prop('x_floor_hole', x, y + 40, { depth: -925 });
+      else if (this.textures.exists('env')) { this.prop('t_hazard', x, y + 46, { depth: -925 }); this.add.image(x, y, 'spark_panel').setScale(0.32).setDepth(-924).setAlpha(0.9); }
+      else this.prop('spark_panel', x, y + 30, { depth: -925 });
+    } else if (this.textures.exists('env')) this.prop('t_grate', x, y + 46, { depth: -926 });
+    this.hazards.push({ kind, x, y, r, period, on, phase, only });
+  }
+
+  buildHazards() {
+    const add = this.addHazard.bind(this);
     add('spark', 470, 1405, 62, 2.8, 0.75, 0);
     add('spark', 1150, 2170, 66, 2.4, 0.7, 1.1);
     add('steam', 260, 1480, 70, 4.2, 1.2, 0.5);
@@ -557,7 +586,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.launch('Info', { mode: 'log', id, from: 'Game' });
   }
 
-  openPuzzle(kind: 'Assembly' | 'Align' | 'Xray') {
+  openPuzzle(kind: string) {
     if (this.busy) return;
     this.busy = true; this.player.frozen = true;
     this.player.play('interact');
@@ -648,7 +677,8 @@ export class GameScene extends Phaser.Scene {
     this.time.delayedCall(1600, () => {
       Audio.play('unlock');
       this.cameras.main.stopFollow();
-      this.cameras.main.pan(1360, 760, 900, 'Sine.easeInOut');
+      const gx = this.map.gateX;
+      this.cameras.main.pan(gx, 760, 900, 'Sine.easeInOut');
       this.locks.forEach((l, i) => this.time.delayedCall(i * 200, () => { l.setScale(2); this.tweens.add({ targets: l, scale: 1.2, duration: 300 }); Audio.play('beep'); }));
       this.time.delayedCall(1000, () => {
         Audio.play('door'); this.cameras.main.shake(1200, 0.005);
@@ -656,13 +686,13 @@ export class GameScene extends Phaser.Scene {
           this.tweens.add({ targets: this.gateOpenImg, alpha: 1, duration: 1400, ease: 'Cubic.inOut' });
           this.tweens.add({ targets: this.gateL, alpha: 0, duration: 1400, ease: 'Cubic.inOut' });
         } else {
-          this.tweens.add({ targets: this.gateL, x: 1360 - 70, duration: 1400, ease: 'Cubic.inOut' });
-          this.tweens.add({ targets: this.gateR, x: 1360 + 70, duration: 1400, ease: 'Cubic.inOut' });
+          this.tweens.add({ targets: this.gateL, x: gx - 70, duration: 1400, ease: 'Cubic.inOut' });
+          this.tweens.add({ targets: this.gateR, x: gx + 70, duration: 1400, ease: 'Cubic.inOut' });
         }
-        this.steam.emitParticleAt(1300, 790, 12); this.steam.emitParticleAt(1420, 790, 12);
-        const flood = this.add.image(1360, 700, 'light').setTint(0x3dffa2).setBlendMode(Phaser.BlendModes.ADD).setScale(0.2).setAlpha(0).setDepth(8700);
+        this.steam.emitParticleAt(gx - 60, 790, 12); this.steam.emitParticleAt(gx + 60, 790, 12);
+        const flood = this.add.image(gx, 700, 'light').setTint(0x3dffa2).setBlendMode(Phaser.BlendModes.ADD).setScale(0.2).setAlpha(0).setDepth(8700);
         this.tweens.add({ targets: flood, scale: 2.2, alpha: 0.6, duration: 1400 });
-        this.light.extra.push({ x: 1360, y: 700, r: 300, a: 0.9 });
+        this.light.extra.push({ x: gx, y: 700, r: 300, a: 0.9 });
       });
       this.time.delayedCall(2600, () => {
         (this.gateBlock.body as Phaser.Physics.Arcade.StaticBody).enable = false;
@@ -683,9 +713,10 @@ export class GameScene extends Phaser.Scene {
     this.player.play('victory');
     Audio.play('victory');
     this.cameras.main.stopFollow();
-    this.cameras.main.pan(1360, 520, 1200, 'Sine.easeInOut');
+    const L = this.map.lift;
+    this.cameras.main.pan(L.x, L.y - 40, 1200, 'Sine.easeInOut');
     this.cameras.main.zoomTo(this.cameras.main.zoom * 1.5, 1600, 'Sine.easeInOut');
-    const beam = this.add.image(1360, 540, 'light').setTint(0x3dffa2).setBlendMode(Phaser.BlendModes.ADD).setScale(0.6, 3).setAlpha(0).setDepth(8800);
+    const beam = this.add.image(L.x, L.y - 20, 'light').setTint(0x3dffa2).setBlendMode(Phaser.BlendModes.ADD).setScale(0.6, 3).setAlpha(0).setDepth(8800);
     this.tweens.add({ targets: beam, alpha: 0.9, duration: 1500, delay: 600 });
     for (let i = 0; i < 6; i++) this.time.delayedCall(400 + i * 280, () => this.player.burst([0x3dffa2, 0x4fd8ff, 0xffffff][i % 3], 26));
     this.time.delayedCall(2800, () => { this.tweens.add({ targets: this.player.root, y: this.player.root.y - 260, alpha: 0, duration: 1200, ease: 'Cubic.in' }); });
@@ -725,8 +756,8 @@ export class GameScene extends Phaser.Scene {
         i.hidden = false; found++;
         this.time.delayedCall(d * 1.6, () => {
           Audio.play('reveal');
-          const bone = Object.entries(this.bonesInWorld).find(([k]) => i.id === `bone_${k}`)?.[1];
-          if (bone) { bone.setVisible(true); this.tweens.add({ targets: bone, alpha: 1, duration: 400 }); }
+          const obj = this.reveal[i.id] ?? Object.entries(this.bonesInWorld).find(([k]) => i.id === `bone_${k}`)?.[1];
+          if (obj) { obj.setVisible(true); this.tweens.add({ targets: obj, alpha: 1, duration: 400 }); }
           const ping = this.add.image(i.x, i.y - 20, 'ring').setTint(0x3dffa2).setBlendMode(Phaser.BlendModes.ADD).setScale(0.05).setDepth(8600);
           this.tweens.add({ targets: ping, scale: 0.6, alpha: 0, duration: 700, onComplete: () => ping.destroy() });
         });
@@ -767,6 +798,7 @@ export class GameScene extends Phaser.Scene {
     // hazards
     const T = this.time.now / 1000;
     for (const h of this.hazards) {
+      if (h.only && !h.only()) { h.active = false; continue; }
       const ph = ((T + h.phase) % h.period);
       const active = ph < h.on;
       const warn = ph > h.period - 0.5;
@@ -793,7 +825,40 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    // blackout countdown
+    this.tickChapter(dt);
+
+    // lift trigger
+    const L = this.map.lift;
+    if (G.run.flags.gate && !G.run.flags.escaped && Phaser.Math.Distance.Between(this.player.x, this.player.y, L.x, L.y) < 70) this.victory();
+
+    // dust zone follows camera
+    const v = this.cameras.main.worldView; this.dustZone.setTo(v.x, v.y, v.width, v.height);
+    this.redWash.setVisible(this.redWash.fillAlpha > 0.003);
+    this.light.update(dt, this.player.x, this.player.y, this.lightRadius());
+    Bus.emit('tick', { px: this.player.x, py: this.player.y, obj: Save.settings.hints ? this.objective() : null, cam: v });
+  }
+
+  timerLabel() { return '비상 전력'; }
+  chapterName() { return '골격 복구실'; }
+  locksOpen() { const f = G.run.flags; return [f.assembled, f.aligned, f.xray].filter(Boolean).length; }
+  floorName() { return 'BODY LAB · B4'; }
+
+  // inventory shown by the HUD
+  invTitle() { return '골격 표본'; }
+  invTotal() { return 6; }
+  invIcon(): IconName { return 'bone'; }
+  invItems(): InvItem[] {
+    return G.run.bones.map(id => { const b = BONES[id]; return { id, tex: `bone_bone_${id}`, title: `${b.ko} (${b.alt})`, en: b.en, info: b.info, tag: b.region === 'upper' ? '분류: 상지 골격' : '분류: 하지 골격', angle: id === 'humerus' || id === 'radius' || id === 'ulna' || id === 'fibula' ? 35 : 0 }; });
+  }
+
+  /** Shown as locked on the full map. */
+  roomLocked(id: string) { const f = G.run.flags; return (id === 'xray' && !f.power) || (id === 'lift' && !f.gate); }
+
+  lightRadius(): number { return G.run.flags.blackout ? 260 : 300; }
+
+  /** Chapter-specific per-frame logic (CH1: blackout countdown + red wash). */
+  tickChapter(dt: number) {
+    const T = this.time.now / 1000;
     if (G.run.flags.blackout && !G.run.flags.power && !this.busy) {
       const prev = this.blackoutLeft;
       this.blackoutLeft -= dt;
@@ -806,15 +871,6 @@ export class GameScene extends Phaser.Scene {
       }
       Bus.emit('timer', this.blackoutLeft);
     }
-
-    // lift trigger
-    if (G.run.flags.gate && !G.run.flags.escaped && Phaser.Math.Distance.Between(this.player.x, this.player.y, 1360, 560) < 70) this.victory();
-
-    // dust zone follows camera
-    const v = this.cameras.main.worldView; this.dustZone.setTo(v.x, v.y, v.width, v.height);
     if (G.run.flags.blackout) this.redWash.fillAlpha = 0.05 + 0.05 * Math.max(0, Math.sin(T * 4));
-    this.redWash.setVisible(this.redWash.fillAlpha > 0.003);
-    this.light.update(dt, this.player.x, this.player.y, G.run.flags.blackout ? 260 : 300);
-    Bus.emit('tick', { px: this.player.x, py: this.player.y, obj: Save.settings.hints ? this.objective() : null, cam: v });
   }
 }

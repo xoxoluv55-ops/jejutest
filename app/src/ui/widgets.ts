@@ -10,6 +10,7 @@ export const F_DISPLAY = `Orbitron,${KO}`;
 export const C = {
   cyan: 0x4fd8ff, cyanS: '#4fd8ff', red: 0xff2d4a, redS: '#ff3d5a', violet: 0xa66bff, violetS: '#b58cff',
   amber: 0xffb43a, amberS: '#ffc24d', green: 0x3dffa2, greenS: '#3dffa2', white: '#e8f1ff', dim: '#8ea3c4',
+  pink: 0xff5c84, pinkS: '#ff7d9c',
   panel: 0x070b14, panel2: 0x0d1424, line: 0x24324f,
 };
 

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BaseScene } from './Base';
+import { worldKey } from '../game/state';
 import { View, viewEvents } from '../core/view';
 import { Audio } from '../core/audio';
 import { Save, persist } from '../core/save';
@@ -14,7 +15,7 @@ export class InfoScene extends BaseScene {
   create(data: { mode: 'settings' | 'multi' | 'log'; id?: string; from: string }) {
     this.data2 = data;
     this.initView();
-    const game = data.from === 'Game' ? (this.scene.get('Game') as any) : null;
+    const game = data.from === 'Game' ? (this.scene.get(worldKey()) as any) : null;
     if (game) { game.busy = true; if (game.player) game.player.frozen = true; this.scene.sleep('HUD'); }
     const { W, H } = View;
     this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setInteractive();
@@ -33,7 +34,7 @@ export class InfoScene extends BaseScene {
   close() {
     Audio.play('close');
     if (this.data2.from === 'Game') {
-      const game = this.scene.get('Game') as any;
+      const game = this.scene.get(worldKey()) as any;
       game.busy = false; if (game.player) game.player.frozen = false;
       this.scene.wake('HUD');
     }

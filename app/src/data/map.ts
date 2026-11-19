@@ -70,3 +70,13 @@ export const LIGHTS: LightDef[] = [
   { x: 760, y: 1400, r: 240, color: 0xff2040, a: 0.5, emergency: true, room: 'corr' },
   { x: 1320, y: 1880, r: 240, color: 0xff2040, a: 0.5, emergency: true, room: 'joint' },
 ];
+
+export interface ChapterMap {
+  WORLD: { x: number; y: number; w: number; h: number };
+  ROOMS: Room[]; PASSAGES: { x: number; y: number; w: number; h: number; floor: Room['floor'] }[];
+  HWALLS: HWall[]; VWALLS: VWall[]; LIGHTS: LightDef[];
+  spawn: { x: number; y: number };
+  gateX: number;                    // exit gate centre on the hub north wall (y = 654)
+  lift: { x: number; y: number };   // lift trigger
+}
+export const MAP1: ChapterMap = { WORLD, ROOMS, PASSAGES, HWALLS, VWALLS, LIGHTS, spawn: { x: 300, y: 1420 }, gateX: 1360, lift: { x: 1360, y: 560 } };
