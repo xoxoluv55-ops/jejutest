@@ -20,7 +20,7 @@ ROLEC = {'agonist': [0.88, 0.20, 0.32], 'antagonist': [0.22, 0.45, 0.82], 'none'
 TRUNK_CTX = {'serratus', 'intercostal', 'trapezius', 'pecminor', 'subclavius'}
 
 if RND == 'elbow':
-    ANG = list(range(0, 141, 20))
+    ANG = list(range(0, 141, 10))
     ROLES = {'biceps': 'agonist', 'brachialis': 'agonist', 'triceps': 'antagonist', 'deltoid': 'none', 'brachioradialis': 'assist'}
     CARDS = ['biceps', 'brachialis', 'triceps', 'deltoid']
     MUS = ['deltoid', 'biceps', 'brachialis', 'triceps', 'brachioradialis', 'coracobrachialis', 'supraspinatus']
@@ -32,7 +32,7 @@ if RND == 'elbow':
     BOX = dict(u0=-45, u1=470, z0=760, z1=1500)          # u = -Y (mm), z (mm)
     pose = pose_elbow
 else:
-    ANG = list(range(0, 91, 15))
+    ANG = list(range(0, 91, 10))
     ROLES = {'deltoid': 'agonist', 'supraspinatus': 'agonist', 'pecmajor': 'antagonist', 'brachialis': 'none'}
     CARDS = ['deltoid', 'supraspinatus', 'pecmajor', 'latissimus', 'brachialis']
     MUS = ['deltoid', 'pecmajor', 'biceps', 'brachialis', 'coracobrachialis', 'brachioradialis', 'triceps', 'supraspinatus']

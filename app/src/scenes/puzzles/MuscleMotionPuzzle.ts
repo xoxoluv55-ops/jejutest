@@ -213,7 +213,8 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     const nm = (id: MuscleId) => adv ? MUSCLES[id].en : MUSCLES[id].ko;
     const live = this.stage !== 'assign';
     // frames: natural colours while assigning, role colours afterwards; cross-fade between neighbouring angles
-    const fi = this.fi(), i = Math.floor(fi), j = Math.min(i + 1, m.frames.length - 1), t = fi - i;
+    // nearest rendered pose (frames every 10°): cross-fading two poses would show a double limb
+    const fi = this.fi(), i = Math.round(fi), j = i, t = 0;
     const A = this.imgA!, B = this.imgB!;
     A.setTexture(live ? `mo_${rk}_r${i}` : `mo_${rk}_n0`).setPosition(f.ox, f.oy).setScale(f.sc / 2).setVisible(true).setAlpha(1);
     B.setTexture(`mo_${rk}_r${j}`).setPosition(f.ox, f.oy).setScale(f.sc / 2).setVisible(live && j !== i && t > 0.01).setAlpha(t);
@@ -241,18 +242,32 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     g.lineStyle(2, C.amber, 0.35); g.beginPath(); g.arc(P.x, P.y, r, s0, s1, this.R.id === 'elbowFlex'); g.strokePath();
     g.fillStyle(0xffe08a, 0.9); g.fillCircle(P.x, P.y, 4);
     if (live) {
-      const keys = Object.keys(m.frames[Math.round(fi)].labels ?? {});
-      const cur = m.frames[Math.round(fi)].labels ?? {};
-      for (const id of keys) {
-        const p = cur[id]; if (!p) continue;
+      // labels pushed out to the side of the limb with leader lines, de-overlapped vertically
+      const cur: Record<string, number[]> = { ...(m.frames[i].labels ?? {}) };
+      const xr = m.frames[i].xray;
+      if (xr && !cur.supraspinatus) cur.supraspinatus = [xr[0] + xr[2] * 0.55, xr[1] + xr[3] * 0.5];   // x-ray overlay centre
+      const items = Object.entries(cur).map(([id, p]) => {
         const sp = this.toScreen(p);
         const extra = id === 'brachioradialis' ? ' (보조 굴곡)' : id === 'supraspinatus' ? ' (뒤쪽 · 투시)' : id === 'deltoid' && rk === 'shoulder' ? ' (중간섬유)' : '';
-        this.label(nm(id as MuscleId) + extra, sp, id === 'brachioradialis' ? 'agonist' : this.roleOf(id as MuscleId));
+        return { id, sp, text: nm(id as MuscleId) + extra, role: (id === 'brachioradialis' ? 'agonist' : this.roleOf(id as MuscleId)) as Role };
+      });
+      const mx = items.reduce((a, b) => a + b.sp.x, 0) / Math.max(1, items.length);
+      for (const side of [-1, 1]) {
+        const grp = items.filter(it => (it.sp.x < mx ? -1 : 1) === side).sort((a, b) => a.sp.y - b.sp.y);
+        let lastY = -1e9;
+        for (const it of grp) {
+          const ly = Math.max(it.sp.y, lastY + 22); lastY = ly;
+          const t = T(this, it.sp.x + side * 70, ly, it.text, 13, it.role === 'agonist' ? '#ffd0dc' : it.role === 'antagonist' ? '#cfe8ff' : '#d8ccd4', { weight: '700', backgroundColor: '#0a0410cc', padding: { x: 4, y: 2 } }).setOrigin(side < 0 ? 1 : 0, 0.5).setDepth(7);
+          if (side < 0 && t.x - t.width < this.view.x + 6) t.setX(this.view.x + 6 + t.width);
+          if (side > 0 && t.x + t.width > this.view.x + this.view.w - 6) t.setX(this.view.x + this.view.w - 6 - t.width);
+          this.labels.push(t);
+          g.lineStyle(1, 0xffffff, 0.55); g.lineBetween(it.sp.x, it.sp.y, t.x, ly); g.fillStyle(0xffffff, 0.9); g.fillCircle(it.sp.x, it.sp.y, 2.5);
+        }
       }
     }
     this.handle(H);
     // length read-out measured on the posed model
-    const st = m.frames[Math.round(fi)].strain;
+    const st = m.frames[i].strain;
     const lines = this.R.cards.map(id => {
       const v = st[id];
       if (v === undefined) return `${nm(id)}  모델 없음`;
