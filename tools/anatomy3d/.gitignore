@@ -1,0 +1,6 @@
+isa.zip
+part?
+*_element_parts.txt
+out/
+render/node_modules/
+__pycache__/

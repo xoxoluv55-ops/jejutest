@@ -4,7 +4,7 @@ import { View } from '../../core/view';
 import { Audio } from '../../core/audio';
 import { G } from '../../game/state';
 import { MUSCLES, MuscleId, ATLAS_TARGETS, ATLAS_DECOYS_BASIC, ATLAS_DECOYS_ADV } from '../../data/muscles';
-import { makePlateTexture, makeMuscleTexture, SHAPES } from '../../art/muscles';
+import { plateKey, makeMuscleTexture, labelPoint, MODEL_CREDIT } from '../../art/muscles';
 import { DENSITY } from '../../art/bones';
 import { T, C, Button } from '../../ui/widgets';
 
@@ -27,8 +27,8 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
     const adv = G.run.difficulty === 'adv';
     this.frame('근육 표본실 · 근육 지도 판독', '번호가 붙은 근육에 알맞은 이름표를 끌어다 놓으세요. 앞에서는 보이지 않는 근육의 이름도 섞여 있습니다.', C.pink);
     const { W, H } = View; const portrait = H > W;
-    // crop to the region that holds the muscles (frame x 150..700, y 100..1180)
-    const crop = { x: 150, y: 100, w: 550, h: 1080 };
+    // crop to the region that holds the muscles (frame x 140..700, y 110..1110)
+    const crop = { x: 140, y: 110, w: 560, h: 1000 };
     const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.56 : this.ph - 180;
     this.s = Math.min(areaW / crop.w, areaH / crop.h);
     this.fx = this.px + 30 + (areaW - crop.w * this.s) / 2 - crop.x * this.s;
@@ -36,21 +36,22 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
     const pl = this.add.graphics();
     pl.fillStyle(0x12060c, 0.75); pl.fillRoundedRect(this.fx + crop.x * this.s - 12, this.fy + crop.y * this.s - 12, crop.w * this.s + 24, crop.h * this.s + 24, 12);
     pl.lineStyle(1.5, C.pink, 0.35); pl.strokeRoundedRect(this.fx + crop.x * this.s - 12, this.fy + crop.y * this.s - 12, crop.w * this.s + 24, crop.h * this.s + 24, 12);
-    const order: MuscleId[] = ['brachioradialis', 'brachialis', 'coracobrachialis', 'biceps', 'pecmajor', 'deltoid'];   // deep -> superficial
-    const key = makePlateTexture(this, 'plate_ch2_atlas', order, 0.9);
-    const img = this.add.image(this.fx, this.fy, key).setOrigin(0).setScale(this.s / DENSITY);
+    // plate rendered from the BodyParts3D model (all muscles, true depth order)
+    const img = this.add.image(this.fx, this.fy, plateKey('full')).setOrigin(0).setScale(this.s / DENSITY);
     const mask = this.make.graphics({}, false); mask.fillRect(this.fx + crop.x * this.s, this.fy + crop.y * this.s, crop.w * this.s, crop.h * this.s);
     img.setMask(mask.createGeometryMask());
     T(this, this.fx + crop.x * this.s + 8, this.fy + crop.y * this.s + 6, '오른팔 · 앞면 (Anterior)', 14, C.pinkS, { weight: '700' });
+    T(this, this.fx + (crop.x + crop.w) * this.s, this.fy + (crop.y + crop.h) * this.s + 16, MODEL_CREDIT, 11, '#8f7f88').setOrigin(1, 0.5);
     T(this, this.fx + crop.x * this.s + 8, this.fy + (crop.y + crop.h) * this.s - 24, '← 외측', 13, '#ffb3c6', { weight: '700' });
     T(this, this.fx + (crop.x + crop.w) * this.s - 8, this.fy + (crop.y + crop.h) * this.s - 24, '내측 →', 13, '#ffb3c6', { weight: '700' }).setOrigin(1, 0);
     // numbered markers (random numbering)
     const ids = Phaser.Utils.Array.Shuffle([...ATLAS_TARGETS]) as MuscleId[];
     ids.forEach((id, i) => {
-      const [lx, ly] = SHAPES[id].label;
+      const [lx, ly] = labelPoint(this, id);   // inside the muscle's visible region on the plate
       const x = this.fx + lx * this.s, y = this.fy + ly * this.s;
       const mt = makeMuscleTexture(this, id, 'glow');
-      const glow = this.add.image(this.fx + (mt.x + mt.w / 2) * this.s, this.fy + (mt.y + mt.h / 2) * this.s, mt.key).setScale(this.s / DENSITY).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+      // whole-muscle highlight layer (also shows the parts hidden under superficial muscles)
+      const glow = this.add.image(this.fx + (mt.x + mt.w / 2) * this.s, this.fy + (mt.y + mt.h / 2) * this.s, mt.key).setScale(this.s / DENSITY).setAlpha(0).setDepth(3);
       const g = this.add.graphics().setDepth(5);
       const m: Mark = { id, n: i + 1, x, y, filled: false, g, glow };
       this.marks.push(m); this.drawMark(m, false);
@@ -80,7 +81,7 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
       ? '단서: 근섬유의 방향과 부착 위치(어느 뼈에서 어느 뼈로)를 확인하세요.'
       : '단서\n• 삼각근은 어깨를 덮는 세모꼴, 대흉근은 가슴에서 부채꼴로 모입니다.\n• 상완이두근은 위팔 앞 가운데, 상완근은 그 아래 깊은 곳에서 양옆으로 보입니다.\n• 상완요골근은 전완 바깥쪽(엄지 쪽) 위를 따라 내려갑니다.';
     if (!adv) {
-      new Button(this, cx0 + Math.min(cw, 380) / 2, by, '근섬유 방향 강조', () => this.toggleHi(), { w: Math.min(cw, 380), h: 52, icon: 'eye', size: 17, accent: C.pink });
+      new Button(this, cx0 + Math.min(cw, 380) / 2, by, '근육 전체 모양 강조', () => this.toggleHi(), { w: Math.min(cw, 380), h: 52, icon: 'eye', size: 17, accent: C.pink });
       T(this, cx0, by + 44, guide, 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: 6 });
     } else T(this, cx0, by, guide, 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: 6 });
     this.setFeedback('근육 지도 데이터가 손상되었습니다. 각 번호의 근육 이름을 복원하세요.', 'info');

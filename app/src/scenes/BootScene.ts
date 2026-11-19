@@ -5,6 +5,7 @@ import { buildEnvironment, USER_ART } from '../art/env';
 import { makeBoneTexture, makeXrayTexture, drawTorsoHolo, DENSITY } from '../art/bones';
 import { BONES, BoneId, FRAME } from '../data/anatomy';
 import { T, C } from '../ui/widgets';
+import { preloadMuscleArt } from '../art/muscles';
 
 export const BOT_COLORS = ['red', 'blue', 'yellow', 'violet'] as const;
 export const BOT_HEX: Record<string, number> = { red: 0xff3d5a, blue: 0x4fa8ff, yellow: 0xffc23d, violet: 0xb07bff };
@@ -27,6 +28,7 @@ export class BootScene extends BaseScene {
     this.load.image('holo_body', 'assets/cut/holo_body.png');
     this.load.atlas('env', 'assets/atlas/env.png', 'assets/atlas/env.json');
     this.load.image('title_bg', 'assets/art/title_bg.jpg');
+    preloadMuscleArt(this.load);   // CH2 anatomy plates rendered from the BodyParts3D model
     // Optional hand-made art overrides (see docs/ASSETS.md)
     this.load.json('art_manifest', 'assets/art/manifest.json');
   }

@@ -6,7 +6,7 @@ import { Audio } from '../core/audio';
 import { Save } from '../core/save';
 import { ARCHIVE, ArchiveEntry } from '../data/anatomy';
 import { T, C, drawPanel, Button } from '../ui/widgets';
-import { makeMuscleTexture } from '../art/muscles';
+import { makeMuscleTexture, MODEL_CREDIT } from '../art/muscles';
 
 /** ANATOMY ARCHIVE — bones, concepts and logs unlocked while playing (persisted in localStorage). */
 export class ArchiveScene extends BaseScene {
@@ -73,6 +73,7 @@ export class ArchiveScene extends BaseScene {
       const mt = makeMuscleTexture(this, e.muscle, 'real');
       const im = this.add.image(dx + 130, 0, mt.key);
       const s = Math.min(240 / im.width, (H - 300) / im.height, 1); im.setScale(s); im.setY(ty + im.displayHeight / 2);
+      T(this, dx + 130, im.y + im.displayHeight / 2 + 14, mt.schematic ? '도식 (3D 모델에 없는 근육)' : MODEL_CREDIT, 11, '#8f7f88', { align: 'center', wordWrap: { width: 250 } }).setOrigin(0.5, 0);
       T(this, dx + 290, ty, e.body, 18, '#d3def3', { wordWrap: { width: dw - 300 }, lineSpacing: 8 });
     } else {
       T(this, dx, ty, e.body, 19, '#d3def3', { wordWrap: { width: dw }, lineSpacing: 9 });

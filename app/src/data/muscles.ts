@@ -8,30 +8,36 @@ export type AttId =
 
 export interface Att { id: AttId; ko: string; en: string; x: number; y: number; posterior?: boolean; on: string }
 
-/** Attachment sites (frame coordinates). `posterior` = lies behind in this anterior view (drawn dashed). */
+/**
+ * Attachment sites (frame coordinates). Measured on the BodyParts3D model (tools/anatomy3d/atts.py): centroid of the
+ * muscle-mesh vertices touching the bone surface (<2.5 mm), projected into the anterior plate. Exceptions: medEpi =
+ * most medial point of the distal humerus; grooveFloor = midpoint of the measured pectoralis major / teres major
+ * insertions (latissimus is not in the model); thoracolumbar = schematic posterior midline point.
+ * `posterior` = lies behind in this anterior view (drawn dashed).
+ */
 export const ATT: Record<AttId, Att> = {
-  clavLat: { id: 'clavLat', ko: '쇄골 외측 1/3', en: 'Lateral third of clavicle', x: 400, y: 150, on: '삼각근(앞섬유)의 기시부입니다.' },
-  clavMed: { id: 'clavMed', ko: '쇄골 내측 1/2', en: 'Medial half of clavicle', x: 540, y: 168, on: '대흉근 쇄골두의 기시부입니다.' },
-  sternum: { id: 'sternum', ko: '흉골 · 늑연골', en: 'Sternum & costal cartilages', x: 632, y: 320, on: '대흉근 흉늑부의 기시부입니다.' },
-  acromion: { id: 'acromion', ko: '견봉', en: 'Acromion', x: 330, y: 142, on: '삼각근(중간섬유)의 기시부입니다.' },
-  spine: { id: 'spine', ko: '견갑극', en: 'Spine of scapula', x: 440, y: 210, posterior: true, on: '삼각근(뒤섬유)의 기시부입니다. 정면에서는 뒤쪽에 있어요.' },
-  coracoid: { id: 'coracoid', ko: '오구돌기', en: 'Coracoid process', x: 372, y: 186, on: '상완이두근 단두·오훼완근·소흉근의 기시부입니다.' },
-  supraglenoid: { id: 'supraglenoid', ko: '관절상결절', en: 'Supraglenoid tubercle', x: 344, y: 228, on: '상완이두근 장두의 기시부입니다(관절와 바로 위).' },
-  infraglenoid: { id: 'infraglenoid', ko: '관절하결절', en: 'Infraglenoid tubercle', x: 354, y: 304, on: '상완삼두근 장두의 기시부입니다(관절와 바로 아래).' },
-  supraFossa: { id: 'supraFossa', ko: '극상와', en: 'Supraspinous fossa', x: 482, y: 188, posterior: true, on: '극상근의 기시부입니다. 견갑극 위의 오목으로 뒤쪽에 있어요.' },
-  greater: { id: 'greater', ko: '대결절', en: 'Greater tubercle', x: 264, y: 246, on: '극상근·극하근·소원근의 정지부입니다.' },
-  groove: { id: 'groove', ko: '결절간구 외측순', en: 'Lateral lip of intertubercular groove', x: 296, y: 336, on: '대흉근의 정지부입니다.' },
-  grooveFloor: { id: 'grooveFloor', ko: '결절간구 바닥', en: 'Floor of intertubercular groove', x: 310, y: 340, on: '광배근의 정지부입니다.' },
-  deltTub: { id: 'deltTub', ko: '삼각근조면', en: 'Deltoid tuberosity', x: 266, y: 448, on: '삼각근의 정지부입니다(상완골 몸통 외측 중간).' },
-  humMed: { id: 'humMed', ko: '상완골 몸통 내측 중간', en: 'Medial shaft of humerus (middle)', x: 308, y: 470, on: '오훼완근의 정지부입니다.' },
-  humAnt: { id: 'humAnt', ko: '상완골 앞면 원위 1/2', en: 'Distal half of anterior humerus', x: 288, y: 588, on: '상완근의 기시부입니다.' },
-  latSupra: { id: 'latSupra', ko: '외측과상능선', en: 'Lateral supracondylar ridge', x: 236, y: 628, on: '상완요골근의 기시부입니다.' },
-  medEpi: { id: 'medEpi', ko: '내측상과', en: 'Medial epicondyle', x: 352, y: 700, on: '원회내근·전완 굴곡근(공통 굴곡건)의 기시부입니다.' },
-  radTub: { id: 'radTub', ko: '요골조면', en: 'Radial tuberosity', x: 258, y: 828, on: '상완이두근의 정지부입니다.' },
-  ulnTub: { id: 'ulnTub', ko: '척골조면 · 구상돌기', en: 'Ulnar tuberosity & coronoid', x: 304, y: 800, on: '상완근의 정지부입니다.' },
-  olecranon: { id: 'olecranon', ko: '주두', en: 'Olecranon', x: 324, y: 744, posterior: true, on: '상완삼두근의 정지부입니다. 팔꿈치 뒤쪽 끝이에요.' },
-  radStyloid: { id: 'radStyloid', ko: '요골 경상돌기 기저부', en: 'Base of radial styloid', x: 216, y: 1146, on: '상완요골근의 정지부입니다.' },
-  thoracolumbar: { id: 'thoracolumbar', ko: '흉요근막 · 하위 흉추', en: 'Thoracolumbar fascia, T7–L5', x: 600, y: 900, posterior: true, on: '광배근의 기시부입니다.' },
+  clavLat: { id: 'clavLat', ko: '쇄골 외측 1/3', en: 'Lateral third of clavicle', x: 431, y: 139, on: '삼각근(앞섬유)의 기시부입니다.' },
+  clavMed: { id: 'clavMed', ko: '쇄골 내측 1/2', en: 'Medial half of clavicle', x: 527, y: 171, on: '대흉근 쇄골두의 기시부입니다.' },
+  sternum: { id: 'sternum', ko: '흉골 · 늑연골', en: 'Sternum & costal cartilages', x: 585, y: 354, on: '대흉근 흉늑부의 기시부입니다.' },
+  acromion: { id: 'acromion', ko: '견봉', en: 'Acromion', x: 363, y: 151, on: '삼각근(중간섬유)의 기시부입니다.' },
+  spine: { id: 'spine', ko: '견갑극', en: 'Spine of scapula', x: 462, y: 207, posterior: true, on: '삼각근(뒤섬유)의 기시부입니다. 정면에서는 뒤쪽에 있어요.' },
+  coracoid: { id: 'coracoid', ko: '오구돌기', en: 'Coracoid process', x: 402, y: 184, on: '상완이두근 단두·오훼완근·소흉근의 기시부입니다.' },
+  supraglenoid: { id: 'supraglenoid', ko: '관절상결절', en: 'Supraglenoid tubercle', x: 399, y: 176, on: '상완이두근 장두의 기시부입니다(관절와 바로 위).' },
+  infraglenoid: { id: 'infraglenoid', ko: '관절하결절', en: 'Infraglenoid tubercle', x: 389, y: 246, on: '상완삼두근 장두의 기시부입니다(관절와 바로 아래).' },
+  supraFossa: { id: 'supraFossa', ko: '극상와', en: 'Supraspinous fossa', x: 486, y: 196, posterior: true, on: '극상근의 기시부입니다. 견갑극 위의 오목으로 뒤쪽에 있어요.' },
+  greater: { id: 'greater', ko: '대결절', en: 'Greater tubercle', x: 322, y: 185, on: '극상근·극하근·소원근의 정지부입니다.' },
+  groove: { id: 'groove', ko: '결절간구 외측순', en: 'Lateral lip of intertubercular groove', x: 321, y: 298, on: '대흉근의 정지부입니다.' },
+  grooveFloor: { id: 'grooveFloor', ko: '결절간구 바닥', en: 'Floor of intertubercular groove', x: 334, y: 287, on: '광배근의 정지부입니다.' },
+  deltTub: { id: 'deltTub', ko: '삼각근조면', en: 'Deltoid tuberosity', x: 285, y: 391, on: '삼각근의 정지부입니다(상완골 몸통 외측 중간).' },
+  humMed: { id: 'humMed', ko: '상완골 몸통 내측 중간', en: 'Medial shaft of humerus (middle)', x: 313, y: 433, on: '오훼완근의 정지부입니다.' },
+  humAnt: { id: 'humAnt', ko: '상완골 앞면 원위 1/2', en: 'Distal half of anterior humerus', x: 287, y: 527, on: '상완근의 기시부입니다.' },
+  latSupra: { id: 'latSupra', ko: '외측과상능선', en: 'Lateral supracondylar ridge', x: 263, y: 542, on: '상완요골근의 기시부입니다.' },
+  medEpi: { id: 'medEpi', ko: '내측상과', en: 'Medial epicondyle', x: 329, y: 666, on: '원회내근·전완 굴곡근(공통 굴곡건)의 기시부입니다.' },
+  radTub: { id: 'radTub', ko: '요골조면', en: 'Radial tuberosity', x: 240, y: 742, on: '상완이두근의 정지부입니다.' },
+  ulnTub: { id: 'ulnTub', ko: '척골조면 · 구상돌기', en: 'Ulnar tuberosity & coronoid', x: 270, y: 725, on: '상완근의 정지부입니다.' },
+  olecranon: { id: 'olecranon', ko: '주두', en: 'Olecranon', x: 271, y: 679, posterior: true, on: '상완삼두근의 정지부입니다. 팔꿈치 뒤쪽 끝이에요.' },
+  radStyloid: { id: 'radStyloid', ko: '요골 경상돌기 기저부', en: 'Base of radial styloid', x: 155, y: 1070, on: '상완요골근의 정지부입니다.' },
+  thoracolumbar: { id: 'thoracolumbar', ko: '흉요근막 · 하위 흉추', en: 'Thoracolumbar fascia, T7–L5', x: 626, y: 681, posterior: true, on: '광배근의 기시부입니다.' },
 };
 
 export type MuscleId = 'deltoid' | 'pecmajor' | 'biceps' | 'brachialis' | 'coracobrachialis' | 'brachioradialis' | 'triceps' | 'supraspinatus' | 'latissimus';

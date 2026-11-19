@@ -1,11 +1,63 @@
 import Phaser from 'phaser';
 import type { MuscleId } from '../data/muscles';
-import { FRAME, UPPER_ORDER } from '../data/anatomy';
-import { DENSITY, drawBone, drawTorsoHolo } from './bones';
+import { DENSITY } from './bones';
 
+/**
+ * CH2 muscle art.
+ *
+ * Every muscle that exists in the BodyParts3D model (© DBCLS, CC BY 4.0) is a pre-rendered layer made from the real
+ * 3D meshes (tools/anatomy3d): same frame as the plate (760×1260 logical units, right upper limb, anterior view,
+ * lateral = viewer's left), density 2. Layers: `mus_real_<id>` (natural) and `mus_glow_<id>` (highlight).
+ *
+ * Latissimus dorsi is NOT part of BodyParts3D 4.0, so it alone is drawn as a clearly-marked schematic.
+ */
+/** Attribution required by CC BY 4.0 — shown wherever model renders appear. */
+export const MODEL_CREDIT = '3D 해부 모델: BodyParts3D © DBCLS (CC BY 4.0)';
+
+export const MODEL_MUSCLES: MuscleId[] = ['deltoid', 'pecmajor', 'biceps', 'brachialis', 'coracobrachialis', 'brachioradialis', 'triceps', 'supraspinatus'];
+export const hasModel = (id: MuscleId) => MODEL_MUSCLES.includes(id);
+const BASE = 'assets/ch2/';
+
+export interface Rect { x: number; y: number; w: number; h: number }
+export interface PlateManifest { frame: [number, number]; density: number; layers: Record<string, Rect>; labels: Record<string, { x: number; y: number; visible: number } | null> }
+
+/** Called from Boot: the anatomy plates and per-muscle layers (~1.2 MB webp). */
+export function preloadMuscleArt(load: Phaser.Loader.LoaderPlugin) {
+  load.json('ch2_plates', BASE + 'plates.json');
+  load.image('ch2_plate_full', BASE + 'plate_full.webp');
+  load.image('ch2_plate_bones', BASE + 'plate_bones.webp');
+  for (const id of MODEL_MUSCLES) {
+    load.image(`mus_real_${id}`, `${BASE}mus_real_${id}.webp`);
+    load.image(`mus_glow_${id}`, `${BASE}mus_glow_${id}.webp`);
+  }
+}
+
+export function plateManifest(scene: Phaser.Scene): PlateManifest { return scene.cache.json.get('ch2_plates') as PlateManifest; }
+
+/** Plate textures (frame-sized, density 2). 'full' = model with every muscle, 'bones' = skeleton only. */
+export function plateKey(which: 'full' | 'bones') { return which === 'full' ? 'ch2_plate_full' : 'ch2_plate_bones'; }
+
+/** A point inside the visible part of the muscle on the full plate (for numbered markers). */
+export function labelPoint(scene: Phaser.Scene, id: MuscleId): [number, number] {
+  const l = plateManifest(scene)?.labels[id];
+  if (l) return [l.x, l.y];
+  const s = SCHEMATIC[id]; return s ? s.label : [380, 400];
+}
+
+export type MuscleStyle = 'real' | 'ghost' | 'glow';
+
+/** Texture for one muscle, cropped to its bounds, with its rect in frame coordinates. */
+export function makeMuscleTexture(scene: Phaser.Scene, id: MuscleId, style: MuscleStyle = 'real'): { key: string; schematic: boolean } & Rect {
+  if (hasModel(id)) {
+    const r = plateManifest(scene).layers[id];
+    return { key: style === 'glow' ? `mus_glow_${id}` : `mus_real_${id}`, schematic: false, ...r };
+  }
+  return { ...schematicTexture(scene, id, style), schematic: true };
+}
+
+// ---------------- schematic fallback (latissimus dorsi only: not in the 3D model) ----------------
 export type Pt = [number, number];
 
-/** Catmull-Rom densified polyline. */
 export function smoothLine(pts: Pt[], n = 8): Pt[] {
   if (pts.length < 3) return pts;
   const out: Pt[] = [];
@@ -23,8 +75,7 @@ export function smoothLine(pts: Pt[], n = 8): Pt[] {
   return out;
 }
 
-/** Closed spindle polygon around a centre line with a width per control point (fusiform muscle belly). */
-export function spindle(center: Pt[], widths: number[], n = 8): Pt[] {
+function spindle(center: Pt[], widths: number[], n = 8): Pt[] {
   const c = smoothLine(center, n);
   const w = smoothLine(widths.map((v, i) => [i, v] as Pt), n).map(p => p[1]);
   const L: Pt[] = [], R: Pt[] = [];
@@ -37,159 +88,37 @@ export function spindle(center: Pt[], widths: number[], n = 8): Pt[] {
   return [...L, ...R.reverse()];
 }
 
-export interface Part { kind: 'belly' | 'tendon'; center?: Pt[]; widths?: number[]; poly?: Pt[] }
-export interface Shape { parts: Part[]; converge?: Pt; label: Pt }
-
-/** Anterior-view shapes (frame coordinates). Fibre direction: along the centre line, or converging on `converge`. */
-export const SHAPES: Record<MuscleId, Shape> = {
-  deltoid: {
-    parts: [{ kind: 'belly', poly: smoothLine([[418, 156], [372, 140], [330, 132], [290, 150], [258, 190], [240, 240], [238, 300], [246, 360], [256, 410], [266, 452], [282, 418], [296, 370], [306, 322], [324, 276], [352, 228], [386, 188], [418, 156]], 4) }],
-    converge: [266, 460], label: [280, 290],
-  },
-  pecmajor: {
-    parts: [{ kind: 'belly', poly: smoothLine([[614, 170], [560, 172], [500, 170], [440, 176], [404, 194], [360, 246], [324, 300], [300, 336], [322, 352], [364, 362], [424, 394], [500, 438], [580, 452], [640, 446], [648, 320], [640, 200], [614, 170]], 4) }],
-    converge: [298, 340], label: [520, 320],
-  },
-  coracobrachialis: {
-    parts: [{ kind: 'belly', center: [[372, 192], [368, 300], [352, 400], [318, 470]], widths: [10, 30, 30, 8] }],
-    label: [358, 392],
-  },
-  biceps: {
-    parts: [
-      { kind: 'tendon', center: [[344, 230], [318, 262], [302, 300], [312, 334]], widths: [6, 6, 6, 8] },          // long head tendon (groove)
-      { kind: 'belly', center: [[370, 194], [354, 262], [332, 336]], widths: [8, 18, 26] },                          // short head
-      { kind: 'belly', center: [[318, 320], [312, 420], [300, 540], [290, 660], [282, 722]], widths: [22, 48, 54, 40, 14] },
-      { kind: 'tendon', center: [[282, 716], [272, 772], [260, 826]], widths: [12, 11, 10] },                       // to radial tuberosity
-      { kind: 'tendon', center: [[288, 742], [322, 770], [354, 792]], widths: [7, 7, 5] },                          // bicipital aponeurosis
-    ],
-    label: [300, 540],
-  },
-  brachialis: {
-    parts: [{ kind: 'belly', center: [[290, 500], [288, 600], [294, 700], [302, 790]], widths: [30, 82, 74, 22] }],
-    label: [340, 652],
-  },
-  brachioradialis: {
-    parts: [
-      { kind: 'belly', center: [[236, 600], [226, 700], [228, 820], [226, 940]], widths: [18, 46, 40, 12] },
-      { kind: 'tendon', center: [[226, 930], [222, 1040], [216, 1146]], widths: [10, 9, 8] },
-    ],
-    label: [222, 790],
-  },
-  triceps: {
-    parts: [
-      { kind: 'belly', center: [[354, 304], [348, 420], [338, 560], [328, 680]], widths: [12, 40, 46, 30] },
-      { kind: 'tendon', center: [[328, 676], [326, 712], [324, 746]], widths: [24, 18, 12] },
-    ],
-    label: [346, 500],
-  },
-  supraspinatus: {
-    parts: [
-      { kind: 'belly', center: [[482, 188], [430, 188], [360, 196]], widths: [44, 40, 26] },
-      { kind: 'tendon', center: [[364, 196], [310, 210], [266, 244]], widths: [16, 12, 10] },
-    ],
-    label: [440, 188],
-  },
+interface SPart { kind: 'belly' | 'tendon'; center: Pt[]; widths: number[] }
+// Latissimus dorsi (posterior): thoracolumbar origin -> floor of the intertubercular groove (334,287 = midpoint of the
+// measured pectoralis major and teres major insertions on the model humerus).
+const SCHEMATIC: Partial<Record<MuscleId, { parts: SPart[]; label: Pt }>> = {
   latissimus: {
     parts: [
-      { kind: 'belly', center: [[600, 900], [520, 700], [430, 520], [360, 400]], widths: [130, 110, 66, 26] },
-      { kind: 'tendon', center: [[364, 404], [330, 366], [310, 342]], widths: [20, 14, 10] },
+      { kind: 'belly', center: [[610, 830], [530, 650], [440, 470], [372, 340]], widths: [130, 110, 66, 26] },
+      { kind: 'tendon', center: [[374, 344], [350, 306], [334, 287]], widths: [20, 14, 10] },
     ],
-    converge: [310, 342], label: [520, 680],
+    label: [520, 640],
   },
 };
 
-export type MuscleStyle = 'real' | 'ghost' | 'glow';
-
-function pathOf(pts: Pt[]) { const p = new Path2D(); p.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) p.lineTo(pts[i][0], pts[i][1]); p.closePath(); return p; }
-function polyOf(part: Part): Pt[] { return part.poly ?? spindle(part.center!, part.widths!); }
-function bbox(pts: Pt[]) { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const [x, y] of pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } return { x0, y0, x1, y1 }; }
-
-/** Draw one muscle in frame coordinates. Light comes from the upper left (same as all world art). */
-export function drawMuscle(ctx: CanvasRenderingContext2D, id: MuscleId, style: MuscleStyle = 'real', alpha = 1) {
-  const sh = SHAPES[id];
-  ctx.save(); ctx.globalAlpha = alpha;
-  for (const part of sh.parts) {
-    const pts = polyOf(part); const path = pathOf(pts); const b = bbox(pts);
-    if (style === 'ghost') {
-      ctx.setLineDash([7, 6]); ctx.lineWidth = 2; ctx.strokeStyle = part.kind === 'tendon' ? 'rgba(255,220,200,0.7)' : 'rgba(255,120,140,0.8)';
-      ctx.fillStyle = part.kind === 'tendon' ? 'rgba(255,230,210,0.10)' : 'rgba(255,90,120,0.12)'; ctx.fill(path); ctx.stroke(path); ctx.setLineDash([]);
-      continue;
-    }
-    if (part.kind === 'tendon') {
-      const g = ctx.createLinearGradient(b.x0, b.y0, b.x1, b.y1);
-      g.addColorStop(0, style === 'glow' ? '#fff2f6' : '#f4ecdc'); g.addColorStop(1, style === 'glow' ? '#ffb3c6' : '#cfc2a8');
-      ctx.fillStyle = g; ctx.fill(path);
-      ctx.strokeStyle = 'rgba(70,50,30,0.55)'; ctx.lineWidth = 1.2; ctx.stroke(path);
-      continue;
-    }
-    // belly: base gradient (lit upper-left), fibres, rim shade, highlight
-    const g = ctx.createLinearGradient(b.x0, b.y0, b.x1, b.y1);
-    if (style === 'glow') { g.addColorStop(0, '#ff9fb6'); g.addColorStop(0.5, '#ff5c84'); g.addColorStop(1, '#b8204e'); }
-    else { g.addColorStop(0, '#d9616a'); g.addColorStop(0.45, '#b83a46'); g.addColorStop(1, '#7c1f2c'); }
-    ctx.fillStyle = g; ctx.fill(path);
-    ctx.save(); ctx.clip(path);
-    // fibres
-    ctx.strokeStyle = style === 'glow' ? 'rgba(255,230,240,0.28)' : 'rgba(255,190,190,0.22)'; ctx.lineWidth = 1.1;
-    if (sh.converge) {
-      const [cx, cy] = sh.converge;
-      for (let i = 0; i < pts.length; i += 2) { ctx.beginPath(); ctx.moveTo(pts[i][0], pts[i][1]); ctx.lineTo(cx, cy); ctx.stroke(); }
-    } else {
-      const c = smoothLine(part.center!, 8);
-      for (let k = -6; k <= 6; k++) {
-        ctx.beginPath();
-        c.forEach((p, i) => {
-          const a = c[Math.max(0, i - 1)], q = c[Math.min(c.length - 1, i + 1)];
-          let dx = q[0] - a[0], dy = q[1] - a[1]; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
-          const x = p[0] - dy * k * 4.2, y = p[1] + dx * k * 4.2;
-          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-        });
-        ctx.stroke();
-      }
-    }
-    // darker fibres for depth
-    ctx.strokeStyle = 'rgba(60,0,10,0.18)'; ctx.lineWidth = 0.8;
-    if (!sh.converge) {
-      const c = smoothLine(part.center!, 8);
-      for (let k = -5; k <= 5; k++) { ctx.beginPath(); c.forEach((p, i) => { const a = c[Math.max(0, i - 1)], q = c[Math.min(c.length - 1, i + 1)]; let dx = q[0] - a[0], dy = q[1] - a[1]; const l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l; const x = p[0] - dy * (k * 4.2 + 2), y = p[1] + dx * (k * 4.2 + 2); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }); ctx.stroke(); }
-    }
-    // rim shade (lower right) + highlight (upper left)
-    ctx.lineWidth = 10; ctx.strokeStyle = 'rgba(40,0,8,0.35)';
-    ctx.save(); ctx.translate(3, 3); ctx.stroke(path); ctx.restore();
-    ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(255,220,220,0.18)';
-    ctx.save(); ctx.translate(-2, -2); ctx.stroke(path); ctx.restore();
-    ctx.restore();
-    ctx.strokeStyle = style === 'glow' ? 'rgba(255,220,235,0.9)' : 'rgba(50,6,14,0.85)'; ctx.lineWidth = 1.6; ctx.stroke(path);
-  }
-  ctx.restore();
-}
-
-export function muscleBounds(id: MuscleId, pad = 8) {
+function schematicTexture(scene: Phaser.Scene, id: MuscleId, style: MuscleStyle) {
+  const sh = SCHEMATIC[id]!;
+  const polys = sh.parts.map(p => ({ kind: p.kind, pts: spindle(p.center, p.widths) }));
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  for (const part of SHAPES[id].parts) { const b = bbox(polyOf(part)); x0 = Math.min(x0, b.x0); y0 = Math.min(y0, b.y0); x1 = Math.max(x1, b.x1); y1 = Math.max(y1, b.y1); }
-  return { x: Math.floor(x0 - pad), y: Math.floor(y0 - pad), w: Math.ceil(x1 - x0 + pad * 2), h: Math.ceil(y1 - y0 + pad * 2) };
-}
-
-/** Muscle cropped to its bounds -> texture `mus_<style>_<id>` (density 2). */
-export function makeMuscleTexture(scene: Phaser.Scene, id: MuscleId, style: MuscleStyle = 'real') {
-  const b = muscleBounds(id);
-  const key = `mus_${style}_${id}`;
+  for (const p of polys) for (const [x, y] of p.pts) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); }
+  const pad = 8; const r = { x: Math.floor(x0 - pad), y: Math.floor(y0 - pad), w: Math.ceil(x1 - x0 + pad * 2), h: Math.ceil(y1 - y0 + pad * 2) };
+  const key = `mus_schem_${style}_${id}`;
   if (!scene.textures.exists(key)) {
-    const c = document.createElement('canvas'); c.width = b.w * DENSITY; c.height = b.h * DENSITY;
-    const ctx = c.getContext('2d')!; ctx.scale(DENSITY, DENSITY); ctx.translate(-b.x, -b.y);
-    drawMuscle(ctx, id, style);
+    const c = document.createElement('canvas'); c.width = r.w * DENSITY; c.height = r.h * DENSITY;
+    const ctx = c.getContext('2d')!; ctx.scale(DENSITY, DENSITY); ctx.translate(-r.x, -r.y);
+    for (const p of polys) {
+      const path = new Path2D(); path.moveTo(p.pts[0][0], p.pts[0][1]); for (const [x, y] of p.pts.slice(1)) path.lineTo(x, y); path.closePath();
+      ctx.setLineDash([7, 6]); ctx.lineWidth = 2;
+      ctx.strokeStyle = style === 'glow' ? 'rgba(255,170,195,0.95)' : p.kind === 'tendon' ? 'rgba(255,220,200,0.7)' : 'rgba(255,120,140,0.8)';
+      ctx.fillStyle = style === 'glow' ? 'rgba(255,92,132,0.35)' : p.kind === 'tendon' ? 'rgba(255,230,210,0.10)' : 'rgba(255,90,120,0.14)';
+      ctx.fill(path); ctx.stroke(path); ctx.setLineDash([]);
+    }
     scene.textures.addCanvas(key, c);
   }
-  return { key, ...b };
-}
-
-/** Full-frame anatomy plate: torso hologram + upper-limb bones (+ optional muscles in draw order). */
-export function makePlateTexture(scene: Phaser.Scene, key: string, muscles: MuscleId[], boneAlpha = 1) {
-  if (scene.textures.exists(key)) return key;
-  const c = document.createElement('canvas'); c.width = FRAME.w * DENSITY; c.height = FRAME.h * DENSITY;
-  const ctx = c.getContext('2d')!; ctx.scale(DENSITY, DENSITY);
-  drawTorsoHolo(ctx, 0.55);
-  ctx.save(); ctx.globalAlpha = boneAlpha; for (const id of UPPER_ORDER) drawBone(ctx, id, 'bone'); ctx.restore();
-  for (const m of muscles) drawMuscle(ctx, m, 'real');
-  scene.textures.addCanvas(key, c);
-  return key;
+  return { key, ...r };
 }

@@ -1,0 +1,45 @@
+# anatomy3d — CH2 muscle art from a real 3D anatomy model
+
+All muscle and bone art in Chapter 2 (근육 연결실) is rendered from **BodyParts3D 4.0**:
+"BodyParts3D, © The Database Center for Life Science licensed under CC Attribution 4.0 International".
+The game shows that credit next to every model render (`MODEL_CREDIT` in `app/src/art/muscles.ts`).
+
+Nothing is drawn by hand or by an image generator: shapes, attachments, depth order, tendons and poses all come
+from the model's meshes. Exception: **latissimus dorsi is not in BodyParts3D 4.0**. It appears only as a dashed
+schematic (archive, link puzzle decoys) or a dashed line of action (shoulder motion round), always labelled as such.
+
+## Pipeline
+
+| step | file | what it does |
+|---|---|---|
+| download | `download.sh` | BodyParts3D IS-A OBJ archive (~143 MB) + element/name tables |
+| meshes | `objio.py`, `model.py` | element IDs for the right shoulder/arm, frame projection (anterior plate: x = 640 + 1.75·X, y = 130 + 1.75·(1355 − Z)), weld, 1:4 subdivision + Taubin smoothing |
+| attachments | `contacts.py`, `atts.py` | every muscle element is intersected with every bone surface (< 2.5 mm). Attachment sites = centroid of the touching vertices → `ATT` in `app/src/data/muscles.ts` |
+| attributes | `build.py` | per-vertex tendon factor (thin cross-sections near the ends; fleshy origins excluded) and fibre direction (toward the insertion) |
+| render | `render/index.html`, `render/render.cjs` | three.js in headless Chromium: colour pass (2× supersampled), screen-space fibre-direction pass, id pass |
+| post | `post.py` | fibres by line-integral convolution along the rendered fibre field, tendon sheen, boundary lines |
+| plates | `plates.py` | `plate_full`, `plate_bones`, `mus_real_<id>`, `mus_glow_<id>`, `plates.json` (layer rects, label points) |
+| motion | `motion.py`, `motion_render.py` | posed frames for elbow flexion (0–140°, lateral view) and shoulder abduction (0–90°, anterior view) |
+| export | `export.py` | crops motion frames, copies everything to `app/public/assets/ch2/` |
+
+### Motion model
+* Bones move rigidly by segment. Elbow: rotation about the measured flexion axis (epicondyle line through the
+  trochlea/capitulum centre). Shoulder: scapulohumeral rhythm 1 : 3 (girdle about the sternoclavicular joint,
+  humerus about the fitted humeral-head centre).
+* Each muscle element keeps its **measured origin and insertion glued to their bones**; the belly follows the new
+  origin→insertion line, tendons keep their length, the belly cross-section scales by √(L₀/L₁) (constant volume).
+* Triceps: its tendon wraps around the olecranon, so its path lengthens by r·θ (r = 15 mm moment arm).
+* Deltoid in abduction: only the clavicular (assist) and acromial (prime mover) fibres shorten; the spinal fibres
+  lengthen below ~90° and are shown as not involved.
+
+## Run
+```
+./download.sh
+(cd render && npm install)
+python3 build.py anterior out/scene_ant.json
+python3 plates.py out/plates
+python3 motion_render.py elbow out/motion
+python3 motion_render.py shoulder out/motion
+python3 export.py out ../../app/public/assets/ch2
+```
+Python needs numpy, scipy, Pillow; rendering needs Node + Playwright's Chromium.

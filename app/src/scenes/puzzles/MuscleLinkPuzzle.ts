@@ -4,20 +4,23 @@ import { View } from '../../core/view';
 import { Audio } from '../../core/audio';
 import { G } from '../../game/state';
 import { MUSCLES, MuscleId, ATT, AttId, LINK_BASIC, LINK_ADV, LINK_NODES } from '../../data/muscles';
-import { makePlateTexture, makeMuscleTexture } from '../../art/muscles';
+import { plateKey, makeMuscleTexture, MODEL_CREDIT } from '../../art/muscles';
 import { DENSITY } from '../../art/bones';
 import { T, C, drawIcon } from '../../ui/widgets';
 
-interface Node { id: AttId; x: number; y: number; g: Phaser.GameObjects.Graphics; t?: Phaser.GameObjects.Text }
+interface Node { id: AttId; x: number; y: number; px: number; py: number; g: Phaser.GameObjects.Graphics; t?: Phaser.GameObjects.Text }   // (x,y) = tap marker, (px,py) = true site
 interface Item { id: MuscleId; done: boolean; bg: Phaser.GameObjects.Graphics; t: Phaser.GameObjects.Text; st: Phaser.GameObjects.Text; x: number; y: number; w: number; h: number }
 
-// label placement for crowded attachment sites: [side, dy]
-const LABEL: Partial<Record<AttId, ['L' | 'R', number]>> = {
-  acromion: ['L', -6], clavLat: ['R', -8], coracoid: ['R', 2], supraglenoid: ['R', 6], greater: ['L', 0], infraglenoid: ['R', 4],
-  deltTub: ['L', 0], humMed: ['R', 0], humAnt: ['R', 0], latSupra: ['L', 0], medEpi: ['R', 0], olecranon: ['R', -4], ulnTub: ['R', 6], radTub: ['L', 4], radStyloid: ['R', 0],
+// Callout direction for each site (unit-ish vector, screen space): crowded sites (e.g. coracoid process and
+// supraglenoid tubercle lie 8 units apart in the anterior projection) get a tap marker pushed out along this
+// direction with a leader line to the true site.
+const CALLOUT: Partial<Record<AttId, [number, number]>> = {
+  acromion: [-0.6, -1], clavLat: [0.5, -1], coracoid: [1, 0.15], supraglenoid: [0.7, -0.8], greater: [-1, -0.4], infraglenoid: [1, 0.5],
+  deltTub: [-1, 0], humMed: [1, 0], humAnt: [1, -0.2], latSupra: [-1, 0], medEpi: [1, 0.1], olecranon: [1, 0.6], ulnTub: [1, 0.4], radTub: [-1, 0.3], radStyloid: [-0.4, 1],
 };
 
-const LAYER: Record<MuscleId, number> = { brachioradialis: 1, brachialis: 2, coracobrachialis: 3, biceps: 4, triceps: 5, deltoid: 6, pecmajor: 7, supraspinatus: 0, latissimus: 0 };
+// draw order of the model layers, deep -> superficial (matches the depth order on the full plate)
+const LAYER: Record<MuscleId, number> = { supraspinatus: 0, triceps: 1, brachialis: 2, coracobrachialis: 3, brachioradialis: 4, biceps: 5, deltoid: 6, pecmajor: 7, latissimus: 0 };
 
 /**
  * CH2 PUZZLE 2 — 기시·정지 연결. Choose a muscle, tap its origin(s) (proximal, fixed) and then its insertion (distal, moving)
@@ -39,7 +42,7 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     const adv = G.run.difficulty === 'adv';
     this.frame('근육 연결 콘솔 · 기시와 정지', '근육을 고른 뒤 뼈 위의 기시(몸쪽 고정점) → 정지(움직이는 쪽) 순서로 눌러 근육을 다시 연결하세요.', C.pink);
     const { W, H } = View; const portrait = H > W;
-    const crop = { x: 150, y: 96, w: 530, h: 1090 };
+    const crop = { x: 140, y: 110, w: 560, h: 1000 };
     const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.56 : this.ph - 180;
     this.s = Math.min(areaW / crop.w, areaH / crop.h);
     this.fx = this.px + 30 + (areaW - crop.w * this.s) / 2 - crop.x * this.s;
@@ -48,21 +51,27 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     const rx = this.fx + crop.x * this.s, ry = this.fy + crop.y * this.s, rw = crop.w * this.s, rh = crop.h * this.s;
     pl.fillStyle(0x12060c, 0.75); pl.fillRoundedRect(rx - 12, ry - 12, rw + 24, rh + 24, 12);
     pl.lineStyle(1.5, C.pink, 0.35); pl.strokeRoundedRect(rx - 12, ry - 12, rw + 24, rh + 24, 12);
-    const img = this.add.image(this.fx, this.fy, makePlateTexture(this, 'plate_ch2_bones', [], 1)).setOrigin(0).setScale(this.s / DENSITY);
+    // skeleton plate rendered from the BodyParts3D model
+    const img = this.add.image(this.fx, this.fy, plateKey('bones')).setOrigin(0).setScale(this.s / DENSITY);
     const mask = this.make.graphics({}, false); mask.fillRect(rx, ry, rw, rh); img.setMask(mask.createGeometryMask());
     T(this, rx + 8, ry + rh - 26, '오른팔 · 앞면  (점선 원 = 뒤쪽 구조)', 13, C.pinkS, { weight: '700' });
+    T(this, rx + rw, ry + rh + 16, MODEL_CREDIT, 11, '#8f7f88').setOrigin(1, 0.5);
     this.stub = this.add.graphics().setDepth(15);
-    // attachment nodes
+    // attachment nodes: true site (measured on the model) + tap marker; crowded sites are spread out as callouts
     for (const id of LINK_NODES) {
       const a = ATT[id];
-      const n: Node = { id, x: this.fx + a.x * this.s, y: this.fy + a.y * this.s, g: this.add.graphics().setDepth(20) };
+      const px = this.fx + a.x * this.s, py = this.fy + a.y * this.s;
+      this.nodes.push({ id, x: px, y: py, px, py, g: this.add.graphics().setDepth(20) });
+    }
+    this.layoutCallouts();
+    for (const n of this.nodes) {
+      const a = ATT[n.id];
       if (!adv) {
-        const [side, dy] = LABEL[id] ?? [a.x < 300 ? 'L' : 'R', 0];
-        const left = side === 'L';
-        n.t = T(this, n.x + (left ? -12 : 12), n.y + dy, a.ko, 12, '#ffd9e3', { weight: '700', backgroundColor: '#14070dcc', padding: { x: 4, y: 2 } }).setOrigin(left ? 1 : 0, 0.5).setDepth(21);
+        const left = n.x < n.px - 2 || (Math.abs(n.x - n.px) <= 2 && a.x < 300);
+        n.t = T(this, n.x + (left ? -12 : 12), n.y, a.ko, 12, '#ffd9e3', { weight: '700', backgroundColor: '#14070dcc', padding: { x: 4, y: 2 } }).setOrigin(left ? 1 : 0, 0.5).setDepth(21);
         if (left && n.t.x - n.t.width < rx - 8) n.t.setX(rx - 8 + n.t.width);
       }
-      this.drawNode(n, 'idle'); this.nodes.push(n);
+      this.drawNode(n, 'idle');
     }
     const hit = this.add.zone(rx, ry, rw, rh).setOrigin(0).setInteractive();
     hit.on('pointerup', (p: Phaser.Input.Pointer) => this.tap(p.worldX, p.worldY));
@@ -91,8 +100,31 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     this.select(this.items[0]);
   }
 
+  /** Push markers that sit closer than `min` px apart outward along their callout direction (true sites stay put). */
+  layoutCallouts() {
+    const min = 30;
+    const crowded = (n: Node) => this.nodes.some(o => o !== n && Math.hypot(o.px - n.px, o.py - n.py) < min);
+    for (const n of this.nodes) {
+      if (!crowded(n)) continue;
+      const [dx, dy] = CALLOUT[n.id] ?? [n.px < this.fx + 330 * this.s ? -1 : 1, 0]; const l = Math.hypot(dx, dy) || 1;
+      n.x = n.px + dx / l * 26; n.y = n.py + dy / l * 26;
+    }
+    for (let it = 0; it < 80; it++) {
+      for (const a of this.nodes) for (const b of this.nodes) {
+        if (a === b) continue;
+        const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01;
+        if (d < min) { const k = (min - d) / 2 / d; a.x -= dx * k; a.y -= dy * k; b.x += dx * k; b.y += dy * k; }
+      }
+    }
+  }
+
   drawNode(n: Node, st: 'idle' | 'pick' | 'ok' | 'err') {
     const a = ATT[n.id]; const g = n.g; g.clear();
+    // leader line + true-site dot when the marker is a callout
+    if (Math.hypot(n.x - n.px, n.y - n.py) > 4) {
+      g.lineStyle(1.2, 0xffd0dc, 0.7); g.lineBetween(n.px, n.py, n.x, n.y);
+      g.fillStyle(0xffd0dc, 0.9); g.fillCircle(n.px, n.py, 2.2);
+    }
     const col = { idle: 0xffd0dc, pick: 0xffe08a, ok: C.green, err: C.red }[st];
     if (st !== 'idle') { g.fillStyle(col, 0.22); g.fillCircle(n.x, n.y, 18); }
     if (a.posterior) { g.lineStyle(2, col, 1); for (let k = 0; k < 8; k++) { const a0 = k / 8 * Math.PI * 2; g.beginPath(); g.arc(n.x, n.y, 9, a0, a0 + 0.45); g.strokePath(); } }
@@ -177,14 +209,19 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     this.drawNode(n, 'ok'); for (const id of this.picked) this.drawNode(this.nodes.find(x => x.id === id)!, 'ok');
     this.stub.clear();
     Audio.play('success');
-    const mt = makeMuscleTexture(this, it.id, M.posterior ? 'ghost' : 'real');
+    // the muscle layer rendered from the model appears between its real attachments (posterior muscles = x-ray)
+    const mt = makeMuscleTexture(this, it.id, 'real');
     const im = this.add.image(this.fx + (mt.x + mt.w / 2) * this.s, this.fy + (mt.y + mt.h / 2) * this.s, mt.key).setScale(this.s / DENSITY).setDepth(2 + LAYER[it.id]).setAlpha(0);
-    if (!M.posterior) im.setAlpha(0);
-    this.tweens.add({ targets: im, alpha: M.posterior ? 0.9 : 0.94, duration: 500 });
-    // contraction pulse: belly shortens toward the origin and thickens slightly
-    this.tweens.add({ targets: im, scaleX: im.scaleX * 1.06, scaleY: im.scaleY * 0.97, duration: 260, yoyo: true, repeat: 1, delay: 450, ease: 'Sine.inOut' });
-    const gl = this.add.image(im.x, im.y, makeMuscleTexture(this, it.id, 'glow').key).setScale(this.s / DENSITY).setBlendMode(Phaser.BlendModes.ADD).setDepth(12).setAlpha(0.9);
-    this.tweens.add({ targets: gl, alpha: 0, duration: 1100, onComplete: () => gl.destroy() });
+    this.tweens.add({ targets: im, alpha: M.posterior ? 0.55 : 0.97, duration: 500 });
+    const gl = this.add.image(im.x, im.y, makeMuscleTexture(this, it.id, 'glow').key).setScale(this.s / DENSITY).setDepth(12).setAlpha(0.95);
+    this.tweens.add({ targets: gl, alpha: 0, duration: 1300, delay: 500, onComplete: () => gl.destroy() });
+    // pull signal: a pulse runs from each origin to the insertion (direction of pull)
+    const ins = this.nodes.find(x => x.id === M.insertion)!;
+    for (const id of M.origins) {
+      const o = this.nodes.find(x => x.id === id)!;
+      const dot = this.add.image(o.px, o.py, 'light').setScale(0.12).setTint(0xffe08a).setBlendMode(Phaser.BlendModes.ADD).setDepth(16);
+      this.tweens.add({ targets: dot, x: ins.px, y: ins.py, duration: 650, repeat: 1, ease: 'Sine.inOut', onComplete: () => dot.destroy() });
+    }
     it.done = true; it.st.setText(`기시 ${M.originText} → 정지 ${M.insertionText}`).setColor(C.greenS);
     this.setFeedback(`${M.ko} 연결 복구 ✓  작용: ${M.action}`, 'ok');
     this.sel = null; for (const o of this.items) this.drawItem(o);
