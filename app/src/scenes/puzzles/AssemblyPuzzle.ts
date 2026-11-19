@@ -10,7 +10,7 @@ import { T, C, drawIcon } from '../../ui/widgets';
 interface Piece { id: BoneId; img: Phaser.GameObjects.Image; home: { x: number; y: number; s: number }; placed: boolean; label: Phaser.GameObjects.Text; card: Phaser.GameObjects.Graphics }
 
 /**
- * PUZZLE 1 — 상지 골격 조립 (right upper limb, anterior view).
+ * PUZZLE 1 — 팔 골격 조립 (right upper limb, anterior view).
  * Drag each recovered specimen onto its anatomical position. Detect & discard the contaminated specimen (fibula).
  */
 export class AssemblyPuzzle extends PuzzleBase {
@@ -27,7 +27,7 @@ export class AssemblyPuzzle extends PuzzleBase {
     this.initView();
     this.pieces = []; this.discarded = false; this.ghosts = {}; this.nodes = {};
     const adv = G.run.difficulty === 'adv';
-    this.frame('골격 복구 테이블 · 상지 골격 재조립', adv ? '오른쪽 상지, 앞면(전면) — 표본의 형태만 보고 제자리를 찾으세요. 오염 표본은 폐기함으로.' : '오른쪽 상지를 앞에서 본 모습입니다. 표본을 끌어 윤곽에 맞춰 놓으세요. 상지가 아닌 표본은 폐기함으로!');
+    this.frame('골격 복구 테이블 · 팔 골격 재조립', adv ? '오른쪽 팔, 앞면 — 표본의 형태만 보고 제자리를 찾으세요. 오염 표본은 폐기함으로.' : '오른쪽 팔을 앞에서 본 모습입니다. 표본을 끌어 윤곽에 맞춰 놓으세요. 팔이 아닌 표본은 폐기함으로!');
     const { W, H } = View;
     const portrait = H > W;
     // ---- frame area (left) ----
@@ -43,9 +43,9 @@ export class AssemblyPuzzle extends PuzzleBase {
     this.add.image(this.fx, this.fy, key).setOrigin(0).setScale(this.fs / DENSITY).setAlpha(0.9);
     // orientation labels
     const lab = (x: number, y: number, s: string) => T(this, x, y, s, 13, '#6fb9d8', { weight: '700' }).setOrigin(0.5);
-    lab(this.fx + 40 * this.fs, this.fy + 20, '← 외측 (Lateral)');
+    lab(this.fx + 40 * this.fs, this.fy + 20, '← 가쪽 (Lateral)');
     lab(this.fx + 640 * this.fs, this.fy + 20, '정중선 (Midline)');
-    lab(this.fx + 690 * this.fs, this.fy + FRAME.h * this.fs - 14, 'R · 전면');
+    lab(this.fx + 690 * this.fs, this.fy + FRAME.h * this.fs - 14, 'R · 앞면');
     // slots
     for (const id of UPPER_ORDER) {
       const b = boneBounds(id);
@@ -86,16 +86,16 @@ export class AssemblyPuzzle extends PuzzleBase {
     this.bin = { x: tx, y: by, w: bw, h: bh, g: bg };
     this.drawBin(false);
     T(this, tx + 70, by + bh / 2 - 10, '오염 표본 폐기함', 18, C.redS, { weight: '700' }).setOrigin(0, 0.5);
-    T(this, tx + 70, by + bh / 2 + 14, '상지 골격이 아닌 표본을 여기에 버리세요', 13, C.dim).setOrigin(0, 0.5);
+    T(this, tx + 70, by + bh / 2 + 14, '팔 골격이 아닌 표본을 여기에 버리세요', 13, C.dim).setOrigin(0, 0.5);
     this.updateProgress();
-    this.setFeedback(adv ? '각 표본을 드래그해 해당 위치에 놓으세요. 위치를 표시한 링은 관절 기준점입니다.' : '표본을 드래그해서 같은 모양의 점선 윤곽에 놓으세요. 이름과 위치 관계(외측·내측)를 함께 기억하세요.', 'info', tx, Math.min(tw, this.pw - 60));
+    this.setFeedback(adv ? '각 표본을 드래그해 해당 위치에 놓으세요. 위치를 표시한 링은 관절 기준점입니다.' : '표본을 드래그해서 같은 모양의 점선 윤곽에 놓으세요. 이름과 위치 관계(가쪽·안쪽)를 함께 기억하세요.', 'info', tx, Math.min(tw, this.pw - 60));
     // ---- drag logic ----
     this.input.on('dragstart', (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Image) => {
       const pc = this.pieces.find(q => q.img === obj); if (!pc || pc.placed || this.solved) return;
       obj.setDepth(100);
       Audio.play('click');
       this.tweens.add({ targets: obj, scale: this.fs / DENSITY, duration: 160 });
-      if (!adv) this.setFeedback(`${BONES[pc.id].ko} (${BONES[pc.id].alt}) · ${BONES[pc.id].en}`, 'info', tx, Math.min(tw, this.pw - 60));
+      if (!adv) this.setFeedback(`${BONES[pc.id].ko} · ${BONES[pc.id].en}`, 'info', tx, Math.min(tw, this.pw - 60));
     });
     this.input.on('drag', (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Image, dx: number, dy: number) => {
       const pc = this.pieces.find(q => q.img === obj); if (!pc || pc.placed || this.solved) return;
@@ -135,12 +135,12 @@ export class AssemblyPuzzle extends PuzzleBase {
         pc.placed = true; this.discarded = true;
         Audio.play('snap');
         this.tweens.add({ targets: pc.img, scale: 0, alpha: 0, angle: 180, duration: 400, ease: 'Back.in' });
-        pc.label.setText('폐기됨 · 비골(Fibula)').setColor(C.redS);
+        pc.label.setText('폐기됨 · 종아리뼈(Fibula)').setColor(C.redS);
         this.setFeedback('정확합니다! ' + b.wrongSlot, 'ok', fbx, fbw);
         this.updateProgress(); this.check();
       } else {
         Audio.play('error'); this.mistake(); G.run.stats.assembly++;
-        this.setFeedback(`${G.run.difficulty === 'adv' ? '이 표본' : b.ko}은(는) 상지 골격입니다. 폐기하면 안 돼요!`, 'err', fbx, fbw);
+        this.setFeedback(`${G.run.difficulty === 'adv' ? '이 표본' : b.ko}은(는) 팔 골격입니다. 폐기하면 안 돼요!`, 'err', fbx, fbw);
         this.back(pc);
       }
       return;
@@ -155,7 +155,7 @@ export class AssemblyPuzzle extends PuzzleBase {
       const flash = this.add.image(this.fx + bb.cx * this.fs, this.fy + bb.cy * this.fs, `bone_holo_${pc.id}`).setScale(this.fs / DENSITY).setBlendMode(Phaser.BlendModes.ADD);
       this.tweens.add({ targets: flash, alpha: 0, duration: 700, onComplete: () => flash.destroy() });
       pc.label.setText(`✓ ${b.ko} · ${b.en}`).setColor(C.greenS);
-      this.setFeedback(`${b.ko}(${b.alt}) 장착 완료 — ${b.info}`, 'ok', fbx, fbw);
+      this.setFeedback(`${b.ko} 장착 완료 — ${b.info}`, 'ok', fbx, fbw);
       this.updateProgress(); this.check();
       return;
     }
@@ -183,7 +183,7 @@ export class AssemblyPuzzle extends PuzzleBase {
       const h = this.add.image(this.fx + bb.cx * this.fs, this.fy + bb.cy * this.fs, `bone_holo_${id}`).setScale(this.fs / DENSITY).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
       this.tweens.add({ targets: h, alpha: 0.9, duration: 300, delay: UPPER_ORDER.indexOf(id) * 140, yoyo: true, hold: 300 });
     }
-    this.setFeedback('상지 골격 재조립 완료! 흉쇄관절 → 견쇄관절 → 견갑상완관절 → 팔꿉관절로 이어지는 사슬이 복구되었습니다.', 'ok');
-    this.success('c_girdle', '상지는 흉쇄관절로만 몸통 골격과 이어진다', 1800);
+    this.setFeedback('팔 골격 재조립 완료! 복장빗장관절 → 봉우리빗장관절 → 오목위팔관절 → 팔꿉관절로 이어지는 사슬이 복구되었습니다.', 'ok');
+    this.success('c_girdle', '팔은 복장빗장관절로만 몸통 골격과 이어진다', 1800);
   }
 }

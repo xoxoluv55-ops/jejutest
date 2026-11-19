@@ -15,7 +15,7 @@ import { DENSITY } from './bones';
  */
 /** Attribution required by CC BY 4.0 — shown wherever model renders appear. */
 export const MODEL_CREDIT = '3D 해부 모델: BodyParts3D © DBCLS (CC BY 4.0)';
-export const LAT_CREDIT = '광배근: BodyParts3D 3.0 © DBCLS (CC BY-SA 2.1 JP)';
+export const LAT_CREDIT = '넓은등근: BodyParts3D 3.0 © DBCLS (CC BY-SA 2.1 JP)';
 
 export const MODEL_MUSCLES: MuscleId[] = ['deltoid', 'pecmajor', 'biceps', 'brachialis', 'coracobrachialis', 'brachioradialis', 'triceps', 'supraspinatus', 'latissimus'];
 export const hasModel = (id: MuscleId) => MODEL_MUSCLES.includes(id);

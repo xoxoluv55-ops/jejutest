@@ -43,8 +43,8 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
     for (const o of addPlateOverlays(this, this.fx, this.fy, this.s)) o.setMask(mask.createGeometryMask());   // latissimus (separate licence)
     T(this, this.fx + crop.x * this.s + 8, this.fy + crop.y * this.s + 6, '오른팔 · 앞면 (Anterior)', 14, C.pinkS, { weight: '700' });
     T(this, this.fx + (crop.x + crop.w) * this.s, this.fy + (crop.y + crop.h) * this.s + 16, `${MODEL_CREDIT} · ${LAT_CREDIT}`, 10, '#8f7f88').setOrigin(1, 0.5);
-    T(this, this.fx + crop.x * this.s + 8, this.fy + (crop.y + crop.h) * this.s - 24, '← 외측', 13, '#ffb3c6', { weight: '700' });
-    T(this, this.fx + (crop.x + crop.w) * this.s - 8, this.fy + (crop.y + crop.h) * this.s - 24, '내측 →', 13, '#ffb3c6', { weight: '700' }).setOrigin(1, 0);
+    T(this, this.fx + crop.x * this.s + 8, this.fy + (crop.y + crop.h) * this.s - 24, '← 가쪽', 13, '#ffb3c6', { weight: '700' });
+    T(this, this.fx + (crop.x + crop.w) * this.s - 8, this.fy + (crop.y + crop.h) * this.s - 24, '안쪽 →', 13, '#ffb3c6', { weight: '700' }).setOrigin(1, 0);
     // numbered markers (random numbering)
     const ids = Phaser.Utils.Array.Shuffle([...ATLAS_TARGETS]) as MuscleId[];
     ids.forEach((id, i) => {
@@ -80,7 +80,7 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
     const by = cy0 + 40 + Math.ceil(labels.length / colN) * 66 + 16;
     const guide = adv
       ? '단서: 근섬유의 방향과 부착 위치(어느 뼈에서 어느 뼈로)를 확인하세요.'
-      : '단서\n• 삼각근은 어깨를 덮는 세모꼴, 대흉근은 가슴에서 부채꼴로 모입니다.\n• 상완이두근은 위팔 앞 가운데, 상완근은 그 아래 깊은 곳에서 양옆으로 보입니다.\n• 상완요골근은 전완 바깥쪽(엄지 쪽) 위를 따라 내려갑니다.';
+      : '단서\n• 어깨세모근은 어깨를 덮는 세모꼴, 큰가슴근은 가슴에서 부채꼴로 모입니다.\n• 위팔두갈래근은 위팔 앞 가운데, 위팔근은 그 아래 깊은 곳에서 양옆으로 보입니다.\n• 위팔노근은 아래팔 가쪽(엄지 쪽) 위를 따라 내려갑니다.';
     if (!adv) {
       new Button(this, cx0 + Math.min(cw, 380) / 2, by, '근육 전체 모양 강조', () => this.toggleHi(), { w: Math.min(cw, 380), h: 52, icon: 'eye', size: 17, accent: C.pink });
       T(this, cx0, by + 44, guide, 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: 6 });
@@ -136,7 +136,7 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
       const tag = T(this, m.x + 20, m.y, adv ? M.en : M.ko, 14, '#eafff4', { weight: '700', backgroundColor: '#062a1ccc', padding: { x: 6, y: 3 } }).setOrigin(0, 0.5).setDepth(8);
       if (tag.x + tag.width > this.fx + 700 * this.s) tag.setOrigin(1, 0.5).setX(m.x - 20);
       Audio.play('snap');
-      this.setFeedback(`${m.n}번 = ${M.ko} (${M.en}) ✓  기시: ${M.originText} → 정지: ${M.insertionText}`, 'ok');
+      this.setFeedback(`${m.n}번 = ${M.ko} (${M.en}) ✓  이는곳: ${M.originText} → 닿는곳: ${M.insertionText}`, 'ok');
       if (this.marks.every(x => x.filled)) this.finish();
       return;
     }

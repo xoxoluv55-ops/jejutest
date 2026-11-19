@@ -219,7 +219,7 @@ export class TitleScene extends BaseScene {
     });
     const STORY: Record<number, string> = {
       1: '인체 구조를 연구하던 지하 시설 BODY LAB.\n중앙 AI의 오작동으로 모든 격벽이 봉쇄됐다.\n\n흩어진 골격 표본을 찾아 복구하고\n탈출 게이트의 잠금 3개를 해제하라.',
-      2: '골격실을 탈출한 실험체는 하부 연구동의\n근육 연결실에 도착했다.\n\n끊어진 근육의 기시와 정지를 다시 잇고\n주동근과 길항근으로 움직임을 되살려라.',
+      2: '골격실을 탈출한 실험체는 하부 연구동의\n근육 연결실에 도착했다.\n\n끊어진 근육의 이는곳과 닿는곳을 다시 잇고\n주작용근과 대항근으로 움직임을 되살려라.',
     };
     const story = T(this, px + 34 + 4 * (cw + 14) + 10, py + 268, STORY[chapter], 16, '#c9d6ee', { lineSpacing: 6, wordWrap: { width: Math.max(160, px + pw - (px + 34 + 4 * (cw + 14) + 10) - 30) } });
     m.add(story);

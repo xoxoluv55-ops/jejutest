@@ -13,7 +13,7 @@ interface MotionPath { m: MuscleId; fid: string; w: number; pts: number[][] }
 interface MotionFrame { angle: number; pivot: number[]; handle: number[]; length: Record<string, number | null>; paths: MotionPath[] }
 interface MotionMeta { round: string; size: [number, number]; angles: number[]; frames: MotionFrame[]; rest: { labels: Record<string, number[]>; xray?: number[]; latx?: number[] } }
 
-const ROLE_KO: Record<Role, string> = { agonist: '주동근', antagonist: '길항근', none: '관여 안 함' };
+const ROLE_KO: Record<Role, string> = { agonist: '주작용근', antagonist: '대항근', none: '관여 안 함' };
 
 /**
  * CH2 PUZZLE 3 — 운동 재현. For a target movement, assign each muscle as agonist / antagonist / not involved,
@@ -54,7 +54,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     this.initView();
     this.round = 0; this.rows = []; this.ui = []; this.angle = 0; this.stage = 'assign'; this.dragging = false;
     this.imgA = this.imgB = this.xA = this.xB = this.lA = this.inset = undefined; this.readout = undefined; this.labels = [];
-    this.frame('운동 재현 장치 · 주동근과 길항근', '목표 움직임에 맞게 근육의 역할을 지정한 뒤, 팔을 직접 끌어 움직임을 실행하세요.', C.pink);
+    this.frame('운동 재현 장치 · 주작용근과 대항근', '목표 움직임에 맞게 근육의 역할을 지정한 뒤, 팔을 직접 끌어 움직임을 실행하세요.', C.pink);
     const { W, H } = View; const portrait = H > W;
     const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.48 : this.ph - 180;
     this.view = { x: this.px + 30, y: this.py + 80, w: areaW, h: areaH };
@@ -104,8 +104,8 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     add(new Button(this, this.cx0 + Math.min(this.cw, 400) / 2, by + 10, '근육 신호 전송 (검증)', () => this.verify(), { w: Math.min(this.cw, 400), h: 60, icon: 'bolt', accent: C.green, primary: true, size: 20 }));
     if (!adv) add(T(this, this.cx0, by + 54, R.id === 'elbowFlex'
       ? '단서: 관절의 앞을 지나는 근육은 굽히고, 뒤를 지나는 근육은 폅니다. 그 관절을 지나지 않는 근육은 관여하지 않아요.'
-      : '단서: 팔을 옆으로 드는 근육(외전근)과, 팔을 몸쪽으로 모으는 근육(내전근)을 구별하세요.', 14, '#e3cfd8', { wordWrap: { width: this.cw }, lineSpacing: 5 }));
-    this.setFeedback(`${R.ko}: 수축해서 움직임을 만드는 근육 = 주동근, 반대 작용을 하며 늘어나는 근육 = 길항근.`, 'info');
+      : '단서: 팔을 옆으로 드는 근육(벌림근)과, 팔을 몸쪽으로 모으는 근육(모음근)을 구별하세요.', 14, '#e3cfd8', { wordWrap: { width: this.cw }, lineSpacing: 5 }));
+    this.setFeedback(`${R.ko}: 수축해서 움직임을 만드는 근육 = 주작용근, 반대 작용을 하며 늘어나는 근육 = 대항근.`, 'info');
     this.redraw();
     // the role buttons were just rebuilt: without this a tap in the same frame as the round change was dropped
     this.flushInput();
@@ -140,7 +140,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     }
     Audio.play('snap');
     this.stage = 'drive';
-    this.setFeedback(`신호 정상! 이제 ${R.id === 'elbowFlex' ? '손(전완 끝)' : '팔 끝'}을 끌어서 ${R.ko}을(를) ${R.range}°까지 실행하세요.`, 'ok');
+    this.setFeedback(`신호 정상! 이제 ${R.id === 'elbowFlex' ? '손(아래팔 끝)' : '팔 끝'}을 끌어서 ${R.ko}을(를) ${R.range}°까지 실행하세요.`, 'ok');
     this.redraw();
   }
 
@@ -193,9 +193,9 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     const R = this.R;
     const ag = Object.entries(R.roles).filter(([, r]) => r === 'agonist').map(([id]) => MUSCLES[id as MuscleId].ko).join(' + ');
     const an = Object.entries(R.roles).filter(([, r]) => r === 'antagonist').map(([id]) => MUSCLES[id as MuscleId].ko).join(' + ');
-    this.setFeedback(`${R.ko} ${R.range}° 완료 ✓  주동근 ${ag}은(는) 짧아지며(구심성 수축), 길항근 ${an}은(는) 이완하며 길어집니다.`, 'ok');
+    this.setFeedback(`${R.ko} ${R.range}° 완료 ✓  주작용근 ${ag}은(는) 짧아지며(구심성 수축), 대항근 ${an}은(는) 이완하며 길어집니다.`, 'ok');
     if (this.round + 1 < MOTION_ROUNDS.length) this.time.delayedCall(2600, () => this.startRound(this.round + 1));
-    else this.time.delayedCall(1800, () => this.success('c_agonist', '주동근은 수축해 움직임을 만들고, 길항근은 이완하며 길어진다', 600));
+    else this.time.delayedCall(1800, () => this.success('c_agonist', '주작용근은 수축해 움직임을 만들고, 대항근은 이완하며 길어진다', 600));
   }
 
   // ---------------- drawing ----------------
@@ -281,7 +281,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
       } else for (const p of fr.paths) if (!cur[p.m] && fr.length[p.m] !== null && (p.fid !== 'FJ1468' && p.fid !== 'FJ1513')) cur[p.m] = p.pts[Math.floor(p.pts.length * 0.6)];
       const items = Object.entries(cur).map(([id, p]) => {
         const sp = this.toScreen(p);
-        const extra = id === 'brachioradialis' ? ' (보조 굴곡)' : (id === 'supraspinatus' || id === 'latissimus') && !moving ? ' (뒤쪽 · 투시)' : id === 'deltoid' && rk === 'shoulder' ? ' (중간섬유)' : '';
+        const extra = id === 'brachioradialis' ? ' (보조 굽힘)' : (id === 'supraspinatus' || id === 'latissimus') && !moving ? ' (뒤쪽 · 투시)' : id === 'deltoid' && rk === 'shoulder' ? ' (중간섬유)' : '';
         return { id, sp, text: nm(id as MuscleId) + extra, role: (id === 'brachioradialis' ? 'agonist' : this.roleOf(id as MuscleId)) as Role };
       });
       const mx = items.reduce((a, b) => a + b.sp.x, 0) / Math.max(1, items.length);
@@ -311,13 +311,13 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     if (!this.readout) this.readout = T(this, 0, 0, '', 13, '#e8dce2', { lineSpacing: 4, backgroundColor: '#0a0410cc', padding: { x: 8, y: 6 } }).setDepth(7);
     this.readout.setText(live ? `근육 길이 변화 (안정 자세 대비)\n${lines.join('\n')}` : '').setVisible(live).setPosition(this.view.x + 14, this.view.y + this.view.h - 44).setOrigin(0, 1);
     this.labels.push(T(this, this.view.x + 14, this.view.y + this.view.h - 10,
-      '움직이는 동안 근육은 실제 모양이 아닌 작용선(측정한 기시→정지 경로)으로 표시 · 뼈는 3D 모델을 관절축으로 회전 · 근육 수축 모양을 재현한 것이 아님',
+      '움직이는 동안 근육은 실제 모양이 아닌 작용선(측정한 이는곳→닿는곳 경로)으로 표시 · 뼈는 3D 모델을 관절축으로 회전 · 근육 수축 모양을 재현한 것이 아님',
       11, '#c9a24a', { wordWrap: { width: this.view.w - 28 } }).setOrigin(0, 1).setDepth(7));
     this.labels.push(T(this, this.view.x + this.view.w - 12, this.view.y + this.view.h - 44, rk === 'shoulder' ? `${MODEL_CREDIT}\n${LAT_CREDIT}` : MODEL_CREDIT, 10, '#8f7f88', { align: 'right' }).setOrigin(1, 1).setDepth(7));
-    this.labels.push(T(this, this.view.x + 18, this.view.y + 66, rk === 'elbow' ? '오른팔 외측면  ← 뒤 · 앞 →' : '오른쪽 어깨 앞면  ← 외측', 12, '#ffb3c6').setDepth(7));
+    this.labels.push(T(this, this.view.x + 18, this.view.y + 66, rk === 'elbow' ? '오른팔 가쪽면  ← 뒤 · 앞 →' : '오른쪽 어깨 앞면  ← 가쪽', 12, '#ffb3c6').setDepth(7));
     // kinematic simplifications, shown so the motion is not taken for the real joint motion (docs/ANATOMY_MODEL.md §6)
     this.labels.push(T(this, this.view.x + 18, this.view.y + 84, rk === 'elbow'
-      ? '⚠ 단순화: 팔꿉관절 고정축 회전만 · 전완은 뒤침(회외) 자세 고정'
+      ? '⚠ 단순화: 팔꿉관절 고정축 회전만 · 아래팔은 뒤침 자세 고정'
       : '⚠ 단순화 모델: 어깨뼈 회전을 1:3 비율로 근사 · 위팔뼈 가쪽돌림·빗장뼈 회전·관절면 미끄러짐 생략 → 실제 어깨 운동과 다릅니다',
       11, '#e8c070', { wordWrap: { width: this.view.w - 36 } }).setDepth(7));
     this.angT.setText(this.stage === 'assign' ? '' : `${Math.round(this.angle)}° / ${this.R.range}°`);

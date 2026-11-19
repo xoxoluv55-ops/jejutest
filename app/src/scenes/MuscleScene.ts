@@ -162,7 +162,7 @@ export class MuscleScene extends GameScene {
     T(this, 1360, 1330, 'MUSCLE LINK CONSOLE', 12, '#ff9fb6', { display: true }).setOrigin(0.5).setDepth(1302).setAlpha(0.85);
     this.addInter({
       id: 'link', x: 1360, y: 1300, r: 150, icon: 'bone',
-      label: () => G.run.flags.linked ? '근육 연결 콘솔 (복구 완료)' : '근육 연결 콘솔 · 기시와 정지',
+      label: () => G.run.flags.linked ? '근육 연결 콘솔 (복구 완료)' : '근육 연결 콘솔 · 이는곳과 닿는곳',
       locked: () => G.run.flags.linked ? '이미 연결을 복구했습니다.'
         : !G.run.flags.atlas ? '근육 지도 데이터가 없습니다. 먼저 근육 표본실(M-02)에서 근육 지도를 복원하세요.'
         : G.run.items.length < this.needed.length ? `근육 데이터 코어가 부족합니다 (${G.run.items.length}/${this.needed.length}). 시설을 탐색하고 SCAN을 사용하세요.` : null,
@@ -217,7 +217,7 @@ export class MuscleScene extends GameScene {
       id: 'gate', x: 1360, y: 840, r: 130, icon: 'lock',
       enabled: () => !G.run.flags.gate,
       label: () => '탈출 게이트 · 코어 인증',
-      locked: () => { const f = G.run.flags; const n = [f.atlas, f.linked, f.motion].filter(Boolean).length; return n < 3 ? `게이트 잠금 ${n}/3 해제됨. 근육 지도 · 기시와 정지 · 운동 재현을 모두 완료해야 합니다.` : null; },
+      locked: () => { const f = G.run.flags; const n = [f.atlas, f.linked, f.motion].filter(Boolean).length; return n < 3 ? `게이트 잠금 ${n}/3 해제됨. 근육 지도 · 이는곳과 닿는곳 · 운동 재현을 모두 완료해야 합니다.` : null; },
       act: () => this.openGate(),
     });
     // research logs
@@ -298,7 +298,7 @@ export class MuscleScene extends GameScene {
     const seq: [number, () => void][] = [
       [600, () => { Audio.play('glitch'); this.ai('하부 연구동 B2 도착. 근육 연결 시스템 오류 감지.', 'warn', 3200); }],
       [3800, () => this.ai('근육 연결 데이터 손상: 수축 신호가 관절까지 전달되지 않습니다.', 'ai', 3600)],
-      [7600, () => { this.ai(`근육 지도(M-02)를 복원하고, 데이터 코어 ${n}개를 회수해 연결 콘솔(M-01)에서 기시와 정지를 재연결하십시오.`, 'ai', 5200); Audio.alarm(false); }],
+      [7600, () => { this.ai(`근육 지도(M-02)를 복원하고, 데이터 코어 ${n}개를 회수해 연결 콘솔(M-01)에서 이는곳과 닿는곳을 재연결하십시오.`, 'ai', 5200); Audio.alarm(false); }],
       [9400, () => {
         this.busy = false; this.player.frozen = false; G.run.flags.intro = true; Bus.emit('mission');
         this.toast('CHAPTER 2 · 근육 연결실', 'info');
@@ -313,7 +313,7 @@ export class MuscleScene extends GameScene {
     const list: Mission[] = [
       { text: '근육 지도 판독 · M-02', done: !!f.atlas, active: !f.atlas, tag: 'LOCK 1' },
       { text: `근육 데이터 코어 회수 (${n}/${N})`, done: n >= N, active: n < N },
-      { text: '기시·정지 연결 · M-01', done: !!f.linked, active: !!f.atlas && n >= N && !f.linked, tag: 'LOCK 2' },
+      { text: '이는곳·닿는곳 연결 · M-01', done: !!f.linked, active: !!f.atlas && n >= N && !f.linked, tag: 'LOCK 2' },
     ];
     if (f.overload || f.stabilized) list.push({ text: '자극 과부하 방전 · M-04', done: !!f.stabilized, active: !!f.overload && !f.stabilized });
     list.push({ text: '운동 재현 · M-03', done: !!f.motion, active: !!f.stabilized && !f.motion, tag: 'LOCK 3' });
@@ -423,7 +423,7 @@ export class MuscleScene extends GameScene {
   invItems(): InvItem[] {
     return G.run.items.map(id => {
       const M = MUSCLES[id as MuscleId];
-      return { id, tex: makeMuscleTexture(this, id as MuscleId, 'real').key, title: `${M.ko} (${M.alt})`, en: M.en, info: `기시: ${M.originText}\n정지: ${M.insertionText}\n작용: ${M.action}\n신경: ${M.nerve}`, tag: '분류: 어깨·위팔 근육' };
+      return { id, tex: makeMuscleTexture(this, id as MuscleId, 'real').key, title: M.ko, en: M.en, info: `이는곳: ${M.originText}\n닿는곳: ${M.insertionText}\n작용: ${M.action}\n신경: ${M.nerve}`, tag: '분류: 어깨·위팔 근육' };
     });
   }
 }

@@ -579,7 +579,7 @@ export class GameScene extends Phaser.Scene {
     this.player.setCarry(`bone_holo_${id}`);
     const b = BONES[id];
     Bus.emit('pickup', id);
-    this.toast(`${b.ko} (${b.alt}) · ${b.en} 획득 — ${run.bones.length}/6`, 'ok');
+    this.toast(`${b.ko} · ${b.en} 획득 — ${run.bones.length}/6`, 'ok');
     Bus.emit('mission');
     if (run.bones.length === 6) this.time.delayedCall(900, () => this.ai('모든 표본 회수 확인. 골격 복구 테이블(A-01)로 이동하십시오.', 'ok'));
   }
@@ -854,7 +854,7 @@ export class GameScene extends Phaser.Scene {
   invTotal() { return 6; }
   invIcon(): IconName { return 'bone'; }
   invItems(): InvItem[] {
-    return G.run.bones.map(id => { const b = BONES[id]; return { id, tex: `bone_bone_${id}`, title: `${b.ko} (${b.alt})`, en: b.en, info: b.info, tag: b.region === 'upper' ? '분류: 상지 골격' : '분류: 하지 골격', angle: id === 'humerus' || id === 'radius' || id === 'ulna' || id === 'fibula' ? 35 : 0 }; });
+    return G.run.bones.map(id => { const b = BONES[id]; return { id, tex: `bone_bone_${id}`, title: b.ko, en: b.en, info: b.info, tag: b.region === 'upper' ? '분류: 팔 골격' : '분류: 다리 골격', angle: id === 'humerus' || id === 'radius' || id === 'ulna' || id === 'fibula' ? 35 : 0 }; });
   }
 
   /** Shown as locked on the full map. */

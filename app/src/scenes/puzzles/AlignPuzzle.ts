@@ -41,10 +41,10 @@ export class AlignPuzzle extends PuzzleBase {
     const ax = this.fx + 30, ay = this.fy + FRAME.h * this.fs - 60;
     const g = this.add.graphics(); g.lineStyle(2, C.violet, 0.8);
     g.lineBetween(ax, ay, ax, ay - 50); g.fillStyle(C.violet, 1); g.fillTriangle(ax - 6, ay - 46, ax + 6, ay - 46, ax, ay - 58);
-    T(this, ax + 10, ay - 52, '근위 (Proximal)', 12, C.violetS).setOrigin(0, 0.5);
-    T(this, ax + 10, ay, '원위 (Distal)', 12, C.violetS).setOrigin(0, 0.5);
-    T(this, this.fx + 40 * this.fs, this.fy + 20, '← 외측', 13, '#c8a8ff', { weight: '700' }).setOrigin(0.5);
-    T(this, this.fx + 600 * this.fs, this.fy + 20, '내측 →', 13, '#c8a8ff', { weight: '700' }).setOrigin(0.5);
+    T(this, ax + 10, ay - 52, '몸쪽 (Proximal)', 12, C.violetS).setOrigin(0, 0.5);
+    T(this, ax + 10, ay, '먼쪽 (Distal)', 12, C.violetS).setOrigin(0, 0.5);
+    T(this, this.fx + 40 * this.fs, this.fy + 20, '← 가쪽', 13, '#c8a8ff', { weight: '700' }).setOrigin(0.5);
+    T(this, this.fx + 600 * this.fs, this.fy + 20, '안쪽 →', 13, '#c8a8ff', { weight: '700' }).setOrigin(0.5);
     // fixed bones
     for (const id of ['scapula', 'clavicle'] as const) { const b = boneBounds(id); this.add.image(this.fx + b.cx * this.fs, this.fy + b.cy * this.fs, `bone_bone_${id}`).setScale(this.fs / DENSITY); }
     // joint sockets (glow)
@@ -78,8 +78,8 @@ export class AlignPuzzle extends PuzzleBase {
     const b3 = new Button(this, cx0 + bw / 2, cy0 + 278, '정렬 검증', () => this.verify(), { w: bw, h: 70, icon: 'check', accent: C.green, primary: true, size: 24 });
     void b1; void b2; void b3;
     const guide = adv
-      ? '단서: 근위/원위의 크기 차이, 관절면(머리·절흔)의 방향, 돌기가 향하는 쪽(내측/외측)을 확인하세요.'
-      : '단서\n• 상완골두(둥근 머리)는 위·안쪽에서 관절와와 만납니다.\n• 척골은 근위부가 크고(주두), 요골은 원위부가 넓습니다.\n• 요골 경상돌기 = 엄지쪽(외측), 척골 경상돌기 = 새끼쪽(내측).';
+      ? '단서: 몸쪽/먼쪽의 크기 차이, 관절면(머리·절흔)의 방향, 돌기가 향하는 쪽(안쪽/가쪽)을 확인하세요.'
+      : '단서\n• 위팔뼈머리(둥근 머리)는 위·안쪽에서 관절오목과 만납니다.\n• 자뼈는 몸쪽부분이 크고(팔꿈치머리), 노뼈는 먼쪽부분이 넓습니다.\n• 노뼈 붓돌기 = 엄지쪽(가쪽), 자뼈 붓돌기 = 새끼쪽(안쪽).';
     T(this, cx0, cy0 + 340, guide, 16, '#c9d6ee', { wordWrap: { width: cw }, lineSpacing: 6 });
     this.setFeedback('세 개의 뼈가 잘못 장착되어 있습니다. 하나씩 선택해서 바로잡으세요.', 'info');
     this.select(this.mb[0]);
@@ -98,7 +98,7 @@ export class AlignPuzzle extends PuzzleBase {
     for (const o of this.mb) { this.tweens.killTweensOf(o.sel); o.sel.setAlpha(0); }
     this.tweens.add({ targets: m.sel, alpha: { from: 0.9, to: 0.35 }, duration: 700, yoyo: true, repeat: -1 });
     const b = BONES[m.id];
-    this.selT.setText(G.run.difficulty === 'adv' ? `${b.en}` : `${b.ko} (${b.alt}) · ${b.en}`);
+    this.selT.setText(G.run.difficulty === 'adv' ? `${b.en}` : `${b.ko} · ${b.en}`);
     Audio.play('click');
   }
 
@@ -129,14 +129,14 @@ export class AlignPuzzle extends PuzzleBase {
     }
     this.solved = true; this.busyAnim = true;
     Audio.play('snap');
-    this.setFeedback('관절면 정렬 완료! 견갑상완관절 외전(abduction) 시연 중…', 'ok');
+    this.setFeedback('관절면 정렬 완료! 오목위팔관절 벌림(abduction) 시연 중…', 'ok');
     // abduction demo around the humeral head (patient's right arm moves laterally = viewer's left)
     this.time.delayedCall(500, () => {
       Audio.play('rotate');
       this.tweens.add({ targets: this.arm, angle: 45, duration: 1400, ease: 'Sine.inOut', yoyo: true, hold: 500, onComplete: () => {
-        this.success('c_gh', '상완골두는 안쪽·위·뒤를 향해 관절와와 만난다', 300);
+        this.success('c_gh', '위팔뼈머리는 안쪽·위·뒤를 향해 관절오목과 만난다', 300);
       } });
-      const tag = T(this, this.arm.x - 200, this.arm.y + 40, '외전 45° · 볼-소켓 관절', 18, C.violetS, { weight: '700' }).setAlpha(0);
+      const tag = T(this, this.arm.x - 200, this.arm.y + 40, '벌림 45° · 볼-소켓 관절', 18, C.violetS, { weight: '700' }).setAlpha(0);
       this.tweens.add({ targets: tag, alpha: 1, duration: 400, yoyo: true, hold: 1800 });
     });
   }

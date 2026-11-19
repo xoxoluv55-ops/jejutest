@@ -157,7 +157,7 @@ export class XrayPuzzle extends PuzzleBase {
   finish() {
     this.solved = true;
     for (const ch of this.chips) if (!ch.done) this.tweens.add({ targets: ch.c, alpha: 0.25, duration: 300 });
-    this.setFeedback('판독 완료! 남은 이름표(소결절·주두 등)는 이 영상에서 번호로 표시되지 않은 구조입니다.', 'ok');
-    this.success('c_xray', '어깨 AP 영상에서 견봉·오구돌기·관절와·상완골두·대결절을 구별한다', 1600);
+    this.setFeedback('판독 완료! 남은 이름표(작은결절·팔꿈치머리 등)는 이 영상에서 번호로 표시되지 않은 구조입니다.', 'ok');
+    this.success('c_xray', '어깨 AP 영상에서 봉우리·부리돌기·관절오목·위팔뼈머리·큰결절을 구별한다', 1600);
   }
 }

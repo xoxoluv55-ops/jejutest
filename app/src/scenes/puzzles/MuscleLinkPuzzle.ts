@@ -23,7 +23,7 @@ const CALLOUT: Partial<Record<AttId, [number, number]>> = {
 const LAYER: Record<MuscleId, number> = { supraspinatus: 0, triceps: 1, brachialis: 2, coracobrachialis: 3, brachioradialis: 4, biceps: 5, deltoid: 6, pecmajor: 7, latissimus: 0 };
 
 /**
- * CH2 PUZZLE 2 — 기시·정지 연결. Choose a muscle, tap its origin(s) (proximal, fixed) and then its insertion (distal, moving)
+ * CH2 PUZZLE 2 — 이는곳·닿는곳 연결. Choose a muscle, tap its origin(s) (proximal, fixed) and then its insertion (distal, moving)
  * on the skeleton. Correct links rebuild the muscle on the plate; wrong taps explain what really attaches there.
  */
 export class MuscleLinkPuzzle extends PuzzleBase {
@@ -40,7 +40,7 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     this.initView();
     this.nodes = []; this.items = []; this.sel = null; this.picked = []; this.phase = 'origin';
     const adv = G.run.difficulty === 'adv';
-    this.frame('근육 연결 콘솔 · 기시와 정지', '근육을 고른 뒤 뼈 위의 기시(몸쪽 고정점) → 정지(움직이는 쪽) 순서로 눌러 근육을 다시 연결하세요.', C.pink);
+    this.frame('근육 연결 콘솔 · 이는곳과 닿는곳', '근육을 고른 뒤 뼈 위의 이는곳(몸쪽 고정점) → 닿는곳(움직이는 쪽) 순서로 눌러 근육을 다시 연결하세요.', C.pink);
     const { W, H } = View; const portrait = H > W;
     const crop = { x: 140, y: 110, w: 560, h: 1000 };
     const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.56 : this.ph - 180;
@@ -86,7 +86,7 @@ export class MuscleLinkPuzzle extends PuzzleBase {
       const x = cx0 + (i % colN) * (iw + 12), y = cy0 + 32 + Math.floor(i / colN) * (ih + 10);
       const bg = this.add.graphics();
       const t = T(this, x + 16, y + 20, adv ? M.en : `${M.ko} · ${M.en}`, 18, C.white, { weight: '700' }).setOrigin(0, 0.5);
-      const st = T(this, x + 16, y + 42, M.posterior ? '연결 대기 · 뒤쪽 근육(장두)' : '연결 대기', 13, C.dim).setOrigin(0, 0.5);
+      const st = T(this, x + 16, y + 42, M.posterior ? '연결 대기 · 뒤쪽 근육(긴갈래)' : '연결 대기', 13, C.dim).setOrigin(0, 0.5);
       const it: Item = { id, done: false, bg, t, st, x, y, w: iw, h: ih };
       this.drawItem(it);
       const z = this.add.zone(x, y, iw, ih).setOrigin(0).setInteractive({ useHandCursor: true });
@@ -95,7 +95,7 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     });
     const ly = cy0 + 32 + Math.ceil(list.length / colN) * (ih + 10) + 10;
     this.stepT = T(this, cx0, ly, '', 19, C.amberS, { weight: '700', wordWrap: { width: cw } });
-    T(this, cx0, ly + 64, '기시(Origin): 근육이 수축할 때 비교적 고정되는 몸쪽(근위) 부착부\n정지(Insertion): 수축할 때 끌려와 움직이는 먼쪽(원위) 부착부', 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: 6 });
+    T(this, cx0, ly + 64, '이는곳(Origin): 근육이 수축할 때 비교적 고정되는 몸쪽 부착부\n닿는곳(Insertion): 수축할 때 끌려와 움직이는 먼쪽 부착부', 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: 6 });
     this.setFeedback('왼쪽 목록에서 근육을 하나 고르세요. 두 갈래(두 곳)에서 시작하는 근육도 있습니다.', 'info');
     this.select(this.items[0]);
   }
@@ -155,8 +155,8 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     const name = adv ? M.en : M.ko;
     if (this.phase === 'origin') {
       const need = M.origins.length;
-      this.stepT.setText(`${name}: 기시 지점을 누르세요  (${this.picked.length}/${need})${need > 1 ? `\n※ ${adv ? 'two origins' : '두 곳에서 시작하는 근육'}` : ''}`);
-    } else this.stepT.setText(`${name}: 이제 정지 지점을 누르세요`);
+      this.stepT.setText(`${name}: 이는곳 지점을 누르세요  (${this.picked.length}/${need})${need > 1 ? `\n※ ${adv ? 'two origins' : '두 곳에서 시작하는 근육'}` : ''}`);
+    } else this.stepT.setText(`${name}: 이제 닿는곳 지점을 누르세요`);
   }
 
   nearest(x: number, y: number) {
@@ -175,20 +175,20 @@ export class MuscleLinkPuzzle extends PuzzleBase {
       if (this.picked.includes(n.id)) return;
       if (M.origins.includes(n.id)) {
         this.picked.push(n.id); this.drawNode(n, 'pick'); Audio.play('snap');
-        this.setFeedback(`✓ ${A.ko} — ${name}의 기시입니다.${M.origins.length > this.picked.length ? ' 나머지 기시도 찾으세요.' : ''}`, 'ok');
+        this.setFeedback(`✓ ${A.ko} — ${name}의 이는곳입니다.${M.origins.length > this.picked.length ? ' 나머지 이는곳도 찾으세요.' : ''}`, 'ok');
         if (this.picked.length === M.origins.length) this.phase = 'insertion';
         this.drawStub();
         this.updateStep(); return;
       }
       this.wrong(n, n.id === M.insertion
-        ? `${A.ko}은(는) ${name}의 정지(움직이는 쪽)입니다. 기시(몸쪽 고정점)를 먼저 찾으세요.`
-        : `${A.ko}은(는) ${name}의 기시가 아닙니다. ${A.on}${adv ? '' : `  힌트: ${name}의 기시는 ${M.originText}.`}`);
+        ? `${A.ko}은(는) ${name}의 닿는곳(움직이는 쪽)입니다. 이는곳(몸쪽 고정점)을 먼저 찾으세요.`
+        : `${A.ko}은(는) ${name}의 이는곳이 아닙니다. ${A.on}${adv ? '' : `  힌트: ${name}의 이는곳은 ${M.originText}.`}`);
       return;
     }
     if (n.id === M.insertion) { this.connect(it, n); return; }
     this.wrong(n, M.origins.includes(n.id)
-      ? `${A.ko}은(는) 이미 선택한 기시입니다. 근육이 끌어당기는 먼쪽 정지를 찾으세요.`
-      : `${A.ko}은(는) ${name}의 정지가 아닙니다. ${A.on}${adv ? '' : `  힌트: ${name}의 정지는 ${M.insertionText}.`}`);
+      ? `${A.ko}은(는) 이미 선택한 이는곳입니다. 근육이 끌어당기는 먼쪽 닿는곳을 찾으세요.`
+      : `${A.ko}은(는) ${name}의 닿는곳이 아닙니다. ${A.on}${adv ? '' : `  힌트: ${name}의 닿는곳은 ${M.insertionText}.`}`);
   }
 
   drawStub() {
@@ -222,12 +222,12 @@ export class MuscleLinkPuzzle extends PuzzleBase {
       const dot = this.add.image(o.px, o.py, 'light').setScale(0.12).setTint(0xffe08a).setBlendMode(Phaser.BlendModes.ADD).setDepth(16);
       this.tweens.add({ targets: dot, x: ins.px, y: ins.py, duration: 650, repeat: 1, ease: 'Sine.inOut', onComplete: () => dot.destroy() });
     }
-    it.done = true; it.st.setText(`기시 ${M.originText} → 정지 ${M.insertionText}`).setColor(C.greenS);
+    it.done = true; it.st.setText(`이는곳 ${M.originText} → 닿는곳 ${M.insertionText}`).setColor(C.greenS);
     this.setFeedback(`${M.ko} 연결 복구 ✓  작용: ${M.action}`, 'ok');
     this.sel = null; for (const o of this.items) this.drawItem(o);
     const next = this.items.find(o => !o.done);
     if (next) { this.time.delayedCall(700, () => { if (!this.solved) this.select(next); }); return; }
     this.solved = true; this.stepT.setText('모든 근육 연결 완료');
-    this.time.delayedCall(800, () => this.success('c_origin', '근육은 기시(고정)에서 정지(움직임) 쪽으로 당긴다', 900));
+    this.time.delayedCall(800, () => this.success('c_origin', '근육은 이는곳(고정)에서 닿는곳(움직임) 쪽으로 당긴다', 900));
   }
 }

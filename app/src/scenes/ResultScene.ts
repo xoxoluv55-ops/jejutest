@@ -45,7 +45,7 @@ export class ResultScene extends BaseScene {
       ['난이도', r.difficulty === 'adv' ? '심화 · 응용' : '기초 · 1학년'],
       ...(ch2 ? [
         ['근육 지도 판독 오답', `${r.stats.atlas}회  (정확도 ${acc(r.stats.atlas)}%)`],
-        ['기시·정지 연결 오답', `${r.stats.link}회  (정확도 ${acc(r.stats.link)}%)`],
+        ['이는곳·닿는곳 연결 오답', `${r.stats.link}회  (정확도 ${acc(r.stats.link)}%)`],
         ['운동 재현 역할 오답', `${r.stats.motion}회  (정확도 ${acc(r.stats.motion)}%)`],
       ] as [string, string][] : [
         ['골격 조립 오답', `${r.stats.assembly}회  (정확도 ${acc(r.stats.assembly)}%)`],
@@ -63,8 +63,8 @@ export class ResultScene extends BaseScene {
     T(this, px + 34, ly, '학습한 핵심 개념', 17, C.amberS, { weight: '700' });
     r.learned.forEach((id, i) => { const e = ARCHIVE.find(a => a.id === id); if (e) T(this, px + 34, ly + 34 + i * 30, `◆ ${e.title} — ${e.en}`, 17, '#d3def3'); });
     const weak: [string, string][] = ch2
-      ? [['atlas', '어깨·위팔 표층 근육의 위치'], ['link', '근육의 기시와 정지(부착 위치)'], ['motion', '주동근·길항근과 관절을 지나는 위치']]
-      : [['assembly', '상지 골격의 위치 관계(요골=외측, 척골=내측)'], ['align', '관절면의 방향(근위/원위, 내측/외측 지표)'], ['xray', '어깨 방사선 영상의 지표 구조']];
+      ? [['atlas', '어깨·위팔 표층 근육의 위치'], ['link', '근육의 이는곳과 닿는곳(부착 위치)'], ['motion', '주작용근·대항근과 관절을 지나는 위치']]
+      : [['assembly', '팔 골격의 위치 관계(노뼈=가쪽, 자뼈=안쪽)'], ['align', '관절면의 방향(몸쪽/먼쪽, 안쪽/가쪽 지표)'], ['xray', '어깨 방사선 영상의 지표 구조']];
     const worst = weak.filter(([k]) => r.stats[k] >= 2).map(([, s]) => s);
     if (worst.length) T(this, px + 34, py + ph - 40, `복습 추천: ${worst.join(', ')}`, 15, C.redS, { wordWrap: { width: pw - 68 } }).setOrigin(0, 0.5);
     const by = H - 56;
