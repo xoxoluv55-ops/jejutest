@@ -29,7 +29,7 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
     const { W, H } = View; const portrait = H > W;
     // crop to the region that holds the muscles (frame x 140..700, y 110..1110)
     const crop = { x: 140, y: 110, w: 560, h: 1000 };
-    const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.56 : this.ph - 180;
+    const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.56 : this.ph - 196;   // room for the two-line licence credit above the feedback bar
     this.s = Math.min(areaW / crop.w, areaH / crop.h);
     this.fx = this.px + 30 + (areaW - crop.w * this.s) / 2 - crop.x * this.s;
     this.fy = this.py + 78 + (areaH - crop.h * this.s) / 2 - crop.y * this.s;
@@ -42,7 +42,7 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
     img.setMask(mask.createGeometryMask());
     for (const o of addPlateOverlays(this, this.fx, this.fy, this.s)) o.setMask(mask.createGeometryMask());   // latissimus (separate licence)
     T(this, this.fx + crop.x * this.s + 8, this.fy + crop.y * this.s + 6, '오른팔 · 앞면 (Anterior)', 14, C.pinkS, { weight: '700' });
-    T(this, this.fx + (crop.x + crop.w) * this.s, this.fy + (crop.y + crop.h) * this.s + 16, `${MODEL_CREDIT} · ${LAT_CREDIT}`, 10, '#8f7f88').setOrigin(1, 0.5);
+    T(this, this.fx + (crop.x + crop.w) * this.s, this.fy + (crop.y + crop.h) * this.s + 14, `${MODEL_CREDIT}\n${LAT_CREDIT}`, 12, '#a8949e', { fine: true, align: 'right' }).setOrigin(1, 0);
     T(this, this.fx + crop.x * this.s + 8, this.fy + (crop.y + crop.h) * this.s - 24, '← 가쪽', 13, '#ffb3c6', { weight: '700' });
     T(this, this.fx + (crop.x + crop.w) * this.s - 8, this.fy + (crop.y + crop.h) * this.s - 24, '안쪽 →', 13, '#ffb3c6', { weight: '700' }).setOrigin(1, 0);
     // numbered markers (random numbering)

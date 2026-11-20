@@ -31,11 +31,11 @@ export class PuzzleBase extends BaseScene {
     const m = 16;
     this.px = m; this.py = m; this.pw = W - m * 2; this.ph = H - m * 2;
     const g = this.add.graphics(); drawPanel(g, this.px, this.py, this.pw, this.ph, { accent, header: 64, alpha: 0.82 });
-    T(this, this.px + 30, this.py + 22, title, 24, C.white, { weight: '700' }).setOrigin(0, 0.5);
-    T(this, this.px + 30, this.py + 47, sub, 15, '#9fb3d6').setOrigin(0, 0.5);
+    T(this, this.px + 30, this.py + 22, title, 26, C.white, { weight: '700' }).setOrigin(0, 0.5);
+    T(this, this.px + 30, this.py + 47, sub, 16, '#c3d3ee').setOrigin(0, 0.5);
     const close = new RoundButton(this, this.px + this.pw - 40, this.py + 32, 22, 'close', () => this.exit(), accent);
     close.setActive2(true);
-    T(this, this.px + this.pw - 72, this.py + 32, '나가기', 14, C.dim).setOrigin(1, 0.5);
+    T(this, this.px + this.pw - 72, this.py + 32, '나가기', 16, C.dim).setOrigin(1, 0.5);
     this.root = this.add.container(0, 0);
     this.cameras.main.fadeIn(250, 0, 0, 0);
     this.input.keyboard?.on('keydown-ESC', () => this.exit());
@@ -49,12 +49,14 @@ export class PuzzleBase extends BaseScene {
     const col = { info: C.cyan, ok: C.green, err: C.red, warn: C.amber }[kind];
     const fx = x ?? this.px + 30, fw = w ?? this.pw - 60;
     const fy = this.py + this.ph - 74;
-    if (!this.fbBg) { this.fbBg = this.add.graphics().setDepth(50); this.feedback = T(this, 0, 0, '', 17, C.white, { weight: '600', wordWrap: { width: fw - 50 }, lineSpacing: 4 }).setOrigin(0, 0.5).setDepth(51); }
+    if (!this.fbBg) { this.fbBg = this.add.graphics().setDepth(50); this.feedback = T(this, 0, 0, '', 18, C.white, { weight: '600', wordWrap: { width: fw - 50 }, lineSpacing: 4 }).setOrigin(0, 0.5).setDepth(51); }
     this.fbBg.clear();
     this.fbBg.fillStyle(0x050810, 0.92); this.fbBg.fillRoundedRect(fx, fy, fw, 58, 8);
     this.fbBg.lineStyle(1.5, col, 0.9); this.fbBg.strokeRoundedRect(fx, fy, fw, 58, 8);
     this.fbBg.fillStyle(col, 1); this.fbBg.fillRect(fx + 8, fy + 10, 3, 38);
     this.feedback.setPosition(fx + 24, fy + 29).setText(text).setWordWrapWidth(fw - 50);
+    // keep long explanations inside the fixed-height banner (never spill over the puzzle content)
+    for (const sz of [18, 17, 16, 15]) { this.feedback.setFontSize(sz); if (this.feedback.height <= 54) break; }
     if (kind === 'err') { this.tweens.add({ targets: [this.fbBg, this.feedback], x: '+=6', duration: 50, yoyo: true, repeat: 3 }); }
   }
 

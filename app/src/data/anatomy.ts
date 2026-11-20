@@ -108,7 +108,7 @@ export const BONES: Record<BoneId, BoneDef> = {
       E(380, 1080, 18, 36),           // lateral malleolus
     ],
     info: '다리(종아리)의 가늘고 긴 가쪽 뼈. 체중을 거의 지지하지 않으며, 먼쪽부분은 가쪽복사를 이룬다. 팔 뼈대가 아니다!',
-    wrongSlot: '종아리뼈은 다리의 뼈입니다. 팔 뼈대 조립에는 필요하지 않아요.',
+    wrongSlot: '종아리뼈는 다리의 뼈입니다. 팔 뼈대 조립에는 필요하지 않아요.',
   },
 };
 

@@ -43,7 +43,7 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     this.frame('근육 연결 콘솔 · 이는곳과 닿는곳', '근육을 고른 뒤 뼈 위의 이는곳(몸쪽 고정점) → 닿는곳(움직이는 쪽) 순서로 눌러 근육을 다시 연결하세요.', C.pink);
     const { W, H } = View; const portrait = H > W;
     const crop = { x: 140, y: 110, w: 560, h: 1000 };
-    const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.56 : this.ph - 180;
+    const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.56 : this.ph - 160;
     this.s = Math.min(areaW / crop.w, areaH / crop.h);
     this.fx = this.px + 30 + (areaW - crop.w * this.s) / 2 - crop.x * this.s;
     this.fy = this.py + 78 + (areaH - crop.h * this.s) / 2 - crop.y * this.s;
@@ -54,8 +54,6 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     // skeleton plate rendered from the BodyParts3D model
     const img = this.add.image(this.fx, this.fy, plateKey('bones')).setOrigin(0).setScale(this.s / DENSITY);
     const mask = this.make.graphics({}, false); mask.fillRect(rx, ry, rw, rh); img.setMask(mask.createGeometryMask());
-    T(this, rx + 8, ry + rh - 26, '오른팔 · 앞면  (점선 원 = 뒤쪽 구조)', 13, C.pinkS, { weight: '700' });
-    T(this, rx + rw, ry + rh + 16, MODEL_CREDIT, 11, '#8f7f88').setOrigin(1, 0.5);
     this.stub = this.add.graphics().setDepth(15);
     // attachment nodes: true site (measured on the model) + tap marker; crowded sites are spread out as callouts
     for (const id of LINK_NODES) {
@@ -64,29 +62,44 @@ export class MuscleLinkPuzzle extends PuzzleBase {
       this.nodes.push({ id, x: px, y: py, px, py, g: this.add.graphics().setDepth(20) });
     }
     this.layoutCallouts();
+    // keep every tap marker inside the plate (a marker pushed past the edge could not be tapped)
+    for (const n of this.nodes) { n.x = Phaser.Math.Clamp(n.x, rx + 10, rx + rw - 10); n.y = Phaser.Math.Clamp(n.y, ry + 10, ry + rh - 34); }
+    const boxes: Phaser.Geom.Rectangle[] = [];
     for (const n of this.nodes) {
       const a = ATT[n.id];
       if (!adv) {
-        const left = n.x < n.px - 2 || (Math.abs(n.x - n.px) <= 2 && a.x < 300);
-        n.t = T(this, n.x + (left ? -12 : 12), n.y, a.ko, 12, '#ffd9e3', { weight: '700', backgroundColor: '#14070dcc', padding: { x: 4, y: 2 } }).setOrigin(left ? 1 : 0, 0.5).setDepth(21);
-        if (left && n.t.x - n.t.width < rx - 8) n.t.setX(rx - 8 + n.t.width);
+        const pref = n.x < n.px - 2 || (Math.abs(n.x - n.px) <= 2 && a.x < 300);
+        n.t = T(this, 0, 0, a.ko, 12, '#ffd9e3', { weight: '700', backgroundColor: '#14070dcc', padding: { x: 4, y: 2 } }).setDepth(21);
+        // place the label beside its marker without covering another label: try the preferred side, the other side,
+        // then nudge up/down
+        const place = (left: boolean, dy: number) => {
+          n.t!.setOrigin(left ? 1 : 0, 0.5).setPosition(n.x + (left ? -12 : 12), n.y + dy);
+          if (left && n.t!.x - n.t!.width < rx - 8) n.t!.setX(rx - 8 + n.t!.width);
+          return n.t!.getBounds();
+        };
+        let r = place(pref, 0);
+        const hits = (q: Phaser.Geom.Rectangle) => boxes.some(b => Phaser.Geom.Intersects.RectangleToRectangle(b, q));
+        for (const [left, dy] of [[!pref, 0], [pref, 20], [pref, -20], [!pref, 20], [!pref, -20], [pref, 40]] as [boolean, number][]) {
+          if (!hits(r)) break; r = place(left, dy);
+        }
+        boxes.push(r);
       }
       this.drawNode(n, 'idle');
     }
-    const hit = this.add.zone(rx, ry, rw, rh).setOrigin(0).setInteractive();
+    const hit = this.add.zone(rx - 12, ry - 12, rw + 24, rh + 24).setOrigin(0).setInteractive();
     hit.on('pointerup', (p: Phaser.Input.Pointer) => this.tap(p.worldX, p.worldY));
     // muscle list
     const list = adv ? LINK_ADV : LINK_BASIC;
     const cx0 = portrait ? this.px + 30 : this.px + this.pw * 0.54 + 10, cy0 = portrait ? ry + rh + 30 : this.py + 96;
     const cw = portrait ? this.pw - 60 : this.pw * 0.46 - 60;
     T(this, cx0, cy0, '손상된 근육', 17, C.pinkS, { weight: '700' });
-    const colN = portrait ? 2 : 1, iw = (cw - (colN - 1) * 12) / colN, ih = 58;
+    const colN = portrait ? 2 : 1, iw = (cw - (colN - 1) * 12) / colN, ih = list.length > 4 && !portrait ? 52 : 58;
     list.forEach((id, i) => {
       const M = MUSCLES[id];
       const x = cx0 + (i % colN) * (iw + 12), y = cy0 + 32 + Math.floor(i / colN) * (ih + 10);
       const bg = this.add.graphics();
       const t = T(this, x + 16, y + 20, adv ? M.en : `${M.ko} · ${M.en}`, 18, C.white, { weight: '700' }).setOrigin(0, 0.5);
-      const st = T(this, x + 16, y + 42, M.posterior ? '연결 대기 · 뒤쪽 근육(긴갈래)' : '연결 대기', 13, C.dim).setOrigin(0, 0.5);
+      const st = T(this, x + 16, y + ih - 15, M.posterior ? '연결 대기 · 뒤쪽 근육(긴갈래)' : '연결 대기', 13, C.dim).setOrigin(0, 0.5);
       const it: Item = { id, done: false, bg, t, st, x, y, w: iw, h: ih };
       this.drawItem(it);
       const z = this.add.zone(x, y, iw, ih).setOrigin(0).setInteractive({ useHandCursor: true });
@@ -95,7 +108,12 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     });
     const ly = cy0 + 32 + Math.ceil(list.length / colN) * (ih + 10) + 10;
     this.stepT = T(this, cx0, ly, '', 19, C.amberS, { weight: '700', wordWrap: { width: cw } });
-    T(this, cx0, ly + 64, '이는곳(Origin): 근육이 수축할 때 비교적 고정되는 몸쪽 부착부\n닿는곳(Insertion): 수축할 때 끌려와 움직이는 먼쪽 부착부', 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: 6 });
+    const defs = T(this, cx0, ly + 64, '이는곳(Origin): 근육이 수축할 때 비교적 고정되는 몸쪽 부착부\n닿는곳(Insertion): 수축할 때 끌려와 움직이는 먼쪽 부착부', 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: 6 });
+    // legend + licence credit live in the right column so they never collide with the bone labels
+    const legend = T(this, cx0, defs.y + defs.height + 12, '그림: 오른팔 · 앞면   (점선 원 = 뒤쪽 구조)', 15, C.pinkS, { weight: '700' });
+    // long lists (advanced): no room above the feedback bar -> put the legend in the plate's top corner instead
+    if (legend.y + legend.height > this.py + this.ph - 84) legend.setPosition(rx + 6, ry + 6).setFontSize(14).setBackgroundColor('#12060ccc').setPadding(4, 2).setDepth(22);
+    T(this, rx + rw - 4, ry + rh - 4, MODEL_CREDIT, 12, '#b8a4ae', { fine: true, backgroundColor: '#12060ccc', padding: { x: 4, y: 2 } }).setOrigin(1, 1).setDepth(22);
     this.setFeedback('왼쪽 목록에서 근육을 하나 고르세요. 두 갈래(두 곳)에서 시작하는 근육도 있습니다.', 'info');
     this.select(this.items[0]);
   }
@@ -223,10 +241,14 @@ export class MuscleLinkPuzzle extends PuzzleBase {
       this.tweens.add({ targets: dot, x: ins.px, y: ins.py, duration: 650, repeat: 1, ease: 'Sine.inOut', onComplete: () => dot.destroy() });
     }
     it.done = true; it.st.setText(`이는곳 ${M.originText} → 닿는곳 ${M.insertionText}`).setColor(C.greenS);
+    // fit the summary inside the card (shrink, then cut with an ellipsis)
+    for (const sz of [15, 14, 13]) { it.st.setFontSize(sz); if (it.st.width <= it.w - 56) break; }
+    while (it.st.width > it.w - 56 && it.st.text.length > 4) it.st.setText(it.st.text.slice(0, -2) + '…');
     this.setFeedback(`${M.ko} 연결 복구 ✓  작용: ${M.action}`, 'ok');
     this.sel = null; for (const o of this.items) this.drawItem(o);
     const next = this.items.find(o => !o.done);
-    if (next) { this.time.delayedCall(700, () => { if (!this.solved) this.select(next); }); return; }
+    // auto-select the next muscle only if the player has not already picked one (a fast tap must not be wiped)
+    if (next) { this.time.delayedCall(700, () => { if (!this.solved && !this.sel) this.select(next); }); return; }
     this.solved = true; this.stepT.setText('모든 근육 연결 완료');
     this.time.delayedCall(800, () => this.success('c_origin', '근육은 이는곳(고정)에서 닿는곳(움직임) 쪽으로 당긴다', 900));
   }

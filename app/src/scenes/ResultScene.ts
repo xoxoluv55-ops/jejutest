@@ -32,11 +32,12 @@ export class ResultScene extends BaseScene {
     const b = this.add.image(W * 0.18, H * 0.8, `full_${r.color}`).setOrigin(0.5, 1).setScale(0.85);
     this.tweens.add({ targets: b, y: b.y - 18, duration: 500, yoyo: true, repeat: -1, ease: 'Quad.out' });
     this.tweens.add({ targets: b, angle: { from: -6, to: 6 }, duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
-    const title = T(this, W / 2, 80, 'ESCAPE SUCCESS', 64, '#ffffff', { display: true, weight: '900' }).setOrigin(0.5);
+    const compact = H < 820;   // iPad landscape (≈740 logical) — tighten the vertical rhythm so nothing overlaps the buttons
+    const title = T(this, W / 2, compact ? 54 : 80, 'ESCAPE SUCCESS', 64, '#ffffff', { display: true, weight: '900' }).setOrigin(0.5);
     title.setShadow(0, 0, '#3dffa2', 24, true, true);
     const ch2 = r.chapter === 2;
-    T(this, W / 2, 140, ch2 ? 'CHAPTER 2 · 근육 연결실 탈출 완료' : 'CHAPTER 1 · 뼈대 복구실 탈출 완료', 22, C.greenS, { weight: '700' }).setOrigin(0.5);
-    const pw = Math.min(760, W * 0.58), px = Math.max(W * 0.36, W / 2 - pw / 2), py = 190, ph = H - 300;
+    T(this, W / 2, compact ? 102 : 140, ch2 ? 'CHAPTER 2 · 근육 연결실 탈출 완료' : 'CHAPTER 1 · 뼈대 복구실 탈출 완료', 22, C.greenS, { weight: '700' }).setOrigin(0.5);
+    const pw = Math.min(760, W * 0.58), px = Math.max(W * 0.36, W / 2 - pw / 2), py = compact ? 128 : 190, ph = H - py - 96;
     const g = this.add.graphics(); drawPanel(g, px, py, pw, ph, { accent: C.green, header: 52 });
     T(this, px + 28, py + 26, '연구 기록 · 결과 보고서', 20, C.white, { weight: '700' }).setOrigin(0, 0.5);
     const acc = (m: number) => Math.max(0, 100 - m * 12);
@@ -54,19 +55,21 @@ export class ResultScene extends BaseScene {
       ] as [string, string][]),
       ['스캔 사용 / 연구 기록', `${r.scans}회 / ${r.logs.length}개 열람`],
     ];
+    const lineH = 28, weakH = 34;
+    const step = Math.max(32, Math.min(44, (ph - 86 - 16 - 34 - r.learned.length * lineH - weakH) / rows.length));
     rows.forEach(([k, v], i) => {
-      const y = py + 86 + i * 44;
+      const y = py + 80 + i * step;
       T(this, px + 34, y, k, 18, C.dim, { weight: '600' }).setOrigin(0, 0.5);
       T(this, px + pw - 34, y, v, 19, C.white, { weight: '700' }).setOrigin(1, 0.5);
     });
-    const ly = py + 86 + rows.length * 44 + 16;
+    const ly = py + 80 + rows.length * step;
     T(this, px + 34, ly, '학습한 핵심 개념', 17, C.amberS, { weight: '700' });
-    r.learned.forEach((id, i) => { const e = ARCHIVE.find(a => a.id === id); if (e) T(this, px + 34, ly + 34 + i * 30, `◆ ${e.title} — ${e.en}`, 17, '#d3def3'); });
+    r.learned.forEach((id, i) => { const e = ARCHIVE.find(a => a.id === id); if (e) T(this, px + 34, ly + 30 + i * lineH, `◆ ${e.title} — ${e.en}`, 17, '#d3def3', { wordWrap: { width: pw - 68 } }).setMaxLines(1); });
     const weak: [string, string][] = ch2
       ? [['atlas', '어깨·위팔 표층 근육의 위치'], ['link', '근육의 이는곳과 닿는곳(부착 위치)'], ['motion', '주작용근·대항근과 관절을 지나는 위치']]
       : [['assembly', '팔 뼈대의 위치 관계(노뼈=가쪽, 자뼈=안쪽)'], ['align', '관절면의 방향(몸쪽/먼쪽, 안쪽/가쪽 지표)'], ['xray', '어깨 방사선 영상의 지표 구조']];
     const worst = weak.filter(([k]) => r.stats[k] >= 2).map(([, s]) => s);
-    if (worst.length) T(this, px + 34, py + ph - 40, `복습 추천: ${worst.join(', ')}`, 15, C.redS, { wordWrap: { width: pw - 68 } }).setOrigin(0, 0.5);
+    if (worst.length) T(this, px + 34, py + ph - 22, `복습 추천: ${worst.join(', ')}`, 15, C.redS, { wordWrap: { width: pw - 68 } }).setOrigin(0, 0.5);
     const by = H - 56;
     const retry = () => { G.run = newRun(r.difficulty, r.color, r.chapter); this.saved = false; startWorld(this.scene); };
     const toTitle = () => { this.saved = false; this.scene.start('Title'); };

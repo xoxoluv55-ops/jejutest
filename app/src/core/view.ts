@@ -6,12 +6,17 @@ import Phaser from 'phaser';
 export const View = { W: 1440, H: 900, k: 1, dpr: 1, cssW: 1440, cssH: 900, quality: 'high' as 'high' | 'low' };
 
 export function measure() {
-  const cssW = Math.max(320, window.innerWidth);
-  const cssH = Math.max(320, window.innerHeight);
+  // size of the #game box: it is inset by the iOS safe areas (home indicator / notch) in index.html
+  const el = document.getElementById('game');
+  const r = el?.getBoundingClientRect();
+  const cssW = Math.max(320, Math.round(r && r.width ? r.width : window.innerWidth));
+  const cssH = Math.max(320, Math.round(r && r.height ? r.height : window.innerHeight));
   const maxDpr = View.quality === 'high' ? 2 : 1.25;
   const dpr = Math.min(window.devicePixelRatio || 1, maxDpr);
   const aspect = cssW / cssH;
-  let H = 900;
+  // Logical height = CSS height (1 logical unit = 1 CSS px) on screens shorter than 900 px, e.g. iPad Safari
+  // landscape (~1180x740): the old fixed 900 shrank every text and button to ~82 %. Taller screens keep 900.
+  let H = Math.min(900, cssH);
   let W = Math.round(H * aspect);
   if (W < 1180) { W = 1180; H = Math.round(W / aspect); }
   View.W = W; View.H = H; View.dpr = dpr; View.cssW = cssW; View.cssH = cssH;

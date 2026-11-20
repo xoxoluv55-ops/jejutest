@@ -3,187 +3,321 @@ import { PuzzleBase, distBone } from './PuzzleBase';
 import { View } from '../../core/view';
 import { Audio } from '../../core/audio';
 import { G } from '../../game/state';
-import { BONES, BoneId, FRAME, UPPER_ORDER } from '../../data/anatomy';
-import { boneBounds, DENSITY } from '../../art/bones';
+import { BONES, BoneId, UPPER_ORDER } from '../../data/anatomy';
+import { boneBounds, DENSITY, makeBoneTexture } from '../../art/bones';
 import { T, C, drawIcon } from '../../ui/widgets';
 
-interface Piece { id: BoneId; img: Phaser.GameObjects.Image; home: { x: number; y: number; s: number }; placed: boolean; label: Phaser.GameObjects.Text; card: Phaser.GameObjects.Graphics }
+interface Piece {
+  id: BoneId; img: Phaser.GameObjects.Image; zone: Phaser.GameObjects.Zone; card: Phaser.GameObjects.Graphics;
+  name: Phaser.GameObjects.Text; sub: Phaser.GameObjects.Text;
+  rect: { x: number; y: number; w: number; h: number }; home: { x: number; y: number; s: number; a: number }; placed: boolean;
+}
+
+/** 팔이음뼈 (pectoral girdle) vs 자유팔뼈 (free upper limb) — the learning goal of this puzzle. */
+const GIRDLE: BoneId[] = ['clavicle', 'scapula'];
+const GROUP_COL = { girdle: 0xffc24d, free: 0x4fd8ff };
+const groupOf = (id: BoneId) => (GIRDLE.includes(id) ? 'girdle' : 'free') as 'girdle' | 'free';
 
 /**
- * PUZZLE 1 — 팔 뼈대 조립 (right upper limb, anterior view).
- * Drag each recovered specimen onto its anatomical position. Detect & discard the contaminated specimen (fibula).
+ * PUZZLE 1 — 팔뼈대 조립 (right upper limb skeleton, anterior view).
+ * Goal: place the 팔이음뼈 (빗장뼈·어깨뼈) and the 자유팔뼈 (위팔뼈·노뼈·자뼈) in their anatomical positions.
+ * Basic: the 5 arm bones only. Advanced: names hidden until placed + a 종아리뼈 decoy to discard
+ * (a leg bone that looks like the forearm bones).
+ * Input: drag a card onto the skeleton, or tap a card and then tap its place.
  */
 export class AssemblyPuzzle extends PuzzleBase {
   constructor() { super('Assembly'); }
   fs = 0.6; fx = 0; fy = 0;
   pieces: Piece[] = [];
-  bin!: { x: number; y: number; w: number; h: number; g: Phaser.GameObjects.Graphics };
+  bin: { x: number; y: number; w: number; h: number; g: Phaser.GameObjects.Graphics } | null = null;
   discarded = false;
   progressT!: Phaser.GameObjects.Text;
   ghosts: Partial<Record<BoneId, Phaser.GameObjects.Image>> = {};
-  nodes: Partial<Record<BoneId, Phaser.GameObjects.Image>> = {};
+  hot!: Phaser.GameObjects.Graphics;          // slot under the finger / bin highlight
+  tags!: Phaser.GameObjects.Container;        // name tags of placed bones
+  selected: Piece | null = null;
+  fbBox = { x: 0, y: 0, w: 0, h: 0 };
+  fbG!: Phaser.GameObjects.Graphics; fbT!: Phaser.GameObjects.Text;
+  dragging: Piece | null = null;
+  view = { x: 0, w: 0 };                       // visible skeleton panel (screen x range)
+
+  get adv() { return G.run.difficulty === 'adv'; }
+  get decoys(): BoneId[] { return G.run.bones.filter(id => !UPPER_ORDER.includes(id)); }
 
   create() {
     this.initView();
-    this.pieces = []; this.discarded = false; this.ghosts = {}; this.nodes = {};
-    const adv = G.run.difficulty === 'adv';
-    this.frame('뼈대 복구 테이블 · 팔 뼈대 재조립', adv ? '오른쪽 팔, 앞면 — 표본의 형태만 보고 제자리를 찾으세요. 오염 표본은 폐기함으로.' : '오른쪽 팔을 앞에서 본 모습입니다. 표본을 끌어 윤곽에 맞춰 놓으세요. 팔이 아닌 표본은 폐기함으로!');
+    this.pieces = []; this.discarded = false; this.ghosts = {}; this.selected = null; this.dragging = null; this.bin = null;
+    const adv = this.adv;
+    this.frame('뼈대 복구 테이블 · 팔뼈대 조립',
+      adv ? '오른쪽 팔뼈대(앞면). 이름이 가려진 표본의 모양만 보고 제자리에 놓고, 팔뼈가 아닌 표본은 폐기하세요.'
+          : '오른쪽 팔뼈대를 앞에서 본 모습입니다. 표본 카드를 끌어 점선 윤곽에 놓거나, 카드를 누른 뒤 자리를 누르세요.');
     const { W, H } = View;
     const portrait = H > W;
-    // ---- frame area (left) ----
-    const areaW = portrait ? this.pw - 40 : this.pw * 0.56, areaH = portrait ? this.ph * 0.56 : this.ph - 190;
-    this.fs = Math.min(areaH / FRAME.h, areaW / FRAME.w) * 0.98;
-    this.fx = this.px + 20 + (areaW - FRAME.w * this.fs) / 2;
-    this.fy = this.py + 76 + (areaH - FRAME.h * this.fs) / 2;
-    // holo backdrop canvas
-    const key = 'torso_holo';
+    const top = this.py + 76, bottom = this.py + this.ph - 14;
+
+    // ---------------- skeleton (left): cropped to the upper-limb bones so it fills the column ----------------
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const id of UPPER_ORDER) { const b = boneBounds(id); x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); }
+    const crop = { x: x0 - 40, y: y0 - 30, w: x1 - x0 + 80, h: y1 - y0 + 60 };
+    const maxW = portrait ? this.pw - 40 : this.pw * 0.46, areaH = portrait ? (bottom - top) * 0.5 : bottom - top;
+    this.fs = Math.min(maxW / crop.w, areaH / crop.h);
+    // the column is exactly as wide as the skeleton: no dead space, the rest goes to the cards
+    const areaW = portrait ? maxW : crop.w * this.fs + 16;
+    const areaX = this.px + 20, areaY = top;
+    const shownW = crop.w * this.fs, shownH = crop.h * this.fs;
+    const ox = areaX + (areaW - shownW) / 2, oy = areaY + (areaH - shownH) / 2;
+    this.fx = ox - crop.x * this.fs; this.fy = oy - crop.y * this.fs;
+    this.view = { x: ox, w: shownW };
     const plate = this.add.graphics();
-    plate.fillStyle(0x03101c, 0.7); plate.fillRoundedRect(this.fx - 10, this.fy - 10, FRAME.w * this.fs + 20, FRAME.h * this.fs + 20, 12);
-    plate.lineStyle(1, C.cyan, 0.25); plate.strokeRoundedRect(this.fx - 10, this.fy - 10, FRAME.w * this.fs + 20, FRAME.h * this.fs + 20, 12);
-    this.add.image(this.fx, this.fy, key).setOrigin(0).setScale(this.fs / DENSITY).setAlpha(0.9);
-    // orientation labels
-    const lab = (x: number, y: number, s: string) => T(this, x, y, s, 13, '#6fb9d8', { weight: '700' }).setOrigin(0.5);
-    lab(this.fx + 40 * this.fs, this.fy + 20, '← 가쪽 (Lateral)');
-    lab(this.fx + 640 * this.fs, this.fy + 20, '정중선 (Midline)');
-    lab(this.fx + 690 * this.fs, this.fy + FRAME.h * this.fs - 14, 'R · 앞면');
-    // slots
+    plate.fillStyle(0x03101c, 0.8); plate.fillRoundedRect(ox - 8, oy - 8, shownW + 16, shownH + 16, 12);
+    plate.lineStyle(1.5, C.cyan, 0.35); plate.strokeRoundedRect(ox - 8, oy - 8, shownW + 16, shownH + 16, 12);
+    const holo = this.add.image(this.fx, this.fy, 'torso_holo').setOrigin(0).setScale(this.fs / DENSITY).setAlpha(0.75);
+    const mask = this.make.graphics({}, false); mask.fillRect(ox - 8, oy - 8, shownW + 16, shownH + 16); holo.setMask(mask.createGeometryMask());
+    T(this, ox + 6, oy + 4, '← 가쪽 (Lateral)', 16, '#9fdcf5', { weight: '700' });
+    T(this, ox + shownW - 6, oy + 4, '안쪽 (Medial) →', 16, '#9fdcf5', { weight: '700' }).setOrigin(1, 0);
+    T(this, ox + shownW - 6, oy + shownH - 4, '오른쪽 · 앞면', 16, '#9fdcf5', { weight: '700' }).setOrigin(1, 1);
+    // slot outlines. basic: bright silhouette of each bone, coloured by group (amber = 팔이음뼈, cyan = 자유팔뼈).
+    // advanced: no shape hints, only a pulsing ring at each slot centre (as before).
     for (const id of UPPER_ORDER) {
       const b = boneBounds(id);
       const cx = this.fx + b.cx * this.fs, cy = this.fy + b.cy * this.fs;
       if (!adv) {
-        const gh = this.add.image(cx, cy, `bone_ghost_${id}`).setScale(this.fs / DENSITY);
-        this.tweens.add({ targets: gh, alpha: 0.55, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+        makeBoneTexture(this, id, 'xray');
+        const gh = this.add.image(cx, cy, `bone_xray_${id}`).setScale(this.fs / DENSITY).setTint(GROUP_COL[groupOf(id)]).setAlpha(0.8);
+        this.tweens.add({ targets: gh, alpha: 0.45, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
         this.ghosts[id] = gh;
+      } else {
+        const ring = this.add.image(cx, cy, 'ring').setScale(0.13).setTint(C.cyan).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.8);
+        this.tweens.add({ targets: ring, scale: 0.17, alpha: 0.35, duration: 900, yoyo: true, repeat: -1 });
+        this.ghosts[id] = ring;
       }
-      const node = this.add.image(cx, cy, 'ring').setScale(0.12).setTint(C.cyan).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.7);
-      this.tweens.add({ targets: node, scale: 0.16, alpha: 0.3, duration: 900, yoyo: true, repeat: -1 });
-      this.nodes[id] = node;
     }
-    // ---- tray (right) ----
-    const tx = portrait ? this.px + 30 : this.px + this.pw * 0.58, ty = portrait ? this.fy + FRAME.h * this.fs + 24 : this.py + 90;
-    const tw = portrait ? this.pw - 60 : this.pw * 0.42 - 40;
-    T(this, tx, ty, adv ? '회수한 표본 (미분류)' : '회수한 뼈대 표본', 18, C.cyanS, { weight: '700' });
-    this.progressT = T(this, tx + tw, ty, '', 16, C.dim, { weight: '700' }).setOrigin(1, 0);
-    const cols = portrait ? 6 : 3, gap = 12;
-    const cw = (tw - gap * (cols - 1)) / cols, ch = portrait ? Math.min(170, cw * 1.4) : Math.min(190, (this.ph - 300) / 2 - gap);
+    this.hot = this.add.graphics().setDepth(40);
+    this.tags = this.add.container(0, 0).setDepth(45);
+    // tap on the skeleton = place the selected card there
+    const hit = this.add.zone(ox - 8, oy - 8, shownW + 16, shownH + 16).setOrigin(0).setInteractive();
+    hit.on('pointerup', (p: Phaser.Input.Pointer) => { if (this.selected && !this.dragging) this.tryPlace(this.selected, p.worldX, p.worldY, false); });
+
+    // ---------------- right column: goal, cards, (bin), feedback ----------------
+    const rx = portrait ? this.px + 20 : ox + shownW + 36, rw = portrait ? this.pw - 40 : this.px + this.pw - 20 - rx;
+    let y = portrait ? oy + shownH + 20 : top;
+    // goal box: what is being assembled
+    const goal = this.add.graphics();
+    const goalLines = [
+      '목표: 오른쪽 팔뼈대(앞면) 조립',
+      '■ 팔이음뼈 — 빗장뼈·어깨뼈: 몸통과 팔을 잇는 뼈',
+      '■ 자유팔뼈 — 위팔뼈·노뼈·자뼈 (손뼈는 이번 조립에서 제외)',
+    ];
+    const gT = T(this, rx + 14, y + 10, goalLines[0], 19, C.white, { weight: '700' });
+    const g1 = T(this, rx + 14, y + 40, goalLines[1], 16, '#ffd98a', { weight: '700', wordWrap: { width: rw - 28 } });
+    const g2 = T(this, rx + 14, g1.y + g1.height + 4, goalLines[2], 16, '#9fe6ff', { weight: '700', wordWrap: { width: rw - 28 } });
+    let gh = g2.y + g2.height - y + 10;
+    if (adv) { const g3 = T(this, rx + 14, y + gh, '※ 다리뼈 표본이 1개 섞여 있습니다. 찾아서 폐기하세요.', 16, '#ffb0bc', { weight: '700', wordWrap: { width: rw - 28 } }); gh += g3.height + 6; }
+    goal.fillStyle(0x07121f, 0.92); goal.fillRoundedRect(rx, y, rw, gh, 10); goal.lineStyle(1.5, C.cyan, 0.5); goal.strokeRoundedRect(rx, y, rw, gh, 10);
+    void gT;
+    y += gh + 12;
+    this.progressT = T(this, rx, y, '', 18, C.white, { weight: '700' });
+    y += 30;
+    // feedback box reserved at the bottom of the column (never covers the cards)
+    const fbH = Math.min(118, Math.max(92, (bottom - y) * 0.26));
+    this.fbBox = { x: rx, y: bottom - fbH, w: rw, h: fbH };
+    this.fbG = this.add.graphics().setDepth(50);
+    this.fbT = T(this, rx + 20, bottom - fbH / 2, '', 18, C.white, { weight: '700', wordWrap: { width: rw - 36 }, lineSpacing: 4 }).setOrigin(0, 0.5).setDepth(51);
+    // bin (advanced only)
+    const binH = adv ? 76 : 0;
+    const cardsBottom = this.fbBox.y - 12 - (adv ? binH + 12 : 0);
+    // cards grid: 3 columns, whole card is the touch target
+    const n = G.run.bones.length, cols = portrait ? Math.min(6, n) : 3, rows = Math.ceil(n / cols), gap = 12;
+    const cw = (rw - gap * (cols - 1)) / cols;
+    const ch = Math.max(118, Math.min(200, (cardsBottom - y - gap * (rows - 1)) / rows));
     const ids = Phaser.Utils.Array.Shuffle([...G.run.bones]) as BoneId[];
     ids.forEach((id, i) => {
-      const x = tx + (i % cols) * (cw + gap), y = ty + 34 + Math.floor(i / cols) * (ch + gap);
+      const x = rx + (i % cols) * (cw + gap), cy = y + Math.floor(i / cols) * (ch + gap);
       const card = this.add.graphics();
-      card.fillStyle(0x0a1222, 0.9); card.fillRoundedRect(x, y, cw, ch, 10); card.lineStyle(1.2, C.line, 1); card.strokeRoundedRect(x, y, cw, ch, 10);
-      const img = this.add.image(x + cw / 2, y + ch / 2 - 10, `bone_bone_${id}`);
-      const s = Math.min((cw - 20) / img.width, (ch - 44) / img.height);
-      img.setScale(s);
-      const label = T(this, x + cw / 2, y + ch - 16, adv ? `표본 #${i + 1}` : `${BONES[id].ko} · ${BONES[id].en}`, 14, C.white, { weight: '700' }).setOrigin(0.5);
-      img.setInteractive({ useHandCursor: true, draggable: true, pixelPerfect: false });
-      const p: Piece = { id, img, home: { x: img.x, y: img.y, s }, placed: false, label, card };
+      const img = this.add.image(x + cw / 2, cy + (ch - 50) / 2 + 6, `bone_bone_${id}`).setDepth(10);
+      // long bones lie horizontally in the tray so they stay large; they turn upright when picked up
+      const rot = (['humerus', 'radius', 'ulna', 'fibula'] as BoneId[]).includes(id) ? -90 : 0;
+      const s = rot ? Math.min((cw - 24) / img.height, (ch - 62) / img.width) : Math.min((cw - 24) / img.width, (ch - 62) / img.height);
+      img.setScale(s).setAngle(rot);
+      const name = T(this, x + cw / 2, cy + ch - 40, adv ? `표본 ${i + 1}` : BONES[id].ko, 19, C.white, { weight: '700' }).setOrigin(0.5, 0);
+      const sub = T(this, x + cw / 2, cy + ch - 19, adv ? '?' : BONES[id].en, 15, '#c8d8f2', { weight: '600' }).setOrigin(0.5, 0);
+      const zone = this.add.zone(x, cy, cw, ch).setOrigin(0).setInteractive({ useHandCursor: true, draggable: true });
+      const p: Piece = { id, img, zone, card, name, sub, rect: { x, y: cy, w: cw, h: ch }, home: { x: img.x, y: img.y, s, a: rot }, placed: false };
+      this.drawCard(p, 'idle');
+      zone.on('pointerup', () => { if (!this.dragging) this.select(p); });
       this.pieces.push(p);
     });
-    // ---- discard bin ----
-    const by = ty + 34 + Math.ceil(ids.length / cols) * (ch + gap) + 4;
-    const bw = Math.min(tw, 360), bh = 74;
-    const bg = this.add.graphics();
-    this.bin = { x: tx, y: by, w: bw, h: bh, g: bg };
-    this.drawBin(false);
-    T(this, tx + 70, by + bh / 2 - 10, '오염 표본 폐기함', 18, C.redS, { weight: '700' }).setOrigin(0, 0.5);
-    T(this, tx + 70, by + bh / 2 + 14, '팔 뼈대가 아닌 표본을 여기에 버리세요', 13, C.dim).setOrigin(0, 0.5);
-    this.updateProgress();
-    this.setFeedback(adv ? '각 표본을 드래그해 해당 위치에 놓으세요. 위치를 표시한 링은 관절 기준점입니다.' : '표본을 드래그해서 같은 모양의 점선 윤곽에 놓으세요. 이름과 위치 관계(가쪽·안쪽)를 함께 기억하세요.', 'info', tx, Math.min(tw, this.pw - 60));
-    // ---- drag logic ----
-    this.input.on('dragstart', (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Image) => {
-      const pc = this.pieces.find(q => q.img === obj); if (!pc || pc.placed || this.solved) return;
-      obj.setDepth(100);
-      Audio.play('click');
-      this.tweens.add({ targets: obj, scale: this.fs / DENSITY, duration: 160 });
-      if (!adv) this.setFeedback(`${BONES[pc.id].ko} · ${BONES[pc.id].en}`, 'info', tx, Math.min(tw, this.pw - 60));
-    });
-    this.input.on('drag', (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Image, dx: number, dy: number) => {
-      const pc = this.pieces.find(q => q.img === obj); if (!pc || pc.placed || this.solved) return;
-      obj.setPosition(dx, dy);
-      this.drawBin(this.inBin(dx, dy));
-    });
-    this.input.on('dragend', (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Image) => {
-      const pc = this.pieces.find(q => q.img === obj); if (!pc || pc.placed || this.solved) return;
+    if (adv) {
+      const by = cardsBottom + 12;
+      this.bin = { x: rx, y: by, w: rw, h: binH, g: this.add.graphics() };
       this.drawBin(false);
-      this.drop(pc, tx, Math.min(tw, this.pw - 60));
+      T(this, rx + 72, by + binH / 2 - 12, '오염 표본 폐기함', 19, C.redS, { weight: '700' }).setOrigin(0, 0.5);
+      T(this, rx + 72, by + binH / 2 + 13, '팔뼈가 아닌 표본을 여기에 끌어 놓거나, 선택 후 누르세요', 15, '#ffc4cc').setOrigin(0, 0.5);
+      const bz = this.add.zone(rx, by, rw, binH).setOrigin(0).setInteractive({ useHandCursor: true });
+      bz.on('pointerup', () => { if (this.selected && !this.dragging) this.discard(this.selected); });
+    }
+    this.updateProgress();
+    this.fb(adv ? '표본 카드를 끌어 제자리에 놓으세요. 카드를 누르면 선택되고, 자리를 누르면 배치됩니다.'
+                : '노란 윤곽 = 팔이음뼈, 파란 윤곽 = 자유팔뼈. 카드를 끌어 같은 모양의 윤곽에 놓으세요.', 'info');
+
+    // ---------------- drag ----------------
+    this.input.on('dragstart', (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Zone) => {
+      const pc = this.pieces.find(q => q.zone === obj); if (!pc || pc.placed || this.solved) return;
+      this.dragging = pc; this.select(pc, true);
+      pc.img.setDepth(100);
+      this.tweens.add({ targets: pc.img, scale: this.fs / DENSITY, angle: 0, duration: 140 });
+    });
+    this.input.on('drag', (p: Phaser.Input.Pointer) => {
+      const pc = this.dragging; if (!pc || pc.placed || this.solved) return;
+      // keep the bone above the fingertip so the finger does not hide it
+      pc.img.setPosition(p.worldX, p.worldY - 46);
+      this.showHot(p.worldX, p.worldY - 46);
+    });
+    this.input.on('dragend', (p: Phaser.Input.Pointer) => {
+      const pc = this.dragging; this.dragging = null; this.hot.clear(); if (this.bin) this.drawBin(false);
+      if (!pc || pc.placed || this.solved) return;
+      if (this.bin && this.inBin(p.worldX, p.worldY)) { this.discard(pc); return; }
+      this.tryPlace(pc, p.worldX, p.worldY - 46, true);
     });
   }
 
-  inBin(x: number, y: number) { const b = this.bin; return x > b.x - 20 && x < b.x + b.w + 20 && y > b.y - 30 && y < b.y + b.h + 30; }
-  drawBin(hot: boolean) {
-    const { x, y, w, h, g } = this.bin; g.clear();
-    g.fillStyle(C.red, hot ? 0.25 : 0.08); g.fillRoundedRect(x, y, w, h, 10);
-    g.lineStyle(hot ? 2.5 : 1.5, C.red, hot ? 1 : 0.6); g.strokeRoundedRect(x, y, w, h, 10);
-    drawIcon(g, 'close', x + 36, y + h / 2, 26, C.red);
+  /** world position of a bone's slot centre (also used by the automated tests) */
+  slotXY(id: BoneId): [number, number] { const b = boneBounds(id); return [this.fx + b.cx * this.fs, this.fy + b.cy * this.fs]; }
+
+  // ---------------- UI helpers ----------------
+  drawCard(p: Piece, st: 'idle' | 'sel' | 'ok' | 'err' | 'gone') {
+    const { x, y, w, h } = p.rect; const g = p.card; g.clear();
+    const col = { idle: C.line, sel: 0xffe08a, ok: C.green, err: C.red, gone: 0x3a2030 }[st];
+    g.fillStyle(st === 'ok' ? 0x082a1c : st === 'sel' ? 0x2a2208 : 0x0b1426, 0.95); g.fillRoundedRect(x, y, w, h, 12);
+    g.lineStyle(st === 'idle' ? 1.5 : 3, col, 1); g.strokeRoundedRect(x, y, w, h, 12);
+    if (st === 'ok') drawIcon(g, 'check', x + w - 20, y + 20, 20, C.green);
+  }
+
+  fb(text: string, kind: 'info' | 'ok' | 'err') {
+    const { x, y, w, h } = this.fbBox;
+    const col = { info: C.cyan, ok: C.green, err: C.red }[kind];
+    const g = this.fbG; g.clear();
+    g.fillStyle(kind === 'ok' ? 0x062a1a : kind === 'err' ? 0x2a0710 : 0x050c18, 0.97); g.fillRoundedRect(x, y, w, h, 10);
+    g.lineStyle(2.5, col, 1); g.strokeRoundedRect(x, y, w, h, 10);
+    g.fillStyle(col, 1); g.fillRect(x + 8, y + 12, 5, h - 24);
+    this.fbT.setText(text).setColor(kind === 'ok' ? '#c9ffe4' : kind === 'err' ? '#ffd2d8' : C.white);
+    // shrink the font if a long explanation would overflow the reserved box
+    for (const sz of [18, 17, 16, 15]) { this.fbT.setFontSize(sz); if (this.fbT.height <= h - 14) break; }
+    if (kind === 'err') this.tweens.add({ targets: [this.fbT], x: '+=6', duration: 50, yoyo: true, repeat: 3 });
+  }
+  // PuzzleBase calls setFeedback for its own messages; route them into the reserved box
+  setFeedback(text: string, kind: 'info' | 'ok' | 'err' | 'warn' = 'info') { if (this.fbG) this.fb(text, kind === 'warn' ? 'info' : kind); }
+
+  select(p: Piece, fromDrag = false) {
+    if (p.placed || this.solved) return;
+    if (this.selected && this.selected !== p) this.drawCard(this.selected, 'idle');
+    this.selected = p; this.drawCard(p, 'sel');
+    if (!fromDrag) { Audio.play('click'); this.fb(this.adv ? '표본을 선택했습니다. 이 뼈가 놓일 자리를 누르세요.' : `${BONES[p.id].ko} (${BONES[p.id].en}) 선택 — 왼쪽 그림에서 놓을 자리를 누르세요.`, 'info'); }
+  }
+
+  nearestSlot(x: number, y: number): { id: BoneId; d: number } {
+    const fx = (x - this.fx) / this.fs, fy = (y - this.fy) / this.fs;
+    let best: BoneId = UPPER_ORDER[0], bd = 1e9;
+    for (const id of UPPER_ORDER) { const d = distBone(id, fx, fy); if (d < bd) { bd = d; best = id; } }
+    return { id: best, d: bd };
+  }
+
+  /** highlight the slot (or bin) under the finger while dragging */
+  showHot(x: number, y: number) {
+    const g = this.hot; g.clear();
+    if (this.bin) this.drawBin(this.inBin(x, y + 46));
+    const s = this.nearestSlot(x, y);
+    if (s.d > 40 || this.pieces.find(q => q.id === s.id)?.placed) return;
+    const b = boneBounds(s.id);
+    g.lineStyle(3, 0xffffff, 0.9); g.strokeRoundedRect(this.fx + b.x * this.fs - 4, this.fy + b.y * this.fs - 4, b.w * this.fs + 8, b.h * this.fs + 8, 8);
+  }
+
+  inBin(x: number, y: number) { const b = this.bin; return !!b && x > b.x && x < b.x + b.w && y > b.y - 10 && y < b.y + b.h + 10; }
+  drawBin(hotOn: boolean) {
+    if (!this.bin) return; const { x, y, w, h, g } = this.bin; g.clear();
+    g.fillStyle(C.red, hotOn ? 0.3 : 0.1); g.fillRoundedRect(x, y, w, h, 10);
+    g.lineStyle(hotOn ? 3 : 2, C.red, hotOn ? 1 : 0.75); g.strokeRoundedRect(x, y, w, h, 10);
+    drawIcon(g, 'close', x + 38, y + h / 2, 28, C.red);
   }
 
   updateProgress() {
-    const n = this.pieces.filter(p => p.placed && p.id !== 'fibula').length;
-    this.progressT.setText(`조립 ${n}/5 · 폐기 ${this.discarded ? 1 : 0}/1`);
+    const n = this.pieces.filter(p => p.placed && UPPER_ORDER.includes(p.id)).length;
+    this.progressT.setText(this.decoys.length ? `조립 ${n}/5   ·   폐기 ${this.discarded ? 1 : 0}/${this.decoys.length}` : `조립 ${n}/5`);
   }
 
-  back(pc: Piece) {
-    this.tweens.add({ targets: pc.img, x: pc.home.x, y: pc.home.y, scale: pc.home.s, duration: 300, ease: 'Cubic.out', onComplete: () => pc.img.setDepth(0) });
-  }
-
-  drop(pc: Piece, fbx: number, fbw: number) {
-    const fx = (pc.img.x - this.fx) / this.fs, fy = (pc.img.y - this.fy) / this.fs;
-    const b = BONES[pc.id];
-    // discard bin
-    if (this.inBin(pc.img.x, pc.img.y)) {
-      if (pc.id === 'fibula') {
-        pc.placed = true; this.discarded = true;
-        Audio.play('snap');
-        this.tweens.add({ targets: pc.img, scale: 0, alpha: 0, angle: 180, duration: 400, ease: 'Back.in' });
-        pc.label.setText('폐기됨 · 종아리뼈(Fibula)').setColor(C.redS);
-        this.setFeedback('정확합니다! ' + b.wrongSlot, 'ok', fbx, fbw);
-        this.updateProgress(); this.check();
-      } else {
-        Audio.play('error'); this.mistake(); G.run.stats.assembly++;
-        this.setFeedback(`${G.run.difficulty === 'adv' ? '이 표본' : b.ko}은(는) 팔 뼈대입니다. 폐기하면 안 돼요!`, 'err', fbx, fbw);
-        this.back(pc);
-      }
-      return;
+  back(pc: Piece, err: boolean) {
+    this.tweens.add({ targets: pc.img, x: pc.home.x, y: pc.home.y, scale: pc.home.s, angle: pc.home.a, duration: 260, ease: 'Cubic.out', onComplete: () => pc.img.setDepth(10) });
+    if (err) {
+      this.drawCard(pc, 'err');
+      this.time.delayedCall(280, () => this.tweens.add({ targets: pc.img, x: pc.home.x + 8, duration: 55, yoyo: true, repeat: 3, onComplete: () => { pc.img.setX(pc.home.x); if (!pc.placed) this.drawCard(pc, this.selected === pc ? 'sel' : 'idle'); } }));
     }
-    // own slot? (forgiving)
-    if (pc.id !== 'fibula' && distBone(pc.id, fx, fy) < 34) {
-      const bb = boneBounds(pc.id);
-      pc.placed = true; pc.img.disableInteractive();
-      this.tweens.add({ targets: pc.img, x: this.fx + bb.cx * this.fs, y: this.fy + bb.cy * this.fs, scale: this.fs / DENSITY, duration: 180, ease: 'Back.out' });
+  }
+
+  // ---------------- game logic ----------------
+  discard(pc: Piece) {
+    if (pc.placed || this.solved) return;
+    const b = BONES[pc.id];
+    if (!UPPER_ORDER.includes(pc.id)) {
+      pc.placed = true; this.discarded = true; this.selected = null; pc.zone.disableInteractive();
       Audio.play('snap');
-      this.ghosts[pc.id]?.destroy(); this.nodes[pc.id]?.destroy();
-      const flash = this.add.image(this.fx + bb.cx * this.fs, this.fy + bb.cy * this.fs, `bone_holo_${pc.id}`).setScale(this.fs / DENSITY).setBlendMode(Phaser.BlendModes.ADD);
-      this.tweens.add({ targets: flash, alpha: 0, duration: 700, onComplete: () => flash.destroy() });
-      pc.label.setText(`✓ ${b.ko} · ${b.en}`).setColor(C.greenS);
-      this.setFeedback(`${b.ko} 장착 완료 — ${b.info}`, 'ok', fbx, fbw);
+      this.tweens.add({ targets: pc.img, scale: 0, alpha: 0, angle: 180, duration: 380, ease: 'Back.in' });
+      this.drawCard(pc, 'gone'); pc.name.setText(`폐기 · ${b.ko}`).setColor(C.redS); pc.sub.setText(b.en);
+      this.fb(`정답! ${b.ko}(${b.en})는 다리(종아리)의 뼈입니다. 노뼈·자뼈와 달리 팔꿉관절을 이루지 않아 팔뼈대에는 쓰지 않아요.`, 'ok');
       this.updateProgress(); this.check();
       return;
     }
-    // dropped on a different slot?
-    let best: BoneId | null = null, bd = 1e9;
-    for (const id of UPPER_ORDER) { if (id === pc.id) continue; const d = distBone(id, fx, fy); if (d < bd) { bd = d; best = id; } }
-    if (best && bd < 22) {
-      Audio.play('error'); this.mistake(); G.run.stats.assembly++;
-      this.cameras.main.shake(120, 0.003);
-      const where = G.run.difficulty === 'adv' ? '' : ` (그 자리는 ${BONES[best].ko} 자리입니다.)`;
-      this.setFeedback(`${b.wrongSlot}${where}`, 'err', fbx, fbw);
-      this.back(pc);
-      return;
-    }
-    this.back(pc);
+    Audio.play('error'); this.mistake(); G.run.stats.assembly++;
+    this.fb(`${this.adv ? '이 표본' : b.ko}은(는) 팔뼈대의 뼈입니다. 폐기하면 안 돼요! (${groupOf(pc.id) === 'girdle' ? '팔이음뼈' : '자유팔뼈'})`, 'err');
+    this.back(pc, true);
+  }
+
+  tryPlace(pc: Piece, x: number, y: number, dropped: boolean) {
+    if (pc.placed || this.solved) return;
+    const b = BONES[pc.id];
+    const s = this.nearestSlot(x, y);
+    const fx = (x - this.fx) / this.fs, fy = (y - this.fy) / this.fs;
+    // correct slot (forgiving on touch)
+    if (UPPER_ORDER.includes(pc.id) && distBone(pc.id, fx, fy) < 40) { this.place(pc); return; }
+    if (s.d > 40) { if (dropped) this.back(pc, false); return; }          // dropped/tapped away from any bone
+    if (this.pieces.find(q => q.id === s.id)?.placed) { this.fb(`그 자리에는 이미 ${BONES[s.id].ko}이(가) 놓여 있습니다.`, 'info'); if (dropped) this.back(pc, false); return; }
+    Audio.play('error'); this.mistake(); G.run.stats.assembly++;
+    this.cameras.main.shake(100, 0.002);
+    if (!UPPER_ORDER.includes(pc.id)) this.fb(`이 표본은 팔뼈대 어디에도 맞지 않습니다. ${this.adv ? '다리뼈일까요? 폐기함을 확인하세요.' : ''}`, 'err');
+    else this.fb(`${b.wrongSlot}${this.adv ? '' : `  (그 자리는 ${BONES[s.id].ko} 자리입니다.)`}`, 'err');
+    this.back(pc, true);
+  }
+
+  place(pc: Piece) {
+    const b = BONES[pc.id], bb = boneBounds(pc.id);
+    pc.placed = true; this.selected = null; pc.zone.disableInteractive();
+    const tx = this.fx + bb.cx * this.fs, ty = this.fy + bb.cy * this.fs;
+    this.tweens.add({ targets: pc.img, x: tx, y: ty, scale: this.fs / DENSITY, angle: 0, duration: 180, ease: 'Back.out' });
+    pc.img.setDepth(20);
+    Audio.play('snap');
+    this.ghosts[pc.id]?.destroy();
+    const flash = this.add.image(tx, ty, `bone_holo_${pc.id}`).setScale(this.fs / DENSITY).setBlendMode(Phaser.BlendModes.ADD).setDepth(21);
+    this.tweens.add({ targets: flash, alpha: 0, duration: 700, onComplete: () => flash.destroy() });
+    // name tag on the skeleton: where it went
+    const col = groupOf(pc.id) === 'girdle' ? '#ffd98a' : '#9fe6ff';
+    const tag = T(this, 0, 0, `✓ ${b.ko} ${b.en}`, 16, col, { weight: '700', backgroundColor: '#04101ccc', padding: { x: 6, y: 3 } });
+    const lx = Math.min(Math.max(tx - tag.width / 2, this.view.x + 2), this.view.x + this.view.w - tag.width - 2);
+    const dy = ({ radius: -0.22, ulna: 0.22 } as Partial<Record<BoneId, number>>)[pc.id] ?? 0;
+    tag.setPosition(lx, ty + dy * bb.h * this.fs - tag.height / 2); this.tags.add(tag);
+    this.drawCard(pc, 'ok'); pc.name.setText(b.ko).setColor(C.greenS); pc.sub.setText(`${b.en} · 배치 완료`).setColor('#a8f5cf');
+    this.fb(`${b.ko}(${b.en}) — ${groupOf(pc.id) === 'girdle' ? '팔이음뼈' : '자유팔뼈'}. ${b.info}`, 'ok');
+    this.updateProgress(); this.check();
   }
 
   check() {
     const allPlaced = UPPER_ORDER.every(id => this.pieces.find(p => p.id === id)?.placed);
-    if (!allPlaced || !this.discarded) return;
+    if (!allPlaced || (this.decoys.length > 0 && !this.discarded)) return;
     this.solved = true;
-    // glow sweep across assembled limb
     for (const id of UPPER_ORDER) {
       const bb = boneBounds(id);
-      const h = this.add.image(this.fx + bb.cx * this.fs, this.fy + bb.cy * this.fs, `bone_holo_${id}`).setScale(this.fs / DENSITY).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
+      const h = this.add.image(this.fx + bb.cx * this.fs, this.fy + bb.cy * this.fs, `bone_holo_${id}`).setScale(this.fs / DENSITY).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setDepth(22);
       this.tweens.add({ targets: h, alpha: 0.9, duration: 300, delay: UPPER_ORDER.indexOf(id) * 140, yoyo: true, hold: 300 });
     }
-    this.setFeedback('팔 뼈대 재조립 완료! 복장빗장관절 → 봉우리빗장관절 → 오목위팔관절 → 팔꿉관절로 이어지는 사슬이 복구되었습니다.', 'ok');
+    this.fb('팔뼈대 조립 완료! 팔이음뼈(빗장뼈·어깨뼈)와 자유팔뼈(위팔뼈·노뼈·자뼈)가 복장빗장관절 → 봉우리빗장관절 → 오목위팔관절 → 팔꿉관절로 이어집니다.', 'ok');
     this.success('c_girdle', '팔은 복장빗장관절로만 몸통 뼈대와 이어진다', 1800);
   }
 }

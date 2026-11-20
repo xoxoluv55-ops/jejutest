@@ -36,6 +36,13 @@ const ENV_MAP: Record<string, string> = {
   joint_rig: 'p_joint_rig', breaker: 'p_breaker', xray_box: 'p_xray', terminal: 'p_terminal',
 };
 
+/** Specimens to recover: basic = the 5 bones of the upper limb skeleton; advanced adds the fibula as a decoy
+ * (telling a leg bone from the two forearm bones is a distinction worth practising). */
+export function neededBones(): BoneId[] {
+  const arm: BoneId[] = ['clavicle', 'scapula', 'humerus', 'radius', 'ulna'];
+  return G.run.difficulty === 'adv' ? [...arm, 'fibula'] : arm;
+}
+
 const BONE_SPOTS: Record<BoneId, { x: number; y: number; hidden?: boolean; via?: 'cabinet' | 'capsule' }> = {
   fibula: { x: 560, y: 1500 },
   scapula: { x: 420, y: 1262, hidden: true, via: 'cabinet' },
@@ -348,7 +355,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   buildBones() {
-    (Object.keys(BONE_SPOTS) as BoneId[]).forEach(id => {
+    neededBones().forEach(id => {
       const s = BONE_SPOTS[id];
       if (s.via) {
         this.addInter({
@@ -375,7 +382,7 @@ export class GameScene extends Phaser.Scene {
     this.addInter({
       id: 'assembly', x: 1360, y: 1300, r: 150, icon: 'bone',
       label: () => G.run.flags.assembled ? '뼈대 홀로그램 (복구 완료)' : '뼈대 복구 테이블',
-      locked: () => G.run.flags.assembled ? '이미 복구한 구조입니다.' : G.run.bones.length < 6 ? `뼈대 표본이 부족합니다 (${G.run.bones.length}/6). 시설 곳곳을 탐색하고 SCAN을 사용하세요.` : null,
+      locked: () => G.run.flags.assembled ? '이미 복구한 구조입니다.' : G.run.bones.length < neededBones().length ? `뼈대 표본이 부족합니다 (${G.run.bones.length}/${neededBones().length}). 시설 곳곳을 탐색하고 SCAN을 사용하세요.` : null,
       act: () => this.openPuzzle('Assembly'),
     });
     // joint rig (J-03)
@@ -506,7 +513,7 @@ export class GameScene extends Phaser.Scene {
     const seq: [number, () => void][] = [
       [600, () => { Audio.play('glitch'); this.ai('경고: 구조 무결성 손상. 프로토콜 LOCKDOWN 실행.', 'warn', 3200); }],
       [3800, () => this.ai('모든 격벽이 봉쇄되었습니다. 인체 구조 복구가 필요합니다.', 'ai', 3400)],
-      [7400, () => { this.ai('손상된 뼈대 표본 6개 감지. 회수 후 복구 테이블(A-01)에서 재조립하십시오.', 'ai', 4200); Audio.alarm(false); }],
+      [7400, () => { this.ai(`손상된 뼈대 표본 ${neededBones().length}개 감지. 회수 후 복구 테이블(A-01)에서 재조립하십시오.`, 'ai', 4200); Audio.alarm(false); }],
       [9000, () => {
         this.busy = false; this.player.frozen = false; G.run.flags.intro = true; Bus.emit('mission');
         this.toast(this.sys.game.device.input.touch ? '왼쪽 조이스틱으로 이동 · 오른쪽 버튼으로 조작/스캔' : '이동 WASD · 달리기 Shift · 상호작용 E · 스캔 Space', 'info');
@@ -519,7 +526,7 @@ export class GameScene extends Phaser.Scene {
   missions(): Mission[] {
     const f = G.run.flags, n = G.run.bones.length;
     const list: Mission[] = [
-      { text: `뼈대 표본 회수 (${n}/6)`, done: n >= 6, active: n < 6 },
+      { text: `뼈대 표본 회수 (${n}/${neededBones().length})`, done: n >= neededBones().length, active: n < neededBones().length },
       { text: '뼈대 조립 · 복구 테이블', done: f.assembled, active: n >= 6 && !f.assembled, tag: 'LOCK 1' },
     ];
     if (f.blackout || f.power) list.push({ text: '보조 전원 복구 · 차단기', done: f.power, active: f.blackout && !f.power });
@@ -532,7 +539,7 @@ export class GameScene extends Phaser.Scene {
   /** Where the guidance arrow should point. */
   objective(): { x: number; y: number } | null {
     const f = G.run.flags;
-    if (G.run.bones.length < 6) {
+    if (G.run.bones.length < neededBones().length) {
       // nearest remaining bone / container
       let best: { x: number; y: number } | null = null, bd = 1e9;
       for (const i of this.inter) {
@@ -579,9 +586,9 @@ export class GameScene extends Phaser.Scene {
     this.player.setCarry(`bone_holo_${id}`);
     const b = BONES[id];
     Bus.emit('pickup', id);
-    this.toast(`${b.ko} · ${b.en} 획득 — ${run.bones.length}/6`, 'ok');
+    this.toast(`${b.ko} · ${b.en} 획득 — ${run.bones.length}/${neededBones().length}`, 'ok');
     Bus.emit('mission');
-    if (run.bones.length === 6) this.time.delayedCall(900, () => this.ai('모든 표본 회수 확인. 뼈대 복구 테이블(A-01)로 이동하십시오.', 'ok'));
+    if (run.bones.length === neededBones().length) this.time.delayedCall(900, () => this.ai('모든 표본 회수 확인. 뼈대 복구 테이블(A-01)로 이동하십시오.', 'ok'));
   }
 
   readLog(id: string) {
@@ -851,7 +858,7 @@ export class GameScene extends Phaser.Scene {
 
   // inventory shown by the HUD
   invTitle() { return '뼈대 표본'; }
-  invTotal() { return 6; }
+  invTotal() { return neededBones().length; }
   invIcon(): IconName { return 'bone'; }
   invItems(): InvItem[] {
     return G.run.bones.map(id => { const b = BONES[id]; return { id, tex: `bone_bone_${id}`, title: b.ko, en: b.en, info: b.info, tag: b.region === 'upper' ? '분류: 팔 뼈대' : '분류: 다리 뼈대', angle: id === 'humerus' || id === 'radius' || id === 'ulna' || id === 'fibula' ? 35 : 0 }; });

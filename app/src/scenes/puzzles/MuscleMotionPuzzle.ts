@@ -11,6 +11,9 @@ interface Row { id: MuscleId; role: Role | null; segs: { role: Role; g: Phaser.G
 type V = { x: number; y: number };
 interface MotionPath { m: MuscleId; fid: string; w: number; pts: number[][] }
 interface MotionFrame { angle: number; pivot: number[]; handle: number[]; length: Record<string, number | null>; paths: MotionPath[] }
+const NOTE_ELBOW = '⚠ 단순화: 팔꿉관절 고정축 회전만 · 아래팔은 뒤침 자세 고정';
+const NOTE_SHOULDER = '⚠ 단순화 모델: 어깨뼈 회전을 1:3 비율로 근사 · 위팔뼈 가쪽돌림·빗장뼈 회전·관절면 미끄러짐 생략 → 실제 어깨 운동과 다릅니다';
+const FOOT_NOTE = '움직이는 동안 근육은 실제 모양이 아닌 작용선(측정한 이는곳→닿는곳 경로)으로 표시 · 뼈는 3D 모델을 관절축으로 회전 · 근육 수축 모양을 재현한 것이 아님';
 interface MotionMeta { round: string; size: [number, number]; angles: number[]; frames: MotionFrame[]; rest: { labels: Record<string, number[]>; xray?: number[]; latx?: number[] } }
 
 const ROLE_KO: Record<Role, string> = { agonist: '주작용근', antagonist: '대항근', none: '관여 안 함' };
@@ -53,7 +56,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
   create() {
     this.initView();
     this.round = 0; this.rows = []; this.ui = []; this.angle = 0; this.stage = 'assign'; this.dragging = false;
-    this.imgA = this.imgB = this.xA = this.xB = this.lA = this.inset = undefined; this.readout = undefined; this.labels = [];
+    this.imgA = this.imgB = this.xA = this.xB = this.lA = this.inset = undefined; this.readout = undefined; this.labels = []; this.bandCache = {};
     this.frame('운동 재현 장치 · 주작용근과 대항근', '목표 움직임에 맞게 근육의 역할을 지정한 뒤, 팔을 직접 끌어 움직임을 실행하세요.', C.pink);
     const { W, H } = View; const portrait = H > W;
     const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.48 : this.ph - 180;
@@ -61,7 +64,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     const pl = this.add.graphics(); pl.fillStyle(0x12060c, 0.75); pl.fillRoundedRect(this.view.x, this.view.y, areaW, areaH, 12);
     pl.lineStyle(1.5, C.pink, 0.35); pl.strokeRoundedRect(this.view.x, this.view.y, areaW, areaH, 12);
     this.g = this.add.graphics().setDepth(5);
-    this.title = T(this, this.view.x + 18, this.view.y + 16, '', 20, C.white, { weight: '700' }).setDepth(6);
+    this.title = T(this, this.view.x + 18, this.view.y + 16, '', 19, C.white, { weight: '700', wordWrap: { width: areaW - 170 } }).setDepth(6).setMaxLines(1);
     this.sub = T(this, this.view.x + 18, this.view.y + 44, '', 14, '#ffb3c6').setDepth(6);
     this.angT = T(this, this.view.x + areaW - 18, this.view.y + 16, '', 22, C.amberS, { display: true, weight: '700' }).setOrigin(1, 0).setDepth(6);
     this.cx0 = portrait ? this.px + 30 : this.px + this.pw * 0.54 + 10; this.cy0 = portrait ? this.view.y + areaH + 24 : this.py + 96;
@@ -152,9 +155,20 @@ export class MuscleMotionPuzzle extends PuzzleBase {
   rk() { return this.R.id === 'elbowFlex' ? 'elbow' : 'shoulder'; }
   fit() {
     const m = this.meta(), v = this.view;
-    const top = 108, bot = 60;   // header + simplification notice / footer notice
+    const { top, bot } = this.bands();   // header + simplification notice / footer notice + credit (measured)
     const sc = Math.min(v.w / m.size[0], (v.h - top - bot) / m.size[1]);
     return { sc, ox: v.x + (v.w - m.size[0] * sc) / 2, oy: v.y + top + (v.h - top - bot - m.size[1] * sc) / 2 };
+  }
+  /** heights of the text bands above/below the picture, measured once per round (fonts are ≥15 px on iPad) */
+  bandCache: Record<string, { top: number; bot: number; foot: number; credit: number }> = {};
+  bands() {
+    const rk = this.rk(); const c = this.bandCache[rk]; if (c) return c;
+    const n = T(this, 0, 0, rk === 'elbow' ? NOTE_ELBOW : NOTE_SHOULDER, 14, '#fff', { wordWrap: { width: this.view.w - 36 } });
+    const f = T(this, 0, 0, FOOT_NOTE, 14, '#fff', { wordWrap: { width: this.view.w - 28 } });
+    const cr = T(this, 0, 0, rk === 'shoulder' ? `${MODEL_CREDIT}\n${LAT_CREDIT}` : MODEL_CREDIT, 12, '#fff', { fine: true });
+    const r = { top: 84 + n.height + 10, foot: f.height, credit: cr.height, bot: f.height + 18 };
+    n.destroy(); f.destroy(); cr.destroy();
+    return (this.bandCache[rk] = r);
   }
   toScreen(p: number[]): V { const f = this.fit(); return { x: f.ox + p[0] * f.sc, y: f.oy + p[1] * f.sc }; }
   /** fractional frame index for the current angle */
@@ -255,11 +269,11 @@ export class MuscleMotionPuzzle extends PuzzleBase {
       // reference inset: the real (undeformed) muscles at 0 deg
       // bottom-right corner (empty in both views at every angle), above the credit line
       const iw = this.view.w * 0.2, ih = iw * m.size[1] / m.size[0];
-      const iy = this.view.y + this.view.h - 76 - ih;
+      const B = this.bands(); const iy = this.view.y + this.view.h - B.foot - 18 - B.credit - 26 - ih;
       this.inset!.setTexture(live ? `mo_${rk}_r0` : `mo_${rk}_n0`).setOrigin(1, 0).setPosition(this.view.x + this.view.w - 12, iy).setDisplaySize(iw, ih).setAlpha(0.95 * (1 - restA)).setVisible(true);
       g.fillStyle(0x0a0410, 0.7 * (1 - restA)); g.fillRect(this.view.x + this.view.w - 12 - iw, iy, iw, ih);
       g.lineStyle(1, 0xffb3c6, 0.6 * (1 - restA)); g.strokeRect(this.view.x + this.view.w - 12 - iw, iy, iw, ih);
-      this.labels.push(T(this, this.view.x + this.view.w - 12 - iw / 2, iy - 4, '실제 근육 메시 (0°)', 11, '#ffb3c6').setOrigin(0.5, 1).setDepth(7).setAlpha(1 - restA));
+      this.labels.push(T(this, this.view.x + this.view.w - 12 - iw / 2, iy - 4, '실제 근육 메시 (0°)', 14, '#ffb3c6').setOrigin(0.5, 1).setDepth(7).setAlpha(1 - restA));
     } else this.inset!.setVisible(false);
     // range arc + handle
     const P = this.pivot();
@@ -309,17 +323,14 @@ export class MuscleMotionPuzzle extends PuzzleBase {
       return `${nm(id)}  ${v <= -0.02 ? '▼ 짧아짐' : v >= 0.02 ? '▲ 길어짐' : '－ 변화 없음'}`;
     });
     if (!this.readout) this.readout = T(this, 0, 0, '', 13, '#e8dce2', { lineSpacing: 4, backgroundColor: '#0a0410cc', padding: { x: 8, y: 6 } }).setDepth(7);
-    this.readout.setText(live ? `근육 길이 변화 (안정 자세 대비)\n${lines.join('\n')}` : '').setVisible(live).setPosition(this.view.x + 14, this.view.y + this.view.h - 44).setOrigin(0, 1);
+    this.readout.setText(live ? `근육 길이 변화 (안정 자세 대비)\n${lines.join('\n')}` : '').setVisible(live).setPosition(this.view.x + 14, this.view.y + this.view.h - this.bands().foot - 18).setOrigin(0, 1);
     this.labels.push(T(this, this.view.x + 14, this.view.y + this.view.h - 10,
-      '움직이는 동안 근육은 실제 모양이 아닌 작용선(측정한 이는곳→닿는곳 경로)으로 표시 · 뼈는 3D 모델을 관절축으로 회전 · 근육 수축 모양을 재현한 것이 아님',
-      11, '#c9a24a', { wordWrap: { width: this.view.w - 28 } }).setOrigin(0, 1).setDepth(7));
-    this.labels.push(T(this, this.view.x + this.view.w - 12, this.view.y + this.view.h - 44, rk === 'shoulder' ? `${MODEL_CREDIT}\n${LAT_CREDIT}` : MODEL_CREDIT, 10, '#8f7f88', { align: 'right' }).setOrigin(1, 1).setDepth(7));
-    this.labels.push(T(this, this.view.x + 18, this.view.y + 66, rk === 'elbow' ? '오른팔 가쪽면  ← 뒤 · 앞 →' : '오른쪽 어깨 앞면  ← 가쪽', 12, '#ffb3c6').setDepth(7));
+      FOOT_NOTE, 14, '#d8b25a', { wordWrap: { width: this.view.w - 28 } }).setOrigin(0, 1).setDepth(7));
+    this.labels.push(T(this, this.view.x + this.view.w - 12, this.view.y + this.view.h - this.bands().foot - 18, rk === 'shoulder' ? `${MODEL_CREDIT}\n${LAT_CREDIT}` : MODEL_CREDIT, 12, '#a8949e', { align: 'right', fine: true }).setOrigin(1, 1).setDepth(7));
+    this.labels.push(T(this, this.view.x + 18, this.view.y + 66, rk === 'elbow' ? '오른팔 가쪽면  ← 뒤 · 앞 →' : '오른쪽 어깨 앞면  ← 가쪽', 14, '#ffb3c6').setDepth(7));
     // kinematic simplifications, shown so the motion is not taken for the real joint motion (docs/ANATOMY_MODEL.md §6)
     this.labels.push(T(this, this.view.x + 18, this.view.y + 84, rk === 'elbow'
-      ? '⚠ 단순화: 팔꿉관절 고정축 회전만 · 아래팔은 뒤침 자세 고정'
-      : '⚠ 단순화 모델: 어깨뼈 회전을 1:3 비율로 근사 · 위팔뼈 가쪽돌림·빗장뼈 회전·관절면 미끄러짐 생략 → 실제 어깨 운동과 다릅니다',
-      11, '#e8c070', { wordWrap: { width: this.view.w - 36 } }).setDepth(7));
+      ? NOTE_ELBOW : NOTE_SHOULDER, 14, '#e8c070', { wordWrap: { width: this.view.w - 36 } }).setDepth(7));
     this.angT.setText(this.stage === 'assign' ? '' : `${Math.round(this.angle)}° / ${this.R.range}°`);
   }
 

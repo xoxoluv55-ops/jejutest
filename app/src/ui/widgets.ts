@@ -9,16 +9,32 @@ export const F_DISPLAY = `Orbitron,${KO}`;
 
 export const C = {
   cyan: 0x4fd8ff, cyanS: '#4fd8ff', red: 0xff2d4a, redS: '#ff3d5a', violet: 0xa66bff, violetS: '#b58cff',
-  amber: 0xffb43a, amberS: '#ffc24d', green: 0x3dffa2, greenS: '#3dffa2', white: '#e8f1ff', dim: '#8ea3c4',
+  amber: 0xffb43a, amberS: '#ffc24d', green: 0x3dffa2, greenS: '#3dffa2', white: '#f2f7ff', dim: '#b9c8e2',   // dim brightened for contrast on iPad
   pink: 0xff5c84, pinkS: '#ff7d9c',
   panel: 0x070b14, panel2: 0x0d1424, line: 0x24324f,
 };
 
-export function T(scene: Phaser.Scene, x: number, y: number, text: string, size = 20, color = C.white, opts: Partial<Phaser.Types.GameObjects.Text.TextStyle> & { display?: boolean; weight?: string } = {}) {
-  const { display, weight, ...rest } = opts;
+export const MIN_FONT = 15;
+
+/** Contrast floor for text on the dark UI: colours darker than relative luminance 0.42 are mixed toward white. */
+export function readable(color: string): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(color); if (!m) return color;
+  const n = parseInt(m[1], 16); let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const lum = (v: number) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const L = () => 0.2126 * lum(r) + 0.7152 * lum(g) + 0.0722 * lum(b);
+  if (L() >= 0.42) return color;
+  for (let k = 0; k < 20 && L() < 0.42; k++) { r += (255 - r) * 0.12; g += (255 - g) * 0.12; b += (255 - b) * 0.12; }
+  const h = (v: number) => Math.round(v).toString(16).padStart(2, '0');
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
+export function T(scene: Phaser.Scene, x: number, y: number, text: string, size = 20, color = C.white, opts: Partial<Phaser.Types.GameObjects.Text.TextStyle> & { display?: boolean; weight?: string; fine?: boolean } = {}) {
+  // fine = licence credits / fine print: exempt from the 15 px reading floor (12 px floor instead)
+  const { display, weight, fine, ...rest } = opts;
   const t = scene.add.text(x, y, text, {
     fontFamily: display ? F_DISPLAY : F_UI,
-    fontSize: `${size}px`, color, fontStyle: weight ?? '600',
+    // 15 px floor: logical units are CSS px on iPad, smaller text was hard to read on the device
+    fontSize: `${Math.max(fine ? 12 : MIN_FONT, size)}px`, color: readable(color), fontStyle: weight ?? '600',
     ...rest,
   });
   t.setResolution(textRes());
