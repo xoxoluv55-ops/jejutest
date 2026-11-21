@@ -21,6 +21,7 @@ export class XrayPuzzle extends PuzzleBase {
   film = { x: 0, y: 0, w: 0, h: 0 };
   overlay!: Phaser.GameObjects.Container; overlayOn = false;
 
+  chipH = 48;
   create() {
     this.initView();
     this.chips = []; this.marks = []; this.tags = []; this.overlayOn = false;
@@ -28,9 +29,10 @@ export class XrayPuzzle extends PuzzleBase {
     this.frame('영상 판독기 · 어깨 AP 방사선 사진', '번호가 표시된 구조물에 알맞은 이름표를 끌어다 붙이세요. 이 영상에 보이지 않는 구조의 이름표도 섞여 있습니다.', C.cyan);
     const { W, H } = View; const portrait = H > W;
     const film = makeXrayTexture(this);
-    const areaW = portrait ? this.pw - 60 : this.pw * 0.56, areaH = portrait ? this.ph * 0.55 : this.ph - 190;
+    const cp = this.compact; this.chipH = cp ? 40 : 48;
+    const areaW = portrait ? this.pw - 60 : this.pw * (cp ? 0.5 : 0.56), areaH = portrait ? this.ph * 0.55 : this.cBot - this.cTop - (cp ? 12 : 20);
     const s = Math.min(areaW / film.w, areaH / film.h);
-    const fx = this.px + 30 + (areaW - film.w * s) / 2, fy = this.py + 80 + (areaH - film.h * s) / 2;
+    const fx = this.px + 30 + (areaW - film.w * s) / 2, fy = this.cTop + (cp ? 6 : 10) + (areaH - film.h * s) / 2;
     // lightbox glow
     this.film = { x: fx, y: fy, w: film.w * s, h: film.h * s };
     const lb = this.add.graphics(); lb.fillStyle(0xbfe6ff, 0.08); lb.fillRoundedRect(fx - 16, fy - 16, film.w * s + 32, film.h * s + 32, 10);
@@ -61,28 +63,29 @@ export class XrayPuzzle extends PuzzleBase {
     });
     // chips
     const labels = Phaser.Utils.Array.Shuffle([...XRAY_TARGETS, ...(adv ? XRAY_DISTRACTORS_ADV : XRAY_DISTRACTORS_BASIC)]) as string[];
-    const cx0 = portrait ? this.px + 30 : this.px + this.pw * 0.6 + 20, cy0 = portrait ? fy + film.h * s + 40 : this.py + 100;
-    const cw = portrait ? this.pw - 60 : this.pw * 0.4 - 70;
+    const cx0 = portrait ? this.px + 30 : fx + film.w * s + (cp ? 40 : 60), cy0 = portrait ? fy + film.h * s + 40 : this.cTop + (cp ? 8 : 24);
+    const cw = portrait ? this.pw - 60 : this.px + this.pw - 30 - cx0;
+    const rowH = cp ? 46 : 66, firstY = cp ? 34 : 40;
     T(this, cx0, cy0 - 6, '이름표', 17, C.cyanS, { weight: '700' });
     const colN = portrait ? 4 : 2; const chW = (cw - (colN - 1) * 12) / colN;
     labels.forEach((id, i) => {
       const L = LANDMARKS[id];
-      const x = cx0 + (i % colN) * (chW + 12) + chW / 2, y = cy0 + 40 + Math.floor(i / colN) * 66;
+      const x = cx0 + (i % colN) * (chW + 12) + chW / 2, y = cy0 + firstY + Math.floor(i / colN) * rowH;
       const c = this.add.container(x, y);
       const bg = this.add.graphics();
       const t = T(this, 0, 0, adv ? L.en : `${L.ko}  ${L.en}`, adv ? 18 : 16, C.white, { weight: '700' }).setOrigin(0.5);
       const w = Math.min(chW, Math.max(t.width + 30, 120));
-      c.add([bg, t]); c.setSize(w, 50);
+      c.add([bg, t]); c.setSize(w, this.chipH + 2);
       c.setInteractive({ draggable: true, useHandCursor: true });
       const chip: Chip = { id, c, home: { x, y }, done: false, bg, w };
       this.drawChip(chip, 'idle');
       this.chips.push(chip);
     });
     if (!adv) {
-      const by = cy0 + 40 + Math.ceil(labels.length / colN) * 66 + 20;
+      const by = cy0 + firstY + Math.ceil(labels.length / colN) * rowH + (cp ? 6 : 20);
       new Button(this, cx0 + Math.min(cw, 380) / 2, by, '실제 뼈 겹쳐 보기 (비교)', () => {
         this.overlayOn = !this.overlayOn; this.tweens.add({ targets: this.overlay, alpha: this.overlayOn ? 0.5 : 0, duration: 300 });
-      }, { w: Math.min(cw, 380), h: 54, icon: 'eye', size: 18 });
+      }, { w: Math.min(cw, 380), h: cp ? 44 : 54, icon: 'eye', size: 18 });
     }
     this.setFeedback('영상의 R 표시는 환자의 오른쪽입니다. 정면(AP) 영상에서는 앞뒤 구조가 겹쳐 보인다는 점을 기억하세요.', 'info');
 
@@ -127,8 +130,9 @@ export class XrayPuzzle extends PuzzleBase {
   drawChip(ch: Chip, st: 'idle' | 'drag' | 'ok' | 'err') {
     const col = { idle: C.cyan, drag: 0xffe08a, ok: C.green, err: C.red }[st];
     const g = ch.bg; g.clear();
-    g.fillStyle(st === 'ok' ? 0x08281c : 0x0a1222, 0.95); g.fillRoundedRect(-ch.w / 2, -24, ch.w, 48, 10);
-    g.lineStyle(st === 'idle' ? 1.4 : 2.2, col, 1); g.strokeRoundedRect(-ch.w / 2, -24, ch.w, 48, 10);
+    const h = this.chipH;
+    g.fillStyle(st === 'ok' ? 0x08281c : 0x0a1222, 0.95); g.fillRoundedRect(-ch.w / 2, -h / 2, ch.w, h, 10);
+    g.lineStyle(st === 'idle' ? 1.4 : 2.2, col, 1); g.strokeRoundedRect(-ch.w / 2, -h / 2, ch.w, h, 10);
   }
 
   drop(ch: Chip) {

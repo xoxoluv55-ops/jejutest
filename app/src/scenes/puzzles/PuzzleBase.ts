@@ -13,6 +13,14 @@ export class PuzzleBase extends BaseScene {
   fbBg!: Phaser.GameObjects.Graphics;
   solved = false;
   root!: Phaser.GameObjects.Container;
+  /** short landscape screens (iPhone: logical height ≈ 450–600): thinner header, smaller banner, tighter margins */
+  get compact() { return View.H < 640; }
+  get hdr() { return this.compact ? 46 : 64; }
+  get fbH() { return this.compact ? 48 : 58; }
+  /** top of the banner and the usable content band between header and banner */
+  get fbY() { return this.py + this.ph - this.fbH - (this.compact ? 8 : 16); }
+  get cTop() { return this.py + this.hdr + (this.compact ? 8 : 14); }
+  get cBot() { return this.fbY - (this.compact ? 8 : 14); }
 
   frame(title: string, sub: string, accent = C.cyan) {
     const { W, H } = View;
@@ -28,14 +36,22 @@ export class PuzzleBase extends BaseScene {
     const grid = this.add.graphics(); grid.lineStyle(1, accent, 0.05);
     for (let x = 0; x < W; x += 40) grid.lineBetween(x, 0, x, H);
     for (let y = 0; y < H; y += 40) grid.lineBetween(0, y, W, y);
-    const m = 16;
+    const m = this.compact ? 6 : 16;
     this.px = m; this.py = m; this.pw = W - m * 2; this.ph = H - m * 2;
-    const g = this.add.graphics(); drawPanel(g, this.px, this.py, this.pw, this.ph, { accent, header: 64, alpha: 0.82 });
-    T(this, this.px + 30, this.py + 22, title, 26, C.white, { weight: '700' }).setOrigin(0, 0.5);
-    T(this, this.px + 30, this.py + 47, sub, 16, '#c3d3ee').setOrigin(0, 0.5);
-    const close = new RoundButton(this, this.px + this.pw - 40, this.py + 32, 22, 'close', () => this.exit(), accent);
-    close.setActive2(true);
-    T(this, this.px + this.pw - 72, this.py + 32, '나가기', 16, C.dim).setOrigin(1, 0.5);
+    const g = this.add.graphics(); drawPanel(g, this.px, this.py, this.pw, this.ph, { accent, header: this.hdr, alpha: 0.82 });
+    if (this.compact) {
+      // one header row: title, then the instruction beside it (up to 2 lines), close button on the right
+      const t = T(this, this.px + 20, this.py + this.hdr / 2, title, 21, C.white, { weight: '700' }).setOrigin(0, 0.5);
+      const sx = t.x + t.width + 18, sw = this.px + this.pw - 64 - sx;
+      if (sw > 240) T(this, sx, this.py + this.hdr / 2, sub, 15, '#c3d3ee', { wordWrap: { width: sw } }).setOrigin(0, 0.5).setMaxLines(2);
+      new RoundButton(this, this.px + this.pw - 30, this.py + this.hdr / 2, 19, 'close', () => this.exit(), accent).setActive2(true);
+    } else {
+      T(this, this.px + 30, this.py + 22, title, 26, C.white, { weight: '700' }).setOrigin(0, 0.5);
+      T(this, this.px + 30, this.py + 47, sub, 16, '#c3d3ee').setOrigin(0, 0.5);
+      const close = new RoundButton(this, this.px + this.pw - 40, this.py + 32, 22, 'close', () => this.exit(), accent);
+      close.setActive2(true);
+      T(this, this.px + this.pw - 72, this.py + 32, '나가기', 16, C.dim).setOrigin(1, 0.5);
+    }
     this.root = this.add.container(0, 0);
     this.cameras.main.fadeIn(250, 0, 0, 0);
     this.input.keyboard?.on('keydown-ESC', () => this.exit());
@@ -48,15 +64,16 @@ export class PuzzleBase extends BaseScene {
   setFeedback(text: string, kind: 'info' | 'ok' | 'err' | 'warn' = 'info', x?: number, w?: number) {
     const col = { info: C.cyan, ok: C.green, err: C.red, warn: C.amber }[kind];
     const fx = x ?? this.px + 30, fw = w ?? this.pw - 60;
-    const fy = this.py + this.ph - 74;
+    const fy = this.fbY, fh = this.fbH;
     if (!this.fbBg) { this.fbBg = this.add.graphics().setDepth(50); this.feedback = T(this, 0, 0, '', 18, C.white, { weight: '600', wordWrap: { width: fw - 50 }, lineSpacing: 4 }).setOrigin(0, 0.5).setDepth(51); }
     this.fbBg.clear();
-    this.fbBg.fillStyle(0x050810, 0.92); this.fbBg.fillRoundedRect(fx, fy, fw, 58, 8);
-    this.fbBg.lineStyle(1.5, col, 0.9); this.fbBg.strokeRoundedRect(fx, fy, fw, 58, 8);
-    this.fbBg.fillStyle(col, 1); this.fbBg.fillRect(fx + 8, fy + 10, 3, 38);
-    this.feedback.setPosition(fx + 24, fy + 29).setText(text).setWordWrapWidth(fw - 50);
+    this.fbBg.fillStyle(0x050810, 0.95); this.fbBg.fillRoundedRect(fx, fy, fw, fh, 8);
+    this.fbBg.lineStyle(1.5, col, 0.9); this.fbBg.strokeRoundedRect(fx, fy, fw, fh, 8);
+    this.fbBg.fillStyle(col, 1); this.fbBg.fillRect(fx + 8, fy + 8, 3, fh - 16);
+    this.feedback.setPosition(fx + 24, fy + fh / 2).setMaxLines(0).setText(text).setWordWrapWidth(fw - 50).setLineSpacing(this.compact ? 1 : 4);
     // keep long explanations inside the fixed-height banner (never spill over the puzzle content)
-    for (const sz of [18, 17, 16, 15]) { this.feedback.setFontSize(sz); if (this.feedback.height <= 54) break; }
+    for (const sz of [18, 17, 16, 15]) { this.feedback.setFontSize(sz); if (this.feedback.height <= fh - 4) break; }
+    if (this.feedback.height > fh - 4) this.feedback.setMaxLines(Math.max(1, Math.floor((fh - 4) / 18)));
     if (kind === 'err') { this.tweens.add({ targets: [this.fbBg, this.feedback], x: '+=6', duration: 50, yoyo: true, repeat: 3 }); }
   }
 
@@ -81,17 +98,25 @@ export class PuzzleBase extends BaseScene {
     const e = ARCHIVE.find(a => a.id === conceptId)!;
     const c = this.add.container(0, 0).setDepth(200);
     c.add(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.6).setInteractive());
-    const w = Math.min(860, W - 60), h = Math.min(560, H - 60), x = W / 2 - w / 2, y = H / 2 - h / 2;
-    const g = this.add.graphics(); drawPanel(g, x, y, w, h, { accent: C.green, header: 60 }); c.add(g);
-    c.add(T(this, x + 30, y + 30, '구조 복구 성공 · 개념 정리', 22, C.greenS, { weight: '700' }).setOrigin(0, 0.5));
-    c.add(T(this, x + 30, y + 92, headline, 24, C.white, { weight: '700', wordWrap: { width: w - 60 } }));
-    c.add(T(this, x + 30, y + 140, `${e.title}  ·  ${e.en}`, 17, C.amberS, { weight: '700' }));
-    c.add(T(this, x + 30, y + 176, e.body, 17, '#d3def3', { wordWrap: { width: w - 60 }, lineSpacing: 7 }));
-    c.add(T(this, x + 30, y + h - 44, '📖 해부학 도감에 등록되었습니다', 15, C.dim).setOrigin(0, 0.5));
-    c.add(new Button(this, x + w - 140, y + h - 44, '계속', () => {
+    const cp = this.compact;
+    const w = Math.min(cp ? 980 : 860, W - 60), h = Math.min(560, H - (cp ? 16 : 60)), x = W / 2 - w / 2, y = H / 2 - h / 2;
+    const hd = cp ? 46 : 60;
+    const g = this.add.graphics(); drawPanel(g, x, y, w, h, { accent: C.green, header: hd }); c.add(g);
+    c.add(T(this, x + 30, y + hd / 2, '구조 복구 성공 · 개념 정리', cp ? 19 : 22, C.greenS, { weight: '700' }).setOrigin(0, 0.5));
+    // stacked from the top with measured heights, so it fits a short (phone) screen as well
+    let ty = y + hd + (cp ? 12 : 30);
+    const hl = T(this, x + 30, ty, headline, cp ? 20 : 24, C.white, { weight: '700', wordWrap: { width: w - 60 } }); c.add(hl); ty += hl.height + (cp ? 8 : 18);
+    const tt = T(this, x + 30, ty, `${e.title}  ·  ${e.en}`, 17, C.amberS, { weight: '700' }); c.add(tt); ty += tt.height + (cp ? 6 : 14);
+    const btnH = cp ? 46 : 58, footY = y + h - (cp ? 32 : 44);
+    const body = T(this, x + 30, ty, e.body, cp ? 15 : 17, '#d3def3', { wordWrap: { width: w - 60 }, lineSpacing: cp ? 3 : 7 }); c.add(body);
+    const room = footY - btnH / 2 - 8 - ty;
+    for (const sz of [16, 15]) { if (body.height <= room) break; body.setFontSize(sz).setLineSpacing(2); }
+    if (body.height > room) body.setMaxLines(Math.max(2, Math.floor(room / 19)));
+    c.add(T(this, x + 30, footY, '📖 해부학 도감에 등록되었습니다', 15, C.dim).setOrigin(0, 0.5));
+    c.add(new Button(this, x + w - 140, footY, '계속', () => {
       Bus.emit('puzzle:done', this.scene.key);
       this.scene.stop();
-    }, { w: 220, h: 58, accent: C.green, primary: true, icon: 'check' }));
+    }, { w: 220, h: btnH, accent: C.green, primary: true, icon: 'check' }));
     c.setAlpha(0); this.tweens.add({ targets: c, alpha: 1, duration: 300 });
   }
 

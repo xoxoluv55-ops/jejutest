@@ -54,6 +54,9 @@ export class HUDScene extends BaseScene {
   }
   scanCd = 0;
   missionW = 390; missionH = 250;
+  /** phone landscape (logical height ≈ 450–600): smaller minimap/buttons, mission panel folds to the active line */
+  get tiny() { return View.H < 640; }
+  missionOpen = false;
 
   layout() {
     // rebuild everything at the new size, keep state
@@ -65,11 +68,12 @@ export class HUDScene extends BaseScene {
     const { W, H } = View;
     const touch = this.sys.game.device.input.touch;
     // --- mission panel ---
-    this.missionC = this.add.container(20, 20);
+    const tn = this.tiny, mg0 = tn ? 10 : 20;
+    this.missionC = this.add.container(mg0, mg0);
     this.drawMissions();
     // --- minimap ---
-    const mw = 240, mh = 172;
-    this.mapRect = { x: W - mw - 20, y: 20, w: mw, h: mh, s: 0, ox: 0, oy: 0 };
+    const mw = tn ? 180 : 240, mh = tn ? 116 : 172;
+    this.mapRect = { x: W - mw - mg0, y: mg0, w: mw, h: mh, s: 0, ox: 0, oy: 0 };
     const mg = this.add.graphics(); this.mapG = mg;
     drawPanel(mg, this.mapRect.x, this.mapRect.y, mw, mh, { accent: C.cyan, alpha: 0.75 });
     const bx0 = 120, by0 = 270, bw = 2700 - bx0, bh = 2340 - by0;
@@ -82,30 +86,31 @@ export class HUDScene extends BaseScene {
     this.mapDot = this.add.graphics();
     const mz = this.add.zone(R.x, R.y, mw, mh).setOrigin(0).setInteractive({ useHandCursor: true });
     mz.on('pointerup', () => this.openMap());
-    this.btnPause = new RoundButton(this, R.x - 40, R.y + 30, 24, 'pause', () => this.openPause(), C.cyan);
+    this.btnPause = new RoundButton(this, R.x - (tn ? 30 : 40), R.y + (tn ? 24 : 30), tn ? 20 : 24, 'pause', () => this.openPause(), C.cyan);
     this.btnPause.setActive2(true);
     // --- blackout timer ---
     this.timerT = T(this, W / 2, 34, '', 30, C.amberS, { display: true, weight: '900' }).setOrigin(0.5).setVisible(false);
     this.timerT.setShadow(0, 0, '#ff3355', 12, true, true);
     // --- action buttons ---
-    const ax = W - 110, ay = H - 120;
-    this.btnAct = new RoundButton(this, ax, ay, 66, 'hand', () => Bus.emit('input:interact'), C.cyan, touch ? '조작' : 'E · 조작');
-    this.btnScan = new RoundButton(this, ax - 150, ay + 34, 44, 'scan', () => Bus.emit('input:scan'), C.violet, touch ? 'SCAN' : 'Space · SCAN');
+    const ax = W - (tn ? 84 : 110), ay = H - (tn ? 84 : 120);
+    this.btnAct = new RoundButton(this, ax, ay, tn ? 52 : 66, 'hand', () => Bus.emit('input:interact'), C.cyan, touch ? '조작' : 'E · 조작');
+    this.btnScan = new RoundButton(this, ax - (tn ? 118 : 150), ay + (tn ? 26 : 34), tn ? 38 : 44, 'scan', () => Bus.emit('input:scan'), C.violet, touch ? 'SCAN' : 'Space · SCAN');
     this.btnScan.setActive2(true);
-    this.btnBag = new RoundButton(this, ax - 30, ay - 130, 34, 'bag', () => this.openInventory(), C.amber, touch ? '인벤토리' : 'Tab');
-    this.btnMap = new RoundButton(this, ax - 120, ay - 98, 30, 'map', () => this.openMap(), C.cyan, touch ? '지도' : 'M');
+    this.btnBag = new RoundButton(this, ax - (tn ? 10 : 30), ay - (tn ? 104 : 130), tn ? 28 : 34, 'bag', () => this.openInventory(), C.amber, touch ? '인벤토리' : 'Tab');
+    this.btnMap = new RoundButton(this, ax - (tn ? 96 : 120), ay - (tn ? 80 : 98), tn ? 26 : 30, 'map', () => this.openMap(), C.cyan, touch ? '지도' : 'M');
     this.btnBag.setActive2(true); this.btnMap.setActive2(true);
     this.scanCdG = this.add.graphics();
     // prompt
     this.promptBg = this.add.graphics();
-    this.promptT = T(this, ax, ay - 92, '', 18, C.white, { weight: '700' }).setOrigin(1, 0.5).setVisible(false);
+    this.promptT = T(this, tn ? ax + 60 : ax, ay - (tn ? 150 : 92), '', tn ? 17 : 18, C.white, { weight: '700' }).setOrigin(1, 0.5).setVisible(false);
     // --- inventory strip ---
-    this.invC = this.add.container(W / 2, H - 48);
+    this.invC = this.add.container(W / 2, H - (tn ? 34 : 48));
     this.drawInventory(false);
     // --- joystick ---
     this.joyBase = this.add.graphics().setVisible(false); this.joyKnob = this.add.graphics().setVisible(false);
     if (touch) {
-      const hint = this.add.graphics(); hint.lineStyle(2, 0x6b7fa3, 0.25); hint.strokeCircle(150, H - 150, 80); hint.fillStyle(0x6b7fa3, 0.12); hint.fillCircle(150, H - 150, 34);
+      const hint = this.add.graphics(); hint.lineStyle(2, 0x6b7fa3, 0.25); const jx = tn ? 110 : 150, jy = H - (tn ? 110 : 150);
+      hint.strokeCircle(jx, jy, tn ? 62 : 80); hint.fillStyle(0x6b7fa3, 0.12); hint.fillCircle(jx, jy, tn ? 26 : 34);
       this.tweens.add({ targets: hint, alpha: 0.4, duration: 1200, yoyo: true, repeat: -1 });
       hint.setName('joyhint');
     }
@@ -117,21 +122,32 @@ export class HUDScene extends BaseScene {
   drawMissions() {
     const c = this.missionC; if (!c) return; c.removeAll(true);
     const ms: Mission[] = this.game2?.missions ? this.game2.missions() : [];
-    const w = Math.min(390, View.W * 0.32), lh = 30;
-    const h = 62 + ms.length * lh + 12;
+    const tn = this.tiny;
+    const w = Math.min(390, View.W * 0.32), lh = tn ? 26 : 30;
+    // phone: only the active mission unless the player taps the panel to unfold it
+    const folded = tn && !this.missionOpen;
+    const shown = folded ? ms.filter(m => m.active).slice(0, 1) : ms;
+    const top = tn ? 54 : 62;
+    const h = top + shown.length * lh + (tn ? 24 : 12);   // phone: + a row for the fold toggle
     this.missionW = w; this.missionH = h;
     const g = this.add.graphics(); drawPanel(g, 0, 0, w, h, { accent: C.red, alpha: 0.78, header: 44 }); c.add(g);
     c.add(T(this, 18, 22, `CH.${G.run.chapter}`, 15, C.redS, { display: true, weight: '900' }).setOrigin(0, 0.5));
     c.add(T(this, 68, 22, `${this.game2.chapterName()} — 미션`, 18, C.white, { weight: '700' }).setOrigin(0, 0.5));
     const n = this.game2.locksOpen();
     for (let i = 0; i < 3; i++) { const lit = i < n; g.fillStyle(lit ? C.green : C.red, lit ? 1 : 0.6); g.fillCircle(w - 66 + i * 20, 22, 6); g.lineStyle(1, 0xffffff, 0.3); g.strokeCircle(w - 66 + i * 20, 22, 6); }
-    ms.forEach((m, i) => {
-      const y = 62 + i * lh;
+    if (tn) {
+      c.add(T(this, w - 16, h - 12, folded ? `▼ 미션 전체 보기 (${ms.length})` : '▲ 접기', 13, '#9fb0d0', { fine: true }).setOrigin(1, 0.5));
+      const z = this.add.zone(0, 0, w, h).setOrigin(0).setInteractive({ useHandCursor: true });
+      z.on('pointerup', () => { this.missionOpen = !this.missionOpen; Audio.play('click'); this.drawMissions(); });
+      c.add(z);
+    }
+    shown.forEach((m, i) => {
+      const y = top + i * lh;
       const col = m.done ? C.greenS : m.active ? C.white : '#61718f';
       g.lineStyle(1.6, m.done ? C.green : m.active ? C.cyan : 0x445270, 1); g.strokeRect(18, y - 8, 16, 16);
       if (m.done) drawIcon(g, 'check', 26, y, 15, C.green);
       else if (m.active) { g.fillStyle(C.cyan, 0.9); g.fillRect(22, y - 4, 8, 8); }
-      const t = T(this, 44, y, m.text, 16, col, { weight: m.active ? '700' : '600' }).setOrigin(0, 0.5);
+      const t = T(this, 44, y, m.text, tn ? 15 : 16, col, { weight: m.active ? '700' : '600' }).setOrigin(0, 0.5);
       if (m.done) t.setAlpha(0.7);
       c.add(t);
       if (m.tag) c.add(T(this, w - 16, y, m.tag, 11, m.done ? C.greenS : '#7d8bb0', { display: true }).setOrigin(1, 0.5));
@@ -142,7 +158,7 @@ export class HUDScene extends BaseScene {
   drawInventory(flash: boolean) {
     const c = this.invC; c.removeAll(true);
     const items = this.game2.invItems(); const n = this.game2.invTotal();
-    const slot = 64, gap = 8;
+    const slot = this.tiny ? 46 : 64, gap = this.tiny ? 6 : 8;
     const w = n * slot + (n - 1) * gap + 24;
     const g = this.add.graphics(); drawPanel(g, -w / 2, -slot / 2 - 12, w, slot + 24, { accent: C.amber, alpha: 0.7, cut: 10 }); c.add(g);
     for (let i = 0; i < n; i++) {
@@ -180,8 +196,8 @@ export class HUDScene extends BaseScene {
   toast(text: string, kind: 'info' | 'warn' | 'ok' | 'err' = 'info') {
     const { W, H } = View;
     const col = { info: C.cyan, warn: C.amber, ok: C.green, err: C.red }[kind];
-    const c = this.add.container(W / 2, H * 0.72);
-    const t = T(this, 0, 0, text, 18, C.white, { weight: '700', align: 'center', wordWrap: { width: Math.min(720, W - 80) } }).setOrigin(0.5);
+    const c = this.add.container(W / 2, H * (this.tiny ? 0.62 : 0.72));
+    const t = T(this, 0, 0, text, this.tiny ? 16 : 18, C.white, { weight: '700', align: 'center', wordWrap: { width: Math.min(720, W - 80) } }).setOrigin(0.5);
     const g = this.add.graphics();
     const w = t.width + 50, h = t.height + 22;
     g.fillStyle(0x050810, 0.88); g.fillRoundedRect(-w / 2, -h / 2, w, h, 10);
@@ -201,17 +217,18 @@ export class HUDScene extends BaseScene {
     this.aiC?.destroy(); this.aiTimer?.remove();
     const col = kind === 'warn' ? C.red : kind === 'ok' ? C.green : C.cyan;
     const colS = kind === 'warn' ? '#ff5d74' : kind === 'ok' ? C.greenS : C.cyanS;
-    const left = 20 + this.missionW + 16, right = W - 340;
-    const wide = right - left >= 480;
-    const w = wide ? Math.min(760, right - left) : Math.min(760, W - 40), h = 92;
-    const y = wide ? (this.timerT.visible ? 70 : 20) : this.missionH + 34;
+    const tn = this.tiny;
+    const left = (tn ? 10 : 20) + this.missionW + 16, right = W - (tn ? 250 : 340);
+    const wide = right - left >= 440;
+    const w = wide ? Math.min(760, right - left) : Math.min(760, W - 40), h = tn ? 78 : 92;
+    const y = wide ? (this.timerT.visible ? 70 : tn ? 10 : 20) : this.missionH + 34;
     const ax = wide ? left + (right - left - w) / 2 : W / 2 - w / 2;
     const c = this.add.container(ax, y); this.aiC = c;
     const g = this.add.graphics(); drawPanel(g, 0, 0, w, h, { accent: col, alpha: 0.88 }); c.add(g);
     // AI "eye"
     g.fillStyle(col, 0.18); g.fillCircle(46, h / 2, 28); g.lineStyle(2, col, 1); g.strokeCircle(46, h / 2, 22); g.fillStyle(col, 1); g.fillCircle(46, h / 2, 8);
-    c.add(T(this, 86, 20, kind === 'warn' ? 'MERIDIAN · WARNING' : 'MERIDIAN · 중앙 AI', 13, colS, { display: true }).setOrigin(0, 0.5));
-    const t = T(this, 86, 54, '', 19, C.white, { weight: '700', wordWrap: { width: w - 110 } }).setOrigin(0, 0.5); c.add(t);
+    c.add(T(this, 86, tn ? 16 : 20, kind === 'warn' ? 'MERIDIAN · WARNING' : 'MERIDIAN · 중앙 AI', 13, colS, { display: true }).setOrigin(0, 0.5));
+    const t = T(this, 86, tn ? 46 : 54, '', tn ? 16 : 19, C.white, { weight: '700', wordWrap: { width: w - 110 }, lineSpacing: tn ? 0 : 2 }).setOrigin(0, 0.5); c.add(t);
     Audio.play(kind === 'warn' ? 'error' : 'ai');
     let i = 0;
     this.aiTimer = this.time.addEvent({ delay: 26, repeat: text.length - 1, callback: () => { i++; t.setText(text.slice(0, i)); if (i % 3 === 0) Audio.play('type'); } });
@@ -235,7 +252,7 @@ export class HUDScene extends BaseScene {
     const { W, H } = View;
     const c = this.add.container(0, 0).setDepth(100); this.overlay = c;
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.65).setInteractive(); c.add(dim);
-    w = Math.min(w, W - 40); h = Math.min(h, H - 40);
+    w = Math.min(w, W - 40); h = Math.min(h, H - (this.tiny ? 16 : 40));
     const x = W / 2 - w / 2, y = H / 2 - h / 2;
     const g = this.add.graphics(); drawPanel(g, x, y, w, h, { accent, header: 54 }); c.add(g);
     c.add(T(this, x + 28, y + 27, title, 21, C.white, { weight: '700' }).setOrigin(0, 0.5));
@@ -257,16 +274,18 @@ export class HUDScene extends BaseScene {
       detail.removeAll(true);
       if (!cur) { detail.add(T(this, m.x + m.w / 2, m.y + m.h / 2, '아직 회수한 표본이 없습니다.\nSCAN으로 숨겨진 표본을 찾아보세요.', 18, C.dim, { align: 'center' }).setOrigin(0.5)); return; }
       const gx = m.x + 300;
-      const im = this.add.image(gx + 150, m.y + 300, cur.tex); im.setScale(Math.min(380 / im.height, 260 / im.width, 1.2)); detail.add(im);
+      const tn = this.tiny;
+      const im = this.add.image(gx + 150, m.y + 54 + (m.h - 54) / 2, cur.tex); im.setScale(Math.min((m.h - 100) / im.height, 260 / im.width, 1.2)); detail.add(im);
       const tx = gx + 320;
-      detail.add(T(this, tx, m.y + 90, cur.title, 28, C.white, { weight: '700' }));
-      detail.add(T(this, tx, m.y + 130, cur.en, 18, C.amberS, { display: true }));
-      detail.add(T(this, tx, m.y + 170, cur.info, 17, '#c9d6ee', { wordWrap: { width: m.x + m.w - tx - 30 }, lineSpacing: 6 }));
-      detail.add(T(this, tx, m.y + m.h - 50, cur.tag, 15, C.dim));
+      detail.add(T(this, tx, m.y + (tn ? 66 : 90), cur.title, tn ? 23 : 28, C.white, { weight: '700' }));
+      detail.add(T(this, tx, m.y + (tn ? 98 : 130), cur.en, tn ? 16 : 18, C.amberS, { display: true }));
+      const info = T(this, tx, m.y + (tn ? 126 : 170), cur.info, 17, '#c9d6ee', { wordWrap: { width: m.x + m.w - tx - 30 }, lineSpacing: tn ? 3 : 6 }); detail.add(info);
+      for (const sz of [16, 15]) { if (info.y + info.height <= m.y + m.h - 64) break; info.setFontSize(sz); }
+      detail.add(T(this, tx, m.y + m.h - (tn ? 30 : 50), cur.tag, 15, C.dim));
     };
-    const rowH = Math.min(72, Math.floor((m.h - 100) / Math.max(1, items.length)));
+    const rowH = Math.min(72, Math.floor((m.h - (this.tiny ? 74 : 100)) / Math.max(1, items.length)));
     items.forEach((it, i) => {
-      const bx = m.x + 30, by = m.y + 76 + i * rowH;
+      const bx = m.x + 30, by = m.y + (this.tiny ? 64 : 76) + i * rowH;
       const g = this.add.graphics(); m.c.add(g);
       const on = it === cur;
       g.fillStyle(on ? C.amber : 0x0a1222, on ? 0.18 : 0.9); g.fillRoundedRect(bx, by, 240, rowH - 10, 8); g.lineStyle(1, on ? C.amber : C.line, 1); g.strokeRoundedRect(bx, by, 240, rowH - 10, 8);

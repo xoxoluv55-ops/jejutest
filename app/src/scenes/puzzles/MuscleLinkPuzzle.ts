@@ -43,10 +43,17 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     this.frame('근육 연결 콘솔 · 이는곳과 닿는곳', '근육을 고른 뒤 뼈 위의 이는곳(몸쪽 고정점) → 닿는곳(움직이는 쪽) 순서로 눌러 근육을 다시 연결하세요.', C.pink);
     const { W, H } = View; const portrait = H > W;
     const crop = { x: 140, y: 110, w: 560, h: 1000 };
-    const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.56 : this.ph - 160;
+    const cp = this.compact;
+    if (cp) {   // phone: crop to the attachment sites (+ room for their labels) so the bones are as large as possible
+      let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+      for (const id of LINK_NODES) { const a = ATT[id]; x0 = Math.min(x0, a.x); y0 = Math.min(y0, a.y); x1 = Math.max(x1, a.x); y1 = Math.max(y1, a.y); }
+      Object.assign(crop, { x: x0 - 150, y: y0 - 30, w: x1 - x0 + 300, h: y1 - y0 + 70 });
+    }
+    const areaW = portrait ? this.pw - 60 : this.pw * (cp ? 0.44 : 0.5), areaH = portrait ? this.ph * 0.56 : (cp ? this.cBot - this.cTop - 12 : this.ph - 160);
     this.s = Math.min(areaW / crop.w, areaH / crop.h);
-    this.fx = this.px + 30 + (areaW - crop.w * this.s) / 2 - crop.x * this.s;
-    this.fy = this.py + 78 + (areaH - crop.h * this.s) / 2 - crop.y * this.s;
+    // compact: plate at the right of its area, the free space on its left holds the site labels
+    this.fx = this.px + 30 + (cp && !adv ? areaW - crop.w * this.s : (areaW - crop.w * this.s) / 2) - crop.x * this.s;
+    this.fy = (cp ? this.cTop + 6 : this.py + 78) + (areaH - crop.h * this.s) / 2 - crop.y * this.s;
     const pl = this.add.graphics();
     const rx = this.fx + crop.x * this.s, ry = this.fy + crop.y * this.s, rw = crop.w * this.s, rh = crop.h * this.s;
     pl.fillStyle(0x12060c, 0.75); pl.fillRoundedRect(rx - 12, ry - 12, rw + 24, rh + 24, 12);
@@ -64,55 +71,76 @@ export class MuscleLinkPuzzle extends PuzzleBase {
     this.layoutCallouts();
     // keep every tap marker inside the plate (a marker pushed past the edge could not be tapped)
     for (const n of this.nodes) { n.x = Phaser.Math.Clamp(n.x, rx + 10, rx + rw - 10); n.y = Phaser.Math.Clamp(n.y, ry + 10, ry + rh - 34); }
+    if (cp && !adv) {
+      // phone: one label column left of the plate, evenly spaced in marker order, each with a leader line to its site
+      const ord = [...this.nodes].sort((p, q) => p.y - q.y);
+      const gap = 19, lo = ry + 8, hi = ry + rh - 26;
+      const ys = ord.map(n => Phaser.Math.Clamp(n.y, lo, hi));
+      for (let i = 1; i < ys.length; i++) ys[i] = Math.max(ys[i], ys[i - 1] + gap);
+      for (let i = ys.length - 2; i >= 0; i--) ys[i] = Math.min(ys[i], ys[i + 1] - gap);
+      const lg = this.add.graphics().setDepth(19); lg.lineStyle(1, 0xffd0dc, 0.55);
+      ord.forEach((n, i) => {
+        n.t = T(this, rx - 14, ys[i], ATT[n.id].ko, 15, '#ffd9e3', { weight: '700' }).setOrigin(1, 0.5).setDepth(21);
+        lg.lineBetween(rx - 10, ys[i], n.x - 7, n.y);
+      });
+      for (const n of this.nodes) this.drawNode(n, 'idle');
+    } else {
     const boxes: Phaser.Geom.Rectangle[] = [];
-    for (const n of this.nodes) {
-      const a = ATT[n.id];
-      if (!adv) {
-        const pref = n.x < n.px - 2 || (Math.abs(n.x - n.px) <= 2 && a.x < 300);
-        n.t = T(this, 0, 0, a.ko, 12, '#ffd9e3', { weight: '700', backgroundColor: '#14070dcc', padding: { x: 4, y: 2 } }).setDepth(21);
-        // place the label beside its marker without covering another label: try the preferred side, the other side,
-        // then nudge up/down
-        const place = (left: boolean, dy: number) => {
-          n.t!.setOrigin(left ? 1 : 0, 0.5).setPosition(n.x + (left ? -12 : 12), n.y + dy);
-          if (left && n.t!.x - n.t!.width < rx - 8) n.t!.setX(rx - 8 + n.t!.width);
-          return n.t!.getBounds();
-        };
-        let r = place(pref, 0);
-        const hits = (q: Phaser.Geom.Rectangle) => boxes.some(b => Phaser.Geom.Intersects.RectangleToRectangle(b, q));
-        for (const [left, dy] of [[!pref, 0], [pref, 20], [pref, -20], [!pref, 20], [!pref, -20], [pref, 40]] as [boolean, number][]) {
-          if (!hits(r)) break; r = place(left, dy);
+      for (const n of this.nodes) {
+        const a = ATT[n.id];
+        if (!adv) {
+          const pref = cp || n.x < n.px - 2 || (Math.abs(n.x - n.px) <= 2 && a.x < 300);
+          n.t = T(this, 0, 0, a.ko, 12, '#ffd9e3', { weight: '700', backgroundColor: '#14070dcc', padding: { x: 4, y: 2 } }).setDepth(21);
+          // place the label beside its marker without covering another label: try the preferred side, the other side,
+          // then nudge up/down
+          const place = (left: boolean, dy: number) => {
+            n.t!.setOrigin(left ? 1 : 0, 0.5).setPosition(n.x + (left ? -12 : 12), n.y + dy);
+            if (left && !cp && n.t!.x - n.t!.width < rx - 8) n.t!.setX(rx - 8 + n.t!.width);
+            return n.t!.getBounds();
+          };
+          let r = place(pref, 0);
+          const hits = (q: Phaser.Geom.Rectangle) => boxes.some(b => Phaser.Geom.Intersects.RectangleToRectangle(b, q));
+          const tries: [boolean, number][] = cp ? [[true, 18], [true, -18], [true, 36], [true, -36], [true, 54], [true, -54]] : [[!pref, 0], [pref, 20], [pref, -20], [!pref, 20], [!pref, -20], [pref, 40]];
+          for (const [left, dy] of tries) {
+            if (!hits(r)) break; r = place(left, dy);
+          }
+          boxes.push(r);
+          // label moved off its marker's line -> thin leader so it still points at the right site
+          if (Math.abs(n.t.y - n.y) > 4) { const lg = this.add.graphics().setDepth(20); lg.lineStyle(1, 0xffd0dc, 0.6); lg.lineBetween(n.t.x + 2, n.t.y, n.x - 7, n.y); }
         }
-        boxes.push(r);
+        this.drawNode(n, 'idle');
       }
-      this.drawNode(n, 'idle');
     }
     const hit = this.add.zone(rx - 12, ry - 12, rw + 24, rh + 24).setOrigin(0).setInteractive();
     hit.on('pointerup', (p: Phaser.Input.Pointer) => this.tap(p.worldX, p.worldY));
     // muscle list
     const list = adv ? LINK_ADV : LINK_BASIC;
-    const cx0 = portrait ? this.px + 30 : this.px + this.pw * 0.54 + 10, cy0 = portrait ? ry + rh + 30 : this.py + 96;
-    const cw = portrait ? this.pw - 60 : this.pw * 0.46 - 60;
-    T(this, cx0, cy0, '손상된 근육', 17, C.pinkS, { weight: '700' });
-    const colN = portrait ? 2 : 1, iw = (cw - (colN - 1) * 12) / colN, ih = list.length > 4 && !portrait ? 52 : 58;
+    const cx0 = portrait ? this.px + 30 : cp ? rx + rw + 34 : this.px + this.pw * 0.54 + 10, cy0 = portrait ? ry + rh + 30 : cp ? this.cTop + 2 : this.py + 96;
+    const cw = portrait ? this.pw - 60 : cp ? this.px + this.pw - 30 - cx0 : this.pw * 0.46 - 60;
+    T(this, cx0, cy0, '손상된 근육', cp ? 16 : 17, C.pinkS, { weight: '700' });
+    const head = cp ? 24 : 32, gapI = cp ? 6 : 10;
+    const colN = portrait || cp ? 2 : 1, iw = (cw - (colN - 1) * 12) / colN, ih = cp ? 48 : list.length > 4 && !portrait ? 52 : 58;
     list.forEach((id, i) => {
       const M = MUSCLES[id];
-      const x = cx0 + (i % colN) * (iw + 12), y = cy0 + 32 + Math.floor(i / colN) * (ih + 10);
+      const x = cx0 + (i % colN) * (iw + 12), y = cy0 + head + Math.floor(i / colN) * (ih + gapI);
       const bg = this.add.graphics();
-      const t = T(this, x + 16, y + 20, adv ? M.en : `${M.ko} · ${M.en}`, 18, C.white, { weight: '700' }).setOrigin(0, 0.5);
-      const st = T(this, x + 16, y + ih - 15, M.posterior ? '연결 대기 · 뒤쪽 근육(긴갈래)' : '연결 대기', 13, C.dim).setOrigin(0, 0.5);
+      const t = T(this, x + (cp ? 12 : 16), y + (cp ? 15 : 20), adv ? M.en : cp ? M.ko : `${M.ko} · ${M.en}`, cp ? 17 : 18, C.white, { weight: '700' }).setOrigin(0, 0.5);
+      if (cp && !adv) T(this, t.x + t.width + 8, t.y + 1, M.en, 15, '#d8c8d0').setOrigin(0, 0.5).setMaxLines(1);
+      const st = T(this, x + (cp ? 12 : 16), y + ih - (cp ? 13 : 15), M.posterior ? '연결 대기 · 뒤쪽 근육(긴갈래)' : '연결 대기', 13, C.dim).setOrigin(0, 0.5);
       const it: Item = { id, done: false, bg, t, st, x, y, w: iw, h: ih };
       this.drawItem(it);
       const z = this.add.zone(x, y, iw, ih).setOrigin(0).setInteractive({ useHandCursor: true });
       z.on('pointerup', () => this.select(it));
       this.items.push(it);
     });
-    const ly = cy0 + 32 + Math.ceil(list.length / colN) * (ih + 10) + 10;
-    this.stepT = T(this, cx0, ly, '', 19, C.amberS, { weight: '700', wordWrap: { width: cw } });
-    const defs = T(this, cx0, ly + 64, '이는곳(Origin): 근육이 수축할 때 비교적 고정되는 몸쪽 부착부\n닿는곳(Insertion): 수축할 때 끌려와 움직이는 먼쪽 부착부', 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: 6 });
+    const ly = cy0 + head + Math.ceil(list.length / colN) * (ih + gapI) + (cp ? 4 : 10);
+    this.stepT = T(this, cx0, ly, '', cp ? 17 : 19, C.amberS, { weight: '700', wordWrap: { width: cw } });
+    const defs = T(this, cx0, ly + (cp ? 46 : 64), '이는곳(Origin): 근육이 수축할 때 비교적 고정되는 몸쪽 부착부\n닿는곳(Insertion): 수축할 때 끌려와 움직이는 먼쪽 부착부', 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: cp ? 2 : 6 });
+    if (defs.y + defs.height > this.cBot) defs.setVisible(false);   // phone + long list: the step text already says what to tap
     // legend + licence credit live in the right column so they never collide with the bone labels
-    const legend = T(this, cx0, defs.y + defs.height + 12, '그림: 오른팔 · 앞면   (점선 원 = 뒤쪽 구조)', 15, C.pinkS, { weight: '700' });
+    const legend = T(this, cx0, defs.visible ? defs.y + defs.height + (cp ? 6 : 12) : ly + 46, '그림: 오른팔 · 앞면   (점선 원 = 뒤쪽 구조)', 15, C.pinkS, { weight: '700' });
     // long lists (advanced): no room above the feedback bar -> put the legend in the plate's top corner instead
-    if (legend.y + legend.height > this.py + this.ph - 84) legend.setPosition(rx + 6, ry + 6).setFontSize(14).setBackgroundColor('#12060ccc').setPadding(4, 2).setDepth(22);
+    if (legend.y + legend.height > this.cBot) legend.setPosition(rx + 6, ry + 6).setFontSize(14).setBackgroundColor('#12060ccc').setPadding(4, 2).setDepth(22);
     T(this, rx + rw - 4, ry + rh - 4, MODEL_CREDIT, 12, '#b8a4ae', { fine: true, backgroundColor: '#12060ccc', padding: { x: 4, y: 2 } }).setOrigin(1, 1).setDepth(22);
     this.setFeedback('왼쪽 목록에서 근육을 하나 고르세요. 두 갈래(두 곳)에서 시작하는 근육도 있습니다.', 'info');
     this.select(this.items[0]);

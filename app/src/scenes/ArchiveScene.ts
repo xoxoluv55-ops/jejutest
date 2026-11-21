@@ -22,10 +22,13 @@ export class ArchiveScene extends BaseScene {
     this.initView();
     const { W, H } = View;
     this.add.rectangle(W / 2, H / 2, W, H, 0x03050b, this.from === 'Game' ? 0.94 : 1).setInteractive();
-    const g = this.add.graphics(); drawPanel(g, 16, 16, W - 32, H - 32, { accent: C.cyan, header: 64 });
-    T(this, 46, 48, 'ANATOMY ARCHIVE', 26, C.white, { display: true, weight: '900' }).setOrigin(0, 0.5);
-    T(this, 46 + 380, 48, `해부학 도감 · ${Save.archive.length}/${ARCHIVE.length} 해금`, 18, C.cyanS, { weight: '700' }).setOrigin(0, 0.5);
-    new Button(this, W - 150, 48, '돌아가기', () => this.back(), { w: 200, h: 50, icon: 'back' });
+    const tn = H < 640;   // phone landscape: thinner header/tabs, list rows sized to the height
+    const m = tn ? 6 : 16, hd = tn ? 48 : 64, hy = m + hd / 2;
+    const g = this.add.graphics(); drawPanel(g, m, m, W - m * 2, H - m * 2, { accent: C.cyan, header: hd });
+    const at = T(this, m + 30, hy, 'ANATOMY ARCHIVE', tn ? 21 : 26, C.white, { display: true, weight: '900' }).setOrigin(0, 0.5);
+    T(this, at.x + at.width + 24, hy, `해부학 도감 · ${Save.archive.length}/${ARCHIVE.length} 해금`, tn ? 16 : 18, C.cyanS, { weight: '700' }).setOrigin(0, 0.5);
+    new Button(this, W - (tn ? 120 : 150), hy, '돌아가기', () => this.back(), { w: tn ? 170 : 200, h: tn ? 40 : 50, icon: 'back' });
+    const tabY = tn ? m + hd + 8 : 92, tabH = tn ? 40 : 46;
     this.input.keyboard?.on('keydown-ESC', () => this.back());
     const listW = Math.min(420, W * 0.36);
     const cats: ArchiveEntry['cat'][] = ['뼈', '근육', '개념', '기록'];
@@ -33,16 +36,16 @@ export class ArchiveScene extends BaseScene {
     cats.forEach((cat, i) => {
       const x = 40 + i * (tw + 6), on = cat === this.cat;
       const n = ARCHIVE.filter(a => a.cat === cat && Save.archive.includes(a.id)).length, tot = ARCHIVE.filter(a => a.cat === cat).length;
-      const bg = this.add.graphics(); bg.fillStyle(on ? C.amber : 0x0a1222, on ? 0.25 : 0.9); bg.fillRoundedRect(x, 92, tw, 46, 8);
-      bg.lineStyle(1.2, on ? C.amber : C.line, 1); bg.strokeRoundedRect(x, 92, tw, 46, 8);
-      T(this, x + tw / 2, 106, cat, 16, on ? C.amberS : C.white, { weight: '700' }).setOrigin(0.5);
-      T(this, x + tw / 2, 127, `${n}/${tot}`, 12, C.dim).setOrigin(0.5);
-      const z = this.add.zone(x, 92, tw, 46).setOrigin(0).setInteractive({ useHandCursor: true });
+      const bg = this.add.graphics(); bg.fillStyle(on ? C.amber : 0x0a1222, on ? 0.25 : 0.9); bg.fillRoundedRect(x, tabY, tw, tabH, 8);
+      bg.lineStyle(1.2, on ? C.amber : C.line, 1); bg.strokeRoundedRect(x, tabY, tw, tabH, 8);
+      T(this, x + tw / 2, tabY + (tn ? 12 : 14), cat, 16, on ? C.amberS : C.white, { weight: '700' }).setOrigin(0.5);
+      T(this, x + tw / 2, tabY + tabH - (tn ? 9 : 11), `${n}/${tot}`, 12, C.dim, { fine: true }).setOrigin(0.5);
+      const z = this.add.zone(x, tabY, tw, tabH).setOrigin(0).setInteractive({ useHandCursor: true });
       z.on('pointerup', () => { Audio.play('click'); this.scene.restart({ from: this.from, cat }); });
     });
-    let y = 156;
+    let y = tabY + tabH + (tn ? 8 : 18);
     const items = ARCHIVE.filter(a => a.cat === this.cat);
-    const ih = Math.min(44, Math.floor((H - 190 - y) / items.length) - 6);
+    const ih = Math.max(26, Math.min(44, Math.floor((H - (tn ? 16 : 40) - y) / items.length) - (tn ? 4 : 6)));
     for (const e of items) {
       const open = Save.archive.includes(e.id);
       const bg = this.add.graphics();
@@ -52,7 +55,7 @@ export class ArchiveScene extends BaseScene {
       T(this, 58, y + ih / 2, open ? e.title : '??? (미발견)', 17, open ? C.white : '#4d5a75', { weight: '700' }).setOrigin(0, 0.5);
       if (open) T(this, 40 + listW - 14, y + ih / 2, e.en, 13, C.dim).setOrigin(1, 0.5);
       if (open) { const z = this.add.zone(40, y, listW, ih).setOrigin(0).setInteractive({ useHandCursor: true }); z.on('pointerup', () => { Audio.play('click'); this.scene.restart({ from: this.from, sel: e.id, cat: this.cat }); }); }
-      y += ih + 6;
+      y += ih + (tn ? 4 : 6);
     }
     const dx = 40 + listW + 30, dw = W - dx - 50;
     const e = ARCHIVE.find(a => a.id === this.sel && Save.archive.includes(a.id));
@@ -60,23 +63,26 @@ export class ArchiveScene extends BaseScene {
       T(this, dx + dw / 2, H / 2, Save.archive.length ? '왼쪽 목록에서 항목을 선택하세요.' : '아직 해금된 항목이 없습니다.\nBODY LAB을 탐험하며 표본과 기록을 수집하세요.', 20, C.dim, { align: 'center' }).setOrigin(0.5);
       return;
     }
-    T(this, dx, 110, e.title, 34, C.white, { weight: '700' });
-    T(this, dx, 158, e.en, 18, C.amberS, { display: true });
-    let ty = 210;
+    const t0 = tn ? m + hd + 10 : 110;
+    T(this, dx, t0, e.title, tn ? 26 : 34, C.white, { weight: '700' });
+    T(this, dx, t0 + (tn ? 34 : 48), e.en, tn ? 16 : 18, C.amberS, { display: true });
+    let ty = t0 + (tn ? 64 : 100);
+    // long entries on a short screen: shrink the body text until it fits above the bottom edge
+    const fitBody = (t: Phaser.GameObjects.Text) => { for (const sz of [18, 17, 16, 15]) { if (t.y + t.height <= H - m - 12) break; t.setFontSize(sz).setLineSpacing(4); } return t; };
     if (e.bone) {
       const im = this.add.image(dx + 130, 0, `bone_bone_${e.bone}`);
-      const s = Math.min(240 / im.width, (H - 300) / im.height); im.setScale(s); im.setY(ty + im.displayHeight / 2);
+      const s = Math.min(240 / im.width, (H - ty - (tn ? 30 : 90)) / im.height); im.setScale(s); im.setY(ty + im.displayHeight / 2);
       const holo = this.add.image(im.x, im.y, `bone_holo_${e.bone}`).setScale(s).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.3);
       this.tweens.add({ targets: holo, alpha: 0.05, duration: 1200, yoyo: true, repeat: -1 });
-      T(this, dx + 290, ty, e.body, 18, '#d3def3', { wordWrap: { width: dw - 300 }, lineSpacing: 8 });
+      fitBody(T(this, dx + 290, ty, e.body, 18, '#d3def3', { wordWrap: { width: dw - 300 }, lineSpacing: 8 }));
     } else if (e.muscle) {
       const mt = makeMuscleTexture(this, e.muscle, 'real');
       const im = this.add.image(dx + 130, 0, mt.key);
-      const s = Math.min(240 / im.width, (H - 300) / im.height, 1); im.setScale(s); im.setY(ty + im.displayHeight / 2);
-      T(this, dx + 130, im.y + im.displayHeight / 2 + 14, mt.credit, 11, '#8f7f88', { align: 'center', wordWrap: { width: 250 } }).setOrigin(0.5, 0);
-      T(this, dx + 290, ty, e.body, 18, '#d3def3', { wordWrap: { width: dw - 300 }, lineSpacing: 8 });
+      const s = Math.min(240 / im.width, (H - ty - (tn ? 50 : 90)) / im.height, 1); im.setScale(s); im.setY(ty + im.displayHeight / 2);
+      T(this, dx + 130, im.y + im.displayHeight / 2 + 14, mt.credit, 12, '#a8949e', { align: 'center', wordWrap: { width: 250 }, fine: true }).setOrigin(0.5, 0);
+      fitBody(T(this, dx + 290, ty, e.body, 18, '#d3def3', { wordWrap: { width: dw - 300 }, lineSpacing: 8 }));
     } else {
-      T(this, dx, ty, e.body, 19, '#d3def3', { wordWrap: { width: dw }, lineSpacing: 9 });
+      fitBody(T(this, dx, ty, e.body, 19, '#d3def3', { wordWrap: { width: dw }, lineSpacing: 9 }));
     }
   }
 

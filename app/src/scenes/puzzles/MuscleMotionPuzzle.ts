@@ -59,16 +59,17 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     this.imgA = this.imgB = this.xA = this.xB = this.lA = this.inset = undefined; this.readout = undefined; this.labels = []; this.bandCache = {};
     this.frame('운동 재현 장치 · 주작용근과 대항근', '목표 움직임에 맞게 근육의 역할을 지정한 뒤, 팔을 직접 끌어 움직임을 실행하세요.', C.pink);
     const { W, H } = View; const portrait = H > W;
-    const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.48 : this.ph - 180;
-    this.view = { x: this.px + 30, y: this.py + 80, w: areaW, h: areaH };
+    const cp = this.compact;
+    const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.48 : (cp ? this.cBot - this.cTop : this.ph - 180);
+    this.view = { x: this.px + (cp ? 20 : 30), y: cp ? this.cTop : this.py + 80, w: areaW, h: areaH };
     const pl = this.add.graphics(); pl.fillStyle(0x12060c, 0.75); pl.fillRoundedRect(this.view.x, this.view.y, areaW, areaH, 12);
     pl.lineStyle(1.5, C.pink, 0.35); pl.strokeRoundedRect(this.view.x, this.view.y, areaW, areaH, 12);
     this.g = this.add.graphics().setDepth(5);
-    this.title = T(this, this.view.x + 18, this.view.y + 16, '', 19, C.white, { weight: '700', wordWrap: { width: areaW - 170 } }).setDepth(6).setMaxLines(1);
-    this.sub = T(this, this.view.x + 18, this.view.y + 44, '', 14, '#ffb3c6').setDepth(6);
-    this.angT = T(this, this.view.x + areaW - 18, this.view.y + 16, '', 22, C.amberS, { display: true, weight: '700' }).setOrigin(1, 0).setDepth(6);
-    this.cx0 = portrait ? this.px + 30 : this.px + this.pw * 0.54 + 10; this.cy0 = portrait ? this.view.y + areaH + 24 : this.py + 96;
-    this.cw = portrait ? this.pw - 60 : this.pw * 0.46 - 60;
+    this.title = T(this, this.view.x + 18, this.view.y + (cp ? 8 : 16), '', cp ? 17 : 19, C.white, { weight: '700', wordWrap: { width: areaW - 170 } }).setDepth(6).setMaxLines(1);
+    this.sub = T(this, this.view.x + 18, this.view.y + 44, '', 14, '#ffb3c6').setDepth(6).setVisible(!cp);   // phone: joint line dropped (the goal is in the right column)
+    this.angT = T(this, this.view.x + areaW - 18, this.view.y + (cp ? 6 : 16), '', cp ? 19 : 22, C.amberS, { display: true, weight: '700' }).setOrigin(1, 0).setDepth(6);
+    this.cx0 = portrait ? this.px + 30 : this.px + this.pw * 0.54 + (cp ? 0 : 10); this.cy0 = portrait ? this.view.y + areaH + 24 : cp ? this.cTop + 2 : this.py + 96;
+    this.cw = portrait ? this.pw - 60 : this.pw * 0.46 - (cp ? 30 : 60);
     const hit = this.add.zone(this.view.x, this.view.y, areaW, areaH).setOrigin(0).setInteractive({ useHandCursor: true });
     hit.on('pointerdown', (p: Phaser.Input.Pointer) => { if (this.stage === 'drive') { this.dragging = true; this.driveTo(p.worldX, p.worldY); } });
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => { if (this.dragging && p.isDown) this.driveTo(p.worldX, p.worldY); });
@@ -85,16 +86,21 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     this.title.setText(`ROUND ${i + 1}/${MOTION_ROUNDS.length} · ${R.ko} (${R.en})`);
     this.sub.setText(`${R.joint} · ${R.plane}`);
     const add = <O extends Phaser.GameObjects.GameObject>(o: O) => { this.ui.push(o); return o; };
-    add(T(this, this.cx0, this.cy0, `목표: ${R.ko}`, 20, C.pinkS, { weight: '700' }));
-    add(T(this, this.cx0, this.cy0 + 30, '각 근육의 역할을 고르세요', 14, C.dim));
-    const rowH = 64, segW = (this.cw - 0) / 3;
+    const cp = this.compact;
+    add(T(this, this.cx0, this.cy0, `목표: ${R.ko}`, cp ? 18 : 20, C.pinkS, { weight: '700' }));
+    add(T(this, cp ? this.cx0 + 170 : this.cx0, cp ? this.cy0 + 3 : this.cy0 + 30, '각 근육의 역할을 고르세요', 14, C.dim));
+    // regular: name above its three role buttons; compact (phone): name on the left, buttons on the right of one row
+    const rowH = cp ? 36 : 64, gapR = cp ? 5 : 8, top0 = cp ? 30 : 62;
+    const nameW = cp ? Math.min(230, this.cw * 0.4) : 0;
+    const segW = (this.cw - nameW - (cp ? 16 : 0)) / 3, segX = this.cx0 + nameW;
     R.cards.forEach((id, k) => {
-      const M = MUSCLES[id]; const y = this.cy0 + 62 + k * (rowH + 8);
-      const name = add(T(this, this.cx0, y, adv ? M.en : `${M.ko} · ${M.en}`, 16, C.white, { weight: '700' }));
+      const M = MUSCLES[id]; const y = this.cy0 + top0 + k * (rowH + gapR);
+      const name = add(T(this, this.cx0, cp ? y + rowH / 2 : y, adv ? M.en : cp ? M.ko : `${M.ko} · ${M.en}`, 16, C.white, { weight: '700' }).setOrigin(0, cp ? 0.5 : 0));
+      if (cp && !adv) add(T(this, this.cx0 + name.width + 6, y + rowH / 2 + 1, M.en, 13, '#bfb3c8', { fine: true, wordWrap: { width: nameW - name.width - 10 } }).setOrigin(0, 0.5).setMaxLines(1));
       const mark = add(this.add.graphics());
       const row: Row = { id, role: null, segs: [], name, mark };
       (['agonist', 'antagonist', 'none'] as Role[]).forEach((r, j) => {
-        const x = this.cx0 + j * segW, sy = y + 24, w = segW - 6, h = 34;
+        const x = segX + j * segW, sy = cp ? y : y + 24, w = segW - 6, h = cp ? rowH : 34;
         const g = add(this.add.graphics());
         const t = add(T(this, x + w / 2, sy + h / 2, ROLE_KO[r], 15, C.white, { weight: '700' }).setOrigin(0.5));
         const z = add(this.add.zone(x, sy, w, h).setOrigin(0).setInteractive({ useHandCursor: true }));
@@ -103,11 +109,15 @@ export class MuscleMotionPuzzle extends PuzzleBase {
       });
       this.drawRow(row); this.rows.push(row);
     });
-    const by = this.cy0 + 62 + R.cards.length * (rowH + 8) + 16;
-    add(new Button(this, this.cx0 + Math.min(this.cw, 400) / 2, by + 10, '근육 신호 전송 (검증)', () => this.verify(), { w: Math.min(this.cw, 400), h: 60, icon: 'bolt', accent: C.green, primary: true, size: 20 }));
-    if (!adv) add(T(this, this.cx0, by + 54, R.id === 'elbowFlex'
-      ? '단서: 관절의 앞을 지나는 근육은 굽히고, 뒤를 지나는 근육은 폅니다. 그 관절을 지나지 않는 근육은 관여하지 않아요.'
-      : '단서: 팔을 옆으로 드는 근육(벌림근)과, 팔을 몸쪽으로 모으는 근육(모음근)을 구별하세요.', 14, '#e3cfd8', { wordWrap: { width: this.cw }, lineSpacing: 5 }));
+    const by = this.cy0 + top0 + R.cards.length * (rowH + gapR) + (cp ? 2 : 16);
+    const bh = cp ? 44 : 60;
+    add(new Button(this, this.cx0 + Math.min(this.cw, 400) / 2, by + bh / 2 - (cp ? 0 : 20), '근육 신호 전송 (검증)', () => this.verify(), { w: Math.min(this.cw, 400), h: bh, icon: 'bolt', accent: C.green, primary: true, size: cp ? 18 : 20 }));
+    if (!adv) {
+      const hint = add(T(this, this.cx0, by + (cp ? bh + 6 : 54), R.id === 'elbowFlex'
+        ? '단서: 관절의 앞을 지나는 근육은 굽히고, 뒤를 지나는 근육은 폅니다. 그 관절을 지나지 않는 근육은 관여하지 않아요.'
+        : '단서: 팔을 옆으로 드는 근육(벌림근)과, 팔을 몸쪽으로 모으는 근육(모음근)을 구별하세요.', 14, '#e3cfd8', { wordWrap: { width: this.cw }, lineSpacing: cp ? 2 : 5 }));
+      if (hint.y + hint.height > this.cBot) { const n = Math.floor((this.cBot - hint.y) / 18); if (n < 1) hint.setVisible(false); else hint.setMaxLines(n); }
+    }
     this.setFeedback(`${R.ko}: 수축해서 움직임을 만드는 근육 = 주작용근, 반대 작용을 하며 늘어나는 근육 = 대항근.`, 'info');
     this.redraw();
     // the role buttons were just rebuilt: without this a tap in the same frame as the round change was dropped
@@ -132,7 +142,7 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     const wrong = this.rows.filter(r => r.role !== (R.roles[r.id] ?? 'none'));
     for (const r of this.rows) {
       r.mark.clear(); const ok = !wrong.includes(r);
-      r.mark.fillStyle(ok ? C.green : C.red, 1); r.mark.fillCircle(this.cx0 + this.cw - 8, r.name.y + 10, 6);
+      r.mark.fillStyle(ok ? C.green : C.red, 1); r.mark.fillCircle(this.cx0 + this.cw - (this.compact ? -4 : 8), this.compact ? r.name.y : r.name.y + 10, 6);
     }
     if (wrong.length) {
       Audio.play('error'); this.mistake(); G.run.stats.motion++;
@@ -164,9 +174,9 @@ export class MuscleMotionPuzzle extends PuzzleBase {
   bands() {
     const rk = this.rk(); const c = this.bandCache[rk]; if (c) return c;
     const n = T(this, 0, 0, rk === 'elbow' ? NOTE_ELBOW : NOTE_SHOULDER, 14, '#fff', { wordWrap: { width: this.view.w - 36 } });
-    const f = T(this, 0, 0, FOOT_NOTE, 14, '#fff', { wordWrap: { width: this.view.w - 28 } });
+    const f = T(this, 0, 0, FOOT_NOTE, this.compact ? 12 : 14, '#fff', { wordWrap: { width: this.view.w - 28 }, fine: this.compact });
     const cr = T(this, 0, 0, rk === 'shoulder' ? `${MODEL_CREDIT}\n${LAT_CREDIT}` : MODEL_CREDIT, 12, '#fff', { fine: true });
-    const r = { top: 84 + n.height + 10, foot: f.height, credit: cr.height, bot: f.height + 18 };
+    const r = { top: (this.compact ? 48 : 84) + n.height + (this.compact ? 6 : 10), foot: f.height, credit: cr.height, bot: f.height + 18 };
     n.destroy(); f.destroy(); cr.destroy();
     return (this.bandCache[rk] = r);
   }
@@ -324,12 +334,20 @@ export class MuscleMotionPuzzle extends PuzzleBase {
     });
     if (!this.readout) this.readout = T(this, 0, 0, '', 13, '#e8dce2', { lineSpacing: 4, backgroundColor: '#0a0410cc', padding: { x: 8, y: 6 } }).setDepth(7);
     this.readout.setText(live ? `근육 길이 변화 (안정 자세 대비)\n${lines.join('\n')}` : '').setVisible(live).setPosition(this.view.x + 14, this.view.y + this.view.h - this.bands().foot - 18).setOrigin(0, 1);
+    if (this.compact) {
+      // phone: the picture is too small to carry the readout box; once the roles are verified the role rows are
+      // locked, so the readout takes their place in the right column (the role colours stay in each line)
+      for (const o of this.ui.slice(1)) (o as unknown as Phaser.GameObjects.Components.Visible).setVisible?.(!live);
+      const rl = this.R.cards.map((id, k) => `${lines[k]}   [${ROLE_KO[this.rows.find(r => r.id === id)?.role ?? 'none']}]`);
+      this.readout.setText(live ? `근육 길이 변화 (안정 자세 대비)\n${rl.join('\n')}` : '').setFontSize(16).setLineSpacing(6)
+        .setPosition(this.cx0, this.cy0 + 32).setOrigin(0, 0).setBackgroundColor('#0a0410');
+    }
     this.labels.push(T(this, this.view.x + 14, this.view.y + this.view.h - 10,
-      FOOT_NOTE, 14, '#d8b25a', { wordWrap: { width: this.view.w - 28 } }).setOrigin(0, 1).setDepth(7));
+      FOOT_NOTE, this.compact ? 12 : 14, '#d8b25a', { wordWrap: { width: this.view.w - 28 }, fine: this.compact }).setOrigin(0, 1).setDepth(7));
     this.labels.push(T(this, this.view.x + this.view.w - 12, this.view.y + this.view.h - this.bands().foot - 18, rk === 'shoulder' ? `${MODEL_CREDIT}\n${LAT_CREDIT}` : MODEL_CREDIT, 12, '#a8949e', { align: 'right', fine: true }).setOrigin(1, 1).setDepth(7));
-    this.labels.push(T(this, this.view.x + 18, this.view.y + 66, rk === 'elbow' ? '오른팔 가쪽면  ← 뒤 · 앞 →' : '오른쪽 어깨 앞면  ← 가쪽', 14, '#ffb3c6').setDepth(7));
+    this.labels.push(T(this, this.view.x + 18, this.view.y + (this.compact ? 28 : 66), rk === 'elbow' ? '오른팔 가쪽면  ← 뒤 · 앞 →' : '오른쪽 어깨 앞면  ← 가쪽', 14, '#ffb3c6').setDepth(7));
     // kinematic simplifications, shown so the motion is not taken for the real joint motion (docs/ANATOMY_MODEL.md §6)
-    this.labels.push(T(this, this.view.x + 18, this.view.y + 84, rk === 'elbow'
+    this.labels.push(T(this, this.view.x + 18, this.view.y + (this.compact ? 48 : 84), rk === 'elbow'
       ? NOTE_ELBOW : NOTE_SHOULDER, 14, '#e8c070', { wordWrap: { width: this.view.w - 36 } }).setDepth(7));
     this.angT.setText(this.stage === 'assign' ? '' : `${Math.round(this.angle)}° / ${this.R.range}°`);
   }

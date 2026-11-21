@@ -21,6 +21,7 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
   s = 0.6; fx = 0; fy = 0;
   hiOn = false;
 
+  chipH = 48;
   create() {
     this.initView();
     this.chips = []; this.marks = []; this.hiOn = false;
@@ -29,10 +30,12 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
     const { W, H } = View; const portrait = H > W;
     // crop to the region that holds the muscles (frame x 140..700, y 110..1110)
     const crop = { x: 140, y: 110, w: 560, h: 1000 };
-    const areaW = portrait ? this.pw - 60 : this.pw * 0.5, areaH = portrait ? this.ph * 0.56 : this.ph - 196;   // room for the two-line licence credit above the feedback bar
+    const cp = this.compact; this.chipH = cp ? 40 : 48;
+    // regular: room for the two-line licence credit under the plate; compact: credit sits inside the plate corner
+    const areaW = portrait ? this.pw - 60 : this.pw * (cp ? 0.42 : 0.5), areaH = portrait ? this.ph * 0.56 : (cp ? this.cBot - this.cTop - 16 : this.ph - 196);
     this.s = Math.min(areaW / crop.w, areaH / crop.h);
     this.fx = this.px + 30 + (areaW - crop.w * this.s) / 2 - crop.x * this.s;
-    this.fy = this.py + 78 + (areaH - crop.h * this.s) / 2 - crop.y * this.s;
+    this.fy = this.cTop + (cp ? 8 : 0) + (areaH - crop.h * this.s) / 2 - crop.y * this.s;
     const pl = this.add.graphics();
     pl.fillStyle(0x12060c, 0.75); pl.fillRoundedRect(this.fx + crop.x * this.s - 12, this.fy + crop.y * this.s - 12, crop.w * this.s + 24, crop.h * this.s + 24, 12);
     pl.lineStyle(1.5, C.pink, 0.35); pl.strokeRoundedRect(this.fx + crop.x * this.s - 12, this.fy + crop.y * this.s - 12, crop.w * this.s + 24, crop.h * this.s + 24, 12);
@@ -42,9 +45,10 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
     img.setMask(mask.createGeometryMask());
     for (const o of addPlateOverlays(this, this.fx, this.fy, this.s)) o.setMask(mask.createGeometryMask());   // latissimus (separate licence)
     T(this, this.fx + crop.x * this.s + 8, this.fy + crop.y * this.s + 6, '오른팔 · 앞면 (Anterior)', 14, C.pinkS, { weight: '700' });
-    T(this, this.fx + (crop.x + crop.w) * this.s, this.fy + (crop.y + crop.h) * this.s + 14, `${MODEL_CREDIT}\n${LAT_CREDIT}`, 12, '#a8949e', { fine: true, align: 'right' }).setOrigin(1, 0);
-    T(this, this.fx + crop.x * this.s + 8, this.fy + (crop.y + crop.h) * this.s - 24, '← 가쪽', 13, '#ffb3c6', { weight: '700' });
-    T(this, this.fx + (crop.x + crop.w) * this.s - 8, this.fy + (crop.y + crop.h) * this.s - 24, '안쪽 →', 13, '#ffb3c6', { weight: '700' }).setOrigin(1, 0);
+    const cr = T(this, this.fx + (crop.x + crop.w) * this.s, this.fy + (crop.y + crop.h) * this.s + 14, `${MODEL_CREDIT}\n${LAT_CREDIT}`, 12, '#a8949e', { fine: true, align: 'right' }).setOrigin(1, 0);
+    if (cp) cr.setPosition(this.fx + (crop.x + crop.w) * this.s - 4, this.fy + (crop.y + crop.h) * this.s - 4).setOrigin(1, 1).setBackgroundColor('#12060ccc').setDepth(8);
+    T(this, this.fx + crop.x * this.s + 8, this.fy + (crop.y + crop.h) * this.s - (cp ? 44 : 24), '← 가쪽', 13, '#ffb3c6', { weight: '700' });
+    T(this, this.fx + (crop.x + crop.w) * this.s - 8, this.fy + (crop.y + crop.h) * this.s - (cp ? 44 : 24), '안쪽 →', 13, '#ffb3c6', { weight: '700' }).setOrigin(1, 0);
     // numbered markers (random numbering)
     const ids = Phaser.Utils.Array.Shuffle([...ATLAS_TARGETS]) as MuscleId[];
     ids.forEach((id, i) => {
@@ -60,31 +64,34 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
     });
     // name chips
     const labels = Phaser.Utils.Array.Shuffle([...ATLAS_TARGETS, ...(adv ? ATLAS_DECOYS_ADV : ATLAS_DECOYS_BASIC)]) as MuscleId[];
-    const cx0 = portrait ? this.px + 30 : this.px + this.pw * 0.54 + 10, cy0 = portrait ? this.fy + (crop.y + crop.h) * this.s + 40 : this.py + 100;
-    const cw = portrait ? this.pw - 60 : this.pw * 0.46 - 60;
+    const cx0 = portrait ? this.px + 30 : this.fx + (crop.x + crop.w) * this.s + (cp ? 34 : 60), cy0 = portrait ? this.fy + (crop.y + crop.h) * this.s + 40 : this.cTop + (cp ? 8 : 24);
+    const cw = portrait ? this.pw - 60 : this.px + this.pw - 30 - cx0;
+    const rowH = cp ? 46 : 66, firstY = cp ? 34 : 40;
     T(this, cx0, cy0 - 6, '이름표', 17, C.pinkS, { weight: '700' });
     const colN = portrait ? 3 : 2; const chW = (cw - (colN - 1) * 12) / colN;
     labels.forEach((id, i) => {
       const M = MUSCLES[id];
-      const x = cx0 + (i % colN) * (chW + 12) + chW / 2, y = cy0 + 40 + Math.floor(i / colN) * 66;
+      const x = cx0 + (i % colN) * (chW + 12) + chW / 2, y = cy0 + firstY + Math.floor(i / colN) * rowH;
       const c = this.add.container(x, y).setDepth(30);
       const bg = this.add.graphics();
       const t = T(this, 0, 0, adv ? M.en : `${M.ko}  ${M.en}`, adv ? 18 : 16, C.white, { weight: '700' }).setOrigin(0.5);
       const w = Math.min(chW, Math.max(t.width + 30, 120));
       if (t.width > w - 16) t.setScale((w - 16) / t.width);
-      c.add([bg, t]); c.setSize(w, 50);
+      c.add([bg, t]); c.setSize(w, this.chipH + 2);
       c.setInteractive({ draggable: true, useHandCursor: true });
       const chip: Chip = { id, c, home: { x, y }, done: false, bg, w };
       this.drawChip(chip, 'idle'); this.chips.push(chip);
     });
-    const by = cy0 + 40 + Math.ceil(labels.length / colN) * 66 + 16;
+    const by = cy0 + firstY + Math.ceil(labels.length / colN) * rowH + (cp ? 4 : 16);
     const guide = adv
       ? '단서: 근섬유의 방향과 부착 위치(어느 뼈에서 어느 뼈로)를 확인하세요.'
       : '단서\n• 어깨세모근은 어깨를 덮는 세모꼴, 큰가슴근은 가슴에서 부채꼴로 모입니다.\n• 위팔두갈래근은 위팔 앞 가운데, 위팔근은 그 아래 깊은 곳에서 양옆으로 보입니다.\n• 위팔노근은 아래팔 가쪽(엄지 쪽) 위를 따라 내려갑니다.';
     if (!adv) {
-      new Button(this, cx0 + Math.min(cw, 380) / 2, by, '근육 전체 모양 강조', () => this.toggleHi(), { w: Math.min(cw, 380), h: 52, icon: 'eye', size: 17, accent: C.pink });
-      T(this, cx0, by + 44, guide, 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: 6 });
-    } else T(this, cx0, by, guide, 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: 6 });
+      new Button(this, cx0 + Math.min(cw, 380) / 2, by, '근육 전체 모양 강조', () => this.toggleHi(), { w: Math.min(cw, 380), h: cp ? 42 : 52, icon: 'eye', size: 17, accent: C.pink });
+    }
+    const gd = T(this, cx0, adv ? by : by + (cp ? 28 : 44), guide, 15, '#e3cfd8', { wordWrap: { width: cw }, lineSpacing: cp ? 2 : 6 });
+    // short screens: keep the clue inside the column (it is repeated in the hints of wrong answers)
+    if (gd.y + gd.height > this.cBot) { const n = Math.floor((this.cBot - gd.y) / 19); if (n < 2) gd.setVisible(false); else gd.setMaxLines(n); }
     this.setFeedback('근육 지도 데이터가 손상되었습니다. 각 번호의 근육 이름을 복원하세요.', 'info');
 
     this.input.on('dragstart', (_p: any, obj: Phaser.GameObjects.Container) => { const ch = this.chips.find(c => c.c === obj); if (!ch || ch.done || this.solved) return; obj.setDepth(100); this.drawChip(ch, 'drag'); Audio.play('click'); });
@@ -118,8 +125,9 @@ export class MuscleAtlasPuzzle extends PuzzleBase {
   drawChip(ch: Chip, st: 'idle' | 'drag' | 'ok' | 'err') {
     const col = { idle: C.pink, drag: 0xffe08a, ok: C.green, err: C.red }[st];
     const g = ch.bg; g.clear();
-    g.fillStyle(st === 'ok' ? 0x08281c : 0x14070d, 0.95); g.fillRoundedRect(-ch.w / 2, -24, ch.w, 48, 10);
-    g.lineStyle(st === 'idle' ? 1.4 : 2.2, col, 1); g.strokeRoundedRect(-ch.w / 2, -24, ch.w, 48, 10);
+    const h = this.chipH;
+    g.fillStyle(st === 'ok' ? 0x08281c : 0x14070d, 0.95); g.fillRoundedRect(-ch.w / 2, -h / 2, ch.w, h, 10);
+    g.lineStyle(st === 'idle' ? 1.4 : 2.2, col, 1); g.strokeRoundedRect(-ch.w / 2, -h / 2, ch.w, h, 10);
   }
 
   drop(ch: Chip) {

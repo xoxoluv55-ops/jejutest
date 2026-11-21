@@ -81,12 +81,13 @@ export class TitleScene extends BaseScene {
     const order = ['blue', 'red', 'yellow', 'violet'];
     const fy = H * 0.92;
     const portrait = H > W;
+    const tiny = !portrait && H < 640;   // phone landscape: smaller logo, robots and menu buttons
     const groupX = portrait ? W * 0.5 : W * 0.3;
     order.forEach((c, i) => {
       const lead = c === Save.color;
-      const sc = (lead ? 0.5 : 0.36) * (portrait ? 0.9 : 1);
-      const x = groupX + (i - 1.5) * (portrait ? 150 : 150) + (lead ? 0 : 0);
-      const y = fy - (lead ? 0 : 40);
+      const sc = (lead ? 0.5 : 0.36) * (portrait ? 0.9 : tiny ? 0.62 : 1);
+      const x = groupX + (i - 1.5) * (tiny ? 100 : 150);
+      const y = fy - (lead ? 0 : tiny ? 24 : 40);
       this.add.image(x, y + 6, 'shadow').setScale(lead ? 2.4 : 1.8).setAlpha(0.8).setDepth(11 + i);
       const b = this.add.image(x, y, `full_${c}`).setOrigin(0.5, 1).setScale(sc * 0.95).setDepth(lead ? 20 : 12 + i);
       this.tweens.add({ targets: b, y: y - 6, scaleY: sc * 1.015, duration: 1100 + i * 120, yoyo: true, repeat: -1, ease: 'Sine.inOut', delay: i * 200 });
@@ -96,13 +97,14 @@ export class TitleScene extends BaseScene {
     this.add.image(W / 2, H / 2, 'vignette').setDisplaySize(W * 1.1, H * 1.1).setDepth(30);
 
     // ---------- logo ----------
-    const lx = portrait ? W / 2 : W * 0.06, ly = portrait ? H * 0.1 : H * 0.12;
+    const lx = portrait ? W / 2 : W * 0.06, ly = portrait ? H * 0.1 : tiny ? H * 0.05 : H * 0.12;
+    const LS = tiny ? 0.62 : 1;   // logo scale
     const ox = portrait ? 0.5 : 0;
-    const l1 = T(this, lx, ly, 'ANATOMY', portrait ? 84 : 96, '#ffffff', { display: true, weight: '900' }).setOrigin(ox, 0).setDepth(40);
+    const l1 = T(this, lx, ly, 'ANATOMY', portrait ? 84 : 96 * LS, '#ffffff', { display: true, weight: '900' }).setOrigin(ox, 0).setDepth(40);
     l1.setShadow(0, 0, '#ff2d4a', 26, true, true); l1.setStroke('#ff2d4a', 3);
-    const l2 = T(this, lx + (portrait ? 0 : 54), ly + (portrait ? 84 : 98), 'ESCAPE', portrait ? 84 : 96, '#ffffff', { display: true, weight: '900' }).setOrigin(ox, 0).setDepth(40);
+    const l2 = T(this, lx + (portrait ? 0 : 54 * LS), ly + (portrait ? 84 : 98 * LS), 'ESCAPE', portrait ? 84 : 96 * LS, '#ffffff', { display: true, weight: '900' }).setOrigin(ox, 0).setDepth(40);
     l2.setShadow(0, 0, '#ff2d4a', 26, true, true); l2.setStroke('#ff2d4a', 3);
-    const sub = T(this, lx + (portrait ? 0 : 60), ly + (portrait ? 186 : 214), '— 해부학 탈출 프로젝트 —', 24, '#ffd2d8', { weight: '700' }).setOrigin(ox, 0).setDepth(40);
+    const sub = T(this, lx + (portrait ? 0 : 60 * LS), ly + (portrait ? 186 : 214 * LS), '— 해부학 탈출 프로젝트 —', tiny ? 18 : 24, '#ffd2d8', { weight: '700' }).setOrigin(ox, 0).setDepth(40);
     sub.setShadow(0, 0, '#ff2d4a', 10, true, true);
     this.ecg = this.add.graphics().setDepth(41);
     this.ecgW = portrait ? 520 : Math.max(120, Math.min(520, W * 0.62 - (l2.x + l2.width + 16)));
@@ -114,7 +116,7 @@ export class TitleScene extends BaseScene {
     } });
 
     // LOCKDOWN plate
-    const lockC = this.add.container(portrait ? W / 2 : lx + 260, portrait ? H * 0.36 : ly + 300).setDepth(40);
+    const lockC = this.add.container(portrait ? W / 2 : lx + 260 * LS, portrait ? H * 0.36 : ly + 300 * LS).setDepth(40).setScale(tiny ? 0.8 : 1);
     const lg = this.add.graphics();
     drawPanel(lg, -170, -34, 340, 68, { accent: C.red, fill: 0x22040a, alpha: 0.85 });
     lg.fillStyle(C.red, 1); lg.fillTriangle(-140, 16, -116, 16, -128, -10);
@@ -125,7 +127,7 @@ export class TitleScene extends BaseScene {
     this.tweens.add({ targets: lockC, alpha: 0.55, duration: 600, yoyo: true, repeat: -1, ease: 'Stepped', easeParams: [2] });
 
     // ---------- menu ----------
-    const mx = portrait ? W / 2 : W * 0.8, my = portrait ? H * 0.5 : H * 0.38;
+    const mx = portrait ? W / 2 : W * 0.8, my = portrait ? H * 0.5 : tiny ? H * 0.17 : H * 0.38;
     const items: [string, string, any, () => void, number?][] = [
       ['GAME START', '게임 시작 · CHAPTER 1', 'play', () => this.openStart(), C.red],
       ['MULTIPLAYER', '협동 플레이 (1~4인)', 'users', () => this.scene.launch('Info', { mode: 'multi', from: 'Title' })],
@@ -133,7 +135,7 @@ export class TitleScene extends BaseScene {
       ['SETTINGS', '설정', 'gear', () => this.scene.launch('Info', { mode: 'settings', from: 'Title' })],
     ];
     items.forEach(([t, s, icon, fn, acc], i) => {
-      const b = new Button(this, mx, my + i * 84, t, fn, { w: 380, h: 70, icon, sub: s, accent: acc ?? C.cyan, display: true, size: 21, primary: i === 0 });
+      const b = new Button(this, mx, my + i * (tiny ? 64 : 84), t, fn, { w: 380, h: tiny ? 56 : 70, icon, sub: s, accent: acc ?? C.cyan, display: true, size: tiny ? 19 : 21, primary: i === 0 });
       b.setDepth(50); b.setAlpha(0); b.x += 40;
       this.tweens.add({ targets: b, alpha: 1, x: mx, duration: 500, delay: 300 + i * 90, ease: 'Cubic.out' });
     });
@@ -170,15 +172,19 @@ export class TitleScene extends BaseScene {
     this.modal = m;
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setInteractive();
     m.add(dim);
-    const pw = Math.min(980, W - 40), ph = 640;
+    const tiny = H < 640;
+    const pw = Math.min(980, W - 40), ph = Math.min(640, H - (tiny ? 12 : 40));
+    // vertical layout of the briefing (compact on a phone)
+    const L = tiny ? { hd: 46, dl: 54, dY: 78, dH: 72, cl: 160, cY: 186 } : { hd: 58, dl: 86, dY: 118, dH: 92, cl: 236, cY: 268 };
+    const cH = Math.min(170, ph - L.cY - (tiny ? 62 : 90));
     const px = W / 2 - pw / 2, py = H / 2 - ph / 2;
-    const g = this.add.graphics(); drawPanel(g, px, py, pw, ph, { accent: C.cyan, header: 58 }); m.add(g);
-    const head = T(this, px + 34, py + 29, '', 22, C.white, { weight: '700' }).setOrigin(0, 0.5); m.add(head);
+    const g = this.add.graphics(); drawPanel(g, px, py, pw, ph, { accent: C.cyan, header: L.hd }); m.add(g);
+    const head = T(this, px + 34, py + L.hd / 2, '', 22, C.white, { weight: '700' }).setOrigin(0, 0.5); m.add(head);
     // chapter selector (CH2 unlocks after clearing CH1)
     const chs: [number, string][] = [[1, 'CH1 뼈대'], [2, 'CH2 근육']];
     const chBtns: { g: Phaser.GameObjects.Graphics; n: number; x: number; t: Phaser.GameObjects.Text }[] = [];
     chs.forEach(([n, label], i) => {
-      const x = px + pw - 34 - (2 - i) * 150 - (1 - i) * 10, y = py + 10;
+      const x = px + pw - 34 - (2 - i) * 150 - (1 - i) * 10, y = py + (L.hd - 38) / 2;
       const g2 = this.add.graphics(); m.add(g2);
       const locked = n === 2 && !ch1Done;
       const t = T(this, x + 70, y + 19, locked ? `${label} 🔒` : label, 16, locked ? '#5a6782' : C.white, { weight: '700' }).setOrigin(0.5); m.add(t);
@@ -189,7 +195,7 @@ export class TitleScene extends BaseScene {
       });
       m.add(z); chBtns.push({ g: g2, n, x, t });
     });
-    m.add(T(this, px + 34, py + 86, '난이도 선택', 18, C.cyanS, { weight: '700' }));
+    m.add(T(this, px + 34, py + L.dl, '난이도 선택', 18, C.cyanS, { weight: '700' }));
     const diffs: [Difficulty, string, string][] = [
       ['basic', '기초 · 1학년', '뼈 이름과 윤곽 가이드 표시, X-ray 라벨 한·영 병기'],
       ['adv', '심화 · 응용', '뼈 이름·윤곽 가이드 없음, 영문 라벨, 오답 보기 추가'],
@@ -197,22 +203,22 @@ export class TitleScene extends BaseScene {
     const dBtns: Phaser.GameObjects.Graphics[] = [];
     const dw = (pw - 34 * 2 - 20) / 2;
     diffs.forEach(([id, t, s], i) => {
-      const x = px + 34 + i * (dw + 20), y = py + 118;
+      const x = px + 34 + i * (dw + 20), y = py + L.dY;
       const bg = this.add.graphics(); dBtns.push(bg); m.add(bg);
-      const zone = this.add.zone(x, y, dw, 92).setOrigin(0).setInteractive({ useHandCursor: true });
+      const zone = this.add.zone(x, y, dw, L.dH).setOrigin(0).setInteractive({ useHandCursor: true });
       zone.on('pointerup', () => { diff = id; Audio.play('click'); redraw(); });
       m.add(zone);
-      m.add(T(this, x + 22, y + 26, t, 22, C.white, { weight: '700' }).setOrigin(0, 0.5));
-      m.add(T(this, x + 22, y + 62, s, 15, C.dim, { wordWrap: { width: dw - 40 } }).setOrigin(0, 0.5));
+      m.add(T(this, x + 22, y + (tiny ? 22 : 26), t, tiny ? 20 : 22, C.white, { weight: '700' }).setOrigin(0, 0.5));
+      m.add(T(this, x + 22, y + (tiny ? 52 : 62), s, 15, C.dim, { wordWrap: { width: dw - 40 } }).setOrigin(0, 0.5));
     });
-    m.add(T(this, px + 34, py + 236, '실험체 색상', 18, C.cyanS, { weight: '700' }));
+    m.add(T(this, px + 34, py + L.cl, '실험체 색상', 18, C.cyanS, { weight: '700' }));
     const cBtns: { g: Phaser.GameObjects.Graphics; c: string; img: Phaser.GameObjects.Image }[] = [];
     const cw = Math.min(150, (pw - 68) / 4 - 10);
     BOT_COLORS.forEach((c, i) => {
-      const x = px + 34 + i * (cw + 14), y = py + 268;
+      const x = px + 34 + i * (cw + 14), y = py + L.cY;
       const gg = this.add.graphics(); m.add(gg);
-      const img = this.add.image(x + cw / 2, y + 166, `hero_${c}`).setOrigin(0.5, 1).setScale(Math.min((cw - 16) / 469, 150 / 520)); m.add(img);
-      const z = this.add.zone(x, y, cw, 170).setOrigin(0).setInteractive({ useHandCursor: true });
+      const img = this.add.image(x + cw / 2, y + cH - 4, `hero_${c}`).setOrigin(0.5, 1).setScale(Math.min((cw - 16) / 469, (cH - 20) / 520)); m.add(img);
+      const z = this.add.zone(x, y, cw, cH).setOrigin(0).setInteractive({ useHandCursor: true });
       z.on('pointerup', () => { color = c; Audio.play('click'); redraw(); this.tweens.add({ targets: img, y: img.y - 14, duration: 140, yoyo: true, ease: 'Quad.out' }); });
       m.add(z);
       cBtns.push({ g: gg, c, img });
@@ -221,38 +227,38 @@ export class TitleScene extends BaseScene {
       1: '인체 구조를 연구하던 지하 시설 BODY LAB.\n중앙 AI의 오작동으로 모든 격벽이 봉쇄됐다.\n\n흩어진 뼈대 표본을 찾아 복구하고\n탈출 게이트의 잠금 3개를 해제하라.',
       2: '뼈대실을 탈출한 실험체는 하부 연구동의\n근육 연결실에 도착했다.\n\n끊어진 근육의 이는곳과 닿는곳을 다시 잇고\n주작용근과 대항근으로 움직임을 되살려라.',
     };
-    const story = T(this, px + 34 + 4 * (cw + 14) + 10, py + 268, STORY[chapter], 16, '#c9d6ee', { lineSpacing: 6, wordWrap: { width: Math.max(160, px + pw - (px + 34 + 4 * (cw + 14) + 10) - 30) } });
+    const story = T(this, px + 34 + 4 * (cw + 14) + 10, py + L.cY, STORY[chapter], tiny ? 15 : 16, '#c9d6ee', { lineSpacing: tiny ? 3 : 6, wordWrap: { width: Math.max(160, px + pw - (px + 34 + 4 * (cw + 14) + 10) - 30) } });
     m.add(story);
     const redraw = () => {
       head.setText(chapter === 1 ? 'MISSION BRIEFING · CHAPTER 1 뼈대 복구실' : 'MISSION BRIEFING · CHAPTER 2 근육 연결실');
       story.setText(STORY[chapter]);
       chBtns.forEach(({ g: g2, n, x }) => {
         const on = n === chapter; g2.clear();
-        g2.fillStyle(on ? C.cyan : 0x0a1222, on ? 0.25 : 0.85); g2.fillRoundedRect(x, py + 10, 140, 38, 8);
-        g2.lineStyle(on ? 2 : 1, on ? C.cyan : C.line, 1); g2.strokeRoundedRect(x, py + 10, 140, 38, 8);
+        g2.fillStyle(on ? C.cyan : 0x0a1222, on ? 0.25 : 0.85); g2.fillRoundedRect(x, py + (L.hd - 38) / 2, 140, 38, 8);
+        g2.lineStyle(on ? 2 : 1, on ? C.cyan : C.line, 1); g2.strokeRoundedRect(x, py + (L.hd - 38) / 2, 140, 38, 8);
       });
       dBtns.forEach((bg, i) => {
-        const x = px + 34 + i * (dw + 20), y = py + 118; const on = diffs[i][0] === diff;
-        bg.clear(); bg.fillStyle(on ? C.cyan : 0x0a1222, on ? 0.18 : 0.8); bg.fillRoundedRect(x, y, dw, 92, 8);
-        bg.lineStyle(on ? 2.5 : 1.2, on ? C.cyan : C.line, 1); bg.strokeRoundedRect(x, y, dw, 92, 8);
+        const x = px + 34 + i * (dw + 20), y = py + L.dY; const on = diffs[i][0] === diff;
+        bg.clear(); bg.fillStyle(on ? C.cyan : 0x0a1222, on ? 0.18 : 0.8); bg.fillRoundedRect(x, y, dw, L.dH, 8);
+        bg.lineStyle(on ? 2.5 : 1.2, on ? C.cyan : C.line, 1); bg.strokeRoundedRect(x, y, dw, L.dH, 8);
         if (on) drawIcon(bg, 'check', x + dw - 30, y + 26, 22, C.cyan);
       });
       cBtns.forEach(({ g: gg, c }, i) => {
-        const x = px + 34 + i * (cw + 14), y = py + 268; const on = c === color; const hx = BOT_HEX[c];
-        gg.clear(); gg.fillStyle(hx, on ? 0.2 : 0.05); gg.fillRoundedRect(x, y, cw, 170, 10);
-        gg.lineStyle(on ? 2.5 : 1, on ? hx : C.line, 1); gg.strokeRoundedRect(x, y, cw, 170, 10);
+        const x = px + 34 + i * (cw + 14), y = py + L.cY; const on = c === color; const hx = BOT_HEX[c];
+        gg.clear(); gg.fillStyle(hx, on ? 0.2 : 0.05); gg.fillRoundedRect(x, y, cw, cH, 10);
+        gg.lineStyle(on ? 2.5 : 1, on ? hx : C.line, 1); gg.strokeRoundedRect(x, y, cw, cH, 10);
       });
     };
     redraw();
-    const by = py + ph - 52;
+    const by = py + ph - (tiny ? 32 : 52);
     const start = new Button(this, px + pw - 170, by, '연구시설 진입', () => {
       Save.color = color; persist();
       G.run = newRun(diff, color, chapter);
       Audio.play('glitch'); Audio.setMusic('none');
       this.cameras.main.fadeOut(500, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => { startWorld(this.scene); });
-    }, { w: 280, h: 62, accent: C.red, primary: true, icon: 'play', size: 22 });
-    const cancel = new Button(this, px + 150, by, '돌아가기', () => { m.destroy(); this.modal = undefined; }, { w: 220, h: 56, icon: 'back' });
+    }, { w: 280, h: tiny ? 48 : 62, accent: C.red, primary: true, icon: 'play', size: tiny ? 20 : 22 });
+    const cancel = new Button(this, px + 150, by, '돌아가기', () => { m.destroy(); this.modal = undefined; }, { w: 220, h: tiny ? 46 : 56, icon: 'back' });
     m.add([start, cancel]);
     m.setAlpha(0); this.tweens.add({ targets: m, alpha: 1, duration: 200 });
   }

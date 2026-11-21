@@ -3,7 +3,7 @@ import { PuzzleBase } from './PuzzleBase';
 import { View } from '../../core/view';
 import { Audio } from '../../core/audio';
 import { G } from '../../game/state';
-import { BONES, FRAME, ALIGN_HINTS, LANDMARKS } from '../../data/anatomy';
+import { BONES, ALIGN_HINTS, LANDMARKS, UPPER_ORDER } from '../../data/anatomy';
 import { boneBounds, DENSITY } from '../../art/bones';
 import { T, C, Button } from '../../ui/widgets';
 
@@ -29,22 +29,29 @@ export class AlignPuzzle extends PuzzleBase {
     const adv = G.run.difficulty === 'adv';
     this.frame('관절 보정 장치 · 관절면 정렬', '뼈를 눌러 선택하고 회전/반전으로 관절면을 맞춘 뒤 [정렬 검증]을 누르세요.', C.violet);
     const { W, H } = View; const portrait = H > W;
-    const areaW = portrait ? this.pw - 40 : this.pw * 0.55, areaH = portrait ? this.ph * 0.58 : this.ph - 190;
-    this.fs = Math.min(areaH / FRAME.h, areaW / FRAME.w);
-    this.fx = this.px + 20 + (areaW - FRAME.w * this.fs) / 2;
-    this.fy = this.py + 76 + (areaH - FRAME.h * this.fs) / 2;
+    const cp = this.compact;
+    // show only the arm skeleton (union of its bones), so it fills the column instead of a mostly empty torso frame
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const id of UPPER_ORDER) { const bb = boneBounds(id); x0 = Math.min(x0, bb.x); y0 = Math.min(y0, bb.y); x1 = Math.max(x1, bb.x + bb.w); y1 = Math.max(y1, bb.y + bb.h); }
+    const crop = { x: x0 - 70, y: y0 - 40, w: x1 - x0 + 110, h: y1 - y0 + 80 };
+    const top = this.cTop, areaH = portrait ? this.ph * 0.58 : this.cBot - top, areaW = portrait ? this.pw - 40 : this.pw * 0.5;
+    this.fs = Math.min(areaH / crop.h, areaW / crop.w);
+    const vw = crop.w * this.fs, vh = crop.h * this.fs;
+    const vx = this.px + 20 + (portrait ? (areaW - vw) / 2 : 0), vy = top + (areaH - vh) / 2;
+    this.fx = vx - crop.x * this.fs; this.fy = vy - crop.y * this.fs;
     const plate = this.add.graphics();
-    plate.fillStyle(0x0b0618, 0.7); plate.fillRoundedRect(this.fx - 10, this.fy - 10, FRAME.w * this.fs + 20, FRAME.h * this.fs + 20, 12);
-    plate.lineStyle(1, C.violet, 0.3); plate.strokeRoundedRect(this.fx - 10, this.fy - 10, FRAME.w * this.fs + 20, FRAME.h * this.fs + 20, 12);
-    this.add.image(this.fx, this.fy, 'torso_holo').setOrigin(0).setScale(this.fs / DENSITY).setAlpha(0.7);
-    // axis legend
-    const ax = this.fx + 30, ay = this.fy + FRAME.h * this.fs - 60;
+    plate.fillStyle(0x0b0618, 0.7); plate.fillRoundedRect(vx - 6, vy - 6, vw + 12, vh + 12, 12);
+    plate.lineStyle(1, C.violet, 0.3); plate.strokeRoundedRect(vx - 6, vy - 6, vw + 12, vh + 12, 12);
+    const holo = this.add.image(this.fx, this.fy, 'torso_holo').setOrigin(0).setScale(this.fs / DENSITY).setAlpha(0.7);
+    const mk = this.make.graphics({}, false); mk.fillRect(vx - 6, vy - 6, vw + 12, vh + 12); holo.setMask(mk.createGeometryMask());
+    // axis legend (bottom-left of the plate) + side labels
+    const ax = vx + vw - 70, ay = vy + vh - 14;   // medial-bottom corner is empty (the forearm lies laterally)
     const g = this.add.graphics(); g.lineStyle(2, C.violet, 0.8);
-    g.lineBetween(ax, ay, ax, ay - 50); g.fillStyle(C.violet, 1); g.fillTriangle(ax - 6, ay - 46, ax + 6, ay - 46, ax, ay - 58);
-    T(this, ax + 10, ay - 52, '몸쪽 (Proximal)', 12, C.violetS).setOrigin(0, 0.5);
-    T(this, ax + 10, ay, '먼쪽 (Distal)', 12, C.violetS).setOrigin(0, 0.5);
-    T(this, this.fx + 40 * this.fs, this.fy + 20, '← 가쪽', 13, '#c8a8ff', { weight: '700' }).setOrigin(0.5);
-    T(this, this.fx + 600 * this.fs, this.fy + 20, '안쪽 →', 13, '#c8a8ff', { weight: '700' }).setOrigin(0.5);
+    g.lineBetween(ax, ay, ax, ay - 44); g.fillStyle(C.violet, 1); g.fillTriangle(ax - 6, ay - 40, ax + 6, ay - 40, ax, ay - 52);
+    T(this, ax + 10, ay - 46, '몸쪽', 15, C.violetS, { weight: '700' }).setOrigin(0, 0.5);
+    T(this, ax + 10, ay, '먼쪽', 15, C.violetS, { weight: '700' }).setOrigin(0, 0.5);
+    T(this, vx + 6, vy + 4, '← 가쪽', 15, '#c8a8ff', { weight: '700' });
+    T(this, vx + vw - 6, vy + 4, '안쪽 →', 15, '#c8a8ff', { weight: '700' }).setOrigin(1, 0);
     // fixed bones
     for (const id of ['scapula', 'clavicle'] as const) { const b = boneBounds(id); this.add.image(this.fx + b.cx * this.fs, this.fy + b.cy * this.fs, `bone_bone_${id}`).setScale(this.fs / DENSITY); }
     // joint sockets (glow)
@@ -68,19 +75,23 @@ export class AlignPuzzle extends PuzzleBase {
       this.mb.push(m);
     });
     // ---- controls (right) ----
-    const cx0 = portrait ? this.px + 30 : this.px + this.pw * 0.58, cy0 = portrait ? this.fy + FRAME.h * this.fs + 30 : this.py + 100;
-    const cw = portrait ? this.pw - 60 : this.pw * 0.42 - 40;
+    const cx0 = portrait ? this.px + 30 : vx + vw + (cp ? 36 : 60), cy0 = portrait ? vy + vh + 30 : top + (cp ? 2 : 10);
+    const cw = portrait ? this.pw - 60 : this.px + this.pw - 30 - cx0;
     T(this, cx0, cy0, '선택한 뼈', 16, C.violetS, { weight: '700' });
-    this.selT = T(this, cx0, cy0 + 30, '— 뼈를 눌러 선택하세요 —', 24, C.white, { weight: '700' });
-    const bw = Math.min(cw, 420);
-    const b1 = new Button(this, cx0 + bw / 2, cy0 + 110, '상하 180° 회전', () => this.op('flip'), { w: bw, h: 62, icon: 'rotate', accent: C.violet, sound: 'rotate' });
-    const b2 = new Button(this, cx0 + bw / 2, cy0 + 184, '좌우 반전 (거울상)', () => this.op('mirror'), { w: bw, h: 62, icon: 'flip', accent: C.violet, sound: 'rotate' });
-    const b3 = new Button(this, cx0 + bw / 2, cy0 + 278, '정렬 검증', () => this.verify(), { w: bw, h: 70, icon: 'check', accent: C.green, primary: true, size: 24 });
+    this.selT = T(this, cx0, cy0 + (cp ? 22 : 30), '— 뼈를 눌러 선택하세요 —', cp ? 20 : 24, C.white, { weight: '700' });
+    const bw = Math.min(cw, cp ? 560 : 420);
+    // compact (phone): the two operations side by side, then the check button, then the clues
+    const L = cp ? { y1: 80, y3: 138, h: 48, hv: 52, gy: 172 } : { y1: 110, y3: 278, h: 62, hv: 70, gy: 340 };
+    const hb = cp ? (bw - 10) / 2 : bw;
+    const b1 = new Button(this, cx0 + hb / 2, cy0 + L.y1, '상하 180° 회전', () => this.op('flip'), { w: hb, h: L.h, icon: 'rotate', accent: C.violet, sound: 'rotate' });
+    const b2 = new Button(this, cp ? cx0 + hb + 10 + hb / 2 : cx0 + bw / 2, cp ? cy0 + L.y1 : cy0 + 184, '좌우 반전 (거울상)', () => this.op('mirror'), { w: hb, h: L.h, icon: 'flip', accent: C.violet, sound: 'rotate' });
+    const b3 = new Button(this, cx0 + bw / 2, cy0 + L.y3, '정렬 검증', () => this.verify(), { w: bw, h: L.hv, icon: 'check', accent: C.green, primary: true, size: cp ? 21 : 24 });
     void b1; void b2; void b3;
     const guide = adv
       ? '단서: 몸쪽/먼쪽의 크기 차이, 관절면(머리·절흔)의 방향, 돌기가 향하는 쪽(안쪽/가쪽)을 확인하세요.'
       : '단서\n• 위팔뼈머리(둥근 머리)는 위·안쪽에서 관절오목과 만납니다.\n• 자뼈는 몸쪽부분이 크고(팔꿈치머리), 노뼈는 먼쪽부분이 넓습니다.\n• 노뼈 붓돌기 = 엄지쪽(가쪽), 자뼈 붓돌기 = 새끼쪽(안쪽).';
-    T(this, cx0, cy0 + 340, guide, 16, '#c9d6ee', { wordWrap: { width: cw }, lineSpacing: 6 });
+    const gd = T(this, cx0, cy0 + L.gy, guide, cp ? 15 : 16, '#c9d6ee', { wordWrap: { width: cw }, lineSpacing: cp ? 2 : 6 });
+    if (gd.y + gd.height > this.cBot) gd.setMaxLines(Math.max(2, Math.floor((this.cBot - gd.y) / 19)));
     this.setFeedback('세 개의 뼈가 잘못 장착되어 있습니다. 하나씩 선택해서 바로잡으세요.', 'info');
     this.select(this.mb[0]);
   }

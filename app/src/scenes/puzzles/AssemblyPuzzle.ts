@@ -53,7 +53,8 @@ export class AssemblyPuzzle extends PuzzleBase {
           : '오른쪽 팔뼈대를 앞에서 본 모습입니다. 표본 카드를 끌어 점선 윤곽에 놓거나, 카드를 누른 뒤 자리를 누르세요.');
     const { W, H } = View;
     const portrait = H > W;
-    const top = this.py + 76, bottom = this.py + this.ph - 14;
+    const cp = this.compact;   // short landscape (iPhone): one-line goal, shorter cards and banner
+    const top = this.cTop, bottom = this.py + this.ph - (cp ? 8 : 14);
 
     // ---------------- skeleton (left): cropped to the upper-limb bones so it fills the column ----------------
     let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
@@ -73,8 +74,9 @@ export class AssemblyPuzzle extends PuzzleBase {
     plate.lineStyle(1.5, C.cyan, 0.35); plate.strokeRoundedRect(ox - 8, oy - 8, shownW + 16, shownH + 16, 12);
     const holo = this.add.image(this.fx, this.fy, 'torso_holo').setOrigin(0).setScale(this.fs / DENSITY).setAlpha(0.75);
     const mask = this.make.graphics({}, false); mask.fillRect(ox - 8, oy - 8, shownW + 16, shownH + 16); holo.setMask(mask.createGeometryMask());
-    T(this, ox + 6, oy + 4, '← 가쪽 (Lateral)', 16, '#9fdcf5', { weight: '700' });
-    T(this, ox + shownW - 6, oy + 4, '안쪽 (Medial) →', 16, '#9fdcf5', { weight: '700' }).setOrigin(1, 0);
+    const narrow = shownW < 300;   // narrow column: short direction labels so they do not overlap
+    T(this, ox + 6, oy + 4, narrow ? '← 가쪽' : '← 가쪽 (Lateral)', 16, '#9fdcf5', { weight: '700' });
+    T(this, ox + shownW - 6, oy + 4, narrow ? '안쪽 →' : '안쪽 (Medial) →', 16, '#9fdcf5', { weight: '700' }).setOrigin(1, 0);
     T(this, ox + shownW - 6, oy + shownH - 4, '오른쪽 · 앞면', 16, '#9fdcf5', { weight: '700' }).setOrigin(1, 1);
     // slot outlines. basic: bright silhouette of each bone, coloured by group (amber = 팔이음뼈, cyan = 자유팔뼈).
     // advanced: no shape hints, only a pulsing ring at each slot centre (as before).
@@ -99,48 +101,54 @@ export class AssemblyPuzzle extends PuzzleBase {
     hit.on('pointerup', (p: Phaser.Input.Pointer) => { if (this.selected && !this.dragging) this.tryPlace(this.selected, p.worldX, p.worldY, false); });
 
     // ---------------- right column: goal, cards, (bin), feedback ----------------
-    const rx = portrait ? this.px + 20 : ox + shownW + 36, rw = portrait ? this.pw - 40 : this.px + this.pw - 20 - rx;
+    const rx = portrait ? this.px + 20 : ox + shownW + (cp ? 22 : 36), rw = portrait ? this.pw - 40 : this.px + this.pw - 20 - rx;
     let y = portrait ? oy + shownH + 20 : top;
     // goal box: what is being assembled
     const goal = this.add.graphics();
-    const goalLines = [
-      '목표: 오른쪽 팔뼈대(앞면) 조립',
-      '■ 팔이음뼈 — 빗장뼈·어깨뼈: 몸통과 팔을 잇는 뼈',
-      '■ 자유팔뼈 — 위팔뼈·노뼈·자뼈 (손뼈는 이번 조립에서 제외)',
-    ];
-    const gT = T(this, rx + 14, y + 10, goalLines[0], 19, C.white, { weight: '700' });
-    const g1 = T(this, rx + 14, y + 40, goalLines[1], 16, '#ffd98a', { weight: '700', wordWrap: { width: rw - 28 } });
-    const g2 = T(this, rx + 14, g1.y + g1.height + 4, goalLines[2], 16, '#9fe6ff', { weight: '700', wordWrap: { width: rw - 28 } });
-    let gh = g2.y + g2.height - y + 10;
-    if (adv) { const g3 = T(this, rx + 14, y + gh, '※ 다리뼈 표본이 1개 섞여 있습니다. 찾아서 폐기하세요.', 16, '#ffb0bc', { weight: '700', wordWrap: { width: rw - 28 } }); gh += g3.height + 6; }
+    let gh: number;
+    if (cp) {
+      // compact: the header already says 팔뼈대 조립 -> just the two groups, coloured like the outlines
+      const g1 = T(this, rx + 12, y + 6, '■ 팔이음뼈: 빗장뼈·어깨뼈 (몸통과 팔을 잇는 뼈)', 15, '#ffd98a', { weight: '700', wordWrap: { width: rw - 24 } });
+      const g2 = T(this, rx + 12, g1.y + g1.height + 2, `■ 자유팔뼈: 위팔뼈·노뼈·자뼈 (손뼈 제외)${adv ? '   ※ 다리뼈 표본 1개 섞임 → 폐기' : ''}`, 15, '#9fe6ff', { weight: '700', wordWrap: { width: rw - 24 } });
+      gh = g2.y + g2.height - y + 6;
+    } else {
+      T(this, rx + 14, y + 10, '목표: 오른쪽 팔뼈대(앞면) 조립', 19, C.white, { weight: '700' });
+      const g1 = T(this, rx + 14, y + 40, '■ 팔이음뼈 — 빗장뼈·어깨뼈: 몸통과 팔을 잇는 뼈', 16, '#ffd98a', { weight: '700', wordWrap: { width: rw - 28 } });
+      const g2 = T(this, rx + 14, g1.y + g1.height + 4, '■ 자유팔뼈 — 위팔뼈·노뼈·자뼈 (손뼈는 이번 조립에서 제외)', 16, '#9fe6ff', { weight: '700', wordWrap: { width: rw - 28 } });
+      gh = g2.y + g2.height - y + 10;
+      if (adv) { const g3 = T(this, rx + 14, y + gh, '※ 다리뼈 표본이 1개 섞여 있습니다. 찾아서 폐기하세요.', 16, '#ffb0bc', { weight: '700', wordWrap: { width: rw - 28 } }); gh += g3.height + 6; }
+    }
     goal.fillStyle(0x07121f, 0.92); goal.fillRoundedRect(rx, y, rw, gh, 10); goal.lineStyle(1.5, C.cyan, 0.5); goal.strokeRoundedRect(rx, y, rw, gh, 10);
-    void gT;
-    y += gh + 12;
-    this.progressT = T(this, rx, y, '', 18, C.white, { weight: '700' });
-    y += 30;
+    y += gh + (cp ? 6 : 12);
+    this.progressT = T(this, rx, y, '', cp ? 16 : 18, C.white, { weight: '700' });
+    y += cp ? 24 : 30;
     // feedback box reserved at the bottom of the column (never covers the cards)
-    const fbH = Math.min(118, Math.max(92, (bottom - y) * 0.26));
+    const fbH = cp ? 60 : Math.min(118, Math.max(92, (bottom - y) * 0.26));
     this.fbBox = { x: rx, y: bottom - fbH, w: rw, h: fbH };
     this.fbG = this.add.graphics().setDepth(50);
-    this.fbT = T(this, rx + 20, bottom - fbH / 2, '', 18, C.white, { weight: '700', wordWrap: { width: rw - 36 }, lineSpacing: 4 }).setOrigin(0, 0.5).setDepth(51);
+    this.fbT = T(this, rx + 20, bottom - fbH / 2, '', 18, C.white, { weight: '700', wordWrap: { width: rw - 36 }, lineSpacing: cp ? 0 : 4 }).setOrigin(0, 0.5).setDepth(51);
     // bin (advanced only)
-    const binH = adv ? 76 : 0;
-    const cardsBottom = this.fbBox.y - 12 - (adv ? binH + 12 : 0);
+    const binH = adv ? (cp ? 44 : 76) : 0;
+    const gapY = cp ? 8 : 12;
+    const cardsBottom = this.fbBox.y - gapY - (adv ? binH + gapY : 0);
     // cards grid: 3 columns, whole card is the touch target
-    const n = G.run.bones.length, cols = portrait ? Math.min(6, n) : 3, rows = Math.ceil(n / cols), gap = 12;
+    const n = G.run.bones.length, cols = portrait ? Math.min(6, n) : 3, rows = Math.ceil(n / cols), gap = cp ? 8 : 12;
     const cw = (rw - gap * (cols - 1)) / cols;
-    const ch = Math.max(118, Math.min(200, (cardsBottom - y - gap * (rows - 1)) / rows));
+    const ch = Math.max(cp ? 64 : 118, Math.min(200, (cardsBottom - y - gap * (rows - 1)) / rows));
+    const labH = cp ? 26 : 50;   // compact: one label line 'name English'
     const ids = Phaser.Utils.Array.Shuffle([...G.run.bones]) as BoneId[];
     ids.forEach((id, i) => {
       const x = rx + (i % cols) * (cw + gap), cy = y + Math.floor(i / cols) * (ch + gap);
       const card = this.add.graphics();
-      const img = this.add.image(x + cw / 2, cy + (ch - 50) / 2 + 6, `bone_bone_${id}`).setDepth(10);
+      const img = this.add.image(x + cw / 2, cy + (ch - labH) / 2 + 4, `bone_bone_${id}`).setDepth(10);
       // long bones lie horizontally in the tray so they stay large; they turn upright when picked up
       const rot = (['humerus', 'radius', 'ulna', 'fibula'] as BoneId[]).includes(id) ? -90 : 0;
-      const s = rot ? Math.min((cw - 24) / img.height, (ch - 62) / img.width) : Math.min((cw - 24) / img.width, (ch - 62) / img.height);
+      const s = rot ? Math.min((cw - 24) / img.height, (ch - labH - 12) / img.width) : Math.min((cw - 24) / img.width, (ch - labH - 12) / img.height);
       img.setScale(s).setAngle(rot);
-      const name = T(this, x + cw / 2, cy + ch - 40, adv ? `표본 ${i + 1}` : BONES[id].ko, 19, C.white, { weight: '700' }).setOrigin(0.5, 0);
-      const sub = T(this, x + cw / 2, cy + ch - 19, adv ? '?' : BONES[id].en, 15, '#c8d8f2', { weight: '600' }).setOrigin(0.5, 0);
+      const name = cp ? T(this, x + cw / 2 - 4, cy + ch - 4, adv ? `표본 ${i + 1}` : BONES[id].ko, 17, C.white, { weight: '700' }).setOrigin(1, 1)
+                      : T(this, x + cw / 2, cy + ch - 40, adv ? `표본 ${i + 1}` : BONES[id].ko, 19, C.white, { weight: '700' }).setOrigin(0.5, 0);
+      const sub = cp ? T(this, x + cw / 2 + 4, cy + ch - 5, adv ? '?' : BONES[id].en, 15, '#c8d8f2', { weight: '600' }).setOrigin(0, 1)
+                     : T(this, x + cw / 2, cy + ch - 19, adv ? '?' : BONES[id].en, 15, '#c8d8f2', { weight: '600' }).setOrigin(0.5, 0);
       const zone = this.add.zone(x, cy, cw, ch).setOrigin(0).setInteractive({ useHandCursor: true, draggable: true });
       const p: Piece = { id, img, zone, card, name, sub, rect: { x, y: cy, w: cw, h: ch }, home: { x: img.x, y: img.y, s, a: rot }, placed: false };
       this.drawCard(p, 'idle');
@@ -148,11 +156,16 @@ export class AssemblyPuzzle extends PuzzleBase {
       this.pieces.push(p);
     });
     if (adv) {
-      const by = cardsBottom + 12;
+      const by = cardsBottom + gapY;
       this.bin = { x: rx, y: by, w: rw, h: binH, g: this.add.graphics() };
       this.drawBin(false);
-      T(this, rx + 72, by + binH / 2 - 12, '오염 표본 폐기함', 19, C.redS, { weight: '700' }).setOrigin(0, 0.5);
-      T(this, rx + 72, by + binH / 2 + 13, '팔뼈가 아닌 표본을 여기에 끌어 놓거나, 선택 후 누르세요', 15, '#ffc4cc').setOrigin(0, 0.5);
+      if (cp) {
+        const bt = T(this, rx + 64, by + binH / 2, '오염 표본 폐기함', 17, C.redS, { weight: '700' }).setOrigin(0, 0.5);
+        T(this, bt.x + bt.width + 14, by + binH / 2, '팔뼈가 아닌 표본을 끌어 놓거나, 선택 후 누르세요', 15, '#ffc4cc').setOrigin(0, 0.5);
+      } else {
+        T(this, rx + 72, by + binH / 2 - 12, '오염 표본 폐기함', 19, C.redS, { weight: '700' }).setOrigin(0, 0.5);
+        T(this, rx + 72, by + binH / 2 + 13, '팔뼈가 아닌 표본을 여기에 끌어 놓거나, 선택 후 누르세요', 15, '#ffc4cc').setOrigin(0, 0.5);
+      }
       const bz = this.add.zone(rx, by, rw, binH).setOrigin(0).setInteractive({ useHandCursor: true });
       bz.on('pointerup', () => { if (this.selected && !this.dragging) this.discard(this.selected); });
     }
@@ -202,7 +215,9 @@ export class AssemblyPuzzle extends PuzzleBase {
     g.fillStyle(col, 1); g.fillRect(x + 8, y + 12, 5, h - 24);
     this.fbT.setText(text).setColor(kind === 'ok' ? '#c9ffe4' : kind === 'err' ? '#ffd2d8' : C.white);
     // shrink the font if a long explanation would overflow the reserved box
-    for (const sz of [18, 17, 16, 15]) { this.fbT.setFontSize(sz); if (this.fbT.height <= h - 14) break; }
+    this.fbT.setMaxLines(0);
+    for (const sz of [18, 17, 16, 15]) { this.fbT.setFontSize(sz); if (this.fbT.height <= h - 6) break; }
+    if (this.fbT.height > h - 6) this.fbT.setMaxLines(Math.floor((h - 6) / 18));
     if (kind === 'err') this.tweens.add({ targets: [this.fbT], x: '+=6', duration: 50, yoyo: true, repeat: 3 });
   }
   // PuzzleBase calls setFeedback for its own messages; route them into the reserved box
