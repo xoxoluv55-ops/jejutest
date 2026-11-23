@@ -140,6 +140,8 @@ export class GameScene extends Phaser.Scene {
     Bus.on('input:interact', () => this.tryInteract(), this);
     Bus.on('input:scan', () => this.scan(), this);
     Bus.on('puzzle:done', (id: string) => this.onPuzzleDone(id), this);
+    Bus.on('ident:ok', (id: BoneId) => this.onIdent(id, true), this);
+    Bus.on('ident:cancel', (id: BoneId) => this.onIdent(id, false), this);
     Bus.on('puzzle:closed', () => { this.busy = false; this.player.frozen = false; this.scene.resume(); this.scene.wake('HUD'); }, this);
     Bus.on('game:quit', () => { this.scene.stop('HUD'); this.scene.start('Title'); }, this);
 
@@ -1147,7 +1149,11 @@ export class GameScene extends Phaser.Scene {
     // leave the locker by moving
     if (this.hiding && (Math.hypot(Pad.x, Pad.y) > 0.4 || this.keys.W.isDown || this.keys.A.isDown || this.keys.S.isDown || this.keys.D.isDown || this.keys.UP.isDown || this.keys.DOWN.isDown || this.keys.LEFT.isDown || this.keys.RIGHT.isDown)) this.exitHide();
     // walk-in pickups
-    for (const k of [...this.pickups]) if (!this.busy && Math.hypot(p.x - k.x, p.y - k.y) < (k.r ?? 48)) { this.pickups = this.pickups.filter(q => q !== k); if (k.id === 'keycard') this.tweens.add({ targets: k.obj, y: (k.obj as any).y - 60, alpha: 0, duration: 300, onComplete: () => k.obj.destroy() }); k.take(); }
+    if (this.identCd > 0) this.identCd -= dt;
+    for (const k of [...this.pickups]) if (!this.busy && Math.hypot(p.x - k.x, p.y - k.y) < (k.r ?? 48)) {
+      // v0.6: a bone is only recovered after the identification check (pick its true feature)
+      if (k.id.startsWith('bone_')) { if (this.identCd <= 0) this.identify(k.id.slice(5) as BoneId); continue; }
+      this.pickups = this.pickups.filter(q => q !== k); if (k.id === 'keycard') this.tweens.add({ targets: k.obj, y: (k.obj as any).y - 60, alpha: 0, duration: 300, onComplete: () => k.obj.destroy() }); k.take(); }
     // checkpoints
     for (const c of this.checkpoints) if (!c.on && Math.hypot(p.x - c.x, p.y - c.y) < 60) this.activateCheckpoint(c);
     // guards
@@ -1179,6 +1185,19 @@ export class GameScene extends Phaser.Scene {
       }
       if (this.escape) Bus.emit('timer', Math.max(0, e.left), e.kind === 'gallery' ? '셔터 폐쇄' : '탈출 제한');
     }
+  }
+
+  identCd = 0;
+  identify(id: BoneId) {
+    this.busy = true; this.player.frozen = true; Pad.x = Pad.y = 0; Pad.run = false;
+    this.player.play('scan');
+    Audio.play('scan');
+    Bus.emit('ident', id);
+  }
+  onIdent(id: BoneId, ok: boolean) {
+    this.busy = false; this.player.frozen = false;
+    if (ok) { const k = this.pickups.find(q => q.id === `bone_${id}`); if (k) { this.pickups = this.pickups.filter(q => q !== k); k.take(); } }
+    else { this.identCd = 1.5; this.toast('표본 식별을 취소했습니다 — 다시 다가가면 식별 창이 열립니다', 'info'); }
   }
 
   /** threats for the HUD's off-screen warnings (drones, active lasers near the player) */

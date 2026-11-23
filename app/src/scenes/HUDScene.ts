@@ -7,6 +7,8 @@ import { Pad } from '../game/input';
 
 import { T, C, drawPanel, drawIcon, RoundButton, Button, IconName } from '../ui/widgets';
 import type { GameScene, Mission } from './GameScene';
+import { BONE_QUIZ } from '../data/boneQuiz';
+import { BONES, BoneId } from '../data/anatomy';
 
 export class HUDScene extends BaseScene {
   constructor() { super('HUD'); }
@@ -43,6 +45,7 @@ export class HUDScene extends BaseScene {
       this.timerT.setVisible(true).setText(`${label ?? this.game2.timerLabel()}  ${String(Math.max(0, Math.ceil(s))).padStart(2, '0')}s`); this.timerT.setColor(s < 20 ? '#ff5d74' : '#ffc24d');
     });
     on('hp', (k?: string) => this.drawHearts(k === 'hit'));
+    on('ident', (id: BoneId) => this.openIdent(id));
     on('blackout', (v: boolean) => { if (!v) this.timerT.setVisible(false); });
     on('channel', (c: any) => this.channel(c.label, c.dur));
     on('tick', (t: any) => { this.lastTick = t; });
@@ -301,7 +304,61 @@ export class HUDScene extends BaseScene {
     Audio.play('open');
     return { c, x, y, w, h };
   }
-  closeOverlay() { if (!this.overlay) return; const c = this.overlay; this.overlay = undefined; this.game2.busy = false; Audio.play('close'); this.tweens.add({ targets: c, alpha: 0, duration: 140, onComplete: () => c.destroy() }); }
+  closeOverlay() { if (!this.overlay) return; if (this.identId) { const id = this.identId; this.identId = null; Bus.emit('ident:cancel', id); } const c = this.overlay; this.overlay = undefined; this.game2.busy = false; Audio.play('close'); this.tweens.add({ targets: c, alpha: 0, duration: 140, onComplete: () => c.destroy() }); }
+
+  // ------------------------------------------------------------ bone identification check (v0.6)
+  identId: BoneId | null = null;
+  /** options of the open identification check (also used by the automated tests) */
+  identOpts: { ok: boolean; zone: Phaser.GameObjects.Zone }[] = [];
+  /** The bone is only recovered after the player picks the feature that is true of it (wrong picks explain why). */
+  openIdent(id: BoneId) {
+    const adv = G.run.difficulty === 'adv', tn = this.tiny, b = BONES[id], q = BONE_QUIZ[id];
+    const m = this.modal(adv ? '표본 식별 · 특징으로 판별하세요' : `표본 식별 · ${b.ko} ${b.en}`, 980, tn ? 600 : 560, C.cyan);
+    this.identId = id;
+    // bone picture on the left
+    const im = this.add.image(m.x + 150, m.y + m.h / 2 + 20, `bone_bone_${id}`);
+    im.setScale(Math.min(200 / im.width, (m.h - 140) / im.height)); m.c.add(im);
+    const glow = this.add.image(im.x, im.y, `bone_holo_${id}`).setScale(im.scale).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.25); m.c.add(glow);
+    this.tweens.add({ targets: glow, alpha: 0.08, duration: 900, yoyo: true, repeat: -1 });
+    const tx = m.x + 300, tw = m.w - 330;
+    const head = T(this, tx, m.y + (tn ? 62 : 74), adv ? '이 표본에 대해 옳은 설명은? (팔뼈대가 아닐 수도 있습니다)' : `${b.ko}의 특징으로 옳은 것은?`, tn ? 18 : 21, C.white, { weight: '700', wordWrap: { width: tw } });
+    m.c.add(head);
+    const opts = [{ text: q.correct, ok: true, is: '' }, ...(adv ? q.wrong : q.wrong.slice(0, 1)).map(w => ({ text: w.text, ok: false, is: w.is }))];
+    Phaser.Utils.Array.Shuffle(opts);
+    const fb = T(this, tx, 0, '', 16, C.white, { weight: '600', wordWrap: { width: tw }, lineSpacing: 3 }); m.c.add(fb);
+    let y = head.y + head.height + (tn ? 12 : 18);
+    const oh = tn ? 76 : 84, gap = tn ? 8 : 12;
+    let done = false;
+    this.identOpts = [];
+    opts.forEach((o, i) => {
+      const g = this.add.graphics(); m.c.add(g);
+      const t = T(this, tx + 52, y + oh / 2, o.text, tn ? 16 : 17, C.white, { weight: '600', wordWrap: { width: tw - 70 }, lineSpacing: 2 }).setOrigin(0, 0.5); m.c.add(t);
+      const badge = T(this, tx + 24, y + oh / 2, String.fromCharCode(65 + i), 20, C.cyanS, { weight: '800' }).setOrigin(0.5); m.c.add(badge);
+      const yy = y;
+      const draw = (st: 'idle' | 'ok' | 'bad') => {
+        const col = st === 'ok' ? C.green : st === 'bad' ? C.red : C.cyan;
+        g.clear(); g.fillStyle(st === 'ok' ? 0x08281c : st === 'bad' ? 0x2a0710 : 0x0a1222, 0.95); g.fillRoundedRect(tx, yy, tw, oh, 10);
+        g.lineStyle(st === 'idle' ? 1.4 : 2.5, col, 1); g.strokeRoundedRect(tx, yy, tw, oh, 10);
+      };
+      draw('idle');
+      const z = this.add.zone(tx, yy, tw, oh).setOrigin(0).setInteractive({ useHandCursor: true }); m.c.add(z);
+      this.identOpts.push({ ok: o.ok, zone: z });
+      z.on('pointerup', () => {
+        if (done) return;
+        if (o.ok) {
+          done = true; draw('ok'); Audio.play('success');
+          fb.setText(`정답 — ${b.ko} (${b.en})\n${q.why}`).setColor('#c9ffe4');
+          this.time.delayedCall(1300, () => { this.identId = null; this.closeOverlay(); Bus.emit('ident:ok', id); });
+        } else {
+          draw('bad'); z.disableInteractive(); t.setAlpha(0.6); Audio.play('error'); G.run.mistakes++;
+          fb.setText(`✗ 그것은 ${o.is}의 특징입니다. 다시 고르세요.${adv ? '' : `\n힌트: ${q.why}`}`).setColor('#ffd2d8');
+          this.tweens.add({ targets: m.c, x: '+=8', duration: 50, yoyo: true, repeat: 3 });
+        }
+      });
+      y += oh + gap;
+    });
+    fb.setY(y + 2);
+  }
 
   openInventory(sel?: string) {
     if (this.overlay || this.game2.player?.frozen) return;
