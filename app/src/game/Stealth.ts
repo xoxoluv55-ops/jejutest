@@ -42,7 +42,7 @@ const angDiff = (a: number, b: number) => Math.atan2(Math.sin(a - b), Math.cos(a
 
 // ---------------------------------------------------------------- guard drone
 export type GState = 'patrol' | 'suspicious' | 'alert' | 'chase' | 'search' | 'return';
-export interface GuardCfg { path: V2[]; wait?: number; speed: number; chase: number; range: number; fov: number; susRate: number; name?: string }
+export interface GuardCfg { path: V2[]; wait?: number; speed: number; chase: number; range: number; fov: number; susRate: number; name?: string; alertDelay?: number; catchStun?: number; susDecay?: number }
 /** What the guard needs from the world each frame. */
 export interface GuardWorld { px: number; py: number; hidden: boolean; blockers: Rect[]; onCatch: (g: Guard) => void; onState: (g: Guard, s: GState) => void }
 
@@ -142,18 +142,18 @@ export class Guard {
         const a = Math.atan2(this.last.y - this.y, this.last.x - this.x);
         this.dir += angDiff(a, this.dir) * Math.min(1, dt * 3);
         if (see) { const d = Math.hypot(w.px - this.x, w.py - this.y); this.sus += dt * this.cfg.susRate * (d < this.cfg.range * 0.5 ? 2.2 : 1); }
-        else { this.sus -= dt * 0.45; if (this.stateT > 1.2) this.moveTo(this.last.x, this.last.y, this.cfg.speed * 0.6, dt, w.blockers); }
+        else { this.sus -= dt * (this.cfg.susDecay ?? 0.45); if (this.stateT > 1.2) this.moveTo(this.last.x, this.last.y, this.cfg.speed * 0.6, dt, w.blockers); }
         if (this.sus >= 1) { this.sus = 1; this.setState('alert'); Audio.play('alert'); }
         else if (this.sus <= 0) { this.sus = 0; this.setState('return'); }
         break;
       }
       case 'alert':
         this.dir += angDiff(Math.atan2(w.py - this.y, w.px - this.x), this.dir) * Math.min(1, dt * 10);
-        if (this.stateT > 0.55) this.setState('chase');
+        if (this.stateT > (this.cfg.alertDelay ?? 0.55)) this.setState('chase');
         break;
       case 'chase': {
         const reached = this.moveTo(this.last.x, this.last.y, this.cfg.chase, dt, w.blockers);
-        if (see && Math.hypot(w.px - this.x, w.py - this.y) < 40) { w.onCatch(this); this.stun = 1.4; this.setState('search'); break; }
+        if (see && Math.hypot(w.px - this.x, w.py - this.y) < 40) { w.onCatch(this); this.stun = this.cfg.catchStun ?? 1.4; this.setState('search'); break; }
         if (!see && (reached || this.stateT > 6)) this.setState('search');
         if (see) this.stateT = Math.min(this.stateT, 3);
         break;
@@ -216,7 +216,7 @@ export interface LaserCfg {
  * (warning). 'sweep' beams are always on and glide back and forth (amp) — cross behind them.
  */
 export class Laser {
-  scene: Phaser.Scene; cfg: LaserCfg; mul = 1; enabled = true; t = 0;
+  scene: Phaser.Scene; cfg: LaserCfg; mul = 1; enabled = true; t = 0; hitR = 16;
   g: Phaser.GameObjects.Graphics; n1: Phaser.GameObjects.Image; n2: Phaser.GameObjects.Image;
   wasOn = false;
   constructor(scene: Phaser.Scene, cfg: LaserCfg) {
@@ -251,6 +251,6 @@ export class Laser {
     } else { g.lineStyle(1, 0xff3d6a, 0.18); g.lineBetween(a.x, a.y, b.x, b.y); }
     this.wasOn = on;
   }
-  hits(px: number, py: number) { if (!this.on()) return false; const [a, b] = this.seg(); return distToSeg(px, py - 18, a, b) < 16; }
+  hits(px: number, py: number) { if (!this.on()) return false; const [a, b] = this.seg(); return distToSeg(px, py - 18, a, b) < this.hitR; }
   destroy() { this.g.destroy(); this.n1.destroy(); this.n2.destroy(); }
 }

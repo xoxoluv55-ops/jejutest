@@ -29,10 +29,19 @@ export const GALLERY_EXIT_X = 1700;   // west wall of L-06: x < this = out of th
 export interface DiffCfg {
   guardSpeed: number; guardChase: number; range: number; fov: number; susRate: number;
   laserMul: number; alarmTime: number; finalTime: number; crates: number; hints: boolean;
+  /** v0.5.1 tuning (played on iPad: too hard) */
+  laserHit: number;      // beam hit half-width (world units)
+  alertDelay: number;    // "!" pause before a drone starts chasing (reaction time)
+  catchStun: number;     // drone pauses this long after catching you (time to get away)
+  susDecay: number;      // suspicion drain per second out of sight
+  hazardScale: number;   // spark / steam damage radius multiplier
 }
 export const DIFF: Record<Difficulty, DiffCfg> = {
-  basic: { guardSpeed: 70, guardChase: 150, range: 230, fov: 64, susRate: 0.9, laserMul: 0.75, alarmTime: 26, finalTime: 80, crates: 5, hints: true },
-  adv: { guardSpeed: 92, guardChase: 190, range: 290, fov: 76, susRate: 1.45, laserMul: 1.15, alarmTime: 18, finalTime: 55, crates: 3, hints: false },
+  // v0.5.1: much easier — slower/shorter-sighted drones, slow lasers with a thinner hit zone, long timers
+  basic: { guardSpeed: 58, guardChase: 115, range: 185, fov: 56, susRate: 0.5, laserMul: 0.5, alarmTime: 45, finalTime: 130, crates: 5, hints: true,
+    laserHit: 10, alertDelay: 1.0, catchStun: 3.0, susDecay: 0.8, hazardScale: 0.7 },
+  adv: { guardSpeed: 82, guardChase: 160, range: 245, fov: 68, susRate: 0.95, laserMul: 0.85, alarmTime: 28, finalTime: 80, crates: 4, hints: false,
+    laserHit: 12, alertDelay: 0.7, catchStun: 2.2, susDecay: 0.6, hazardScale: 0.85 },
 };
 
 export function vaultGuards(d: Difficulty): Omit<GuardCfg, 'speed' | 'chase' | 'range' | 'fov' | 'susRate'>[] {

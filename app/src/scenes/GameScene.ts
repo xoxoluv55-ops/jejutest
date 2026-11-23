@@ -409,7 +409,7 @@ export class GameScene extends Phaser.Scene {
     this.prop('crate', 470, 900, { col: [70, 40] }); this.prop('crate', 650, 900, { col: [70, 40] });
     if (env) { this.prop('x_glass', 300, 392, { depth: 429 }); this.prop('x_camera', 620, 360, { depth: 429 }); this.prop('x_sign', 600, 1080, {}); }
     T(this, 440, 470, 'SPECIMEN VAULT · V-05', 12, '#9fd2ff', { display: true }).setOrigin(0.5).setDepth(5200).setAlpha(0.85);
-    for (const cfg of vaultGuards(d)) this.guards.push(new Guard(this, { ...cfg, speed: D.guardSpeed, chase: D.guardChase, range: D.range, fov: D.fov, susRate: D.susRate }));
+    for (const cfg of vaultGuards(d)) this.guards.push(new Guard(this, { ...cfg, speed: D.guardSpeed, chase: D.guardChase, range: D.range, fov: D.fov, susRate: D.susRate, alertDelay: D.alertDelay, catchStun: D.catchStun, susDecay: D.susDecay }));
     // keycard on the floor by the NE rack (inside the patrol loop)
     if (!G.run.keycard) {
       const k = this.add.image(KEYCARD_AT.x, KEYCARD_AT.y, 'keycard').setScale(0.7).setDepth(KEYCARD_AT.y);
@@ -436,9 +436,9 @@ export class GameScene extends Phaser.Scene {
     });
     // ---- L-06 laser corridor ----
     const mul = D.laserMul;
-    for (const c of GALLERY_LASERS) { const l = new Laser(this, c); l.mul = mul; this.lasers.push(l); }
-    for (const c of ALARM_LASERS) { const l = new Laser(this, c); l.enabled = false; this.lasers.push(l); }
-    for (const c of FINAL_LASERS) { const l = new Laser(this, c); l.enabled = false; this.lasers.push(l); }
+    for (const c of GALLERY_LASERS) { const l = new Laser(this, c); l.mul = mul; l.hitR = D.laserHit; this.lasers.push(l); }
+    for (const c of ALARM_LASERS) { const l = new Laser(this, c); l.hitR = D.laserHit; l.enabled = false; this.lasers.push(l); }
+    for (const c of FINAL_LASERS) { const l = new Laser(this, c); l.hitR = D.laserHit; l.enabled = false; this.lasers.push(l); }
     if (env) { this.prop('x_barrier', 2580, 2300, {}); this.prop('x_lamp', 1900, 1830, { depth: 1845 }); }
     T(this, 2190, 1880, 'LASER GRID · L-06', 12, '#ff9ab0', { display: true }).setOrigin(0.5).setDepth(5200).setAlpha(0.85);
     // pedestal under the ulna (alarm bait)
@@ -1110,7 +1110,7 @@ export class GameScene extends Phaser.Scene {
     const t = this.D.alarmTime;
     this.escape = { kind: 'gallery', left: t, total: t };
     Audio.alarm(true); Audio.setMusic('chase');
-    for (const l of this.lasers) { if (l.cfg.group === 'gallery') l.mul = this.D.laserMul * 1.6; if (l.cfg.group === 'alarm') l.enabled = true; }
+    for (const l of this.lasers) { if (l.cfg.group === 'gallery') l.mul = this.D.laserMul * 1.3; if (l.cfg.group === 'alarm') l.enabled = true; }
     this.cameras.main.shake(400, 0.006);
     this.ai(`보안 경보! 표본 이탈 감지 — L-06 격리 셔터가 ${t}초 뒤 닫힙니다. 서쪽 출구로 탈출하십시오.`, 'warn', 4200);
     Bus.emit('mission');
@@ -1134,7 +1134,7 @@ export class GameScene extends Phaser.Scene {
     Audio.alarm(true); Audio.setMusic('chase');
     this.light.setBlackout(false);
     for (const l of this.lasers) if (l.cfg.group === 'final') { l.enabled = true; l.mul = this.D.laserMul; }
-    if (G.run.difficulty === 'adv') { const D = this.D; this.guards.push(new Guard(this, { ...FINAL_GUARD, speed: D.guardSpeed, chase: D.guardChase, range: D.range, fov: D.fov, susRate: D.susRate })); }
+    if (G.run.difficulty === 'adv') { const D = this.D; this.guards.push(new Guard(this, { ...FINAL_GUARD, speed: D.guardSpeed, chase: D.guardChase, range: D.range, fov: D.fov, susRate: D.susRate, alertDelay: D.alertDelay, catchStun: D.catchStun, susDecay: D.susDecay })); }
     this.ai(`보안 시스템 재가동! ${t}초 안에 탈출 게이트(A-01 북쪽)를 열고 승강기에 탑승하십시오.`, 'warn', 4600);
     Bus.emit('mission');
   }
@@ -1233,7 +1233,7 @@ export class GameScene extends Phaser.Scene {
         if (active && !h.active && near) Audio.play('steam');
       }
       h.active = active;
-      if (active && !this.busy && Math.hypot(this.player.x - h.x, this.player.y - h.y) < h.r) this.hurt(h.kind, h.x, h.y);
+      if (active && !this.busy && Math.hypot(this.player.x - h.x, this.player.y - h.y) < h.r * this.D.hazardScale) this.hurt(h.kind, h.x, h.y);
     }
 
     this.tickSurvival(dt);
