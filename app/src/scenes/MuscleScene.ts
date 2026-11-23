@@ -232,9 +232,8 @@ export class MuscleScene extends GameScene {
         continue;
       }
       const c = this.coreSprite(id as MuscleId, s.x, s.y);
-      if (s.hidden) c.setVisible(false).setAlpha(0);
       this.reveal[`core_${id}`] = c;
-      this.addInter({ id: `core_${id}`, x: s.x, y: s.y, r: 80, hidden: s.hidden, icon: 'hand', label: () => '근육 데이터 코어 회수', act: () => this.pickCore(id as MuscleId) });
+      this.addInter({ id: `core_${id}`, x: s.x, y: s.y, r: 80, icon: 'hand', label: () => '근육 데이터 코어 회수', act: () => this.pickCore(id as MuscleId) });
     }
     // hazards: permanent ones in M-04/M-02 and overload-only arcs across the hub
     this.addHazard('steam', 1150, 2170, 66, 3.6, 1.1, 1.1);

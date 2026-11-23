@@ -40,7 +40,49 @@ function primBounds(p: Prim) {
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
 }
 
+// ---------------------------------------------------------------- real bone model (v0.7)
+// CH1 bones are rendered from the BodyParts3D 4.0 model (tools/anatomy3d/ch1_bones.py -> assets/ch1/): one image per
+// bone in the same 760x1260 anterior frame, their rects, opaque sample points for hit tests and measured landmarks.
+// The primitive drawings below remain only as a fallback and for the stylised X-ray film (X-04), whose markers were
+// laid out on them.
+export interface BoneModel {
+  rects: Record<string, { x: number; y: number; w: number; h: number }>;
+  mask: Record<string, [number, number][]>;
+  landmarks: { head: [number, number]; glenoid: [number, number]; elbow: [number, number]; headRadius: number };
+}
+let MODEL: BoneModel | null = null;
+export function setBoneModel(m: BoneModel | null) { MODEL = m && m.rects ? m : null; }
+export function boneModel() { return MODEL; }
+/** landmarks measured on the model (frame coords), or null when the model is not loaded */
+export function modelLandmarks() {
+  if (!MODEL) return null;
+  const L = MODEL.landmarks;
+  return { head: { x: L.head[0], y: L.head[1] }, glenoid: { x: L.glenoid[0], y: L.glenoid[1] }, elbow: { x: L.elbow[0], y: L.elbow[1] } };
+}
+/** signed-ish distance (frame units) from (x, y) to the bone's opaque area; 0 inside */
+export function modelBoneDist(id: BoneId, x: number, y: number): number | null {
+  const pts = MODEL?.mask[id]; if (!pts || !pts.length) return null;
+  let d = 1e9; for (const [px, py] of pts) { const q = Math.hypot(px - x, py - y); if (q < d) d = q; }
+  return Math.max(0, d - 4.5);
+}
+
+/** a point on the bone itself (the mask point closest to its rect centre): bbox centres of diagonal bones like the
+ * clavicle can fall on a neighbouring bone */
+export function boneAnchor(id: BoneId): { x: number; y: number } {
+  const b = boneBounds(id), pts = MODEL?.mask[id];
+  if (!pts || !pts.length) return { x: b.cx, y: b.cy };
+  let best = pts[0], bd = 1e9;
+  for (const p of pts) { const d = Math.hypot(p[0] - b.cx, p[1] - b.cy); if (d < bd) { bd = d; best = p; } }
+  return { x: best[0], y: best[1] };
+}
+
 export function boneBounds(id: BoneId, pad = 14) {
+  const r = MODEL?.rects[id];
+  if (r) return { x: r.x, y: r.y, w: r.w, h: r.h, cx: r.x + r.w / 2, cy: r.y + r.h / 2 };
+  return primBoneBounds(id, pad);
+}
+
+export function primBoneBounds(id: BoneId, pad = 14) {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   for (const p of BONES[id].prims) { const b = primBounds(p); x0 = Math.min(x0, b[0]); y0 = Math.min(y0, b[1]); x1 = Math.max(x1, b[2]); y1 = Math.max(y1, b[3]); }
   x0 = Math.floor(x0 - pad); y0 = Math.floor(y0 - pad); x1 = Math.ceil(x1 + pad); y1 = Math.ceil(y1 + pad);
@@ -215,6 +257,29 @@ export function drawBone(ctx: CanvasRenderingContext2D, id: BoneId, style: BoneS
 export function makeBoneTexture(scene: Phaser.Scene, id: BoneId, style: BoneStyle) {
   const b = boneBounds(id);
   const key = `bone_${style}_${id}`;
+  const src = `ch1m_${id}`;
+  if (!scene.textures.exists(key) && MODEL?.rects[id] && scene.textures.exists(src)) {
+    // real model image -> style variants (bone = as rendered; holo = cyan glass; xray = cold white; ghost = faint)
+    const img = scene.textures.get(src).getSourceImage() as HTMLImageElement;
+    const c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+    const ctx = c.getContext('2d')!;
+    ctx.drawImage(img, 0, 0);
+    if (style !== 'bone') {
+      ctx.globalCompositeOperation = 'source-atop';
+      ctx.fillStyle = style === 'holo' ? 'rgba(70,195,255,0.62)' : style === 'xray' ? 'rgba(228,240,255,0.55)' : 'rgba(120,225,255,0.55)';
+      ctx.fillRect(0, 0, c.width, c.height);
+      if (style === 'holo') { ctx.fillStyle = 'rgba(190,245,255,0.18)'; for (let y = 0; y < c.height; y += 10) ctx.fillRect(0, y, c.width, 3); }
+      if (style === 'ghost') { ctx.globalCompositeOperation = 'destination-in'; ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(0, 0, c.width, c.height); }
+    }
+    scene.textures.addCanvas(key, c);
+    return { key, ...b };
+  }
+  return makePrimBoneTexture(scene, id, style, key, b);
+}
+
+/** primitive-drawn bone (fallback, and the X-ray film overlay which is aligned to the primitive drawing) */
+export function makePrimBoneTexture(scene: Phaser.Scene, id: BoneId, style: BoneStyle, key = `bone_prim_${style}_${id}`, bb?: ReturnType<typeof boneBounds>) {
+  const b = bb ?? primBoneBounds(id);
   if (!scene.textures.exists(key)) {
     const c = document.createElement('canvas');
     c.width = b.w * DENSITY; c.height = b.h * DENSITY;

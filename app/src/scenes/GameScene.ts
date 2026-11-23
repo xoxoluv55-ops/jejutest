@@ -132,14 +132,13 @@ export class GameScene extends Phaser.Scene {
     kb.addCapture('TAB,SPACE,UP,DOWN,LEFT,RIGHT');
     kb.on('keydown-E', () => this.tryInteract());
     kb.on('keydown-ENTER', () => this.tryInteract());
-    kb.on('keydown-SPACE', () => this.scan());
     kb.on('keydown-TAB', () => Bus.emit('ui:inventory'));
     kb.on('keydown-M', () => Bus.emit('ui:map'));
     kb.on('keydown-ESC', () => Bus.emit('ui:pause'));
 
     Bus.on('input:interact', () => this.tryInteract(), this);
-    Bus.on('input:scan', () => this.scan(), this);
     Bus.on('puzzle:done', (id: string) => this.onPuzzleDone(id), this);
+    Bus.on('investigate:found', (id: string) => this.onInvestigateFound(id), this);
     Bus.on('ident:ok', (id: BoneId) => this.onIdent(id, true), this);
     Bus.on('ident:cancel', (id: BoneId) => this.onIdent(id, false), this);
     Bus.on('puzzle:closed', () => { this.busy = false; this.player.frozen = false; this.scene.resume(); this.scene.wake('HUD'); }, this);
@@ -169,6 +168,7 @@ export class GameScene extends Phaser.Scene {
     this.buildStations();
     this.buildHazards();
     this.buildZone();
+    this.buildOffice();
   }
 
   floorTint(floor: string): number { return floor === 'floor_lab' ? 0x7c88a6 : floor === 'floor_grate' ? 0x8e98b4 : 0x9094b0; }
@@ -310,7 +310,6 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({ targets: cam, angle: { from: -18, to: 18 }, duration: 3000, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
     // --- B-02 corridor ---
     this.prop('rack', 210, 1262, { col: [60, 30] });
-    this.cabinet = this.prop('cabinet', 420, 1270, { col: [86, 30] });
     this.prop('crate', 700, 1540, { col: [70, 40] });
     // --- J-03 joint bay ---
     this.prop('rack', 940, 1858, { col: [60, 30] });
@@ -377,6 +376,7 @@ export class GameScene extends Phaser.Scene {
   buildBones() {
     for (const id of neededBones()) {
       const g = BONE_GET[id];
+      if (g.get === 'puzzle') continue;   // obtained in the investigation view (buildOffice)
       if (g.get === 'scan') {
         // hidden locker in B-02: only a SCAN pulse reveals it
         this.addInter({
@@ -450,6 +450,54 @@ export class GameScene extends Phaser.Scene {
     CRATE_SPOTS.slice(0, D.crates).forEach((p, i) => this.addCrate(p.x, p.y, i));
     for (const c of CHECKPOINTS) this.addCheckpoint(c.id, c.x, c.y, c.name);
     for (const h of HIDE_SPOTS) this.addHideSpot(h.x, h.y);
+  }
+
+  // ---------------------------------------------------------------- v0.7 escape-room investigation (CH1, B-02)
+  officeShutter?: Phaser.GameObjects.Image; officeShutterBlock?: Phaser.GameObjects.Zone;
+  /** research desk + photo frame in B-02, and the shutter to A-01 that opens when the scapula is recovered */
+  buildOffice() {
+    const desk = this.add.image(330, 1360, 'w_desk').setOrigin(0.5, 1).setScale(0.5).setDepth(1360);
+    this.solid(330 - 80, 1360 - 42, 160, 42);
+    this.add.image(420, 1214, 'w_frame').setScale(0.55).setDepth(1249);
+    for (const [x, y, d] of [[300, 1300, 0], [420, 1196, 700]] as [number, number, number][]) {
+      // a soft glint: these objects can be examined
+      const g = this.add.image(x, y, 'light').setTint(0xfff0c0).setBlendMode(Phaser.BlendModes.ADD).setScale(0.08).setAlpha(0).setDepth(5100);
+      this.tweens.add({ targets: g, alpha: 0.9, scale: 0.16, duration: 450, yoyo: true, repeat: -1, repeatDelay: 2200, delay: d });
+    }
+    void desk;
+    this.addInter({ id: 'inv_desk', x: 330, y: 1385, r: 110, icon: 'eye', label: () => G.run.flags.scapulaFound ? '연구원 책상 (조사 완료)' : '연구원 책상 조사', act: () => this.openInvestigate('desk') });
+    this.addInter({ id: 'inv_frame', x: 420, y: 1290, r: 85, icon: 'eye', label: () => '벽 액자 조사', act: () => this.openInvestigate('frame') });
+    // shutter between B-02 and A-01
+    if (!G.run.flags.scapulaFound) {
+      const env = this.textures.exists('env') && this.textures.get('env').has('d_side_closed');
+      this.officeShutter = (env ? this.add.image(742, 1552, 'env', 'd_side_closed') : this.add.image(742, 1550, 'door_v')).setOrigin(0.5, 1).setScale(0.5, 0.5 * 300 / 160).setDepth(1552).setTint(0xffb0b0);
+      this.officeShutterBlock = this.solid(724, 1250, 36, 300);
+      this.addInter({ id: 'b02_shutter', x: 690, y: 1400, r: 80, icon: 'lock', enabled: () => !G.run.flags.scapulaFound, label: () => 'A-01 격벽',
+        locked: () => '격벽이 봉쇄되어 있습니다. 표본 S-01 보관대의 압력 센서가 해제되어야 열립니다. (표본을 찾으세요)', act: () => { /* locked */ } });
+    }
+  }
+
+  openInvestigate(kind: 'desk' | 'frame') {
+    if (this.busy) return;
+    this.busy = true; this.player.frozen = true; Pad.x = Pad.y = 0; Pad.run = false;
+    this.player.play('interact', 0, -1); Audio.play('open');
+    this.time.delayedCall(220, () => { this.scene.sleep('HUD'); this.scene.launch('Investigate', { kind }); this.scene.pause(); });
+  }
+
+  onInvestigateFound(id: string) {
+    this.scene.resume(); this.scene.wake('HUD'); this.busy = false; this.player.frozen = false;
+    if (id !== 'scapula') return;
+    this.pickupBone('scapula');
+    // the specimen left its pressure sensor -> the B-02 shutter opens (the lab changes)
+    this.time.delayedCall(900, () => {
+      if (!this.officeShutter || !this.officeShutterBlock) return;
+      Audio.play('door'); this.cameras.main.shake(400, 0.004);
+      this.tweens.add({ targets: this.officeShutter, y: this.officeShutter.y - 300, alpha: 0.1, duration: 1300, ease: 'Cubic.inOut' });
+      (this.officeShutterBlock.body as Phaser.Physics.Arcade.StaticBody).enable = false;
+      this.blockers = this.blockers.filter(r => !(r.x === 724 && r.y === 1250));
+      this.ai('표본 S-01 이탈 감지 — 압력 센서 해제. 격리 통로 B-02 격벽 개방.', 'ok', 3800);
+      Bus.emit('mission');
+    });
   }
 
   addCheckpoint(id: string, x: number, y: number, name: string) {
@@ -650,9 +698,7 @@ export class GameScene extends Phaser.Scene {
 
   buildHazards() {
     const add = this.addHazard.bind(this);
-    add('spark', 470, 1405, 62, 2.8, 0.75, 0);
     add('spark', 1150, 2170, 66, 2.4, 0.7, 1.1);
-    add('steam', 260, 1480, 70, 4.2, 1.2, 0.5);
     add('steam', 960, 2210, 70, 3.6, 1.1, 2.0);
     add('steam', 820, 1360, 64, 5.0, 1.2, 1.4);
   }
@@ -689,12 +735,12 @@ export class GameScene extends Phaser.Scene {
     const seq: [number, () => void][] = [
       [600, () => { Audio.play('glitch'); this.ai('경고: 구조 무결성 손상. 프로토콜 LOCKDOWN 실행.', 'warn', 3200); }],
       [3800, () => this.ai('모든 격벽이 봉쇄되었습니다. 인체 구조 복구가 필요합니다.', 'ai', 3400)],
-      [7400, () => { this.ai(`손상된 뼈대 표본 ${neededBones().length}개 감지. 회수 후 복구 테이블(A-01)에서 재조립하십시오.`, 'ai', 4200); Audio.alarm(false); }],
+      [7400, () => { this.ai(G.run.chapter === 1 ? '격리 통로 B-02 봉쇄. 한 박사가 표본 S-01을 이 통로 어딘가에 숨겼습니다. 책상과 벽을 조사하십시오.' : `손상된 뼈대 표본 ${neededBones().length}개 감지. 회수 후 복구 테이블(A-01)에서 재조립하십시오.`, 'ai', 4600); Audio.alarm(false); }],
       [9000, () => {
         this.busy = false; this.player.frozen = false; G.run.flags.intro = true; Bus.emit('mission');
-        this.toast(this.sys.game.device.input.touch ? '왼쪽 조이스틱으로 이동 · 오른쪽 버튼으로 조작/스캔' : '이동 WASD · 달리기 Shift · 상호작용 E · 스캔 Space', 'info');
+        this.toast(this.sys.game.device.input.touch ? '왼쪽 조이스틱으로 이동 · 오른쪽 버튼으로 조사/조작' : '이동 WASD · 달리기 Shift · 조사/조작 E', 'info');
         Audio.setMusic(this.bgm());
-        if (G.run.chapter === 1) this.time.delayedCall(2600, () => this.ai('하트 3개. 경비 드론의 시야(빛 원뿔)·레이저·방전 배선에 닿으면 하트를 잃습니다. 뼈는 직접 다가가면 회수됩니다.', 'ai', 5200));
+        if (G.run.chapter === 1) this.time.delayedCall(2600, () => this.ai('반짝이는 물건은 조사할 수 있습니다. 다가가서 조작 버튼을 누르면 확대 화면으로 들어갑니다.', 'ai', 5200));
       }],
     ];
     for (const [t, fn] of seq) this.time.delayedCall(t, fn);
@@ -702,7 +748,9 @@ export class GameScene extends Phaser.Scene {
 
   missions(): Mission[] {
     const f = G.run.flags, n = G.run.bones.length, N = neededBones().length;
-    const list: Mission[] = [{ text: `뼈대 표본 회수 (${n}/${N})`, done: n >= N, active: n < N }];
+    const list: Mission[] = [];
+    if (G.run.chapter === 1) list.push({ text: G.run.flags.scapulaFound ? '표본 S-01 (어깨뼈) 회수' : '표본 S-01 찾기 · B-02 책상과 액자 조사', done: !!f.scapulaFound, active: !f.scapulaFound });
+    list.push({ text: `뼈대 표본 회수 (${n}/${N})`, done: n >= N, active: !!f.scapulaFound && n < N });
     const needKey = !G.run.bones.includes('radius');
     if (needKey || G.run.keycard) list.push({ text: '카드키 확보 · V-05 경비 구역', done: G.run.keycard, active: !G.run.keycard && n < N });
     if (this.escape?.kind === 'gallery') list.push({ text: 'L-06 셔터가 닫히기 전에 탈출!', done: false, active: true });
@@ -718,6 +766,7 @@ export class GameScene extends Phaser.Scene {
   objective(): { x: number; y: number } | null {
     const f = G.run.flags, p = this.player;
     if (this.escape?.kind === 'gallery') return { x: GALLERY_EXIT_X - 40, y: 2060 };
+    if (!f.scapulaFound) return G.run.clues.includes('journal') && !G.run.clues.includes('photo') ? { x: 420, y: 1290 } : { x: 330, y: 1385 };
     if (G.run.bones.length < neededBones().length) {
       const doorShut = !!(this.keyDoorBlock?.body as Phaser.Physics.Arcade.StaticBody | undefined)?.enable;
       const cands: { x: number; y: number }[] = [];

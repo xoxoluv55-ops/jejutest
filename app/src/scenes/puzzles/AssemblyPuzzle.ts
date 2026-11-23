@@ -4,18 +4,22 @@ import { View } from '../../core/view';
 import { Audio } from '../../core/audio';
 import { G } from '../../game/state';
 import { BONES, BoneId, UPPER_ORDER } from '../../data/anatomy';
-import { boneBounds, DENSITY, makeBoneTexture } from '../../art/bones';
-import { T, C, drawIcon } from '../../ui/widgets';
+import { boneBounds, boneAnchor, DENSITY } from '../../art/bones';
+import { T, C, drawIcon, drawPanel, Button } from '../../ui/widgets';
+import { BONE_QUIZ } from '../../data/boneQuiz';
 
 interface Piece {
   id: BoneId; img: Phaser.GameObjects.Image; zone: Phaser.GameObjects.Zone; card: Phaser.GameObjects.Graphics;
   name: Phaser.GameObjects.Text; sub: Phaser.GameObjects.Text;
+  mag?: [Phaser.GameObjects.Graphics, Phaser.GameObjects.Zone];
   rect: { x: number; y: number; w: number; h: number }; home: { x: number; y: number; s: number; a: number }; placed: boolean;
 }
 
 /** 팔이음뼈 (pectoral girdle) vs 자유팔뼈 (free upper limb) — the learning goal of this puzzle. */
 const GIRDLE: BoneId[] = ['clavicle', 'scapula'];
 const GROUP_COL = { girdle: 0xffc24d, free: 0x4fd8ff };
+/** anterior view, back -> front: scapula, ulna, humerus, radius, clavicle */
+const BONE_DEPTH: Record<string, number> = { scapula: 16, ulna: 18, humerus: 20, radius: 22, clavicle: 24, fibula: 20 };
 const groupOf = (id: BoneId) => (GIRDLE.includes(id) ? 'girdle' : 'free') as 'girdle' | 'free';
 
 /**
@@ -33,6 +37,7 @@ export class AssemblyPuzzle extends PuzzleBase {
   discarded = false;
   progressT!: Phaser.GameObjects.Text;
   ghosts: Partial<Record<BoneId, Phaser.GameObjects.Image>> = {};
+  glows: Partial<Record<BoneId, Phaser.GameObjects.Image>> = {};
   hot!: Phaser.GameObjects.Graphics;          // slot under the finger / bin highlight
   tags!: Phaser.GameObjects.Container;        // name tags of placed bones
   selected: Piece | null = null;
@@ -46,11 +51,11 @@ export class AssemblyPuzzle extends PuzzleBase {
 
   create() {
     this.initView();
-    this.pieces = []; this.discarded = false; this.ghosts = {}; this.selected = null; this.dragging = null; this.bin = null;
+    this.pieces = []; this.discarded = false; this.ghosts = {}; this.glows = {}; this.selected = null; this.dragging = null; this.bin = null;
     const adv = this.adv;
     this.frame('뼈대 복구 테이블 · 팔뼈대 조립',
       adv ? '오른쪽 팔뼈대(앞면). 이름이 가려진 표본의 모양만 보고 제자리에 놓고, 팔뼈가 아닌 표본은 폐기하세요.'
-          : '오른쪽 팔뼈대를 앞에서 본 모습입니다. 표본 카드를 끌어 점선 윤곽에 놓거나, 카드를 누른 뒤 자리를 누르세요.');
+          : '오른쪽 팔뼈대를 앞에서 본 모습입니다. 표본 카드를 끌어 반투명한 뼈 자리에 놓거나, 카드를 누른 뒤 자리를 누르세요.');
     const { W, H } = View;
     const portrait = H > W;
     const cp = this.compact;   // short landscape (iPhone): one-line goal, shorter cards and banner
@@ -72,27 +77,24 @@ export class AssemblyPuzzle extends PuzzleBase {
     const plate = this.add.graphics();
     plate.fillStyle(0x03101c, 0.8); plate.fillRoundedRect(ox - 8, oy - 8, shownW + 16, shownH + 16, 12);
     plate.lineStyle(1.5, C.cyan, 0.35); plate.strokeRoundedRect(ox - 8, oy - 8, shownW + 16, shownH + 16, 12);
-    const holo = this.add.image(this.fx, this.fy, 'torso_holo').setOrigin(0).setScale(this.fs / DENSITY).setAlpha(0.75);
+    const holo = this.add.image(this.fx, this.fy, this.textures.exists('ctx_holo') ? 'ctx_holo' : 'torso_holo').setOrigin(0).setScale(this.fs / DENSITY).setAlpha(0.75);
     const mask = this.make.graphics({}, false); mask.fillRect(ox - 8, oy - 8, shownW + 16, shownH + 16); holo.setMask(mask.createGeometryMask());
     const narrow = shownW < 300;   // narrow column: short direction labels so they do not overlap
     T(this, ox + 6, oy + 4, narrow ? '← 가쪽' : '← 가쪽 (Lateral)', 16, '#9fdcf5', { weight: '700' });
     T(this, ox + shownW - 6, oy + 4, narrow ? '안쪽 →' : '안쪽 (Medial) →', 16, '#9fdcf5', { weight: '700' }).setOrigin(1, 0);
     T(this, ox + shownW - 6, oy + shownH - 4, '오른쪽 · 앞면', 16, '#9fdcf5', { weight: '700' }).setOrigin(1, 1);
-    // slot outlines. basic: bright silhouette of each bone, coloured by group (amber = 팔이음뼈, cyan = 자유팔뼈).
-    // advanced: no shape hints, only a pulsing ring at each slot centre (as before).
+    // targets: the real bone model, translucent until the right specimen is placed (then it is restored opaque).
+    // basic: clearly visible + a soft group-coloured glow (amber = 팔이음뼈, cyan = 자유팔뼈); advanced: faint, no colour.
     for (const id of UPPER_ORDER) {
       const b = boneBounds(id);
       const cx = this.fx + b.cx * this.fs, cy = this.fy + b.cy * this.fs;
       if (!adv) {
-        makeBoneTexture(this, id, 'xray');
-        const gh = this.add.image(cx, cy, `bone_xray_${id}`).setScale(this.fs / DENSITY).setTint(GROUP_COL[groupOf(id)]).setAlpha(0.8);
-        this.tweens.add({ targets: gh, alpha: 0.45, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
-        this.ghosts[id] = gh;
-      } else {
-        const ring = this.add.image(cx, cy, 'ring').setScale(0.13).setTint(C.cyan).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.8);
-        this.tweens.add({ targets: ring, scale: 0.17, alpha: 0.35, duration: 900, yoyo: true, repeat: -1 });
-        this.ghosts[id] = ring;
+        const glow = this.add.image(cx, cy, `bone_holo_${id}`).setScale(this.fs / DENSITY).setTint(GROUP_COL[groupOf(id)]).setAlpha(0.35).setDepth(BONE_DEPTH[id] - 10);
+        this.tweens.add({ targets: glow, alpha: 0.12, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+        this.glows[id] = glow;
       }
+      const gh = this.add.image(cx, cy, `bone_bone_${id}`).setScale(this.fs / DENSITY).setAlpha(adv ? 0.18 : 0.42).setDepth(BONE_DEPTH[id] - 5);
+      this.ghosts[id] = gh;
     }
     this.hot = this.add.graphics().setDepth(40);
     this.tags = this.add.container(0, 0).setDepth(45);
@@ -153,6 +155,14 @@ export class AssemblyPuzzle extends PuzzleBase {
       const p: Piece = { id, img, zone, card, name, sub, rect: { x, y: cy, w: cw, h: ch }, home: { x: img.x, y: img.y, s, a: rot }, placed: false };
       this.drawCard(p, 'idle');
       zone.on('pointerup', () => { if (!this.dragging) this.select(p); });
+      // magnifier: look at the specimen up close (head, shaft, joint surfaces) before deciding
+      const mz = cp ? 34 : 40, mx = x + 6, my = cy + 6;
+      const mg = this.add.graphics().setDepth(12);
+      mg.fillStyle(0x0a1a2c, 0.95); mg.fillRoundedRect(mx, my, mz, mz, 8); mg.lineStyle(1.5, C.cyan, 0.9); mg.strokeRoundedRect(mx, my, mz, mz, 8);
+      mg.lineStyle(2.5, 0x9fe6ff, 1); mg.strokeCircle(mx + mz * 0.44, my + mz * 0.44, mz * 0.2); mg.lineBetween(mx + mz * 0.58, my + mz * 0.58, mx + mz * 0.78, my + mz * 0.78);
+      const mzone = this.add.zone(mx - 4, my - 4, mz + 8, mz + 8).setOrigin(0).setInteractive({ useHandCursor: true }).setDepth(13);
+      mzone.on('pointerup', () => { if (!this.dragging) this.zoom(p, i); });
+      p.mag = [mg, mzone];
       this.pieces.push(p);
     });
     if (adv) {
@@ -171,7 +181,7 @@ export class AssemblyPuzzle extends PuzzleBase {
     }
     this.updateProgress();
     this.fb(adv ? '표본 카드를 끌어 제자리에 놓으세요. 카드를 누르면 선택되고, 자리를 누르면 배치됩니다.'
-                : '노란 윤곽 = 팔이음뼈, 파란 윤곽 = 자유팔뼈. 카드를 끌어 같은 모양의 윤곽에 놓으세요.', 'info');
+                : '노란빛 = 팔이음뼈, 파란빛 = 자유팔뼈. 카드를 끌어 같은 모양의 반투명 뼈에 놓으세요. 🔍로 크게 볼 수 있습니다.', 'info');
 
     // ---------------- drag ----------------
     this.input.on('dragstart', (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Zone) => {
@@ -195,7 +205,42 @@ export class AssemblyPuzzle extends PuzzleBase {
   }
 
   /** world position of a bone's slot centre (also used by the automated tests) */
-  slotXY(id: BoneId): [number, number] { const b = boneBounds(id); return [this.fx + b.cx * this.fs, this.fy + b.cy * this.fs]; }
+  slotXY(id: BoneId): [number, number] { const a = boneAnchor(id); return [this.fx + a.x * this.fs, this.fy + a.y * this.fs]; }
+
+  /** Close-up of one specimen: the real model large in the centre, with its orientation (basic: name + key features). */
+  zoom(p: Piece, i: number) {
+    if (this.solved) return;
+    Audio.play('open');
+    const { W, H } = View, adv = this.adv, b = BONES[p.id];
+    const c = this.add.container(0, 0).setDepth(300);
+    c.add(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.72).setInteractive());
+    const pw = Math.min(980, W - 40), ph = H - (this.compact ? 16 : 60), px = W / 2 - pw / 2, py = H / 2 - ph / 2;
+    const g = this.add.graphics(); drawPanel(g, px, py, pw, ph, { accent: C.cyan, header: 52 }); c.add(g);
+    c.add(T(this, px + 26, py + 26, adv ? `표본 ${i + 1} · 확대 관찰` : `${b.ko} ${b.en} · 확대 관찰`, 21, C.white, { weight: '700' }).setOrigin(0, 0.5));
+    // bone image: as large as the panel allows, anatomical orientation kept (proximal up, lateral = left)
+    const img = this.add.image(px + 40 + (pw * 0.5 - 40) / 2, py + 52 + (ph - 52) / 2, `bone_bone_${p.id}`);
+    const sc = Math.min((pw * 0.5 - 60) / img.width, (ph - 120) / img.height); img.setScale(sc); c.add(img);
+    const ix = img.x - img.displayWidth / 2, iy = img.y - img.displayHeight / 2;
+    const ar = this.add.graphics(); c.add(ar);
+    ar.lineStyle(2, 0x9fdcf5, 0.8); ar.lineBetween(px + 30, py + 80, px + 30, py + ph - 40);
+    ar.fillStyle(0x9fdcf5, 1); ar.fillTriangle(px + 24, py + 92, px + 36, py + 92, px + 30, py + 78);
+    c.add(T(this, px + 40, py + 84, '몸쪽 (위)', 15, '#9fdcf5', { weight: '700' }));
+    c.add(T(this, px + 40, py + ph - 46, '먼쪽 (아래)', 15, '#9fdcf5', { weight: '700' }).setOrigin(0, 0.5));
+    c.add(T(this, ix, iy + img.displayHeight + 4, '← 가쪽', 15, '#9fdcf5', { weight: '700' }).setOrigin(0, 0));
+    c.add(T(this, ix + img.displayWidth, iy + img.displayHeight + 4, '안쪽 →', 15, '#9fdcf5', { weight: '700' }).setOrigin(1, 0));
+    // right column: what to look at
+    const tx = px + pw * 0.5 + 10, tw = pw * 0.5 - 40;
+    const lines = adv
+      ? ['관찰 포인트', '· 몸쪽 끝과 먼쪽 끝 중 어느 쪽이 더 큰가?', '· 둥근 머리 / 움푹한 관절면 / 돌기가 어디에 있는가?', '· 팔뼈대의 뼈가 맞는가? (다리뼈가 섞여 있다)']
+      : ['관찰 포인트', `· ${BONE_QUIZ[p.id].correct}`, `· ${b.info}`];
+    let y = py + 76;
+    lines.forEach((t, k) => { const tt = T(this, tx, y, t, k === 0 ? 19 : 16, k === 0 ? C.amberS : '#d3def3', { weight: k === 0 ? '700' : '600', wordWrap: { width: tw }, lineSpacing: 4 }); c.add(tt); y += tt.height + 12; });
+    c.add(T(this, tx, py + ph - 34, '3D 해부 모델: BodyParts3D © DBCLS (CC BY 4.0)', 12, '#8fa0b8', { fine: true }).setOrigin(0, 0.5));
+    const close = () => { Audio.play('close'); this.tweens.add({ targets: c, alpha: 0, duration: 140, onComplete: () => c.destroy() }); };
+    c.add(new Button(this, px + pw - 110, py + ph - 40, '닫기', close, { w: 160, h: 48, icon: 'close' }));
+    c.setAlpha(0); this.tweens.add({ targets: c, alpha: 1, duration: 160 });
+    this.flushInput();
+  }
 
   // ---------------- UI helpers ----------------
   drawCard(p: Piece, st: 'idle' | 'sel' | 'ok' | 'err' | 'gone') {
@@ -233,7 +278,12 @@ export class AssemblyPuzzle extends PuzzleBase {
   nearestSlot(x: number, y: number): { id: BoneId; d: number } {
     const fx = (x - this.fx) / this.fs, fy = (y - this.fy) / this.fs;
     let best: BoneId = UPPER_ORDER[0], bd = 1e9;
-    for (const id of UPPER_ORDER) { const d = distBone(id, fx, fy); if (d < bd) { bd = d; best = id; } }
+    for (const id of UPPER_ORDER) {
+      const d = distBone(id, fx, fy);
+      // where bones overlap (clavicle in front of the scapula, radius/ulna at the elbow) the one drawn in front owns the spot
+      const tie = d <= 4 && bd <= 4;
+      if (tie ? BONE_DEPTH[id] > BONE_DEPTH[best] : d < bd) { bd = Math.min(d, bd); best = id; if (!tie) bd = d; }
+    }
     return { id: best, d: bd };
   }
 
@@ -292,7 +342,10 @@ export class AssemblyPuzzle extends PuzzleBase {
     const s = this.nearestSlot(x, y);
     const fx = (x - this.fx) / this.fs, fy = (y - this.fy) / this.fs;
     // correct slot (forgiving on touch)
-    if (UPPER_ORDER.includes(pc.id) && distBone(pc.id, fx, fy) < 40) { this.place(pc); return; }
+    // correct only if the drop point is closest to this bone's own slot (radius and ulna lie side by side on the real
+    // model, so "within 40 of its own bone" alone would accept a radius dropped on the ulna)
+    const own = UPPER_ORDER.includes(pc.id) ? distBone(pc.id, fx, fy) : 1e9;
+    if (own < 40 && (s.id === pc.id || (own <= s.d + 2 && !(s.d <= 4 && own <= 4)))) { this.place(pc); return; }
     if (s.d > 40) { if (dropped) this.back(pc, false); return; }          // dropped/tapped away from any bone
     if (this.pieces.find(q => q.id === s.id)?.placed) { this.fb(`그 자리에는 이미 ${BONES[s.id].ko}이(가) 놓여 있습니다.`, 'info'); if (dropped) this.back(pc, false); return; }
     Audio.play('error'); this.mistake(); G.run.stats.assembly++;
@@ -304,20 +357,21 @@ export class AssemblyPuzzle extends PuzzleBase {
 
   place(pc: Piece) {
     const b = BONES[pc.id], bb = boneBounds(pc.id);
-    pc.placed = true; this.selected = null; pc.zone.disableInteractive();
+    pc.placed = true; this.selected = null; pc.zone.disableInteractive(); pc.mag?.forEach(o => o.destroy());
     const tx = this.fx + bb.cx * this.fs, ty = this.fy + bb.cy * this.fs;
     this.tweens.add({ targets: pc.img, x: tx, y: ty, scale: this.fs / DENSITY, angle: 0, duration: 180, ease: 'Back.out' });
-    pc.img.setDepth(20);
+    pc.img.setDepth(BONE_DEPTH[pc.id]);
     Audio.play('snap');
-    this.ghosts[pc.id]?.destroy();
-    const flash = this.add.image(tx, ty, `bone_holo_${pc.id}`).setScale(this.fs / DENSITY).setBlendMode(Phaser.BlendModes.ADD).setDepth(21);
+    this.ghosts[pc.id]?.destroy(); this.glows[pc.id]?.destroy();
+    const flash = this.add.image(tx, ty, `bone_holo_${pc.id}`).setScale(this.fs / DENSITY).setBlendMode(Phaser.BlendModes.ADD).setDepth(30).setAlpha(0.5);
     this.tweens.add({ targets: flash, alpha: 0, duration: 700, onComplete: () => flash.destroy() });
     // name tag on the skeleton: where it went
     const col = groupOf(pc.id) === 'girdle' ? '#ffd98a' : '#9fe6ff';
     const tag = T(this, 0, 0, `✓ ${b.ko} ${b.en}`, 16, col, { weight: '700', backgroundColor: '#04101ccc', padding: { x: 6, y: 3 } });
     const lx = Math.min(Math.max(tx - tag.width / 2, this.view.x + 2), this.view.x + this.view.w - tag.width - 2);
-    const dy = ({ radius: -0.22, ulna: 0.22 } as Partial<Record<BoneId, number>>)[pc.id] ?? 0;
-    tag.setPosition(lx, ty + dy * bb.h * this.fs - tag.height / 2); this.tags.add(tag);
+    const an = boneAnchor(pc.id), dy = ({ radius: -0.22, ulna: 0.22 } as Partial<Record<BoneId, number>>)[pc.id] ?? 0;
+    const lx2 = Math.min(Math.max(this.fx + an.x * this.fs - tag.width / 2, this.view.x + 2), this.view.x + this.view.w - tag.width - 2);
+    tag.setPosition(lx2, this.fy + an.y * this.fs + dy * bb.h * this.fs - tag.height / 2); this.tags.add(tag); void lx;
     this.drawCard(pc, 'ok'); pc.name.setText(b.ko).setColor(C.greenS); pc.sub.setText(`${b.en} · 배치 완료`).setColor('#a8f5cf');
     this.fb(`${b.ko}(${b.en}) — ${groupOf(pc.id) === 'girdle' ? '팔이음뼈' : '자유팔뼈'}. ${b.info}`, 'ok');
     this.updateProgress(); this.check();
@@ -330,7 +384,7 @@ export class AssemblyPuzzle extends PuzzleBase {
     for (const id of UPPER_ORDER) {
       const bb = boneBounds(id);
       const h = this.add.image(this.fx + bb.cx * this.fs, this.fy + bb.cy * this.fs, `bone_holo_${id}`).setScale(this.fs / DENSITY).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setDepth(22);
-      this.tweens.add({ targets: h, alpha: 0.9, duration: 300, delay: UPPER_ORDER.indexOf(id) * 140, yoyo: true, hold: 300 });
+      this.tweens.add({ targets: h, alpha: 0.45, duration: 300, delay: UPPER_ORDER.indexOf(id) * 140, yoyo: true, hold: 300 });
     }
     this.fb('팔뼈대 조립 완료! 팔이음뼈(빗장뼈·어깨뼈)와 자유팔뼈(위팔뼈·노뼈·자뼈)가 복장빗장관절 → 봉우리빗장관절 → 오목위팔관절 → 팔꿉관절로 이어집니다.', 'ok');
     this.success('c_girdle', '팔은 복장빗장관절로만 몸통 뼈대와 이어진다', 1800);

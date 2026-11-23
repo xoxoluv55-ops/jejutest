@@ -5,6 +5,7 @@ import { Audio } from '../../core/audio';
 import { Bus, G } from '../../game/state';
 import { ARCHIVE, BoneId, Prim, BONES } from '../../data/anatomy';
 import { T, C, drawPanel, Button, RoundButton } from '../../ui/widgets';
+import { modelBoneDist } from '../../art/bones';
 
 /** Full-screen puzzle terminal with header, close button, feedback line and success/concept card. */
 export class PuzzleBase extends BaseScene {
@@ -149,5 +150,6 @@ function distPrim(p: Prim, x: number, y: number): number {
   return inside ? -md : md;
 }
 export function distBone(id: BoneId, x: number, y: number) {
+  const m = modelBoneDist(id, x, y); if (m !== null) return m;   // real model: distance to its opaque area
   let d = 1e9; for (const p of BONES[id].prims) d = Math.min(d, distPrim(p, x, y)); return d;
 }

@@ -28,13 +28,14 @@ export function readable(color: string): string {
   return `#${h(r)}${h(g)}${h(b)}`;
 }
 
-export function T(scene: Phaser.Scene, x: number, y: number, text: string, size = 20, color = C.white, opts: Partial<Phaser.Types.GameObjects.Text.TextStyle> & { display?: boolean; weight?: string; fine?: boolean } = {}) {
+export function T(scene: Phaser.Scene, x: number, y: number, text: string, size = 20, color = C.white, opts: Partial<Phaser.Types.GameObjects.Text.TextStyle> & { display?: boolean; weight?: string; fine?: boolean; ink?: boolean } = {}) {
   // fine = licence credits / fine print: exempt from the 15 px reading floor (12 px floor instead)
-  const { display, weight, fine, ...rest } = opts;
+  // ink = dark text printed on a light surface (paper, sticky note, sticker): skip the dark-background contrast lift
+  const { display, weight, fine, ink, ...rest } = opts;
   const t = scene.add.text(x, y, text, {
     fontFamily: display ? F_DISPLAY : F_UI,
     // 15 px floor: logical units are CSS px on iPad, smaller text was hard to read on the device
-    fontSize: `${Math.max(fine ? 12 : MIN_FONT, size)}px`, color: readable(color), fontStyle: weight ?? '600',
+    fontSize: `${Math.max(fine ? 12 : MIN_FONT, size)}px`, color: ink ? color : readable(color), fontStyle: weight ?? '600',
     ...rest,
   });
   t.setResolution(textRes());

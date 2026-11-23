@@ -4,7 +4,7 @@ import { View } from '../../core/view';
 import { Audio } from '../../core/audio';
 import { G } from '../../game/state';
 import { BONES, ALIGN_HINTS, LANDMARKS, UPPER_ORDER } from '../../data/anatomy';
-import { boneBounds, DENSITY } from '../../art/bones';
+import { boneBounds, DENSITY, modelLandmarks } from '../../art/bones';
 import { T, C, Button } from '../../ui/widgets';
 
 type Mov = 'humerus' | 'ulna' | 'radius';
@@ -42,7 +42,7 @@ export class AlignPuzzle extends PuzzleBase {
     const plate = this.add.graphics();
     plate.fillStyle(0x0b0618, 0.7); plate.fillRoundedRect(vx - 6, vy - 6, vw + 12, vh + 12, 12);
     plate.lineStyle(1, C.violet, 0.3); plate.strokeRoundedRect(vx - 6, vy - 6, vw + 12, vh + 12, 12);
-    const holo = this.add.image(this.fx, this.fy, 'torso_holo').setOrigin(0).setScale(this.fs / DENSITY).setAlpha(0.7);
+    const holo = this.add.image(this.fx, this.fy, this.textures.exists('ctx_holo') ? 'ctx_holo' : 'torso_holo').setOrigin(0).setScale(this.fs / DENSITY).setAlpha(0.7);
     const mk = this.make.graphics({}, false); mk.fillRect(vx - 6, vy - 6, vw + 12, vh + 12); holo.setMask(mk.createGeometryMask());
     // axis legend (bottom-left of the plate) + side labels
     const ax = vx + vw - 70, ay = vy + vh - 14;   // medial-bottom corner is empty (the forearm lies laterally)
@@ -55,10 +55,12 @@ export class AlignPuzzle extends PuzzleBase {
     // fixed bones
     for (const id of ['scapula', 'clavicle'] as const) { const b = boneBounds(id); this.add.image(this.fx + b.cx * this.fs, this.fy + b.cy * this.fs, `bone_bone_${id}`).setScale(this.fs / DENSITY); }
     // joint sockets (glow)
-    const jp = [LANDMARKS.glenoid, { x: 276, y: 742 }];
+    // joint centres: measured on the 3D model when it is loaded (else the old drawing's landmarks)
+    const LM = modelLandmarks() ?? { head: LANDMARKS.head, glenoid: LANDMARKS.glenoid, elbow: { x: 276, y: 742 } };
+    const jp = [LM.glenoid, LM.elbow];
     for (const j of jp) { const r = this.add.image(this.fx + j.x * this.fs, this.fy + j.y * this.fs, 'light').setScale(0.35).setTint(C.violet).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.6); this.tweens.add({ targets: r, alpha: 0.2, duration: 800, yoyo: true, repeat: -1 }); }
     // movable bones in an "arm" container pivoting at humeral head (for the demo)
-    const pivot = { x: this.fx + LANDMARKS.head.x * this.fs, y: this.fy + LANDMARKS.head.y * this.fs };
+    const pivot = { x: this.fx + LM.head.x * this.fs, y: this.fy + LM.head.y * this.fs };
     this.arm = this.add.container(pivot.x, pivot.y);
     const states: [boolean, boolean][] = Phaser.Utils.Array.Shuffle([[true, false], [false, true], [true, true]] as [boolean, boolean][]);
     (['humerus', 'ulna', 'radius'] as Mov[]).forEach((id, i) => {

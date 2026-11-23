@@ -4,7 +4,7 @@ import { View } from '../../core/view';
 import { Audio } from '../../core/audio';
 import { G } from '../../game/state';
 import { LANDMARKS, XRAY_TARGETS, XRAY_DISTRACTORS_BASIC, XRAY_DISTRACTORS_ADV } from '../../data/anatomy';
-import { makeXrayTexture, boneBounds, DENSITY } from '../../art/bones';
+import { makeXrayTexture, primBoneBounds, DENSITY } from '../../art/bones';
 import { T, C, Button } from '../../ui/widgets';
 
 interface Chip { id: string; c: Phaser.GameObjects.Container; home: { x: number; y: number }; done: boolean; bg: Phaser.GameObjects.Graphics; w: number }
@@ -42,8 +42,9 @@ export class XrayPuzzle extends PuzzleBase {
     this.overlay = this.add.container(0, 0).setAlpha(0);
     const mask = this.make.graphics({}, false); mask.fillRect(fx, fy, film.w * s, film.h * s);
     for (const id of ['scapula', 'clavicle', 'humerus'] as const) {
-      const b = boneBounds(id);
-      this.overlay.add(this.add.image(fx + (b.cx - film.x) * s, fy + (b.cy - film.y) * s, `bone_bone_${id}`).setScale(s / DENSITY));
+      // the film and its markers are laid out on the primitive drawing -> overlay the same drawing
+      const b = primBoneBounds(id);
+      this.overlay.add(this.add.image(fx + (b.cx - film.x) * s, fy + (b.cy - film.y) * s, `bone_prim_bone_${id}`).setScale(s / DENSITY));
     }
     this.overlay.setMask(mask.createGeometryMask());
     // markers

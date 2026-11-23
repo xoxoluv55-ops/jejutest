@@ -104,8 +104,8 @@ export class HUDScene extends BaseScene {
     // --- action buttons ---
     const ax = W - (tn ? 84 : 110), ay = H - (tn ? 84 : 120);
     this.btnAct = new RoundButton(this, ax, ay, tn ? 52 : 66, 'hand', () => Bus.emit('input:interact'), C.cyan, touch ? '조작' : 'E · 조작');
-    this.btnScan = new RoundButton(this, ax - (tn ? 118 : 150), ay + (tn ? 26 : 34), tn ? 38 : 44, 'scan', () => Bus.emit('input:scan'), C.violet, touch ? 'SCAN' : 'Space · SCAN');
-    this.btnScan.setActive2(true);
+    // v0.7: SCAN removed (things are found by investigating objects, not by a radar pulse)
+    this.btnScan = new RoundButton(this, -999, -999, 1, 'scan', () => { /* removed */ }, C.violet).setVisible(false);
     this.btnBag = new RoundButton(this, ax - (tn ? 10 : 30), ay - (tn ? 104 : 130), tn ? 28 : 34, 'bag', () => this.openInventory(), C.amber, touch ? '인벤토리' : 'Tab');
     this.btnMap = new RoundButton(this, ax - (tn ? 96 : 120), ay - (tn ? 80 : 98), tn ? 26 : 30, 'map', () => this.openMap(), C.cyan, touch ? '지도' : 'M');
     this.btnBag.setActive2(true); this.btnMap.setActive2(true);
@@ -484,7 +484,7 @@ export class HUDScene extends BaseScene {
     // scan cooldown ring
     this.scanCd = Math.max(0, this.scanCd - dms / 1000);
     const sg = this.scanCdG; sg.clear();
-    if (this.scanCd > 0) { sg.lineStyle(4, C.violet, 0.9); sg.beginPath(); sg.arc(this.btnScan.x, this.btnScan.y, 50, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - this.scanCd / 1.4)); sg.strokePath(); }
+    if (this.scanCd > 0 && this.btnScan.visible) { sg.lineStyle(4, C.violet, 0.9); sg.beginPath(); sg.arc(this.btnScan.x, this.btnScan.y, 50, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - this.scanCd / 1.4)); sg.strokePath(); }
     // off-screen threats (drones / lasers): red edge markers so the closer camera never hides an approaching danger
     const tg = this.threatG; tg.clear();
     if (t.threats && t.cam) {

@@ -7,6 +7,7 @@ import type { Difficulty } from '../game/state';
 
 /** How a bone is obtained. */
 export type Getter =
+  | 'puzzle'    // v0.7 escape-room investigation (desk, journal, photo, drawer code)
   | 'scan'      // hidden locker, only visible after a SCAN pulse (B-02)
   | 'stealth'   // specimen capsule inside the guarded vault (V-05)
   | 'keycard'   // behind the S-07 door; the keycard lies in the vault
@@ -14,7 +15,7 @@ export type Getter =
   | 'alarm';    // taking it trips the alarm: leave L-06 before the shutter closes
 
 export const BONE_GET: Record<BoneId, { x: number; y: number; get: Getter }> = {
-  scapula: { x: 420, y: 1262, get: 'scan' },
+  scapula: { x: 330, y: 1345, get: 'puzzle' },   // v0.7: research desk in B-02 (journal + photo -> drawer code)
   humerus: { x: 440, y: 560, get: 'stealth' },
   radius: { x: 650, y: 2090, get: 'keycard' },
   fibula: { x: 790, y: 2230, get: 'keycard' },     // advanced only (decoy leg bone)

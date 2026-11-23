@@ -1,9 +1,10 @@
 import { makeStealthArt } from '../art/stealth';
+import { makeOfficeArt } from '../art/office';
 import Phaser from 'phaser';
 import { BaseScene } from './Base';
 import { View } from '../core/view';
 import { buildEnvironment, USER_ART } from '../art/env';
-import { makeBoneTexture, makeXrayTexture, drawTorsoHolo, DENSITY } from '../art/bones';
+import { makeBoneTexture, makePrimBoneTexture, setBoneModel, makeXrayTexture, drawTorsoHolo, DENSITY } from '../art/bones';
 import { BONES, BoneId, FRAME } from '../data/anatomy';
 import { T, C } from '../ui/widgets';
 import { preloadMuscleArt } from '../art/muscles';
@@ -27,6 +28,10 @@ export class BootScene extends BaseScene {
     this.load.on('progress', (v: number) => this.drawBar(v * 0.7));
     for (const c of BOT_COLORS) { this.load.image(`hero_${c}`, `assets/atlas/hero_${c}.png`); this.load.image(`full_${c}`, `assets/atlas/full_${c}.png`); }
     this.load.image('holo_body', 'assets/cut/holo_body.png');
+    // CH1 bones rendered from the BodyParts3D model (v0.7)
+    this.load.json('ch1_bones', 'assets/ch1/bones.json');
+    for (const id of ['clavicle', 'scapula', 'humerus', 'radius', 'ulna', 'fibula']) this.load.image(`ch1m_${id}`, `assets/ch1/bone_${id}.webp`);
+    this.load.image('ch1_ctx', 'assets/ch1/ctx.webp');
     this.load.atlas('env', 'assets/atlas/env.png', 'assets/atlas/env.json');
     this.load.image('title_bg', 'assets/art/title_bg.jpg');
     preloadMuscleArt(this.load);   // CH2 anatomy plates rendered from the BodyParts3D model
@@ -53,8 +58,18 @@ export class BootScene extends BaseScene {
     this.status.setText('구조 데이터 렌더링…');
     try { await Promise.race([Promise.all([document.fonts.load('700 20px Orbitron'), document.fonts.load('900 20px Orbitron'), document.fonts.load('600 20px Rajdhani'), document.fonts.load('700 20px Rajdhani')]), new Promise(r => setTimeout(r, 2500))]); } catch { /* ignore */ }
     await this.nextFrame();
-    buildEnvironment(this); makeStealthArt(this); this.drawBar(0.82); await this.nextFrame();
-    for (const id of Object.keys(BONES) as BoneId[]) { makeBoneTexture(this, id, 'bone'); makeBoneTexture(this, id, 'holo'); makeBoneTexture(this, id, 'ghost'); }
+    buildEnvironment(this); makeStealthArt(this); makeOfficeArt(this); this.drawBar(0.82); await this.nextFrame();
+    setBoneModel(this.cache.json.get('ch1_bones') ?? null);
+    for (const id of Object.keys(BONES) as BoneId[]) { makeBoneTexture(this, id, 'bone'); makeBoneTexture(this, id, 'holo'); makeBoneTexture(this, id, 'ghost'); makePrimBoneTexture(this, id, 'bone'); }
+    if (this.textures.exists('ch1_ctx') && !this.textures.exists('ctx_holo')) {
+      // model rib cage / sternum / hand as a cyan hologram backdrop (assembly + joint alignment)
+      const img = this.textures.get('ch1_ctx').getSourceImage() as HTMLImageElement;
+      const cv = document.createElement('canvas'); cv.width = img.width; cv.height = img.height;   // ctx.webp: full frame at density 2
+      const c = cv.getContext('2d')!; c.drawImage(img, 0, 0, cv.width, cv.height);
+      c.globalCompositeOperation = 'source-atop'; c.fillStyle = 'rgba(60,180,255,0.78)'; c.fillRect(0, 0, cv.width, cv.height);
+      c.globalCompositeOperation = 'destination-in'; c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(0, 0, cv.width, cv.height);
+      this.textures.addCanvas('ctx_holo', cv);
+    }
     this.drawBar(0.94); await this.nextFrame();
     makeXrayTexture(this);
     if (!this.textures.exists('torso_holo')) {

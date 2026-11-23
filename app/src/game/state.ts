@@ -19,7 +19,12 @@ export interface RunState {
   learned: string[];
   // survival (v0.5): hearts, one-hit shield, S-07 keycard, last checkpoint, times hit
   hp: number; shield: number; keycard: boolean; cp: { x: number; y: number; id: string } | null; hits: number;
+  // escape-room investigation (v0.7): clues found (kept on death) and this run's codes
+  clues: string[]; codes: Record<string, string>; hintsUsed: number;
 }
+
+/** 4 digits, no digit repeated (each sticker on the photo shows a different number) */
+function randomCode() { const d = Phaser.Utils.Array.Shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]); return d.slice(0, 4).join(''); }
 
 export function newRun(difficulty: Difficulty, color: string, chapter = 1): RunState {
   const ch1 = chapter === 1;
@@ -31,6 +36,7 @@ export function newRun(difficulty: Difficulty, color: string, chapter = 1): RunS
     stats: ch1 ? { assembly: 0, align: 0, xray: 0 } : { atlas: 0, link: 0, motion: 0 },
     learned: [],
     hp: 3, shield: 0, keycard: false, cp: null, hits: 0,
+    clues: [], codes: { scapula: randomCode() }, hintsUsed: 0,
   };
 }
 

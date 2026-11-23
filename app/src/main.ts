@@ -20,6 +20,7 @@ import { MuscleMotionPuzzle } from './scenes/puzzles/MuscleMotionPuzzle';
 import { ArchiveScene } from './scenes/ArchiveScene';
 import { ResultScene } from './scenes/ResultScene';
 import { InfoScene } from './scenes/InfoScene';
+import { InvestigateScene } from './scenes/InvestigateScene';
 
 View.quality = Save.settings.quality;
 const px = measure();
@@ -38,7 +39,7 @@ const game = new Phaser.Game({
   input: { activePointers: 4 },
   fps: { target: 60, smoothStep: true },
   physics: { default: 'arcade', arcade: { debug: false } },
-  scene: [BootScene, TitleScene, GameScene, MuscleScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene],
+  scene: [BootScene, TitleScene, GameScene, MuscleScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene, InvestigateScene],
 });
 
 let rt: number | undefined;

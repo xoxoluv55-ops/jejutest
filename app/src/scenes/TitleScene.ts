@@ -139,7 +139,7 @@ export class TitleScene extends BaseScene {
       b.setDepth(50); b.setAlpha(0); b.x += 40;
       this.tweens.add({ targets: b, alpha: 1, x: mx, duration: 500, delay: 300 + i * 90, ease: 'Cubic.out' });
     });
-    T(this, W - 18, H - 14, `v0.6 · 빌드 ${__BUILD__}`, 15, '#8a9bbd').setOrigin(1, 1).setDepth(50);
+    T(this, W - 18, H - 14, `v0.7 · 빌드 ${__BUILD__}`, 15, '#8a9bbd').setOrigin(1, 1).setDepth(50);
     if (Save.clears) T(this, 18, H - 14, `CLEAR ×${Save.clears}${Save.bestTime ? ` · BEST ${fmt(Save.bestTime)}` : ''}`, 14, C.greenS, { weight: '700' }).setOrigin(0, 1).setDepth(50);
 
     if (!entered) this.enterGate(); else this.startAudio();
