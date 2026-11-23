@@ -49,10 +49,18 @@ export interface BoneModel {
   rects: Record<string, { x: number; y: number; w: number; h: number }>;
   mask: Record<string, [number, number][]>;
   landmarks: { head: [number, number]; glenoid: [number, number]; elbow: [number, number]; headRadius: number };
+  /** landmarks measured on the meshes, in each bone image's px (density 2): tools/anatomy3d/arm_points.py */
+  points?: Record<string, Record<string, [number, number]>>;
+  scapulaPoints?: Record<string, [number, number]>;
 }
 let MODEL: BoneModel | null = null;
 export function setBoneModel(m: BoneModel | null) { MODEL = m && m.rects ? m : null; }
 export function boneModel() { return MODEL; }
+/** a measured landmark in the bone image's px (density 2), or null when the model is not loaded */
+export function bonePoint(bone: string, name: string): [number, number] | null {
+  if (!MODEL) return null;
+  return (bone === 'scapula' ? MODEL.scapulaPoints?.[name] : MODEL.points?.[bone]?.[name]) ?? null;
+}
 /** landmarks measured on the model (frame coords), or null when the model is not loaded */
 export function modelLandmarks() {
   if (!MODEL) return null;

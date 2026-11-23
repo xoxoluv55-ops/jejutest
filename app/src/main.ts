@@ -21,6 +21,10 @@ import { ArchiveScene } from './scenes/ArchiveScene';
 import { ResultScene } from './scenes/ResultScene';
 import { InfoScene } from './scenes/InfoScene';
 import { InvestigateScene } from './scenes/InvestigateScene';
+import { InvHumerusScene } from './scenes/invest/InvHumerusScene';
+import { InvRadiusScene } from './scenes/invest/InvRadiusScene';
+import { InvUlnaScene } from './scenes/invest/InvUlnaScene';
+import { InvClavicleScene } from './scenes/invest/InvClavicleScene';
 
 View.quality = Save.settings.quality;
 const px = measure();
@@ -39,7 +43,7 @@ const game = new Phaser.Game({
   input: { activePointers: 4 },
   fps: { target: 60, smoothStep: true },
   physics: { default: 'arcade', arcade: { debug: false } },
-  scene: [BootScene, TitleScene, GameScene, MuscleScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene, InvestigateScene],
+  scene: [BootScene, TitleScene, GameScene, MuscleScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene, InvestigateScene, InvHumerusScene, InvRadiusScene, InvUlnaScene, InvClavicleScene],
 });
 
 let rt: number | undefined;

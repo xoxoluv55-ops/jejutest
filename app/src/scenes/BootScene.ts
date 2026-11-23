@@ -1,5 +1,6 @@
 import { makeStealthArt } from '../art/stealth';
 import { makeOfficeArt } from '../art/office';
+import { makeEscapeArt } from '../art/escape';
 import Phaser from 'phaser';
 import { BaseScene } from './Base';
 import { View } from '../core/view';
@@ -58,7 +59,7 @@ export class BootScene extends BaseScene {
     this.status.setText('구조 데이터 렌더링…');
     try { await Promise.race([Promise.all([document.fonts.load('700 20px Orbitron'), document.fonts.load('900 20px Orbitron'), document.fonts.load('600 20px Rajdhani'), document.fonts.load('700 20px Rajdhani')]), new Promise(r => setTimeout(r, 2500))]); } catch { /* ignore */ }
     await this.nextFrame();
-    buildEnvironment(this); makeStealthArt(this); makeOfficeArt(this); this.drawBar(0.82); await this.nextFrame();
+    buildEnvironment(this); makeStealthArt(this); makeOfficeArt(this); makeEscapeArt(this); this.drawBar(0.82); await this.nextFrame();
     setBoneModel(this.cache.json.get('ch1_bones') ?? null);
     for (const id of Object.keys(BONES) as BoneId[]) { makeBoneTexture(this, id, 'bone'); makeBoneTexture(this, id, 'holo'); makeBoneTexture(this, id, 'ghost'); makePrimBoneTexture(this, id, 'bone'); }
     if (this.textures.exists('ch1_ctx') && !this.textures.exists('ctx_holo')) {

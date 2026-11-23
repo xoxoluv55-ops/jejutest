@@ -1,21 +1,11 @@
 import Phaser from 'phaser';
-import { PuzzleBase } from './puzzles/PuzzleBase';
-import { View } from '../core/view';
+import { InvestBase, Overlay } from './invest/InvestBase';
 import { Audio } from '../core/audio';
-import { G, Bus } from '../game/state';
-import { T, C, drawPanel, Button } from '../ui/widgets';
+import { G } from '../game/state';
+import { T, C, Button } from '../ui/widgets';
 import { boneModel } from '../art/bones';
+import { SCAP_ORDER, SCAP_KO, SCAP_DESC } from '../data/escape';
 
-type Kind = 'desk' | 'frame';
-/** the four structures whose stickers make the drawer code, in the order the journal gives */
-export const SCAP_ORDER = ['acromion', 'coracoid', 'glenoid', 'inferiorAngle'] as const;
-const SCAP_KO: Record<string, string> = { acromion: '봉우리', coracoid: '부리돌기', glenoid: '관절오목', inferiorAngle: '아래각' };
-const SCAP_DESC: Record<string, string> = {
-  acromion: '어깨 꼭대기에서 빗장뼈와 만나는 바깥쪽 끝',
-  coracoid: '앞쪽으로 갈고리처럼 튀어나온 돌기',
-  glenoid: '위팔뼈머리를 받는 얕은 오목',
-  inferiorAngle: '삼각형의 가장 아래 꼭짓점',
-};
 /** sticker offset from the measured landmark (image px) so the sticker sits on the structure, not over its edge */
 const STICK_OFF: Record<string, [number, number]> = { acromion: [26, 8], coracoid: [14, -6], glenoid: [-6, 18], inferiorAngle: [-6, -30] };
 
@@ -25,35 +15,18 @@ const STICK_OFF: Record<string, [number, number]> = { acromion: [26, 8], coracoi
  * flip the photo frame, punch the drawer code, lift the false bottom, take the specimen. Clues go to the notebook
  * (G.run.clues, kept on death). Graded hints, unlimited retries, no damage while investigating (the world is paused).
  */
-export class InvestigateScene extends PuzzleBase {
+export class InvestigateScene extends InvestBase {
   constructor() { super('Investigate'); }
-  kind: Kind = 'desk';
-  layer!: Phaser.GameObjects.Container;       // current overlay (journal / keypad / notebook ...)
-  hintLv = 0;
+  clueIds = ['note', 'frame_back', 'journal', 'photo'];
   // desk state
   mugLifted = false; drawerOpen = false; panelUp = false; taken = false;
   code = '';
 
-  get adv() { return G.run.difficulty === 'adv'; }
-  get solved4() { return G.run.flags.scapulaFound; }
+  get solved4() { return !!G.run.flags.scapulaFound; }
 
-  create(data: { kind: Kind }) {
-    this.initView();
-    this.kind = data.kind; this.hintLv = 0; this.code = '';
-    this.mugLifted = false; this.panelUp = false; this.taken = false; this.drawerOpen = !!G.run.flags.drawerOpen;
-    this.layer = undefined as unknown as Phaser.GameObjects.Container;
-    if (this.kind === 'desk') this.buildDesk(); else this.buildFrame();
-    // header tools: hint + notebook
-    const hx = this.px + this.pw - (this.compact ? 250 : 360), hy = this.py + this.hdr / 2;
-    new Button(this, hx, hy, '힌트', () => this.hint(), { w: this.compact ? 96 : 110, h: this.compact ? 36 : 42, icon: 'info', size: 16 }).setDepth(60);
-    new Button(this, hx + (this.compact ? 108 : 126), hy, '기록장', () => this.notebook(), { w: this.compact ? 110 : 126, h: this.compact ? 36 : 42, icon: 'book', size: 16 }).setDepth(60);
-  }
-
-  addClue(id: string, toast: string) {
-    if (G.run.clues.includes(id)) return;
-    G.run.clues.push(id); Audio.play('reveal');
-    this.setFeedback(`📒 기록장에 저장: ${toast}`, 'ok');
-    Bus.emit('mission');
+  build(kind: string) {
+    this.code = ''; this.mugLifted = false; this.panelUp = false; this.taken = false; this.drawerOpen = !!G.run.flags.drawerOpen;
+    if (kind === 'desk') this.buildDesk(); else this.buildFrame();
   }
 
   // ------------------------------------------------------------------ desk
@@ -104,28 +77,6 @@ export class InvestigateScene extends PuzzleBase {
       : '책상 위를 살펴보세요. 연구원이 무언가를 숨겨 둔 것 같습니다.', 'info');
   }
   drawerGlow?: Phaser.GameObjects.Image;
-
-  glint(o: Phaser.GameObjects.Image) {
-    const g = this.add.image(o.x + o.displayWidth * 0.3, o.y - o.displayHeight * 0.3, 'light').setTint(0xffffff).setBlendMode(Phaser.BlendModes.ADD).setScale(0.12).setAlpha(0);
-    this.tweens.add({ targets: g, alpha: 0.9, scale: 0.2, duration: 500, yoyo: true, repeat: -1, repeatDelay: 1800, delay: Math.random() * 1500 });
-  }
-
-  /** dims the view and returns a fresh overlay container with a close button */
-  overlay(title: string, w: number, h: number, accent = C.amber) {
-    this.layer?.destroy();
-    const { W, H } = View;
-    const c = this.add.container(0, 0).setDepth(200); this.layer = c;
-    c.add(this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.66).setInteractive());
-    w = Math.min(w, W - 30); h = Math.min(h, H - (this.compact ? 12 : 40));
-    const x = W / 2 - w / 2, y = H / 2 - h / 2;
-    const g = this.add.graphics(); drawPanel(g, x, y, w, h, { accent, header: 50 }); c.add(g);
-    c.add(T(this, x + 24, y + 25, title, 20, C.white, { weight: '700' }).setOrigin(0, 0.5));
-    c.add(new Button(this, x + w - 80, y + 25, '닫기', () => this.closeLayer(), { w: 120, h: 38, icon: 'close', size: 16 }));
-    c.setAlpha(0); this.tweens.add({ targets: c, alpha: 1, duration: 150 });
-    this.flushInput();
-    return { c, x, y, w, h };
-  }
-  closeLayer() { if (!this.layer) return; const c = this.layer; this.layer = undefined as unknown as Phaser.GameObjects.Container; Audio.play('close'); this.tweens.add({ targets: c, alpha: 0, duration: 120, onComplete: () => c.destroy() }); }
 
   // ---- journal: two pages, turn with the page corner ----
   openJournal() {
@@ -259,15 +210,8 @@ export class InvestigateScene extends PuzzleBase {
     Audio.play('pickup');
     this.tweens.add({ targets: img, y: img.y - 60, scale: img.scale * 1.2, duration: 500, ease: 'Back.out' });
     G.run.flags.scapulaFound = true;
-    this.time.delayedCall(700, () => {
-      this.closeLayer();
-      const o = this.overlay('표본 S-01 회수 · 어깨뼈 Scapula', 860, 520, C.green);
-      const im = this.add.image(o.x + 190, o.y + o.h / 2 + 20, 'bone_bone_scapula'); im.setScale(Math.min(260 / im.width, (o.h - 120) / im.height)); o.c.add(im);
-      const tx = o.x + 360, tw = o.w - 390;
-      o.c.add(T(this, tx, o.y + 80, '해부학 도감에 등록되었습니다', 19, C.greenS, { weight: '700' }));
-      o.c.add(T(this, tx, o.y + 120, '어깨뼈는 팔이음뼈(어깨띠)를 이루는 납작한 삼각형 뼈. 가쪽각의 관절오목이 위팔뼈머리와 오목위팔관절을, 봉우리가 빗장뼈와 봉우리빗장관절을 만든다. 몸통 뼈대와는 직접 관절하지 않는다.', 17, '#d3def3', { wordWrap: { width: tw }, lineSpacing: 6 }));
-      o.c.add(new Button(this, o.x + o.w - 130, o.y + o.h - 40, '계속', () => { Bus.emit('investigate:found', 'scapula'); this.scene.stop(); }, { w: 200, h: 50, icon: 'check', accent: C.green, primary: true }));
-    });
+    this.time.delayedCall(700, () => this.found('scapula', '표본 S-01 회수 · 어깨뼈 Scapula',
+      '어깨뼈는 팔이음뼈(어깨띠)를 이루는 납작한 삼각형 뼈. 가쪽각의 관절오목이 위팔뼈머리와 오목위팔관절을, 봉우리가 빗장뼈와 봉우리빗장관절을 만든다. 몸통 뼈대와는 직접 관절하지 않는다.'));
   }
 
   // ------------------------------------------------------------------ photo frame
@@ -323,38 +267,24 @@ export class InvestigateScene extends PuzzleBase {
   }
 
   // ------------------------------------------------------------------ notebook + hints
-  notebook() {
-    Audio.play('open');
-    const o = this.overlay('기록장 · 찾은 단서', 960, 620, C.cyan);
-    const cl = G.run.clues;
-    let y = o.y + 70; const x = o.x + 30, w = o.w - 60;
-    if (!cl.length) { o.c.add(T(this, x, y, '아직 기록한 단서가 없습니다.', 17, C.dim)); return; }
-    const textLines: string[] = [];
-    if (cl.includes('note')) textLines.push('📝 메모: 서랍 — 숫자 4자리. 숫자는 S-01 사진, 순서는 일지 마지막 장.');
-    if (cl.includes('frame_back')) textLines.push('🖼 액자 뒷면: "숫자만 봐서는 모른다. 순서는 내 일지 마지막 장에."');
-    if (cl.includes('journal')) textLines.push('📖 일지 마지막 장 — 순서:\n' + SCAP_ORDER.map((id, i) => `    ${i + 1}. ${SCAP_KO[id]}${this.adv ? '' : ` — ${SCAP_DESC[id]}`}`).join('\n'));
-    const hasPhoto = cl.includes('photo');
-    const tw = hasPhoto ? w * 0.56 : w;
-    const tt = T(this, x, y, textLines.join('\n\n') || '(사진만 찾았습니다)', 16, '#d3def3', { wordWrap: { width: tw }, lineSpacing: 5 }); o.c.add(tt);
-    for (const sz of [16, 15]) { if (tt.y + tt.height < o.y + o.h - 20) break; tt.setFontSize(sz); }
-    if (hasPhoto) {
-      // a copy of the photo (with its stickers) so the code can be read while standing at the keypad
-      const px = o.x + o.w * 0.62, pw = o.w * 0.36, ph = o.h - 110;
-      const g = this.add.graphics(); g.fillStyle(0x0b1622, 1); g.fillRoundedRect(px, y, pw, ph, 8); g.lineStyle(2, 0xd9c08a, 1); g.strokeRoundedRect(px, y, pw, ph, 8); o.c.add(g);
-      const photo = this.add.image(px + pw / 2, y + ph / 2 - 8, 'bone_bone_scapula'); o.c.add(photo);
-      const ps = Math.min((pw - 30) / photo.width, (ph - 40) / photo.height); photo.setScale(ps);
-      const pts = (boneModel() as any)?.scapulaPoints as Record<string, [number, number]> | undefined;
-      SCAP_ORDER.forEach((id, i) => {
-        const pt = pts?.[id] ?? [photo.width / 2, photo.height / 2]; const [ox, oy] = STICK_OFF[id];
-        const sx = photo.x + (pt[0] + ox - photo.width / 2) * ps, sy = photo.y + (pt[1] + oy - photo.height / 2) * ps;
-        const sg = this.add.graphics(); sg.fillStyle(0xfff3c4, 1); sg.fillCircle(sx, sy, 12); sg.lineStyle(2, 0x8a6a1a, 1); sg.strokeCircle(sx, sy, 12); o.c.add(sg);
-        o.c.add(T(this, sx, sy, G.run.codes.scapula[i], 16, '#3a2a05', { ink: true, weight: '900' }).setOrigin(0.5));
-      });
-      o.c.add(T(this, px + pw / 2, y + ph - 14, '사진 S-01 (사본)', 15, '#d9c08a', { weight: '700' }).setOrigin(0.5));
-    }
+  /** a copy of the photo (with its stickers) so the code can be read while standing at the keypad */
+  notebookVisual(o: Overlay, px: number, y: number, pw: number, ph: number) {
+    if (!this.has('photo')) return false;
+    const g = this.add.graphics(); g.fillStyle(0x0b1622, 1); g.fillRoundedRect(px, y, pw, ph, 8); g.lineStyle(2, 0xd9c08a, 1); g.strokeRoundedRect(px, y, pw, ph, 8); o.c.add(g);
+    const photo = this.add.image(px + pw / 2, y + ph / 2 - 8, 'bone_bone_scapula'); o.c.add(photo);
+    const ps = Math.min((pw - 30) / photo.width, (ph - 40) / photo.height); photo.setScale(ps);
+    const pts = (boneModel() as any)?.scapulaPoints as Record<string, [number, number]> | undefined;
+    SCAP_ORDER.forEach((id, i) => {
+      const pt = pts?.[id] ?? [photo.width / 2, photo.height / 2]; const [ox, oy] = STICK_OFF[id];
+      const sx = photo.x + (pt[0] + ox - photo.width / 2) * ps, sy = photo.y + (pt[1] + oy - photo.height / 2) * ps;
+      const sg = this.add.graphics(); sg.fillStyle(0xfff3c4, 1); sg.fillCircle(sx, sy, 12); sg.lineStyle(2, 0x8a6a1a, 1); sg.strokeCircle(sx, sy, 12); o.c.add(sg);
+      o.c.add(T(this, sx, sy, G.run.codes.scapula[i], 16, '#3a2a05', { ink: true, weight: '900' }).setOrigin(0.5));
+    });
+    o.c.add(T(this, px + pw / 2, y + ph - 14, '사진 S-01 (사본)', 15, '#d9c08a', { weight: '700' }).setOrigin(0.5));
+    return true;
   }
 
-  hint() {
+  hints() {
     const cl = G.run.clues, adv = this.adv;
     const H: string[] = [];
     if (!cl.includes('journal')) H.push('책상 위의 초록색 일지를 펼쳐 보세요. 마지막 장까지 넘겨야 합니다.');
@@ -363,9 +293,6 @@ export class InvestigateScene extends PuzzleBase {
     H.push('사진은 앞에서 본 오른쪽 어깨뼈: 봉우리=가장 위 왼쪽(가쪽) 끝 · 부리돌기=관절오목 위로 앞쪽에 튀어나온 갈고리 · 관절오목=왼쪽 가장자리의 얕은 오목 · 아래각=맨 아래 꼭짓점.');
     if (!adv) H.push(`앞의 두 자리는 ${G.run.codes.scapula.slice(0, 2)} 입니다.`);
     if (this.drawerOpen && !this.panelUp) H.unshift('서랍 바닥판 오른쪽의 홈을 잡고 위로 끌어 올리세요 (이중 바닥).');
-    const lv = Math.min(this.hintLv, H.length - 1);
-    this.hintLv++; G.run.hintsUsed++;
-    Audio.play('ai');
-    this.setFeedback(`힌트 ${lv + 1}/${H.length}: ${H[lv]}`, 'warn');
+    return H;
   }
 }

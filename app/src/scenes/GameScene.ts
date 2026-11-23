@@ -12,6 +12,7 @@ import { boneBounds, DENSITY } from '../art/bones';
 import { T } from '../ui/widgets';
 import type { IconName } from '../ui/widgets';
 import { Guard, Laser, GState } from '../game/Stealth';
+import { INV_SCENE, EscSpot } from '../data/escapeWorld';
 import { BONE_GET, KEYCARD_AT, KEY_DOOR, GALLERY_EXIT_X, DIFF, vaultGuards, FINAL_GUARD, GALLERY_LASERS, ALARM_LASERS, FINAL_LASERS, CHECKPOINTS, CRATE_SPOTS, HIDE_SPOTS, PICKUP_HINT } from '../data/zone1';
 
 export interface Interactable {
@@ -139,6 +140,7 @@ export class GameScene extends Phaser.Scene {
     Bus.on('input:interact', () => this.tryInteract(), this);
     Bus.on('puzzle:done', (id: string) => this.onPuzzleDone(id), this);
     Bus.on('investigate:found', (id: string) => this.onInvestigateFound(id), this);
+    Bus.on('investigate:done', (key: string) => this.onInvestigateDone(key), this);
     Bus.on('ident:ok', (id: BoneId) => this.onIdent(id, true), this);
     Bus.on('ident:cancel', (id: BoneId) => this.onIdent(id, false), this);
     Bus.on('puzzle:closed', () => { this.busy = false; this.player.frozen = false; this.scene.resume(); this.scene.wake('HUD'); }, this);
@@ -169,6 +171,7 @@ export class GameScene extends Phaser.Scene {
     this.buildHazards();
     this.buildZone();
     this.buildOffice();
+    this.buildEscape();
   }
 
   floorTint(floor: string): number { return floor === 'floor_lab' ? 0x7c88a6 : floor === 'floor_grate' ? 0x8e98b4 : 0x9094b0; }
@@ -376,7 +379,8 @@ export class GameScene extends Phaser.Scene {
   buildBones() {
     for (const id of neededBones()) {
       const g = BONE_GET[id];
-      if (g.get === 'puzzle') continue;   // obtained in the investigation view (buildOffice)
+      if (g.get === 'puzzle') continue;   // obtained in an investigation view (buildOffice / buildEscape)
+      if (g.get === 'alarm' && !G.run.flags.ulnaCage) continue;   // v0.8: caged until its power is restored (buildEscape)
       if (g.get === 'scan') {
         // hidden locker in B-02: only a SCAN pulse reveals it
         this.addInter({
@@ -421,7 +425,7 @@ export class GameScene extends Phaser.Scene {
       this.pickups.push({ id: 'keycard', x: KEYCARD_AT.x, y: KEYCARD_AT.y, obj: k, take: () => { kg.destroy(); this.takeKeycard(); } });
     }
     // ---- S-07 storage behind the keycard door ----
-    this.prop('rack', 620, 1985, { col: [60, 30] }); this.prop('rack', 800, 1985, { col: [60, 30] });
+    // v0.8: the racks made way for the S-03 bench and specimen locker (buildEscape)
     if (env) this.prop('p_tubes', 600, 2290, { col: [40, 20] });
     this.addHazard('spark', 720, 2165, 60, 2.6, 0.9, 0.3);
     this.keyDoor = env && this.textures.get('env').has('d_side_closed')
@@ -477,16 +481,102 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  openInvestigate(kind: 'desk' | 'frame') {
+  // ---------------------------------------------------------------- v0.8 escape-room puzzles for the other four bones
+  escSpots: EscSpot[] = [];
+  cage?: { g: Phaser.GameObjects.Graphics; block: Phaser.GameObjects.Zone; light: Phaser.GameObjects.Image };
+  /** clipboard + cryo capsule (V-05), bench + locker (S-07), toolbox + poster (J-03), safe + cage panel (L-06) */
+  buildEscape() {
+    const has = (c: string) => G.run.clues.includes(c), got = (b: BoneId) => G.run.bones.includes(b);
+    const spot = (id: string, kind: string, x: number, y: number, r: number, label: () => string, todo: () => boolean, glint: [number, number], store = false) => {
+      this.addInter({ id, x, y, r, icon: 'eye', label, act: () => this.openInvestigate(kind) });
+      this.escSpots.push({ x, y, todo, store });
+      const g = this.add.image(glint[0], glint[1], 'light').setTint(0xfff0c0).setBlendMode(Phaser.BlendModes.ADD).setScale(0.08).setAlpha(0).setDepth(5100);
+      this.tweens.add({ targets: g, alpha: 0.9, scale: 0.16, duration: 450, yoyo: true, repeat: -1, repeatDelay: 2200, delay: Math.random() * 1500 });
+    };
+    // ---- S-02 humerus: clipboard by the vault door, cooling unit on the capsule ----
+    const stand = this.add.graphics().setDepth(1060); stand.fillStyle(0x2a313d, 1); stand.fillRect(667, 1020, 6, 44); stand.fillStyle(0x1a2029, 1); stand.fillEllipse(670, 1064, 34, 10);
+    this.add.image(670, 1030, 'w_clip').setOrigin(0.5, 1).setScale(0.6).setDepth(1061);
+    spot('inv_cryolog', 'cryolog', 670, 1070, 75, () => '냉각 기록지 조사', () => !got('humerus') && !has('cryolog'), [680, 996]);
+    this.add.image(440, 600, 'w_cryo').setScale(0.45).setDepth(601);
+    spot('inv_cryo', 'cryo', 440, 620, 90, () => got('humerus') ? '냉각 캡슐 (비어 있음)' : '냉각 캡슐 제어 장치 조사', () => !got('humerus') && has('cryolog'), [470, 520]);
+    // ---- S-03 radius: bench + locker in S-07 ----
+    this.add.image(640, 2056, 'w_bench').setOrigin(0.5, 1).setScale(0.6).setDepth(2056); this.solid(640 - 48, 2056 - 30, 96, 30);
+    spot('inv_bench', 'bench', 640, 2095, 75, () => 'S-07 작업대 조사', () => !got('radius') && !(has('uvcard') && has('magnifier')), [620, 2010], true);
+    this.prop('p_locker', 800, 2050, { col: [56, 28] });
+    spot('inv_locker', 'locker', 800, 2095, 75, () => got('radius') ? '표본 보관장 (S-03 회수함)' : '표본 보관장 조사', () => !got('radius') && has('uvcard') && has('magnifier'), [800, 1960], true);
+    // ---- S-05 ulna: toolbox in J-03, cage + panel in L-06 ----
+    this.prop('p_techbox', 990, 2280, { col: [60, 26] });
+    spot('inv_toolbox', 'toolbox', 990, 2235, 80, () => '공구함 조사', () => !G.run.flags.ulnaCage && !(has('fuse') && has('manual')), [990, 2200]);
+    this.prop('p_breaker', 2440, 1850, { depth: 1850 });
+    spot('inv_panel', 'panel', 2440, 1895, 72, () => G.run.flags.ulnaCage ? '케이지 제어반 (전원 복구됨)' : '케이지 제어반 조사', () => !G.run.flags.ulnaCage && has('fuse') && has('manual'), [2440, 1790]);
+    if (!G.run.flags.ulnaCage) {
+      const g = this.add.graphics().setDepth(2125);
+      g.lineStyle(3, 0x9aa6b8, 0.95);
+      for (let x = 2500; x <= 2620; x += 12) g.lineBetween(x, 1985, x, 2120);
+      g.lineStyle(6, 0x5a6577, 1); g.strokeRect(2500, 1985, 120, 135);
+      g.fillStyle(0x0b1018, 0.35); g.fillRect(2500, 1985, 120, 135);
+      const light = this.add.image(2560, 1980, 'light').setTint(0xff3d5a).setBlendMode(Phaser.BlendModes.ADD).setScale(0.18).setAlpha(0.8).setDepth(2126);
+      this.tweens.add({ targets: light, alpha: 0.3, duration: 600, yoyo: true, repeat: -1 });
+      const block = this.solid(2500, 1995, 120, 125);
+      this.cage = { g, block, light };
+      const inCage = this.add.image(2560, 2070, 'bone_holo_ulna').setScale(0.22).setAlpha(0.7).setDepth(2080);
+      this.tweens.add({ targets: inCage, y: 2062, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+      (this.cage as any).ghost = inCage;
+      this.addInter({ id: 'ulna_cage', x: 2560, y: 2150, r: 70, icon: 'lock', enabled: () => !G.run.flags.ulnaCage, label: () => '잠긴 표본 케이지 S-05',
+        locked: () => '정전으로 잠겨 있습니다. 북쪽 벽의 케이지 제어반에서 전원을 복구해야 합니다.', act: () => { /* locked */ } });
+    }
+    // ---- S-04 clavicle: poster in J-03, wall safe in L-06 ----
+    this.add.image(1580, 1832, 'w_poster').setOrigin(0.5, 1).setScale(0.62).setDepth(1846);
+    spot('inv_poster', 'poster', 1580, 1885, 72, () => '해부도 포스터 조사', () => !got('clavicle') && !has('poster'), [1600, 1790]);
+    this.add.image(2150, 1834, 'w_safe').setOrigin(0.5, 1).setScale(0.62).setDepth(1846);
+    spot('inv_safe', 'safe', 2150, 1885, 72, () => got('clavicle') ? '벽 금고 (비어 있음)' : '벽 금고 조사', () => !got('clavicle') && has('poster'), [2165, 1790]);
+  }
+
+  /** the lab reacts when a specimen leaves its puzzle */
+  escapeWorldChange(id: string) {
+    if (id === 'humerus') {
+      // thawing vents a loud hiss: the vault drones turn to look
+      if (this.vaultCapsule && this.textures.exists('env') && this.textures.get('env').has('p_capsule_empty')) this.vaultCapsule.setFrame('p_capsule_empty');
+      Audio.play('steam'); this.cameras.main.shake(160, 0.003);
+      for (const g of this.guards) if (g.cfg.path[0].x < 760 && g.state !== 'chase') { g.last = { x: 440, y: 640 }; g.sus = Math.max(g.sus, G.run.difficulty === 'adv' ? 0.7 : 0.4); g.setState('suspicious'); }
+      this.time.delayedCall(700, () => this.ai('캡슐 해동음 감지 — 경비 드론이 소리 쪽으로 이동합니다. 엄폐하며 보관동을 빠져나가십시오.', 'warn', 3800));
+    } else if (id === 'clavicle') {
+      // the safe's alarm loop powered one of the sweeping beams
+      const l = this.lasers.find(q => q.cfg === GALLERY_LASERS[2]);
+      if (l) { l.enabled = false; this.time.delayedCall(600, () => this.ai('금고 보안 회로 해제 — L-06 레이저 1개가 정지했습니다.', 'ok', 3400)); }
+    } else if (id === 'radius') this.time.delayedCall(600, () => this.ai('표본 S-03 회수 확인.', 'ok', 2400));
+    Bus.emit('mission');
+  }
+
+  onInvestigateDone(key: string) {
+    this.scene.resume(); this.scene.wake('HUD'); this.busy = false; this.player.frozen = false;
+    if (key === 'ulnaCage' && this.cage) {
+      const c = this.cage; this.cage = undefined;
+      Audio.play('door'); this.cameras.main.shake(300, 0.004);
+      this.tweens.add({ targets: c.g, y: -140, alpha: 0, duration: 1200, ease: 'Cubic.inOut', onComplete: () => c.g.destroy() });
+      c.light.destroy(); (c as any).ghost?.destroy();
+      (c.block.body as Phaser.Physics.Arcade.StaticBody).enable = false;
+      this.blockers = this.blockers.filter(r => !(r.x === 2500 && r.y === 1995));
+      const it = this.inter.find(i => i.id === 'ulna_cage'); if (it) { it.gone = true; it.marker?.setVisible(false); }
+      this.time.delayedCall(800, () => {
+        this.addPickup('ulna', 2560, 2075);
+        this.ai('케이지 개방. 표본 S-05(자뼈)를 집으면 보안 경보가 울릴 수 있습니다 — 서쪽 출구를 확인해 두십시오.', 'warn', 4200);
+      });
+    }
+    Bus.emit('mission');
+  }
+
+  openInvestigate(kind: string) {
     if (this.busy) return;
+    const key = INV_SCENE[kind] ?? 'Investigate';
     this.busy = true; this.player.frozen = true; Pad.x = Pad.y = 0; Pad.run = false;
     this.player.play('interact', 0, -1); Audio.play('open');
-    this.time.delayedCall(220, () => { this.scene.sleep('HUD'); this.scene.launch('Investigate', { kind }); this.scene.pause(); });
+    this.time.delayedCall(220, () => { this.scene.sleep('HUD'); this.scene.launch(key, { kind }); this.scene.pause(); });
   }
 
   onInvestigateFound(id: string) {
     this.scene.resume(); this.scene.wake('HUD'); this.busy = false; this.player.frozen = false;
-    if (id !== 'scapula') return;
+    if (id !== 'scapula') { this.pickupBone(id as BoneId); this.escapeWorldChange(id); return; }
     this.pickupBone('scapula');
     // the specimen left its pressure sensor -> the B-02 shutter opens (the lab changes)
     this.time.delayedCall(900, () => {
@@ -496,6 +586,7 @@ export class GameScene extends Phaser.Scene {
       (this.officeShutterBlock.body as Phaser.Physics.Arcade.StaticBody).enable = false;
       this.blockers = this.blockers.filter(r => !(r.x === 724 && r.y === 1250));
       this.ai('표본 S-01 이탈 감지 — 압력 센서 해제. 격리 통로 B-02 격벽 개방.', 'ok', 3800);
+      this.time.delayedCall(4400, () => this.ai('남은 표본 4개도 연구실 곳곳에 잠겨 있습니다. 반짝이는 물건을 조사하십시오. 순서는 자유입니다.', 'ai', 4600));
       Bus.emit('mission');
     });
   }
@@ -749,10 +840,17 @@ export class GameScene extends Phaser.Scene {
   missions(): Mission[] {
     const f = G.run.flags, n = G.run.bones.length, N = neededBones().length;
     const list: Mission[] = [];
-    if (G.run.chapter === 1) list.push({ text: G.run.flags.scapulaFound ? '표본 S-01 (어깨뼈) 회수' : '표본 S-01 찾기 · B-02 책상과 액자 조사', done: !!f.scapulaFound, active: !f.scapulaFound });
-    list.push({ text: `뼈대 표본 회수 (${n}/${N})`, done: n >= N, active: !!f.scapulaFound && n < N });
-    const needKey = !G.run.bones.includes('radius');
-    if (needKey || G.run.keycard) list.push({ text: '카드키 확보 · V-05 경비 구역', done: G.run.keycard, active: !G.run.keycard && n < N });
+    list.push({ text: G.run.flags.scapulaFound ? '표본 S-01 (어깨뼈) 회수' : '표본 S-01 찾기 · B-02 책상과 액자 조사', done: !!f.scapulaFound, active: !f.scapulaFound });
+    // v0.8: every specimen has its own escape-room puzzle (any order once B-02 is open)
+    const B = G.run.bones, open = !!f.scapulaFound;
+    const bone = (id: BoneId, name: string, where: string) => list.push({ text: B.includes(id) ? `${name} 회수` : `${name} · ${where}`, done: B.includes(id), active: open && !B.includes(id) });
+    bone('humerus', '표본 S-02 (위팔뼈)', 'V-05 냉각 캡슐 — 기록지 확인');
+    bone('radius', '표본 S-03 (노뼈)', 'S-07 작업대·보관장');
+    if (!B.includes('radius') || G.run.keycard) list.push({ text: '카드키 확보 · V-05 경비 구역 (S-07 출입)', done: G.run.keycard, active: open && !G.run.keycard });
+    bone('clavicle', '표본 S-04 (빗장뼈)', 'L-06 벽 금고 — J-03 해부도');
+    bone('ulna', '표본 S-05 (자뼈)', f.ulnaCage ? 'L-06 케이지에서 회수' : 'L-06 케이지 전원 — J-03 공구함');
+    if (G.run.difficulty === 'adv') bone('fibula', '미끼 표본 (종아리뼈)', 'S-07 바닥');
+    void n; void N;
     if (this.escape?.kind === 'gallery') list.push({ text: 'L-06 셔터가 닫히기 전에 탈출!', done: false, active: true });
     list.push({ text: '뼈대 조립 · 복구 테이블', done: f.assembled, active: n >= N && !f.assembled, tag: 'LOCK 1' });
     if (f.blackout || f.power) list.push({ text: '보조 전원 복구 · 차단기', done: f.power, active: f.blackout && !f.power });
@@ -769,17 +867,12 @@ export class GameScene extends Phaser.Scene {
     if (!f.scapulaFound) return G.run.clues.includes('journal') && !G.run.clues.includes('photo') ? { x: 420, y: 1290 } : { x: 330, y: 1385 };
     if (G.run.bones.length < neededBones().length) {
       const doorShut = !!(this.keyDoorBlock?.body as Phaser.Physics.Arcade.StaticBody | undefined)?.enable;
+      const B = G.run.bones;
       const cands: { x: number; y: number }[] = [];
-      for (const k of this.pickups) {
-        const behindDoor = (k.id === 'bone_radius' || k.id === 'bone_fibula') && doorShut;
-        if (!behindDoor) cands.push(k);
-      }
-      if (doorShut && G.run.keycard && !G.run.bones.includes('radius')) cands.push(KEY_DOOR.panel);
-      for (const i of this.inter) {
-        if (i.gone || !(i.id.startsWith('cabinet_') || i.id.startsWith('capsule_'))) continue;
-        if (i.hidden && !Save.settings.hints) continue;
-        cands.push(i);
-      }
+      for (const k of this.pickups) if (!(k.id === 'bone_fibula' && doorShut)) cands.push(k);
+      const needStore = !B.includes('radius') || (G.run.difficulty === 'adv' && !B.includes('fibula'));
+      if (doorShut && G.run.keycard && needStore) cands.push(KEY_DOOR.panel);
+      for (const e of this.escSpots) if (e.todo() && !(e.store && doorShut)) cands.push(e);
       let best: { x: number; y: number } | null = null, bd = 1e9;
       for (const c of cands) { const d = Math.hypot(p.x - c.x, p.y - c.y); if (d < bd) { bd = d; best = c; } }
       return best;

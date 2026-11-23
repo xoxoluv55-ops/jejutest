@@ -16,11 +16,12 @@ export type Getter =
 
 export const BONE_GET: Record<BoneId, { x: number; y: number; get: Getter }> = {
   scapula: { x: 330, y: 1345, get: 'puzzle' },   // v0.7: research desk in B-02 (journal + photo -> drawer code)
-  humerus: { x: 440, y: 560, get: 'stealth' },
-  radius: { x: 650, y: 2090, get: 'keycard' },
+  humerus: { x: 440, y: 560, get: 'puzzle' },     // v0.8: cryo capsule in the guarded vault (log -> zone temperatures)
+  radius: { x: 650, y: 2090, get: 'puzzle' },      // v0.8: S-07 bench (UV card, rubbing, magnifier) + locker
+
   fibula: { x: 790, y: 2230, get: 'keycard' },     // advanced only (decoy leg bone)
-  clavicle: { x: 2150, y: 2075, get: 'laser' },
-  ulna: { x: 2560, y: 2075, get: 'alarm' },
+  clavicle: { x: 2150, y: 1880, get: 'puzzle' },   // v0.8: L-06 wall safe (J-03 poster numbers, rotary dial)
+  ulna: { x: 2560, y: 2075, get: 'alarm' },        // v0.8: caged until its power is restored (J-03 toolbox + panel); taking it trips the alarm
 };
 
 export const KEYCARD_AT: V2 = { x: 660, y: 640 };
