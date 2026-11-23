@@ -3,6 +3,8 @@
 import { Save } from './save';
 
 type Bus = 'sfx' | 'music';
+/** 0.1 s of silence (8 kHz, 8-bit mono) for the iOS playback-session trick */
+const SILENT_WAV = 'data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';
 export type MusicMode = 'none' | 'ambient' | 'lab2' | 'tension' | 'title' | 'chase';
 
 class AudioEngine {
@@ -19,7 +21,27 @@ class AudioEngine {
   played: Record<string, number> = {};
   private heartbeatTimer: number | null = null;
 
+  private silentEl: HTMLAudioElement | null = null;
+
+  /**
+   * iOS Safari routes Web Audio through the "ambient" audio session, which the ring/silent switch (or Control Centre
+   * silent mode) mutes. Ask for the "playback" session so game audio plays like a video would:
+   * - iOS 17+ / Safari 16.4+: navigator.audioSession.type = 'playback'
+   * - older iOS: a looping, silent <audio> element started in the same gesture switches the session to playback.
+   */
+  private requestPlaybackSession() {
+    try { const as = (navigator as any).audioSession; if (as && as.type !== 'playback') as.type = 'playback'; } catch { /* not supported */ }
+    if (!this.silentEl) {
+      const el = document.createElement('audio');
+      el.setAttribute('playsinline', ''); el.setAttribute('x-webkit-airplay', 'deny'); el.loop = true; el.preload = 'auto';
+      el.src = SILENT_WAV;
+      this.silentEl = el;
+    }
+    if (this.silentEl.paused) this.silentEl.play().catch(() => { /* needs a gesture; retried on the next one */ });
+  }
+
   unlock() {
+    this.requestPlaybackSession();
     if (!this.ctx) {
       const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
       if (!AC) return;
@@ -36,8 +58,13 @@ class AudioEngine {
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.applyVolumes();
     }
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    if (this.ctx.state !== 'running') this.ctx.resume().catch(() => { /* retried on the next gesture */ });
+    // classic iOS unlock: start a 1-sample silent buffer inside the gesture
+    if (!this.primed) {
+      try { const b = this.ctx.createBuffer(1, 1, 22050); const src = this.ctx.createBufferSource(); src.buffer = b; src.connect(this.ctx.destination); src.start(0); this.primed = true; } catch { /* ignore */ }
+    }
   }
+  private primed = false;
 
   applyVolumes() {
     if (!this.ctx) return;
