@@ -17,6 +17,8 @@ export interface RunState {
   flags: Record<string, boolean>;   // always: intro, gate, escaped (+ chapter-specific)
   stats: Record<string, number>;    // mistakes per puzzle id
   learned: string[];
+  // survival (v0.5): hearts, one-hit shield, S-07 keycard, last checkpoint, times hit
+  hp: number; shield: number; keycard: boolean; cp: { x: number; y: number; id: string } | null; hits: number;
 }
 
 export function newRun(difficulty: Difficulty, color: string, chapter = 1): RunState {
@@ -28,6 +30,7 @@ export function newRun(difficulty: Difficulty, color: string, chapter = 1): RunS
       : { intro: false, atlas: false, linked: false, overload: false, stabilized: false, motion: false, gate: false, escaped: false },
     stats: ch1 ? { assembly: 0, align: 0, xray: 0 } : { atlas: 0, link: 0, motion: 0 },
     learned: [],
+    hp: 3, shield: 0, keycard: false, cp: null, hits: 0,
   };
 }
 

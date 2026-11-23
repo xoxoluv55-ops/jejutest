@@ -3,7 +3,7 @@
 import { Save } from './save';
 
 type Bus = 'sfx' | 'music';
-export type MusicMode = 'none' | 'ambient' | 'lab2' | 'tension' | 'title';
+export type MusicMode = 'none' | 'ambient' | 'lab2' | 'tension' | 'title' | 'chase';
 
 class AudioEngine {
   ctx: AudioContext | null = null;
@@ -131,6 +131,16 @@ class AudioEngine {
         [392, 523, 659, 784, 1047, 1319].forEach((f, i) => { this.osc('triangle', f, t + i * 0.11, 0.9, 0.11); this.osc('sine', f / 2, t + i * 0.11, 0.9, 0.06); });
         this.noise(t + 0.6, 2.0, 0.05, 'highpass', 7000); break;
       case 'beep': this.osc('sine', 1046, t, 0.12, 0.08); break;
+      // stealth / survival (v0.5)
+      case 'alert': this.osc('square', 660, t, 0.12, 0.09, 'sfx', 990); this.osc('square', 990, t + 0.12, 0.22, 0.09, 'sfx', 1320); this.noise(t, 0.15, 0.06, 'bandpass', 2500, 4); break;
+      case 'laser': this.osc('sawtooth', 1800, t, 0.18, 0.025, 'sfx', 900); break;
+      case 'heal': [523, 659, 784, 1046].forEach((f, i) => this.osc('sine', f, t + i * 0.07, 0.3, 0.07)); break;
+      case 'shield': this.osc('triangle', 300, t, 0.4, 0.09, 'sfx', 900); this.noise(t, 0.35, 0.05, 'bandpass', 1200, 6, 'sfx', 4000); break;
+      case 'shieldbreak': this.noise(t, 0.35, 0.14, 'highpass', 2000, 1, 'sfx', 7000); this.osc('triangle', 900, t, 0.3, 0.08, 'sfx', 200); break;
+      case 'card': this.osc('sine', 1318, t, 0.08, 0.07); this.osc('sine', 1760, t + 0.08, 0.14, 0.07); break;
+      case 'checkpoint': [392, 523, 659].forEach((f, i) => this.osc('triangle', f, t + i * 0.09, 0.35, 0.06)); break;
+      case 'respawn': this.osc('sine', 200, t, 0.8, 0.1, 'sfx', 800); this.noise(t, 0.6, 0.05, 'bandpass', 600, 2, 'sfx', 3000); break;
+      case 'shutter': this.noise(t, 0.6, 0.18, 'lowpass', 900, 1, 'sfx', 200); this.osc('square', 90, t + 0.5, 0.2, 0.12, 'sfx', 50); break;
       case 'ai': this.osc('sine', 740, t, 0.12, 0.07); this.osc('sine', 988, t + 0.1, 0.18, 0.07); break;
       case 'hold': this.osc('sine', 300, t, 0.1, 0.05, 'sfx', 340); break;
     }
@@ -169,6 +179,7 @@ class AudioEngine {
     if (this.musicTimer) { clearInterval(this.musicTimer); this.musicTimer = null; }
     if (mode === 'none') return;
     if (mode === 'lab2') { this.lab2Music(); return; }
+    if (mode === 'chase') { this.chaseMusic(); return; }
     // Minor-key generative arpeggio / pulse.
     const scale = [0, 3, 5, 7, 10, 12, 15];
     const root = mode === 'tension' ? 55 : 49;
@@ -193,6 +204,26 @@ class AudioEngine {
         if (step % 16 === 0) this.osc('sine', root, t, 3.5, 0.08, 'music', undefined, 0.8);
         if (mode === 'title' && step % 8 === 4) this.noise(t, 0.6, 0.02, 'bandpass', 3000, 8, 'music');
       }
+      step++;
+    }, iv * 1000);
+  }
+
+  /** Pursuit / alarm: 150 BPM, driving octave bass, off-beat stabs and a rising siren sweep every 4 bars. */
+  private chaseMusic() {
+    const root = 46.25;   // F#1
+    const iv = 60 / 150 / 2;
+    let step = 0;
+    this.musicTimer = window.setInterval(() => {
+      if (!this.ctx) return;
+      const t = this.t + 0.05;
+      const bar = Math.floor(step / 8) % 4, pat = [0, 0, 3, 5][bar];
+      const f = root * Math.pow(2, pat / 12) * (step % 2 ? 2 : 1);
+      this.osc('sawtooth', f, t, 0.13, 0.07, 'music', f * 0.97);
+      if (step % 4 === 0) { this.osc('sine', 60, t, 0.18, 0.28, 'music', 38); }
+      if (step % 4 === 2) this.noise(t, 0.08, 0.07, 'bandpass', 2200, 1.5, 'music');
+      if (step % 2 === 1) this.noise(t, 0.03, 0.035, 'highpass', 9000, 1, 'music');
+      if (step % 8 === 3 || step % 8 === 6) this.osc('square', root * 8 * Math.pow(2, (pat + 7) / 12), t, 0.09, 0.025, 'music');
+      if (step % 32 === 0) this.osc('triangle', 600, t, 1.6, 0.03, 'music', 1400, 0.4);
       step++;
     }, iv * 1000);
   }

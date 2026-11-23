@@ -38,7 +38,11 @@ export class HUDScene extends BaseScene {
     on('toast', (t: any) => this.toast(t.text, t.kind));
     on('ai', (a: any) => this.ai(a.text, a.kind, a.dur));
     on('pickup', () => this.drawInventory(true));
-    on('timer', (s: number) => { this.timerT.setVisible(true).setText(`${this.game2.timerLabel()}  ${String(Math.max(0, Math.ceil(s))).padStart(2, '0')}s`); this.timerT.setColor(s < 20 ? '#ff5d74' : '#ffc24d'); });
+    on('timer', (s: number, label?: string) => {
+      if (s < 0) { this.timerT.setVisible(false); return; }
+      this.timerT.setVisible(true).setText(`${label ?? this.game2.timerLabel()}  ${String(Math.max(0, Math.ceil(s))).padStart(2, '0')}s`); this.timerT.setColor(s < 20 ? '#ff5d74' : '#ffc24d');
+    });
+    on('hp', (k?: string) => this.drawHearts(k === 'hit'));
     on('blackout', (v: boolean) => { if (!v) this.timerT.setVisible(false); });
     on('channel', (c: any) => this.channel(c.label, c.dur));
     on('tick', (t: any) => { this.lastTick = t; });
@@ -54,6 +58,8 @@ export class HUDScene extends BaseScene {
   }
   scanCd = 0;
   missionW = 390; missionH = 250;
+  hpC?: Phaser.GameObjects.Container;
+  threatG!: Phaser.GameObjects.Graphics;
   /** phone landscape (logical height ≈ 450–600): smaller minimap/buttons, mission panel folds to the active line */
   get tiny() { return View.H < 640; }
   missionOpen = false;
@@ -70,6 +76,7 @@ export class HUDScene extends BaseScene {
     // --- mission panel ---
     const tn = this.tiny, mg0 = tn ? 10 : 20;
     this.missionC = this.add.container(mg0, mg0);
+    this.hpC = this.add.container(mg0, mg0);
     this.drawMissions();
     // --- minimap ---
     const mw = tn ? 180 : 240, mh = tn ? 116 : 172;
@@ -114,8 +121,9 @@ export class HUDScene extends BaseScene {
       this.tweens.add({ targets: hint, alpha: 0.4, duration: 1200, yoyo: true, repeat: -1 });
       hint.setName('joyhint');
     }
-    // guidance arrow
+    // guidance arrow + off-screen threat warnings
     this.arrow = this.add.graphics();
+    this.threatG = this.add.graphics();
   }
 
   // ------------------------------------------------------------ missions
@@ -125,17 +133,17 @@ export class HUDScene extends BaseScene {
     const tn = this.tiny;
     const w = Math.min(390, View.W * 0.32), lh = tn ? 26 : 30;
     // phone: only the active mission unless the player taps the panel to unfold it
-    const folded = tn && !this.missionOpen;
+    const folded = !this.missionOpen;   // v0.5: folded on every screen (closer camera needs the space)
     const shown = folded ? ms.filter(m => m.active).slice(0, 1) : ms;
     const top = tn ? 54 : 62;
-    const h = top + shown.length * lh + (tn ? 24 : 12);   // phone: + a row for the fold toggle
+    const h = top + shown.length * lh + (tn ? 24 : 28);   // + a row for the fold toggle
     this.missionW = w; this.missionH = h;
     const g = this.add.graphics(); drawPanel(g, 0, 0, w, h, { accent: C.red, alpha: 0.78, header: 44 }); c.add(g);
     c.add(T(this, 18, 22, `CH.${G.run.chapter}`, 15, C.redS, { display: true, weight: '900' }).setOrigin(0, 0.5));
     c.add(T(this, 68, 22, `${this.game2.chapterName()} — 미션`, 18, C.white, { weight: '700' }).setOrigin(0, 0.5));
     const n = this.game2.locksOpen();
     for (let i = 0; i < 3; i++) { const lit = i < n; g.fillStyle(lit ? C.green : C.red, lit ? 1 : 0.6); g.fillCircle(w - 66 + i * 20, 22, 6); g.lineStyle(1, 0xffffff, 0.3); g.strokeCircle(w - 66 + i * 20, 22, 6); }
-    if (tn) {
+    {
       c.add(T(this, w - 16, h - 12, folded ? `▼ 미션 전체 보기 (${ms.length})` : '▲ 접기', 13, '#9fb0d0', { fine: true }).setOrigin(1, 0.5));
       const z = this.add.zone(0, 0, w, h).setOrigin(0).setInteractive({ useHandCursor: true });
       z.on('pointerup', () => { this.missionOpen = !this.missionOpen; Audio.play('click'); this.drawMissions(); });
@@ -152,6 +160,37 @@ export class HUDScene extends BaseScene {
       c.add(t);
       if (m.tag) c.add(T(this, w - 16, y, m.tag, 11, m.done ? C.greenS : '#7d8bb0', { display: true }).setOrigin(1, 0.5));
     });
+    this.drawHearts();
+  }
+
+  // ------------------------------------------------------------ hearts / shield / keycard (v0.5)
+  drawHearts(hit = false) {
+    const c = this.hpC; if (!c) return;
+    c.removeAll(true);
+    const r = G.run, tn = this.tiny, sz = tn ? 26 : 32, gap = tn ? 6 : 8;
+    c.setPosition(this.missionC.x, this.missionC.y + this.missionH + (tn ? 6 : 10));
+    const bg = this.add.graphics(); c.add(bg);
+    const n = 3, extra = (r.shield ? 1 : 0) + (r.keycard ? 1 : 0);
+    const w = 16 + (n + extra) * (sz + gap) + (extra ? 10 : 0);
+    bg.fillStyle(0x050810, 0.72); bg.fillRoundedRect(0, 0, w, sz + 14, 10); bg.lineStyle(1.2, C.red, 0.5); bg.strokeRoundedRect(0, 0, w, sz + 14, 10);
+    const heart = (x: number, y: number, full: boolean) => {
+      const g = this.add.graphics(); const k = sz / 32;
+      g.fillStyle(full ? 0xff3d5a : 0x2a3140, 1); g.lineStyle(2, full ? 0xffd0d8 : 0x4a5570, 1);
+      g.fillCircle(x - 7 * k, y - 4 * k, 8.5 * k); g.fillCircle(x + 7 * k, y - 4 * k, 8.5 * k);
+      g.fillTriangle(x - 15.5 * k, y - 1 * k, x + 15.5 * k, y - 1 * k, x, y + 14 * k);
+      if (full) { g.fillStyle(0xffffff, 0.45); g.fillCircle(x - 9 * k, y - 7 * k, 3 * k); }
+      return g;
+    };
+    for (let i = 0; i < n; i++) c.add(heart(8 + sz / 2 + i * (sz + gap) + 4, 7 + sz / 2, i < r.hp));
+    let x = 8 + n * (sz + gap) + 14;
+    if (r.shield) {
+      const g = this.add.graphics(); const cx = x + sz / 2, cy = 7 + sz / 2;
+      g.fillStyle(0x4fd8ff, 0.3); g.lineStyle(2.4, 0x9fe6ff, 1);
+      g.beginPath(); g.moveTo(cx, cy - sz * 0.46); g.lineTo(cx + sz * 0.4, cy - sz * 0.28); g.lineTo(cx + sz * 0.32, cy + sz * 0.18); g.lineTo(cx, cy + sz * 0.46); g.lineTo(cx - sz * 0.32, cy + sz * 0.18); g.lineTo(cx - sz * 0.4, cy - sz * 0.28); g.closePath(); g.fillPath(); g.strokePath();
+      c.add(g); x += sz + gap;
+    }
+    if (r.keycard) c.add(this.add.image(x + sz / 2, 7 + sz / 2, 'keycard').setScale(sz / 44 * 0.95));
+    if (hit) { c.setScale(1.15); this.tweens.add({ targets: c, scale: 1, duration: 300, ease: 'Back.out' }); this.cameras.main.flash(90, 120, 0, 20); }
   }
 
   // ------------------------------------------------------------ inventory
@@ -221,7 +260,7 @@ export class HUDScene extends BaseScene {
     const left = (tn ? 10 : 20) + this.missionW + 16, right = W - (tn ? 250 : 340);
     const wide = right - left >= 440;
     const w = wide ? Math.min(760, right - left) : Math.min(760, W - 40), h = tn ? 78 : 92;
-    const y = wide ? (this.timerT.visible ? 70 : tn ? 10 : 20) : this.missionH + 34;
+    const y = wide ? (this.timerT.visible ? 70 : tn ? 10 : 20) : this.missionH + (tn ? 56 : 72);
     const ax = wide ? left + (right - left - w) / 2 : W / 2 - w / 2;
     const c = this.add.container(ax, y); this.aiC = c;
     const g = this.add.graphics(); drawPanel(g, 0, 0, w, h, { accent: col, alpha: 0.88 }); c.add(g);
@@ -389,6 +428,26 @@ export class HUDScene extends BaseScene {
     this.scanCd = Math.max(0, this.scanCd - dms / 1000);
     const sg = this.scanCdG; sg.clear();
     if (this.scanCd > 0) { sg.lineStyle(4, C.violet, 0.9); sg.beginPath(); sg.arc(this.btnScan.x, this.btnScan.y, 50, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - this.scanCd / 1.4)); sg.strokePath(); }
+    // off-screen threats (drones / lasers): red edge markers so the closer camera never hides an approaching danger
+    const tg = this.threatG; tg.clear();
+    if (t.threats && t.cam) {
+      const v = t.cam; const { W, H } = View; const m = 46;
+      for (const th of t.threats as { x: number; y: number; kind: string; hot: boolean }[]) {
+        const sx = (th.x - v.x) / v.width * W, sy = (th.y - v.y) / v.height * H;
+        if (sx > 0 && sx < W && sy > 0 && sy < H) continue;
+        const x = Phaser.Math.Clamp(sx, m, W - m), y = Phaser.Math.Clamp(sy, m, H - m);
+        const ang = Math.atan2(sy - y, sx - x);
+        const col = th.kind === 'guard' ? (th.hot ? C.red : 0xffc24d) : (th.hot ? 0xff3d6a : 0xff9ab0);
+        const pulse = th.hot ? 1 + 0.2 * Math.sin(now * 10) : 1;
+        tg.fillStyle(0x000000, 0.55); tg.fillCircle(x, y, 18 * pulse);
+        tg.lineStyle(2.5, col, 1); tg.strokeCircle(x, y, 18 * pulse);
+        const p = (d: number, o: number) => ({ x: x + Math.cos(ang + o) * d, y: y + Math.sin(ang + o) * d });
+        const p1 = p(30 * pulse, 0), p2 = p(19, 0.5), p3 = p(19, -0.5);
+        tg.fillStyle(col, 1); tg.fillTriangle(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+        if (th.kind === 'guard') { tg.fillRect(x - 2, y - 9, 4, 11); tg.fillRect(x - 2, y + 5, 4, 4); }
+        else { tg.lineStyle(3, col, 1); tg.lineBetween(x - 8, y + 6, x + 8, y - 6); }
+      }
+    }
     // objective arrow at screen edge
     const a = this.arrow; a.clear();
     if (t.obj && t.cam) {

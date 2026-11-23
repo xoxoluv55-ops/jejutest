@@ -7,9 +7,12 @@ import { Pad } from '../game/input';
 import { Player } from '../game/Player';
 import { Lighting } from '../game/Lighting';
 import { WALL_CAP, WALL_FACE, MAP1, ChapterMap } from '../data/map';
-import { BONES, BoneId } from '../data/anatomy';
+import { BONES, BoneId, UPPER_ORDER } from '../data/anatomy';
+import { boneBounds, DENSITY } from '../art/bones';
 import { T } from '../ui/widgets';
 import type { IconName } from '../ui/widgets';
+import { Guard, Laser, GState } from '../game/Stealth';
+import { BONE_GET, KEYCARD_AT, KEY_DOOR, GALLERY_EXIT_X, DIFF, vaultGuards, FINAL_GUARD, GALLERY_LASERS, ALARM_LASERS, FINAL_LASERS, CHECKPOINTS, CRATE_SPOTS, HIDE_SPOTS, PICKUP_HINT } from '../data/zone1';
 
 export interface Interactable {
   id: string; x: number; y: number; r: number;
@@ -43,14 +46,6 @@ export function neededBones(): BoneId[] {
   return G.run.difficulty === 'adv' ? [...arm, 'fibula'] : arm;
 }
 
-const BONE_SPOTS: Record<BoneId, { x: number; y: number; hidden?: boolean; via?: 'cabinet' | 'capsule' }> = {
-  fibula: { x: 560, y: 1500 },
-  scapula: { x: 420, y: 1262, hidden: true, via: 'cabinet' },
-  clavicle: { x: 1630, y: 1330 },
-  humerus: { x: 1040, y: 905, via: 'capsule' },
-  ulna: { x: 1918, y: 1640, hidden: true },
-  radius: { x: 1060, y: 2220 },
-};
 
 export class GameScene extends Phaser.Scene {
   constructor(key = 'Game') { super(key); }
@@ -84,6 +79,21 @@ export class GameScene extends Phaser.Scene {
   holoProj!: Phaser.GameObjects.Image;
   holoSkel: Phaser.GameObjects.Image[] = [];
   private onResize = () => this.fitCam();
+  // ---- survival / stealth (v0.5) ----
+  /** every solid rectangle (walls + props): blocks guard sight and lasers' line of sight */
+  blockers: Phaser.Geom.Rectangle[] = [];
+  guards: Guard[] = []; lasers: Laser[] = [];
+  invuln = 0;
+  hiding: { x: number; y: number; img: Phaser.GameObjects.Image } | null = null;
+  hideSpots: { x: number; y: number; img: Phaser.GameObjects.Image }[] = [];
+  pickups: { id: string; x: number; y: number; obj: Phaser.GameObjects.Container | Phaser.GameObjects.Image; take: () => void; hidden?: boolean; r?: number }[] = [];
+  checkpoints: { id: string; x: number; y: number; name: string; pad: Phaser.GameObjects.Image; on: boolean }[] = [];
+  /** timed event in progress: L-06 alarm escape or the final escape */
+  escape: { kind: 'gallery' | 'final'; left: number; total: number } | null = null;
+  keyDoor?: Phaser.GameObjects.Image; keyDoorBlock?: Phaser.GameObjects.Zone;
+  vaultCapsule?: Phaser.GameObjects.Image;
+  scanAmp = false;
+  get D() { return DIFF[G.run.difficulty]; }
 
   preload() {
     const c = G.run.color;
@@ -95,6 +105,8 @@ export class GameScene extends Phaser.Scene {
     run.startTime = this.time.now;
     this.inter = []; this.hazards = []; this.locks = []; this.holoSkel = []; this.bonesInWorld = {}; this.reveal = {};
     this.busy = false; this.cabinetOpen = false; this.capsuleOpen = false; this.blackoutLeft = 0; this.focus = null;
+    this.blockers = []; this.guards = []; this.lasers = []; this.pickups = []; this.checkpoints = []; this.hideSpots = []; this.hiding = null; this.escape = null; this.invuln = 0; this.scanAmp = false;
+    run.hp = run.hp > 0 ? run.hp : 3;
     const { WORLD } = this.map;
     this.physics.world.setBounds(WORLD.x, WORLD.y, WORLD.w, WORLD.h);
     this.cameras.main.setBackgroundColor('#020308');
@@ -112,7 +124,7 @@ export class GameScene extends Phaser.Scene {
     this.player = new Player(this, this.map.spawn.x, this.map.spawn.y, run.color);
     this.physics.add.collider(this.player.phys, this.walls);
     this.light = new Lighting(this, this.map.LIGHTS);
-    this.cameras.main.startFollow(this.player.root, true, 0.12, 0.12, 0, 40);
+    this.cameras.main.startFollow(this.player.root, true, 0.09, 0.09, 0, 40);
     this.cameras.main.setBounds(WORLD.x - 200, WORLD.y - 200, WORLD.w + 400, WORLD.h + 400);
 
     const kb = this.input.keyboard!;
@@ -139,7 +151,10 @@ export class GameScene extends Phaser.Scene {
   fitCam() {
     const cam = this.cameras.main;
     cam.setSize(Math.round(View.cssW * View.dpr), Math.round(View.cssH * View.dpr));
-    cam.setZoom(View.k * this.worldZoom * (View.H > View.W ? 0.9 : 1));
+    // v0.5: closer camera (≈1.6x the old 1.08 on iPad landscape) so the unit and hazards read clearly;
+    // short phone screens get a little less so there is still room to see what is coming
+    const z = 1.72 * Phaser.Math.Clamp(View.H / 740, 0.78, 1);
+    cam.setZoom(View.k * z * (View.H > View.W ? 0.9 : 1));
     this.light?.resize();
   }
 
@@ -151,6 +166,7 @@ export class GameScene extends Phaser.Scene {
     this.buildBones();
     this.buildStations();
     this.buildHazards();
+    this.buildZone();
   }
 
   floorTint(floor: string): number { return floor === 'floor_lab' ? 0x7c88a6 : floor === 'floor_grate' ? 0x8e98b4 : 0x9094b0; }
@@ -187,6 +203,7 @@ export class GameScene extends Phaser.Scene {
     const z = this.add.zone(x + w / 2, y + h / 2, w, h);
     this.physics.add.existing(z, true);
     this.walls.add(z);
+    this.blockers.push(new Phaser.Geom.Rectangle(x, y, w, h));
     return z;
   }
 
@@ -262,7 +279,7 @@ export class GameScene extends Phaser.Scene {
       // wall-mounted decor on the north wall faces
       this.prop('x_fan', 1110, 776, { depth: 799 }); this.prop('x_glass', 1600, 772, { depth: 799 });
       this.prop('x_pipes', 1860, 790, { depth: 799 }); this.prop('x_grill', 2140, 776, { depth: 799 }); this.prop('x_glass', 2470, 772, { depth: 799 });
-      this.prop('x_fan', 300, 1226, { depth: 1249 }); this.prop('x_pipes', 560, 1240, { depth: 1249 });
+      this.prop('x_fan', 300, 1226, { depth: 1249 });
       this.prop('x_grill', 1180, 1822, { depth: 1845 }); this.prop('x_pipes', 1600, 1836, { depth: 1845 });
       // floor decor (y-sorted, light collision)
       this.prop('p_trolley', 1560, 1450, { col: [60, 24] }); this.prop('p_iv', 1790, 1235, {});
@@ -354,22 +371,179 @@ export class GameScene extends Phaser.Scene {
     return c;
   }
 
+  /** v0.5: every bone has its own way in (scanner, stealth, keycard, lasers, alarm escape) — see data/zone1.ts */
   buildBones() {
-    neededBones().forEach(id => {
-      const s = BONE_SPOTS[id];
-      if (s.via) {
+    for (const id of neededBones()) {
+      const g = BONE_GET[id];
+      if (g.get === 'scan') {
+        // hidden locker in B-02: only a SCAN pulse reveals it
         this.addInter({
-          id: `${s.via}_${id}`, x: s.x, y: s.y + (s.via === 'cabinet' ? 20 : 40), r: 95, hidden: s.hidden, icon: 'hand',
-          label: () => s.via === 'cabinet' ? '보관함 열기' : '파손된 캡슐 조사',
-          act: () => this.openContainer(id, s.via!),
+          id: `cabinet_${id}`, x: g.x, y: g.y + 20, r: 95, hidden: true, icon: 'hand',
+          label: () => '숨겨진 보관함 열기', act: () => this.openContainer(id, 'cabinet'),
         });
-        return;
-      }
-      const c = this.boneSprite(id, s.x, s.y);
-      if (s.hidden) c.setVisible(false).setAlpha(0);
-      this.bonesInWorld[id] = c;
-      this.addInter({ id: `bone_${id}`, x: s.x, y: s.y, r: 80, hidden: s.hidden, icon: 'hand', label: () => '뼈대 표본 회수', act: () => this.pickupBone(id) });
+      } else if (g.get === 'stealth') {
+        // specimen capsule in the guarded vault: opening it makes noise -> nearby drones turn to look
+        this.addInter({
+          id: `capsule_${id}`, x: g.x, y: g.y + 40, r: 90, icon: 'hand',
+          label: () => '표본 캡슐 개방 (소음 주의)', act: () => this.openVaultCapsule(id),
+        });
+      } else this.addPickup(id, g.x, g.y);
+    }
+  }
+
+  /** a bone lying in the world: collected by walking into it (no button) */
+  addPickup(id: BoneId, x: number, y: number) {
+    const c = this.boneSprite(id, x, y);
+    this.bonesInWorld[id] = c;
+    this.pickups.push({ id: `bone_${id}`, x, y, obj: c, take: () => this.pickupBone(id) });
+  }
+
+  // ---------------------------------------------------------------- v0.5 exploration zone (CH1)
+  buildZone() {
+    const d = G.run.difficulty, D = this.D, env = this.textures.exists('env');
+    // ---- V-05 specimen vault: cover rows + racks; the humerus capsule sits at the far (north) end ----
+    this.vaultCapsule = this.prop('capsule', 440, 560, { col: [96, 36] });
+    this.prop('rack', 240, 540, { col: [60, 30] }); this.prop('rack', 640, 540, { col: [60, 30] });
+    this.prop('crate', 330, 720, { col: [70, 40] }); this.prop('crate', 560, 720, { col: [70, 40] });
+    if (env) this.prop('x_barrels', 250, 905, { col: [60, 26] }); else this.prop('crate', 250, 905, { col: [70, 40] });
+    this.prop('crate', 470, 900, { col: [70, 40] }); this.prop('crate', 650, 900, { col: [70, 40] });
+    if (env) { this.prop('x_glass', 300, 392, { depth: 429 }); this.prop('x_camera', 620, 360, { depth: 429 }); this.prop('x_sign', 600, 1080, {}); }
+    T(this, 440, 470, 'SPECIMEN VAULT · V-05', 12, '#9fd2ff', { display: true }).setOrigin(0.5).setDepth(5200).setAlpha(0.85);
+    for (const cfg of vaultGuards(d)) this.guards.push(new Guard(this, { ...cfg, speed: D.guardSpeed, chase: D.guardChase, range: D.range, fov: D.fov, susRate: D.susRate }));
+    // keycard on the floor by the NE rack (inside the patrol loop)
+    if (!G.run.keycard) {
+      const k = this.add.image(KEYCARD_AT.x, KEYCARD_AT.y, 'keycard').setScale(0.7).setDepth(KEYCARD_AT.y);
+      const kg = this.add.image(KEYCARD_AT.x, KEYCARD_AT.y, 'light').setTint(0xffc24d).setBlendMode(Phaser.BlendModes.ADD).setScale(0.35).setAlpha(0.6).setDepth(KEYCARD_AT.y - 1);
+      this.tweens.add({ targets: k, y: KEYCARD_AT.y - 8, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+      this.tweens.add({ targets: kg, alpha: 0.2, duration: 700, yoyo: true, repeat: -1 });
+      this.pickups.push({ id: 'keycard', x: KEYCARD_AT.x, y: KEYCARD_AT.y, obj: k, take: () => { kg.destroy(); this.takeKeycard(); } });
+    }
+    // ---- S-07 storage behind the keycard door ----
+    this.prop('rack', 620, 1985, { col: [60, 30] }); this.prop('rack', 800, 1985, { col: [60, 30] });
+    if (env) this.prop('p_tubes', 600, 2290, { col: [40, 20] });
+    this.addHazard('spark', 720, 2165, 60, 2.6, 0.9, 0.3);
+    this.keyDoor = env && this.textures.get('env').has('d_side_closed')
+      ? this.add.image(882, KEY_DOOR.y + KEY_DOOR.h + 2, 'env', 'd_side_closed').setOrigin(0.5, 1).setScale(0.5, 0.5 * 140 / 160).setDepth(KEY_DOOR.y + KEY_DOOR.h).setTint(0xffd08a)
+      : this.add.image(882, KEY_DOOR.y + KEY_DOOR.h, 'door_v').setOrigin(0.5, 1).setScale(0.5, 0.5 * 140 / 180).setDepth(KEY_DOOR.y + KEY_DOOR.h);
+    this.keyDoorBlock = this.solid(KEY_DOOR.x, KEY_DOOR.y, KEY_DOOR.w, KEY_DOOR.h);
+    T(this, 930, KEY_DOOR.y - 14, 'S-07 · 카드키 필요', 12, '#ffd08a', { weight: '700' }).setOrigin(0.5).setDepth(3000);
+    this.addInter({
+      id: 'keydoor', x: KEY_DOOR.panel.x, y: KEY_DOOR.panel.y, r: 95, icon: 'lock',
+      enabled: () => !!(this.keyDoorBlock?.body as Phaser.Physics.Arcade.StaticBody | undefined)?.enable,
+      label: () => G.run.keycard ? '잠금 보관실 열기 (카드키)' : '잠금 보관실 S-07',
+      locked: () => G.run.keycard ? null : '카드키가 필요합니다. 표본 보관동(V-05) 경비 구역 어딘가에 떨어져 있습니다.',
+      act: () => this.openKeyDoor(),
     });
+    // ---- L-06 laser corridor ----
+    const mul = D.laserMul;
+    for (const c of GALLERY_LASERS) { const l = new Laser(this, c); l.mul = mul; this.lasers.push(l); }
+    for (const c of ALARM_LASERS) { const l = new Laser(this, c); l.enabled = false; this.lasers.push(l); }
+    for (const c of FINAL_LASERS) { const l = new Laser(this, c); l.enabled = false; this.lasers.push(l); }
+    if (env) { this.prop('x_barrier', 2580, 2300, {}); this.prop('x_lamp', 1900, 1830, { depth: 1845 }); }
+    T(this, 2190, 1880, 'LASER GRID · L-06', 12, '#ff9ab0', { display: true }).setOrigin(0.5).setDepth(5200).setAlpha(0.85);
+    // pedestal under the ulna (alarm bait)
+    const ped = this.add.graphics().setDepth(2070);
+    ped.fillStyle(0x1a2232, 1); ped.fillEllipse(2560, 2086, 70, 22); ped.lineStyle(2, 0xff5d74, 0.8); ped.strokeEllipse(2560, 2086, 70, 22);
+    // ---- supply crates, checkpoints, hiding lockers ----
+    CRATE_SPOTS.slice(0, D.crates).forEach((p, i) => this.addCrate(p.x, p.y, i));
+    for (const c of CHECKPOINTS) this.addCheckpoint(c.id, c.x, c.y, c.name);
+    for (const h of HIDE_SPOTS) this.addHideSpot(h.x, h.y);
+  }
+
+  addCheckpoint(id: string, x: number, y: number, name: string) {
+    const pad = this.add.image(x, y, 'cp_pad').setScale(0.6).setDepth(-905).setAlpha(0.55);
+    const cp = { id, x, y, name, pad, on: false };
+    this.checkpoints.push(cp);
+    if (!G.run.cp && id === 'b02') this.activateCheckpoint(cp, true);
+    else if (G.run.cp?.id === id) this.activateCheckpoint(cp, true);
+  }
+  activateCheckpoint(cp: GameScene['checkpoints'][number], silent = false) {
+    for (const c of this.checkpoints) { c.on = c === cp; c.pad.setTint(c.on ? 0x3dffa2 : 0xffffff).setAlpha(c.on ? 0.95 : 0.55); }
+    G.run.cp = { x: cp.x, y: cp.y, id: cp.id };
+    if (silent) return;
+    Audio.play('checkpoint');
+    this.toast(`체크포인트 저장 — ${cp.name}`, 'ok');
+    const ring = this.add.image(cp.x, cp.y, 'ring').setScale(0.1, 0.04).setTint(0x3dffa2).setBlendMode(Phaser.BlendModes.ADD).setDepth(-900);
+    this.tweens.add({ targets: ring, scaleX: 0.9, scaleY: 0.35, alpha: 0, duration: 700, onComplete: () => ring.destroy() });
+  }
+
+  addCrate(x: number, y: number, i: number) {
+    const img = this.add.image(x, y, 'crate_closed').setOrigin(0.5, 1).setScale(0.55).setDepth(y);
+    this.solid(x - 20, y - 16, 40, 16);
+    const it: Interactable = {
+      id: `crate_${i}`, x, y: y + 10, r: 80, icon: 'bag', label: () => '보급 상자 열기',
+      act: () => {
+        it.gone = true; it.marker?.setVisible(false);
+        img.setTexture('crate_open'); Audio.play('open');
+        this.player.play('interact', x - this.player.x, y - this.player.y);
+        // random contents (a heal when hurt is more likely; a heal at full health becomes a shield)
+        const r = G.run, roll = Math.random();
+        let kind: 'heal' | 'shield' | 'scan' = r.hp < 3 && roll < 0.55 ? 'heal' : roll < 0.7 ? 'shield' : 'scan';
+        if (kind === 'heal' && r.hp >= 3) kind = 'shield';
+        const icon = this.add.image(x, y - 40, kind === 'scan' ? 'ring' : 'light').setTint(kind === 'heal' ? 0xff5d74 : kind === 'shield' ? 0x4fd8ff : 0xb07bff).setBlendMode(Phaser.BlendModes.ADD).setScale(0.3).setDepth(y + 1);
+        this.tweens.add({ targets: icon, y: y - 110, alpha: 0, duration: 900, onComplete: () => icon.destroy() });
+        if (kind === 'heal') { r.hp = Math.min(3, r.hp + 1); Audio.play('heal'); this.toast('회복 앰플 — 하트 1개 회복', 'ok'); this.player.burst(0xff5d74, 18); }
+        else if (kind === 'shield') { r.shield = 1; Audio.play('shield'); this.toast('일회용 보호막 — 다음 피해 1번을 막아 줍니다', 'ok'); this.player.burst(0x4fd8ff, 18); }
+        else { this.scanAmp = true; Audio.play('reveal'); this.toast('스캐너 증폭기 — 다음 SCAN의 탐지 반경 2배', 'ok'); }
+        Bus.emit('hp');
+      },
+    };
+    this.addInter(it);
+  }
+
+  addHideSpot(x: number, y: number) {
+    const env = this.textures.exists('env');
+    const img = env ? this.add.image(x, y, 'env', 'p_locker_closed').setOrigin(0.5, 1).setScale(0.5).setDepth(y) : this.add.image(x, y, 'cabinet').setOrigin(0.5, 1).setScale(0.55).setDepth(y);
+    this.solid(x - 24, y - 18, 48, 18);
+    this.hideSpots.push({ x, y, img });
+    this.addInter({ id: `hide_${x}_${y}`, x, y: y + 16, r: 70, icon: 'eye', enabled: () => !this.hiding, label: () => '사물함에 숨기', act: () => this.enterHide(x, y, img) });
+  }
+  enterHide(x: number, y: number, img: Phaser.GameObjects.Image) {
+    // drones that are watching you right now see you get in
+    if (this.guards.some(g => g.seeing && (g.state === 'chase' || g.state === 'alert'))) { Audio.play('error'); this.toast('추격 중에는 숨을 수 없습니다! 먼저 시야를 벗어나세요.', 'warn'); return; }
+    this.hiding = { x, y, img };
+    this.player.root.setAlpha(0.15); this.player.frozen = true;
+    this.player.pb.reset(x, y + 24);
+    Audio.play('close'); img.setTint(0x9fdcff);
+    this.toast('숨는 중 — 움직이거나 조작 버튼을 누르면 나옵니다', 'info');
+    Bus.emit('prompt', { label: '사물함에서 나오기', icon: 'eye', locked: false });
+  }
+  exitHide() {
+    if (!this.hiding) return;
+    this.hiding.img.clearTint(); this.hiding = null;
+    this.player.root.setAlpha(1); this.player.frozen = false;
+    Audio.play('open');
+  }
+
+  takeKeycard() {
+    G.run.keycard = true; Audio.play('card');
+    this.toast('카드키 S-07 획득 — 관절 보정실(J-03) 서쪽의 잠금 보관실을 열 수 있습니다', 'ok');
+    Bus.emit('hp'); Bus.emit('mission');
+  }
+  openKeyDoor() {
+    if (!this.keyDoor || !this.keyDoorBlock) return;
+    this.player.play('interact', -1, 0);
+    Audio.play('unlock');
+    this.time.delayedCall(300, () => {
+      Audio.play('door');
+      this.tweens.add({ targets: this.keyDoor, y: this.keyDoor!.y - 130, alpha: 0.15, duration: 900, ease: 'Cubic.inOut' });
+      (this.keyDoorBlock!.body as Phaser.Physics.Arcade.StaticBody).enable = false;
+      this.blockers = this.blockers.filter(r => !(r.x === KEY_DOOR.x && r.y === KEY_DOOR.y));
+      this.toast('S-07 잠금 해제 — 바닥 배선의 방전 주기를 보고 들어가세요', 'ok');
+    });
+  }
+
+  openVaultCapsule(id: BoneId) {
+    const it = this.inter.find(i => i.id === `capsule_${id}`)!;
+    it.gone = true; it.marker?.setVisible(false);
+    this.player.play('interact', 0, -1);
+    Audio.play('open'); Audio.play('glitch');
+    if (this.vaultCapsule && this.textures.exists('env') && this.textures.get('env').has('p_capsule_empty')) this.vaultCapsule.setFrame('p_capsule_empty');
+    this.cameras.main.shake(160, 0.003);
+    // security reacts: every drone in the vault turns towards the capsule with raised suspicion
+    for (const g of this.guards) if (g.cfg.path[0].x < 760 && g.state !== 'chase') { g.last = { x: 440, y: 620 }; g.sus = Math.max(g.sus, G.run.difficulty === 'adv' ? 0.75 : 0.45); g.setState('suspicious'); }
+    this.toast('캡슐 개방음 — 경비 드론이 소리를 들었습니다! 표본을 집고 엄폐하세요', 'warn');
+    this.addPickup(id, 440, 610);
   }
 
   buildStations() {
@@ -425,9 +599,9 @@ export class GameScene extends Phaser.Scene {
     // x-ray door panel (feedback when locked)
     this.addInter({
       id: 'xdoor', x: 1930, y: 1060, r: 90, icon: 'lock',
-      enabled: () => !G.run.flags.power,
       label: () => '영상 판독실 출입문',
-      locked: () => G.run.flags.blackout ? '전력이 없어 문이 열리지 않습니다. 보조 전원을 복구하세요.' : '격벽 잠금 상태. 뼈대 복구 이후 전력 재분배가 필요합니다.',
+      enabled: () => !G.run.flags.aligned,
+      locked: () => G.run.flags.blackout ? '전력이 없어 문이 열리지 않습니다. 보조 전원을 복구하세요.' : G.run.flags.power ? '문 구동부가 멈춰 있습니다. 관절 보정 장치(J-03)로 관절을 정렬하면 기계 팔이 문을 엽니다.' : '격벽 잠금 상태. 뼈대 복구 이후 전력 재분배가 필요합니다.',
       act: () => { /* locked only */ },
     });
     // gate
@@ -442,7 +616,7 @@ export class GameScene extends Phaser.Scene {
       act: () => this.openGate(),
     });
     // research logs
-    const logs: [string, number, number, string][] = [['log_1', 620, 1268, '연구일지 단말기'], ['log_2', 1470, 912, 'MERIDIAN 로그 단말기'], ['log_3', 1620, 2250, '프로토콜 단말기']];
+    const logs: [string, number, number, string][] = [['log_1', 680, 1268, '연구일지 단말기'], ['log_2', 1470, 912, 'MERIDIAN 로그 단말기'], ['log_3', 1620, 2250, '프로토콜 단말기']];
     for (const [id, x, y, name] of logs) {
       this.prop('terminal', x, y, { col: [40, 20] });
       this.addInter({ id, x, y, r: 85, icon: 'info', label: () => name, act: () => this.readLog(id) });
@@ -518,36 +692,45 @@ export class GameScene extends Phaser.Scene {
         this.busy = false; this.player.frozen = false; G.run.flags.intro = true; Bus.emit('mission');
         this.toast(this.sys.game.device.input.touch ? '왼쪽 조이스틱으로 이동 · 오른쪽 버튼으로 조작/스캔' : '이동 WASD · 달리기 Shift · 상호작용 E · 스캔 Space', 'info');
         Audio.setMusic(this.bgm());
+        if (G.run.chapter === 1) this.time.delayedCall(2600, () => this.ai('하트 3개. 경비 드론의 시야(빛 원뿔)·레이저·방전 배선에 닿으면 하트를 잃습니다. 뼈는 직접 다가가면 회수됩니다.', 'ai', 5200));
       }],
     ];
     for (const [t, fn] of seq) this.time.delayedCall(t, fn);
   }
 
   missions(): Mission[] {
-    const f = G.run.flags, n = G.run.bones.length;
-    const list: Mission[] = [
-      { text: `뼈대 표본 회수 (${n}/${neededBones().length})`, done: n >= neededBones().length, active: n < neededBones().length },
-      { text: '뼈대 조립 · 복구 테이블', done: f.assembled, active: n >= 6 && !f.assembled, tag: 'LOCK 1' },
-    ];
+    const f = G.run.flags, n = G.run.bones.length, N = neededBones().length;
+    const list: Mission[] = [{ text: `뼈대 표본 회수 (${n}/${N})`, done: n >= N, active: n < N }];
+    const needKey = !G.run.bones.includes('radius');
+    if (needKey || G.run.keycard) list.push({ text: '카드키 확보 · V-05 경비 구역', done: G.run.keycard, active: !G.run.keycard && n < N });
+    if (this.escape?.kind === 'gallery') list.push({ text: 'L-06 셔터가 닫히기 전에 탈출!', done: false, active: true });
+    list.push({ text: '뼈대 조립 · 복구 테이블', done: f.assembled, active: n >= N && !f.assembled, tag: 'LOCK 1' });
     if (f.blackout || f.power) list.push({ text: '보조 전원 복구 · 차단기', done: f.power, active: f.blackout && !f.power });
     list.push({ text: '관절면 정렬 · J-03', done: f.aligned, active: f.power && !f.aligned, tag: 'LOCK 2' });
-    list.push({ text: 'X-ray 판독 · X-04', done: f.xray, active: f.power && !f.xray, tag: 'LOCK 3' });
-    list.push({ text: '게이트 개방 · 승강기 탑승', done: f.escaped, active: f.assembled && f.aligned && f.xray && !f.escaped });
+    list.push({ text: 'X-ray 판독 · X-04', done: f.xray, active: f.aligned && !f.xray, tag: 'LOCK 3' });
+    list.push({ text: f.xray ? '제한 시간 안에 게이트 → 승강기' : '게이트 개방 · 승강기 탑승', done: f.escaped, active: f.assembled && f.aligned && f.xray && !f.escaped });
     return list;
   }
 
   /** Where the guidance arrow should point. */
   objective(): { x: number; y: number } | null {
-    const f = G.run.flags;
+    const f = G.run.flags, p = this.player;
+    if (this.escape?.kind === 'gallery') return { x: GALLERY_EXIT_X - 40, y: 2060 };
     if (G.run.bones.length < neededBones().length) {
-      // nearest remaining bone / container
-      let best: { x: number; y: number } | null = null, bd = 1e9;
-      for (const i of this.inter) {
-        if (i.gone || !(i.id.startsWith('bone_') || i.id.startsWith('cabinet_') || i.id.startsWith('capsule_'))) continue;
-        if (i.hidden && !Save.settings.hints) continue;
-        const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, i.x, i.y);
-        if (d < bd) { bd = d; best = i; }
+      const doorShut = !!(this.keyDoorBlock?.body as Phaser.Physics.Arcade.StaticBody | undefined)?.enable;
+      const cands: { x: number; y: number }[] = [];
+      for (const k of this.pickups) {
+        const behindDoor = (k.id === 'bone_radius' || k.id === 'bone_fibula') && doorShut;
+        if (!behindDoor) cands.push(k);
       }
+      if (doorShut && G.run.keycard && !G.run.bones.includes('radius')) cands.push(KEY_DOOR.panel);
+      for (const i of this.inter) {
+        if (i.gone || !(i.id.startsWith('cabinet_') || i.id.startsWith('capsule_'))) continue;
+        if (i.hidden && !Save.settings.hints) continue;
+        cands.push(i);
+      }
+      let best: { x: number; y: number } | null = null, bd = 1e9;
+      for (const c of cands) { const d = Math.hypot(p.x - c.x, p.y - c.y); if (d < bd) { bd = d; best = c; } }
       return best;
     }
     if (!f.assembled) return { x: 1360, y: 1300 };
@@ -566,16 +749,14 @@ export class GameScene extends Phaser.Scene {
     it.gone = true; it.marker?.setVisible(false);
     if (via === 'cabinet') { if (this.textures.exists('env') && this.textures.get('env').has('p_locker_open')) { this.cabinet.setFrame('p_locker_open'); this.cabinet.setOrigin(0.5, 1); } else if (this.textures.exists('env')) { this.cabinet.setTint(0x8fa6c8); this.add.image(this.cabinet.x, this.cabinet.y - 50, 'light').setTint(0x4fd8ff).setBlendMode(Phaser.BlendModes.ADD).setScale(0.6).setAlpha(0.5).setDepth(this.cabinet.depth + 1); } else this.cabinet.setTexture('cabinet_open'); this.cabinetOpen = true; this.toast('보관함 잠금 해제 — 내부에서 표본 발견!', 'ok'); }
     else { this.capsuleOpen = true; this.toast('캡슐 잔해 속에서 표본 발견!', 'ok'); this.cameras.main.shake(150, 0.002); }
-    const s = BONE_SPOTS[id];
-    const c = this.boneSprite(id, s.x, s.y + (via === 'cabinet' ? 50 : 60));
-    c.setScale(0.2); this.tweens.add({ targets: c, scale: 1, duration: 400, ease: 'Back.out' });
-    this.bonesInWorld[id] = c;
-    this.addInter({ id: `bone_${id}`, x: c.x, y: c.y, r: 90, icon: 'hand', label: () => '뼈대 표본 회수', act: () => this.pickupBone(id) });
+    const s = BONE_GET[id];
+    this.addPickup(id, s.x, s.y + (via === 'cabinet' ? 50 : 60));
+    const c = this.bonesInWorld[id]!; c.setScale(0.2); this.tweens.add({ targets: c, scale: 1, duration: 400, ease: 'Back.out' });
   }
 
   pickupBone(id: BoneId) {
     const run = G.run; if (run.bones.includes(id)) return;
-    const it = this.inter.find(i => i.id === `bone_${id}`); if (it) { it.gone = true; it.marker?.setVisible(false); }
+    this.pickups = this.pickups.filter(p => p.id !== `bone_${id}`);
     const c = this.bonesInWorld[id];
     this.player.play('interact', (c?.x ?? 0) - this.player.x, (c?.y ?? 0) - this.player.y);
     if (c) this.tweens.add({ targets: c, x: this.player.x, y: this.player.y - 100, scale: 0.3, alpha: 0, duration: 380, ease: 'Cubic.in', onComplete: () => c.destroy() });
@@ -586,7 +767,9 @@ export class GameScene extends Phaser.Scene {
     this.player.setCarry(`bone_holo_${id}`);
     const b = BONES[id];
     Bus.emit('pickup', id);
-    this.toast(`${b.ko} · ${b.en} 획득 — ${run.bones.length}/${neededBones().length}`, 'ok');
+    // anatomy is learned while playing: basic shows what the bone is, advanced only the name
+    this.toast(`${b.ko} · ${b.en} 획득 — ${run.bones.length}/${neededBones().length}${this.D.hints ? `\n${PICKUP_HINT[id]}` : ''}`, 'ok');
+    if (BONE_GET[id].get === 'alarm') this.time.delayedCall(250, () => this.startGalleryAlarm());
     Bus.emit('mission');
     if (run.bones.length === neededBones().length) this.time.delayedCall(900, () => this.ai('모든 표본 회수 확인. 뼈대 복구 테이블(A-01)로 이동하십시오.', 'ok'));
   }
@@ -614,17 +797,97 @@ export class GameScene extends Phaser.Scene {
     if (id === 'Assembly') {
       f.assembled = true; this.player.setCarry(null); unlock('c_girdle'); G.run.learned.push('c_girdle');
       this.setLock(0);
-      this.showHoloSkeleton();
-      this.time.delayedCall(1800, () => this.startBlackout());
+      // the recovered bones fly onto the table and lock into the arm skeleton, then the hologram rises
+      this.restoreSkeletonOnTable(() => { this.showHoloSkeleton(); this.time.delayedCall(1400, () => this.startBlackout()); });
     } else if (id === 'Align') {
       f.aligned = true; unlock('c_gh'); G.run.learned.push('c_gh'); this.setLock(1);
-      this.ai('관절 정렬 데이터 동기화 완료. 게이트 잠금 2 해제.', 'ok');
+      // the calibrated joint drives the rig's mechanical arm, which hauls the X-04 blast door open
+      this.runJointRig();
     } else if (id === 'Xray') {
       f.xray = true; unlock('c_xray'); G.run.learned.push('c_xray'); this.setLock(2);
-      this.ai('영상 판독 데이터 확인. 게이트 잠금 3 해제.', 'ok');
+      this.ai('영상 판독 데이터 확인. 게이트 잠금 3 해제.', 'ok', 3000);
+      this.light.extra.push({ x: 2320, y: 900, r: 380, a: 0.6 });
+      this.time.delayedCall(3200, () => this.startFinalEscape());
     }
     Bus.emit('mission');
-    if (f.assembled && f.aligned && f.xray && !f.gate) this.time.delayedCall(2600, () => { this.ai('모든 구조 복구 완료. 탈출 게이트에서 코어 인증을 실행하십시오.', 'ok', 5000); Audio.play('unlock'); });
+  }
+
+  /** Assembly success: the recovered bones fly from the unit onto the recovery table and lock into the arm skeleton. */
+  restoreSkeletonOnTable(done: () => void) {
+    this.busy = true; this.player.frozen = true;
+    const ids = UPPER_ORDER;
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const id of ids) { const b = boneBounds(id); x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y); x1 = Math.max(x1, b.x + b.w); y1 = Math.max(y1, b.y + b.h); }
+    // laid flat along the table top like a specimen: proximal (shoulder) end to the left, hand end to the right
+    const L = 240, s = L / (y1 - y0), fcx = (x0 + x1) / 2, fcy = (y0 + y1) / 2, cx = 1360, cy = 1222;
+    const to = (fx: number, fy: number) => ({ x: cx + (fy - fcy) * s, y: cy - (fx - fcx) * s * 0.75 });   // rotated -90°, table seen at 3/4 (x0.75 depth)
+    this.cameras.main.stopFollow(); this.cameras.main.pan(1360, 1250, 600, 'Sine.easeInOut');
+    const base = this.add.image(1360, 1225, 'ring').setScale(1.0, 0.28).setTint(0x4fd8ff).setBlendMode(Phaser.BlendModes.ADD).setDepth(1399).setAlpha(0.8);
+    this.holoSkel.push(base);
+    ids.forEach((id, k) => {
+      const b = boneBounds(id);
+      const img = this.add.image(this.player.x, this.player.y - 90, `bone_bone_${id}`).setScale(0.05).setDepth(1400).setAlpha(0.9);
+      const tg = to(b.cx, b.cy);
+      this.time.delayedCall(500 + k * 320, () => {
+        this.tweens.add({ targets: img, x: tg.x, y: tg.y, scaleX: s / DENSITY * 0.75, scaleY: s / DENSITY, angle: -90, alpha: 1, duration: 520, ease: 'Cubic.out', onComplete: () => {
+          Audio.play('snap');
+          // contact shadow so the ivory bone reads against the glowing table
+          const sh = this.add.image(img.x + 3, img.y + 4, `bone_bone_${id}`).setScale(img.scaleX, img.scaleY).setAngle(-90).setTintFill(0x02101c).setAlpha(0.55).setDepth(1399);
+          this.holoSkel.push(sh); img.setTint(0xf0e2c4);
+          const fl = this.add.image(img.x, img.y, `bone_holo_${id}`).setScale(s / DENSITY * 0.75, s / DENSITY).setAngle(-90).setBlendMode(Phaser.BlendModes.ADD).setDepth(1401);
+          this.tweens.add({ targets: fl, alpha: 0, duration: 600, onComplete: () => fl.destroy() });
+        } });
+      });
+      this.holoSkel.push(img);
+    });
+    this.time.delayedCall(500 + ids.length * 320 + 700, () => {
+      Audio.play('success'); this.cameras.main.flash(250, 80, 220, 255);
+      this.ai('팔뼈대 복구 완료: 빗장뼈·어깨뼈(팔이음뼈) → 위팔뼈 → 노뼈·자뼈. 게이트 잠금 1 해제.', 'ok', 3600);
+      for (const l of this.light.lights) if (l.room === 'lab') l.cur = 1;
+      this.time.delayedCall(900, () => {
+        this.cameras.main.startFollow(this.player.root, true, 0.09, 0.09, 0, 40);
+        this.busy = false; this.player.frozen = false; done();
+      });
+    });
+  }
+
+  /** Align success: the calibrated shoulder/elbow model on the J-03 rig moves (abduction, then elbow flexion) and its
+   * winch hauls the X-04 blast door open. */
+  runJointRig() {
+    this.busy = true; this.player.frozen = true;
+    const px = 1480, py = 1872;
+    const arm = this.add.container(px, py).setDepth(2012);
+    const hum = this.add.image(0, 0, 'bone_bone_humerus').setOrigin(0.5, 0.04);
+    const hs = 92 / hum.height; hum.setScale(hs);
+    const fore = this.add.container(0, hum.displayHeight * 0.93);
+    const ul = this.add.image(0, 0, 'bone_bone_ulna').setOrigin(0.5, 0.03); ul.setScale(80 / ul.height);
+    const ra = this.add.image(6, 6, 'bone_bone_radius').setOrigin(0.5, 0.03); ra.setScale(74 / ra.height);
+    fore.add([ul, ra]); arm.add([hum, fore]);
+    const joint = this.add.image(px, py, 'light').setTint(0xb07bff).setBlendMode(Phaser.BlendModes.ADD).setScale(0.3).setDepth(2013);
+    this.cameras.main.stopFollow(); this.cameras.main.pan(px, py + 40, 500, 'Sine.easeInOut');
+    Audio.play('powerup');
+    this.time.delayedCall(500, () => {
+      Audio.play('rotate'); this.ai('관절 정렬 완료 — 보정 장치 구동: 어깨 벌림 → 팔꿉 굽힘', 'ok', 3000);
+      this.tweens.add({ targets: arm, angle: -70, duration: 1100, ease: 'Sine.inOut' });
+      this.time.delayedCall(1200, () => { Audio.play('rotate'); this.tweens.add({ targets: fore, angle: -80, duration: 900, ease: 'Sine.inOut' }); });
+    });
+    // winch -> X-04 door
+    this.time.delayedCall(2500, () => {
+      this.cameras.main.pan(1978, 1060, 900, 'Sine.easeInOut');
+      this.time.delayedCall(950, () => {
+        Audio.play('door'); this.cameras.main.shake(400, 0.004);
+        this.tweens.add({ targets: this.xrayDoor, y: this.xrayDoor.y - 150, alpha: 0.2, duration: 1100, ease: 'Cubic.inOut' });
+        (this.xrayDoorBlock.body as Phaser.Physics.Arcade.StaticBody).enable = false;
+        this.blockers = this.blockers.filter(r => !(r.x === 1960 && r.y === 980));
+        this.ai('게이트 잠금 2 해제. 영상 판독실(X-04) 출입문 개방.', 'ok', 3400);
+      });
+      this.time.delayedCall(2400, () => {
+        this.cameras.main.startFollow(this.player.root, true, 0.09, 0.09, 0, 40);
+        this.busy = false; this.player.frozen = false;
+        this.tweens.add({ targets: [arm, joint], alpha: 0.55, duration: 600 });
+        Bus.emit('mission');
+      });
+    });
   }
 
   setLock(i: number) {
@@ -670,13 +933,7 @@ export class GameScene extends Phaser.Scene {
       this.holoProj.setVisible(true);
       Audio.play('powerup'); Audio.alarm(false); Audio.setMusic(this.bgm()); Audio.heartbeat(false);
       this.blackoutLeft = 0;
-      // unlock x-ray door
-      this.time.delayedCall(900, () => {
-        Audio.play('door');
-        this.tweens.add({ targets: this.xrayDoor, y: this.xrayDoor.y - 150, alpha: 0.2, duration: 1100, ease: 'Cubic.inOut' });
-        (this.xrayDoorBlock.body as Phaser.Physics.Arcade.StaticBody).enable = false;
-      });
-      this.ai('보조 전원 가동. 관절 보정 장치와 영상 판독실이 활성화되었습니다.', 'ok', 4400);
+      this.ai('보조 전원 가동. 관절 보정 장치(J-03)가 활성화되었습니다. 관절을 정렬하면 장치가 X-04 출입문을 엽니다.', 'ok', 4800);
       Bus.emit('mission'); Bus.emit('blackout', false);
     });
   }
@@ -721,6 +978,7 @@ export class GameScene extends Phaser.Scene {
   victory() {
     const f = G.run.flags; if (f.escaped) return;
     f.escaped = true; this.busy = true; this.player.frozen = true;
+    if (this.escape) { this.escape = null; Audio.alarm(false); Audio.heartbeat(false); Bus.emit('timer', -1); this.redWash.fillAlpha = 0; }
     G.run.elapsed = (this.time.now - G.run.startTime) / 1000;
     Bus.emit('mission'); Bus.emit('hud:hide');
     this.player.play('victory');
@@ -728,7 +986,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.stopFollow();
     const L = this.map.lift;
     this.cameras.main.pan(L.x, L.y - 40, 1200, 'Sine.easeInOut');
-    this.cameras.main.zoomTo(this.cameras.main.zoom * 1.5, 1600, 'Sine.easeInOut');
+    this.cameras.main.zoomTo(this.cameras.main.zoom * 1.15, 1600, 'Sine.easeInOut');   // base camera is already close (v0.5)
     const beam = this.add.image(L.x, L.y - 20, 'light').setTint(0x3dffa2).setBlendMode(Phaser.BlendModes.ADD).setScale(0.6, 3).setAlpha(0).setDepth(8800);
     this.tweens.add({ targets: beam, alpha: 0.9, duration: 1500, delay: 600 });
     for (let i = 0; i < 6; i++) this.time.delayedCall(400 + i * 280, () => this.player.burst([0x3dffa2, 0x4fd8ff, 0xffffff][i % 3], 26));
@@ -741,6 +999,7 @@ export class GameScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------- interaction / scan
   tryInteract() {
+    if (this.hiding) { this.exitHide(); return; }
     if (this.busy || !G.run.flags.intro) return;
     const i = this.focus;
     if (!i) { this.toast('주변에 조작할 수 있는 대상이 없습니다.', 'info'); return; }
@@ -755,8 +1014,10 @@ export class GameScene extends Phaser.Scene {
     this.player.play('scan');
     Audio.play('scan');
     const px = this.player.x, py = this.player.y - 30;
-    this.ringFx.setPosition(px, py).setVisible(true).setScale(0.1).setAlpha(1).setTint(0x4fd8ff);
-    this.tweens.add({ targets: this.ringFx, scale: 3.2, alpha: 0, duration: 900, ease: 'Cubic.out', onComplete: () => this.ringFx.setVisible(false) });
+    const amp = this.scanAmp; this.scanAmp = false;
+    const R = amp ? 840 : 420;
+    this.ringFx.setPosition(px, py).setVisible(true).setScale(0.1).setAlpha(1).setTint(amp ? 0xb07bff : 0x4fd8ff);
+    this.tweens.add({ targets: this.ringFx, scale: amp ? 6.4 : 3.2, alpha: 0, duration: 900, ease: 'Cubic.out', onComplete: () => this.ringFx.setVisible(false) });
     this.light.extra.push({ x: px, y: py, r: 400, a: 0.5 });
     this.time.delayedCall(450, () => this.light.extra.shift());
     Bus.emit('scanned');
@@ -764,7 +1025,7 @@ export class GameScene extends Phaser.Scene {
     for (const i of this.inter) {
       if (i.gone) continue;
       const d = Phaser.Math.Distance.Between(px, py, i.x, i.y);
-      if (d > 420) continue;
+      if (d > R) continue;
       if (i.hidden) {
         i.hidden = false; found++;
         this.time.delayedCall(d * 1.6, () => {
@@ -779,6 +1040,153 @@ export class GameScene extends Phaser.Scene {
       }
     }
     this.time.delayedCall(700, () => this.toast(found ? `SCAN: 숨겨진 신호 ${found}개 탐지!` : 'SCAN: 주변에 숨겨진 신호 없음', found ? 'ok' : 'info'));
+  }
+
+  // ---------------------------------------------------------------- damage / respawn (v0.5)
+  /** One heart of damage (shield absorbs it). 1.5 s of invulnerability with blinking afterwards. */
+  hurt(src: 'guard' | 'laser' | 'spark' | 'steam' | 'shutter', fx: number, fy: number) {
+    if (this.invuln > 0 || this.busy || G.run.flags.escaped) return false;
+    const r = G.run;
+    const dx = this.player.x - fx || 1, dy = this.player.y - fy;
+    if (this.hiding) this.exitHide();
+    if (r.shield > 0) {
+      r.shield = 0; this.invuln = 1.0;
+      Audio.play('shieldbreak'); this.player.burst(0x4fd8ff, 26);
+      this.cameras.main.shake(140, 0.004);
+      this.toast('보호막이 피해를 막았습니다!', 'warn'); Bus.emit('hp');
+      return true;
+    }
+    r.hp = Math.max(0, r.hp - 1); r.hits++; r.mistakes++;
+    this.invuln = 1.5;
+    this.player.play('damage', dx, dy);
+    Audio.play('hurt'); if (src === 'laser' || src === 'spark') Audio.play('zap');
+    this.cameras.main.shake(240, 0.008);
+    this.cameras.main.flash(140, 255, 40, 70, false);
+    Bus.emit('hp', 'hit');
+    const why = { guard: '경비 드론에게 붙잡혔습니다!', laser: '레이저에 닿았습니다! 깜빡이는 경고선을 보고 지나가세요.', spark: '전기 충격! 노출된 배선의 방전 주기를 피하세요.', steam: '고온 증기! 배출 주기를 확인하고 지나가세요.', shutter: '보안 셔터가 닫혔습니다!' }[src];
+    if (r.hp <= 0) { this.toast(`${why} — 하트 0`, 'err'); this.time.delayedCall(450, () => this.respawn()); }
+    else this.toast(`${why}  (하트 ${r.hp}/3)`, 'err');
+    return true;
+  }
+
+  /** Hearts gone (or a timed event failed): back to the last checkpoint. Bones, keycard and learning records stay. */
+  respawn(reason = '시스템 재부팅 — 마지막 체크포인트로 복귀합니다') {
+    if (this.busy) return;
+    this.busy = true; this.player.frozen = true; Pad.x = Pad.y = 0;
+    if (this.hiding) this.exitHide();
+    Audio.play('respawn'); Audio.heartbeat(false);
+    this.cameras.main.fadeOut(450, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      const cp = G.run.cp ?? { x: this.map.spawn.x, y: this.map.spawn.y, id: 'b02' };
+      this.player.pb.reset(cp.x, cp.y - 10);
+      this.player.vx = this.player.vy = 0; this.player.stun = 0;   // no knock-back carried over the teleport
+      G.run.hp = 3; this.invuln = 2;
+      for (const g of this.guards) g.reset();
+      if (this.escape?.kind === 'gallery') this.endGalleryAlarm(false);
+      if (this.escape?.kind === 'final') { this.escape.left = this.escape.total; }
+      if (!this.escape) Audio.setMusic(G.run.flags.blackout ? 'tension' : this.bgm());
+      this.cameras.main.fadeIn(500, 0, 0, 0);
+      this.time.delayedCall(500, () => { this.busy = false; this.player.frozen = false; });
+      this.toast(`${reason} (하트 3/3 · 획득한 뼈와 학습 기록은 유지)`, 'info');
+      Bus.emit('hp'); Bus.emit('mission');
+    });
+  }
+
+  /** guard state changes: chase music while any drone hunts the player */
+  onGuardState(_g: Guard, s: GState) {
+    if (s === 'alert') { this.toast('경비 드론에게 발각! 시야를 끊고 엄폐물이나 사물함으로 숨으세요', 'err'); this.cameras.main.shake(120, 0.003); }
+    this.updateThreatMusic();
+  }
+  updateThreatMusic() {
+    if (this.busy && !this.escape) return;
+    const hunted = this.guards.some(g => g.state === 'alert' || g.state === 'chase');
+    if (hunted || this.escape) Audio.setMusic('chase');
+    else Audio.setMusic(G.run.flags.blackout ? 'tension' : this.bgm());
+  }
+
+  // ---------------------------------------------------------------- L-06 alarm escape
+  startGalleryAlarm() {
+    if (this.escape) return;
+    const t = this.D.alarmTime;
+    this.escape = { kind: 'gallery', left: t, total: t };
+    Audio.alarm(true); Audio.setMusic('chase');
+    for (const l of this.lasers) { if (l.cfg.group === 'gallery') l.mul = this.D.laserMul * 1.6; if (l.cfg.group === 'alarm') l.enabled = true; }
+    this.cameras.main.shake(400, 0.006);
+    this.ai(`보안 경보! 표본 이탈 감지 — L-06 격리 셔터가 ${t}초 뒤 닫힙니다. 서쪽 출구로 탈출하십시오.`, 'warn', 4200);
+    Bus.emit('mission');
+  }
+  endGalleryAlarm(escaped: boolean) {
+    this.escape = null; Audio.alarm(false); Bus.emit('timer', -1);
+    for (const l of this.lasers) { if (l.cfg.group === 'gallery') l.mul = this.D.laserMul; if (l.cfg.group === 'alarm') l.enabled = false; }
+    this.redWash.fillAlpha = 0;
+    if (escaped) {
+      Audio.play('shutter'); this.cameras.main.shake(300, 0.005);
+      this.ai('격리 셔터 폐쇄 직전에 탈출 성공. 경보 해제.', 'ok', 3200);
+      this.activateCheckpoint(this.checkpoints.find(c => c.id === 'j03')!, true);
+    }
+    this.updateThreatMusic(); Bus.emit('mission');
+  }
+
+  // ---------------------------------------------------------------- final escape (after the 3rd lock)
+  startFinalEscape() {
+    const t = this.D.finalTime;
+    this.escape = { kind: 'final', left: t, total: t };
+    Audio.alarm(true); Audio.setMusic('chase');
+    this.light.setBlackout(false);
+    for (const l of this.lasers) if (l.cfg.group === 'final') { l.enabled = true; l.mul = this.D.laserMul; }
+    if (G.run.difficulty === 'adv') { const D = this.D; this.guards.push(new Guard(this, { ...FINAL_GUARD, speed: D.guardSpeed, chase: D.guardChase, range: D.range, fov: D.fov, susRate: D.susRate })); }
+    this.ai(`보안 시스템 재가동! ${t}초 안에 탈출 게이트(A-01 북쪽)를 열고 승강기에 탑승하십시오.`, 'warn', 4600);
+    Bus.emit('mission');
+  }
+
+  /** per-frame: survival systems shared by every chapter + CH1 zone systems */
+  tickSurvival(dt: number) {
+    const p = this.player, r = G.run;
+    // invulnerability blink
+    if (this.invuln > 0) { this.invuln -= dt; p.root.setAlpha(this.hiding ? 0.15 : (Math.floor(this.invuln * 12) % 2 ? 0.35 : 1)); if (this.invuln <= 0 && !this.hiding) p.root.setAlpha(1); }
+    // leave the locker by moving
+    if (this.hiding && (Math.hypot(Pad.x, Pad.y) > 0.4 || this.keys.W.isDown || this.keys.A.isDown || this.keys.S.isDown || this.keys.D.isDown || this.keys.UP.isDown || this.keys.DOWN.isDown || this.keys.LEFT.isDown || this.keys.RIGHT.isDown)) this.exitHide();
+    // walk-in pickups
+    for (const k of [...this.pickups]) if (!this.busy && Math.hypot(p.x - k.x, p.y - k.y) < (k.r ?? 48)) { this.pickups = this.pickups.filter(q => q !== k); if (k.id === 'keycard') this.tweens.add({ targets: k.obj, y: (k.obj as any).y - 60, alpha: 0, duration: 300, onComplete: () => k.obj.destroy() }); k.take(); }
+    // checkpoints
+    for (const c of this.checkpoints) if (!c.on && Math.hypot(p.x - c.x, p.y - c.y) < 60) this.activateCheckpoint(c);
+    // guards
+    const world = { px: p.x, py: p.y, hidden: !!this.hiding, blockers: this.blockers, onCatch: (g: Guard) => this.hurt('guard', g.x, g.y), onState: () => { /* via onGuardState */ } };
+    for (const g of this.guards) if (!this.busy) g.update(dt, world); else g.draw(world);
+    // lasers
+    for (const l of this.lasers) {
+      const near = Math.hypot(p.x - l.cfg.a.x, p.y - l.cfg.a.y) < 900;
+      l.update(this.busy ? 0 : dt, near);
+      if (!this.busy && l.hits(p.x, p.y)) this.hurt('laser', p.x - 1, p.y + 30);
+    }
+    // timed escapes (paused during cinematics / puzzles)
+    const e = this.escape;
+    if (e && !this.busy) {
+      const prev = e.left; e.left -= dt;
+      this.redWash.fillAlpha = 0.07 + 0.07 * Math.max(0, Math.sin(this.time.now / 160));
+      if (prev > 10 && e.left <= 10) { Audio.heartbeat(true, 1.6); }
+      if (e.kind === 'gallery') {
+        if (p.x < GALLERY_EXIT_X - 10) { Audio.heartbeat(false); this.endGalleryAlarm(true); }
+        else if (e.left <= 0) {
+          Audio.heartbeat(false); Audio.play('shutter');
+          this.hurt('shutter', p.x + 1, p.y);
+          if (r.hp > 0) this.respawn('격리 셔터에 갇혔습니다 — 체크포인트로 복귀');
+        }
+      } else if (e.left <= 0) {
+        Audio.heartbeat(false); e.left = e.total;
+        this.hurt('shutter', p.x + 1, p.y);
+        if (r.hp > 0) this.respawn('탈출 시간 초과 — 체크포인트에서 다시 시도');
+      }
+      if (this.escape) Bus.emit('timer', Math.max(0, e.left), e.kind === 'gallery' ? '셔터 폐쇄' : '탈출 제한');
+    }
+  }
+
+  /** threats for the HUD's off-screen warnings (drones, active lasers near the player) */
+  threats() {
+    const out: { x: number; y: number; kind: 'guard' | 'laser'; hot: boolean }[] = [];
+    for (const g of this.guards) if (Math.hypot(g.x - this.player.x, g.y - this.player.y) < 1000) out.push({ x: g.x, y: g.y - 30, kind: 'guard', hot: g.state === 'chase' || g.state === 'alert' || g.state === 'suspicious' });
+    for (const l of this.lasers) { if (!l.enabled) continue; const [a, b] = l.seg(); const m = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; if (Math.hypot(m.x - this.player.x, m.y - this.player.y) < 700) out.push({ ...m, kind: 'laser', hot: l.on() || l.warning() }); }
+    return out;
   }
 
   // ---------------------------------------------------------------- loop
@@ -825,19 +1233,10 @@ export class GameScene extends Phaser.Scene {
         if (active && !h.active && near) Audio.play('steam');
       }
       h.active = active;
-      if (active && this.player.stun <= 0 && !this.busy) {
-        const dx = this.player.x - h.x, dy = this.player.y - h.y;
-        if (Math.hypot(dx, dy) < h.r) {
-          this.player.play('damage', dx || 1, dy);
-          Audio.play('hurt'); if (h.kind === 'spark') Audio.play('zap');
-          this.cameras.main.shake(220, 0.006);
-          this.cameras.main.flash(120, 255, 40, 70, false);
-          G.run.mistakes++;
-          this.toast(h.kind === 'spark' ? '전기 충격! 노출된 배선의 방전 주기를 피하세요.' : '고온 증기! 배출 주기를 확인하고 지나가세요.', 'err');
-        }
-      }
+      if (active && !this.busy && Math.hypot(this.player.x - h.x, this.player.y - h.y) < h.r) this.hurt(h.kind, h.x, h.y);
     }
 
+    this.tickSurvival(dt);
     this.tickChapter(dt);
 
     // lift trigger
@@ -848,7 +1247,7 @@ export class GameScene extends Phaser.Scene {
     const v = this.cameras.main.worldView; this.dustZone.setTo(v.x, v.y, v.width, v.height);
     this.redWash.setVisible(this.redWash.fillAlpha > 0.003);
     this.light.update(dt, this.player.x, this.player.y, this.lightRadius());
-    Bus.emit('tick', { px: this.player.x, py: this.player.y, obj: Save.settings.hints ? this.objective() : null, cam: v });
+    Bus.emit('tick', { px: this.player.x, py: this.player.y, obj: Save.settings.hints ? this.objective() : null, cam: v, threats: this.threats() });
   }
 
   timerLabel() { return '비상 전력'; }
@@ -865,7 +1264,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   /** Shown as locked on the full map. */
-  roomLocked(id: string) { const f = G.run.flags; return (id === 'xray' && !f.power) || (id === 'lift' && !f.gate); }
+  roomLocked(id: string) { const f = G.run.flags; return (id === 'xray' && !f.aligned) || (id === 'store' && !G.run.keycard) || (id === 'lift' && !f.gate); }
 
   lightRadius(): number { return G.run.flags.blackout ? 260 : 300; }
 
