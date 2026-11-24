@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { View, viewEvents } from '../core/view';
 import { Audio, MusicMode } from '../core/audio';
-import { Save, unlock } from '../core/save';
+import { Save, unlock, saveRun } from '../core/save';
 import { G, Bus } from '../game/state';
 import { Pad } from '../game/input';
 import { Player } from '../game/Player';
@@ -101,9 +101,12 @@ export class GameScene extends Phaser.Scene {
     if (!this.textures.exists(`bot_${c}`)) this.load.atlas(`bot_${c}`, `assets/atlas/bot_${c}.png`, `assets/atlas/bot_${c}.json`);
   }
 
-  create() {
+  resuming = false;
+  create(data?: { resume?: boolean }) {
     const run = G.run;
-    run.startTime = this.time.now;
+    this.resuming = !!data?.resume;
+    // a resumed run keeps counting from its saved play time
+    run.startTime = this.time.now - (this.resuming ? (run.elapsed || 0) * 1000 : 0);
     this.inter = []; this.hazards = []; this.locks = []; this.holoSkel = []; this.bonesInWorld = {}; this.reveal = {};
     this.busy = false; this.cabinetOpen = false; this.capsuleOpen = false; this.blackoutLeft = 0; this.focus = null;
     this.blockers = []; this.guards = []; this.lasers = []; this.pickups = []; this.checkpoints = []; this.hideSpots = []; this.hiding = null; this.escape = null; this.invuln = 0; this.scanAmp = false;
@@ -145,10 +148,12 @@ export class GameScene extends Phaser.Scene {
     Bus.on('ident:cancel', (id: BoneId) => this.onIdent(id, false), this);
     Bus.on('puzzle:closed', () => { this.busy = false; this.player.frozen = false; this.scene.resume(); this.scene.wake('HUD'); }, this);
     Bus.on('game:quit', () => { this.scene.stop('HUD'); this.scene.start('Title'); }, this);
+    // autosave whenever progress changes (missions update on every pickup, puzzle, checkpoint ...)
+    Bus.on('mission', () => this.autosave(), this);
 
     this.scene.launch('HUD');
     this.cameras.main.fadeIn(1200, 0, 0, 0);
-    this.intro();
+    if (this.resuming) this.applyResume(); else this.intro();
   }
 
   fitCam() {
@@ -378,6 +383,7 @@ export class GameScene extends Phaser.Scene {
   /** v0.5: every bone has its own way in (scanner, stealth, keycard, lasers, alarm escape) — see data/zone1.ts */
   buildBones() {
     for (const id of neededBones()) {
+      if (G.run.bones.includes(id)) continue;   // already recovered (resumed run)
       const g = BONE_GET[id];
       if (g.get === 'puzzle') continue;   // obtained in an investigation view (buildOffice / buildEscape)
       if (g.get === 'alarm' && !G.run.flags.ulnaCage) continue;   // v0.8: caged until its power is restored (buildEscape)
@@ -473,11 +479,11 @@ export class GameScene extends Phaser.Scene {
     this.addInter({ id: 'inv_desk', x: 330, y: 1385, r: 110, icon: 'eye', label: () => G.run.flags.scapulaFound ? '연구원 책상 (조사 완료)' : '연구원 책상 조사', act: () => this.openInvestigate('desk') });
     this.addInter({ id: 'inv_frame', x: 420, y: 1290, r: 85, icon: 'eye', label: () => '벽 액자 조사', act: () => this.openInvestigate('frame') });
     // shutter between B-02 and A-01
-    if (!G.run.flags.scapulaFound) {
+    if (!G.run.flags.scapulaFound && !G.run.bones.includes('scapula')) {
       const env = this.textures.exists('env') && this.textures.get('env').has('d_side_closed');
       this.officeShutter = (env ? this.add.image(742, 1552, 'env', 'd_side_closed') : this.add.image(742, 1550, 'door_v')).setOrigin(0.5, 1).setScale(0.5, 0.5 * 300 / 160).setDepth(1552).setTint(0xffb0b0);
       this.officeShutterBlock = this.solid(724, 1250, 36, 300);
-      this.addInter({ id: 'b02_shutter', x: 690, y: 1400, r: 80, icon: 'lock', enabled: () => !G.run.flags.scapulaFound, label: () => 'A-01 격벽',
+      this.addInter({ id: 'b02_shutter', x: 690, y: 1400, r: 80, icon: 'lock', enabled: () => !G.run.flags.scapulaFound && !G.run.bones.includes('scapula'), label: () => 'A-01 격벽',
         locked: () => '격벽이 봉쇄되어 있습니다. 표본 S-01 보관대의 압력 센서가 해제되어야 열립니다. (표본을 찾으세요)', act: () => { /* locked */ } });
     }
   }
@@ -580,6 +586,7 @@ export class GameScene extends Phaser.Scene {
   onInvestigateFound(id: string) {
     this.scene.resume(); this.scene.wake('HUD'); this.busy = false; this.player.frozen = false;
     if (id !== 'scapula') { this.pickupBone(id as BoneId); this.escapeWorldChange(id); return; }
+    G.run.flags.scapulaFound = true;
     this.pickupBone('scapula');
     // the specimen left its pressure sensor -> the B-02 shutter opens (the lab changes)
     this.time.delayedCall(900, () => {
@@ -670,6 +677,7 @@ export class GameScene extends Phaser.Scene {
     Audio.play('unlock');
     this.time.delayedCall(300, () => {
       Audio.play('door');
+      G.run.flags.keyDoorOpen = true;
       this.tweens.add({ targets: this.keyDoor, y: this.keyDoor!.y - 130, alpha: 0.15, duration: 900, ease: 'Cubic.inOut' });
       (this.keyDoorBlock!.body as Phaser.Physics.Arcade.StaticBody).enable = false;
       this.blockers = this.blockers.filter(r => !(r.x === KEY_DOOR.x && r.y === KEY_DOOR.y));
@@ -820,6 +828,49 @@ export class GameScene extends Phaser.Scene {
   // ---------------------------------------------------------------- story & events
   ai(text: string, kind: 'ai' | 'warn' | 'ok' = 'ai', dur = 4200) { Bus.emit('ai', { text, kind, dur }); }
   toast(text: string, kind: 'info' | 'warn' | 'ok' | 'err' = 'info') { Bus.emit('toast', { text, kind }); }
+
+  // ---------------------------------------------------------------- save / resume (v0.9.2)
+  lastSave = 0;
+  /** write the in-progress run (throttled); not during the victory sequence */
+  autosave(force = false) {
+    const r = G.run;
+    if (r.flags.escaped || !r.flags.intro) return;
+    const now = this.time.now; if (!force && now - this.lastSave < 800) return;
+    this.lastSave = now;
+    r.elapsed = (now - r.startTime) / 1000;
+    saveRun(r);
+  }
+  /** instantly put a lock indicator into its solved state (no sound/animation) */
+  setLockQuiet(i: number) { const l = this.locks[i]; if (!l) return; this.tweens.killTweensOf(l); l.setTexture('lock_green').setAlpha(1).setScale(1.2); }
+  openGateInstant() {
+    const gx = this.map.gateX;
+    if (this.gateOpenImg) { this.gateOpenImg.setAlpha(1); this.gateL.setAlpha(0); } else { this.gateL.x = gx - 70; this.gateR.x = gx + 70; }
+    (this.gateBlock.body as Phaser.Physics.Arcade.StaticBody).enable = false;
+    this.light.extra.push({ x: gx, y: 700, r: 300, a: 0.9 });
+  }
+  openDoorInstant(img: Phaser.GameObjects.Image | undefined, block: Phaser.GameObjects.Zone | undefined, lift: number) {
+    if (img) { img.y -= lift; img.setAlpha(0.15); }
+    if (block) { (block.body as Phaser.Physics.Arcade.StaticBody).enable = false; const b = block.body as Phaser.Physics.Arcade.StaticBody; this.blockers = this.blockers.filter(r => !(Math.abs(r.x - b.x) < 1 && Math.abs(r.y - b.y) < 1)); }
+  }
+  /** rebuild the world from a saved run: player at the last checkpoint, every solved device in its solved state */
+  applyResume() {
+    const f = G.run.flags, B = G.run.bones;
+    f.intro = true; this.busy = false; this.player.frozen = false;
+    if (G.run.cp) this.player.pb.reset(G.run.cp.x, G.run.cp.y);
+    if (f.assembled) { this.setLockQuiet(0); this.showHoloSkeleton(); }
+    if (f.aligned) { this.setLockQuiet(1); this.openDoorInstant(this.xrayDoor, this.xrayDoorBlock, 150); }
+    if (f.xray) this.setLockQuiet(2);
+    if (f.keyDoorOpen) this.openDoorInstant(this.keyDoor, this.keyDoorBlock, 130);
+    if (B.includes('humerus') && this.vaultCapsule && this.textures.exists('env') && this.textures.get('env').has('p_capsule_empty')) this.vaultCapsule.setFrame('p_capsule_empty');
+    if (B.includes('clavicle')) { const l = this.lasers.find(q => q.cfg === GALLERY_LASERS[2]); if (l) l.enabled = false; }
+    if (f.gate) this.openGateInstant();
+    if (f.blackout && !f.power) { this.light.setBlackout(true); this.holoProj?.setVisible(false); this.blackoutLeft = 90; Audio.setMusic('tension'); }
+    else Audio.setMusic(this.bgm());
+    if (f.xray && !f.escaped) this.time.delayedCall(1800, () => { if (!this.escape) this.startFinalEscape(); });
+    this.cameras.main.fadeIn(600, 0, 0, 0);
+    this.toast('저장된 지점에서 이어합니다', 'info');
+    Bus.emit('mission');
+  }
 
   intro() {
     this.busy = true; this.player.frozen = true;

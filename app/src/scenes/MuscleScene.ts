@@ -38,7 +38,7 @@ export class MuscleScene extends GameScene {
 
   get needed(): MuscleId[] { return G.run.difficulty === 'adv' ? LINK_ADV : LINK_BASIC; }
 
-  create() { this.overloadLeft = 0; this.coresInWorld = {}; super.create(); }
+  create(data?: { resume?: boolean }) { this.overloadLeft = 0; this.coresInWorld = {}; super.create(data); }
 
   floorTint(floor: string) { return floor === 'floor_tile' ? 0x9a8fae : floor === 'floor_grate' ? 0x8e94b0 : 0x86809e; }
   /** CH2 has its own exploration music (Dorian pulse) — CH1 uses 'ambient'. */
@@ -225,6 +225,7 @@ export class MuscleScene extends GameScene {
     for (const [id, x, y, name] of logs) { this.prop('terminal', x, y, { col: [40, 20] }); this.addInter({ id, x, y, r: 85, icon: 'info', label: () => name, act: () => this.readLog(id) }); }
     // data cores
     for (const id of this.needed) {
+      if (G.run.items.includes(id)) continue;   // already recovered (resumed run)
       const s = CORE_SPOTS[id];
       if (s.via) {
         this.addInter({ id: `${s.via}_${id}`, x: s.x, y: s.y + (s.via === 'locker' ? 20 : 40), r: 95, icon: 'hand',
@@ -358,6 +359,22 @@ export class MuscleScene extends GameScene {
     }
     Bus.emit('mission');
     if (f.atlas && f.linked && f.motion && !f.gate) this.time.delayedCall(2600, () => { this.ai('근육 시스템 복구 완료. 탈출 게이트에서 코어 인증을 실행하십시오.', 'ok', 5000); Audio.play('unlock'); });
+  }
+
+  applyResume() {
+    const f = G.run.flags;
+    f.intro = true; this.busy = false; this.player.frozen = false;
+    if (G.run.cp) this.player.pb.reset(G.run.cp.x, G.run.cp.y);
+    if (f.atlas) this.setLockQuiet(0);
+    if (f.linked) this.setLockQuiet(1);
+    if (f.motion) this.setLockQuiet(2);
+    if (f.stabilized) this.openDoorInstant(this.motionDoor, this.motionDoorBlock, 150);
+    if (f.gate) this.openGateInstant();
+    Audio.setMusic(this.bgm());
+    if (f.overload && !f.stabilized) this.time.delayedCall(800, () => this.startOverload());
+    this.cameras.main.fadeIn(600, 0, 0, 0);
+    this.toast('저장된 지점에서 이어합니다', 'info');
+    Bus.emit('mission');
   }
 
   startOverload() {

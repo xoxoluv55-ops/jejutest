@@ -22,3 +22,12 @@ function read(): SaveData {
 export const Save: SaveData = read();
 export function persist() { try { localStorage.setItem(KEY, JSON.stringify(Save)); } catch { /* private mode */ } }
 export function unlock(id: string) { if (!Save.archive.includes(id)) { Save.archive.push(id); persist(); return true; } return false; }
+
+/** In-progress run snapshot (mid-chapter save): written on progress and on "save & quit", cleared when a chapter is cleared. */
+const RUN_KEY = 'anatomy-escape-run-v1';
+export interface RunSnapshot { v: 1; at: number; run: Record<string, unknown> }
+export function saveRun(run: object) { try { localStorage.setItem(RUN_KEY, JSON.stringify({ v: 1, at: Date.now(), run })); return true; } catch { return false; } }
+export function loadRun(): RunSnapshot | null {
+  try { const raw = localStorage.getItem(RUN_KEY); if (!raw) return null; const d = JSON.parse(raw); return d && d.v === 1 && d.run ? d : null; } catch { return null; }
+}
+export function clearRun() { try { localStorage.removeItem(RUN_KEY); } catch { /* ignore */ } }

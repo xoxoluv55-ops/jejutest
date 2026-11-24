@@ -43,7 +43,13 @@ export function newRun(difficulty: Difficulty, color: string, chapter = 1): RunS
 /** Scene key of the world scene for the current chapter (CH1 'Game', CH2 'Game2'). */
 export function worldKey() { return G.run.chapter === 2 ? 'Game2' : 'Game'; }
 /** Start the current chapter's world scene. */
-export function startWorld(sp: Phaser.Scenes.ScenePlugin) { sp.start(worldKey()); }
+export function startWorld(sp: Phaser.Scenes.ScenePlugin, data?: { resume?: boolean }) { sp.start(worldKey(), data); }
+/** rebuild a RunState from a saved snapshot (fields added in later versions fall back to their defaults) */
+export function restoreRun(saved: Record<string, unknown>): RunState {
+  const r = saved as unknown as RunState;
+  const base = newRun(r.difficulty ?? 'basic', r.color ?? 'red', r.chapter ?? 1);
+  return { ...base, ...r, flags: { ...base.flags, ...(r.flags ?? {}) }, codes: { ...base.codes, ...(r.codes ?? {}) }, stats: { ...base.stats, ...(r.stats ?? {}) } };
+}
 
 export const G: { run: RunState } = { run: newRun('basic', 'red') };
 

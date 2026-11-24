@@ -4,6 +4,7 @@ import { View } from '../core/view';
 import { Audio } from '../core/audio';
 import { Save, persist } from '../core/save';
 import { G, newRun, startWorld } from '../game/state';
+import { clearRun } from '../core/save';
 import { ARCHIVE } from '../data/anatomy';
 import { T, C, drawPanel, Button } from '../ui/widgets';
 import { fmt } from './TitleScene';
@@ -16,7 +17,7 @@ export class ResultScene extends BaseScene {
     const r = G.run;
     if (!this.saved) {
       this.saved = true;
-      Save.clears++;
+      Save.clears++; clearRun();   // the chapter is finished: no run to continue
       if (!Save.cleared.includes(r.chapter)) Save.cleared.push(r.chapter);
       const key = String(r.chapter);
       if (!Save.best[key] || r.elapsed < Save.best[key]) Save.best[key] = r.elapsed;

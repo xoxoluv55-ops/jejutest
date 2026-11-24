@@ -3,6 +3,7 @@ import { BaseScene } from './Base';
 import { View } from '../core/view';
 import { Audio } from '../core/audio';
 import { G, Bus, worldKey } from '../game/state';
+import { saveRun } from '../core/save';
 import { Pad } from '../game/input';
 
 import { T, C, drawPanel, drawIcon, RoundButton, Button, IconName } from '../ui/widgets';
@@ -96,7 +97,7 @@ export class HUDScene extends BaseScene {
     this.mapDot = this.add.graphics();
     const mz = this.add.zone(R.x, R.y, mw, mh).setOrigin(0).setInteractive({ useHandCursor: true });
     mz.on('pointerup', () => this.openMap());
-    this.btnPause = new RoundButton(this, R.x - (tn ? 30 : 40), R.y + (tn ? 24 : 30), tn ? 20 : 24, 'pause', () => this.openPause(), C.cyan);
+    this.btnPause = new RoundButton(this, R.x - (tn ? 30 : 40), R.y + (tn ? 24 : 30), tn ? 22 : 26, 'pause', () => this.openPause(), C.cyan, '일시정지');
     this.btnPause.setActive2(true);
     // --- blackout timer ---
     this.timerT = T(this, W / 2, 34, '', 30, C.amberS, { display: true, weight: '900' }).setOrigin(0.5).setVisible(false);
@@ -415,19 +416,62 @@ export class HUDScene extends BaseScene {
     m.c.add(T(this, m.x + 28, m.y + m.h - 24, '○ 현재 위치    ◎ 다음 목표    붉은 테두리 = 잠긴 구역', 14, C.dim).setOrigin(0, 0.5));
   }
 
+  /** world scene paused by the pause menu (time, tweens, drones, lasers all stop); play time excludes the pause */
+  pausedAt = -1; busyBefore = false;
+  pauseWorld() {
+    if (this.pausedAt >= 0) return;
+    this.busyBefore = this.game2.busy;
+    this.pausedAt = this.game.loop.time;
+    this.scene.pause(worldKey());
+    Audio.heartbeat(false);
+  }
+  resumeWorld() {
+    if (this.pausedAt < 0) return;
+    G.run.startTime += this.game.loop.time - this.pausedAt;   // paused time is not play time
+    this.pausedAt = -1;
+    this.scene.resume(worldKey());
+    this.game2.busy = this.busyBefore;
+  }
   openPause() {
-    if (this.overlay || this.game2.player?.frozen) return;
-    const m = this.modal('일시 정지', 520, 470);
+    if (this.overlay || this.identId) return;
+    const m = this.modal('일시 정지', 520, 520);
+    this.pauseWorld();
     const cx = m.x + m.w / 2;
-    const items: [string, IconName, () => void][] = [
-      ['계속하기', 'play', () => this.closeOverlay()],
-      ['해부학 도감', 'book', () => { this.closeOverlay(); this.scene.launch('Archive', { from: 'Game' }); this.game2.busy = true; this.scene.pause(worldKey()); this.scene.sleep(); }],
-      ['설정', 'gear', () => { this.closeOverlay(); this.scene.launch('Info', { mode: 'settings', from: 'Game' }); }],
-      ['타이틀로 나가기', 'back', () => { this.closeOverlay(); Audio.alarm(false); Audio.heartbeat(false); Audio.setMusic('none'); Bus.emit('game:quit'); }],
+    const items: [string, IconName, () => void, number][] = [
+      ['계속하기', 'play', () => this.closePause(), C.cyan],
+      ['해부학 도감', 'book', () => { this.closePause(); this.scene.launch('Archive', { from: 'Game' }); this.game2.busy = true; this.scene.pause(worldKey()); this.scene.sleep(); }, C.cyan],
+      ['설정', 'gear', () => { this.closePause(); this.scene.launch('Info', { mode: 'settings', from: 'Game' }); }, C.cyan],
+      ['저장하고 나가기', 'back', () => this.confirmQuit(), C.red],
     ];
-    items.forEach(([t, ic, fn], i) => m.c.add(new Button(this, cx, m.y + 110 + i * 80, t, fn, { w: 360, h: 62, icon: ic, accent: i === 3 ? C.red : C.cyan })));
-    const sec = Math.floor((this.game2.time.now - G.run.startTime) / 1000);
-    m.c.add(T(this, cx, m.y + m.h - 30, `경과 ${Math.floor(sec / 60)}분 ${sec % 60}초 · 스캔 ${G.run.scans}회 · 실수 ${G.run.mistakes}회`, 14, C.dim).setOrigin(0.5));
+    const bh = this.tiny ? 50 : 62, gap = this.tiny ? 60 : 78;
+    items.forEach(([t, ic, fn, acc], i) => m.c.add(new Button(this, cx, m.y + (this.tiny ? 92 : 112) + i * gap, t, fn, { w: 360, h: bh, icon: ic, accent: acc })));
+    const sec = Math.floor((this.game.loop.time - G.run.startTime - (this.pausedAt >= 0 ? this.game.loop.time - this.pausedAt : 0)) / 1000);
+    const prog = G.run.chapter === 1 ? `뼈 ${G.run.bones.length}개 회수` : `코어 ${G.run.items.length}개 회수`;
+    m.c.add(T(this, cx, m.y + m.h - 30, `플레이 ${Math.floor(sec / 60)}분 ${sec % 60}초 · ${prog} · 실수 ${G.run.mistakes}회`, 15, C.dim).setOrigin(0.5));
+    // the modal's own close (X) button also resumes
+    const x = m.c.list.find(o => o instanceof RoundButton) as RoundButton | undefined; if (x) x.onPress = () => this.closePause();
+  }
+  closePause() { this.closeOverlay(); this.resumeWorld(); }
+  confirmQuit() {
+    const m = this.modal('저장하고 나가기', 560, 360, C.red);
+    const cx = m.x + m.w / 2;
+    m.c.add(T(this, cx, m.y + 100, '지금까지의 진행(회수한 표본, 찾은 단서, 마지막 체크포인트)을\n저장하고 타이틀로 나갑니다.\n타이틀의 [이어하기]로 계속할 수 있습니다.', 17, '#d3def3', { align: 'center', lineSpacing: 6, wordWrap: { width: m.w - 50 } }).setOrigin(0.5, 0));
+    const by = m.y + m.h - 52;
+    m.c.add(new Button(this, cx - 130, by, '취소', () => { this.closeOverlay(); this.openPauseAgain(); }, { w: 220, h: 54, icon: 'back' }));
+    m.c.add(new Button(this, cx + 130, by, '저장하고 나가기', () => this.saveAndQuit(), { w: 240, h: 54, icon: 'check', accent: C.red, primary: true }));
+    const x = m.c.list.find(o => o instanceof RoundButton) as RoundButton | undefined; if (x) x.onPress = () => { this.closeOverlay(); this.openPauseAgain(); };
+  }
+  openPauseAgain() { this.time.delayedCall(170, () => { if (!this.overlay) this.openPause(); }); }   // the world stays paused meanwhile
+  saveAndQuit() {
+    const r = G.run;
+    // play time up to the moment the pause started
+    r.elapsed = ((this.pausedAt >= 0 ? this.pausedAt : this.game.loop.time) - r.startTime) / 1000;
+    const ok = r.flags.intro && !r.flags.escaped ? saveRun(r) : false;
+    this.closeOverlay(); this.pausedAt = -1;
+    this.scene.resume(worldKey());
+    Audio.alarm(false); Audio.heartbeat(false); Audio.setMusic('none');
+    void ok;
+    Bus.emit('game:quit');
   }
 
   // ------------------------------------------------------------ joystick

@@ -2,10 +2,10 @@ import Phaser from 'phaser';
 import { BaseScene } from './Base';
 import { View } from '../core/view';
 import { Audio } from '../core/audio';
-import { Save, persist } from '../core/save';
+import { Save, persist, loadRun, clearRun } from '../core/save';
 import { T, C, Button, drawPanel, drawIcon } from '../ui/widgets';
 import { BOT_COLORS, BOT_HEX } from './BootScene';
-import { G, newRun, Difficulty, startWorld } from '../game/state';
+import { G, newRun, Difficulty, startWorld, restoreRun } from '../game/state';
 
 let entered = false;
 
@@ -128,21 +128,41 @@ export class TitleScene extends BaseScene {
 
     // ---------- menu ----------
     const mx = portrait ? W / 2 : W * 0.8, my = portrait ? H * 0.5 : tiny ? H * 0.17 : H * 0.38;
+    // a saved run in progress -> CONTINUE first
+    const snap = loadRun();
+    const cont: [string, string, any, () => void, number?][] = [];
+    if (snap) {
+      const r = snap.run as { chapter?: number; difficulty?: string; bones?: string[]; items?: string[] };
+      const d = new Date(snap.at), when = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      const prog = r.chapter === 2 ? `코어 ${r.items?.length ?? 0}개` : `뼈 ${r.bones?.length ?? 0}개`;
+      cont.push(['CONTINUE', `이어하기 · CH${r.chapter ?? 1} ${r.difficulty === 'adv' ? '심화' : '기초'} · ${prog} · ${when}`, 'play', () => this.continueRun(), C.green]);
+    }
     const items: [string, string, any, () => void, number?][] = [
-      ['GAME START', '게임 시작 · CHAPTER 1', 'play', () => this.openStart(), C.red],
+      ...cont,
+      ['GAME START', cont.length ? '새 게임 · 처음부터' : '게임 시작 · CHAPTER 1', 'play', () => this.openStart(), C.red],
       ['MULTIPLAYER', '협동 플레이 (1~4인)', 'users', () => this.scene.launch('Info', { mode: 'multi', from: 'Title' })],
       ['ANATOMY ARCHIVE', '해부학 도감', 'book', () => { this.scene.start('Archive', { from: 'Title' }); }],
       ['SETTINGS', '설정', 'gear', () => this.scene.launch('Info', { mode: 'settings', from: 'Title' })],
     ];
+    const step = tiny ? (items.length > 4 ? 54 : 64) : (items.length > 4 ? 76 : 84), bh0 = tiny ? (items.length > 4 ? 48 : 56) : (items.length > 4 ? 64 : 70);
+    const my0 = items.length > 4 && !portrait ? my - (tiny ? 10 : 36) : my;
     items.forEach(([t, s, icon, fn, acc], i) => {
-      const b = new Button(this, mx, my + i * (tiny ? 64 : 84), t, fn, { w: 380, h: tiny ? 56 : 70, icon, sub: s, accent: acc ?? C.cyan, display: true, size: tiny ? 19 : 21, primary: i === 0 });
+      const b = new Button(this, mx, my0 + i * step, t, fn, { w: 380, h: bh0, icon, sub: s, accent: acc ?? C.cyan, display: true, size: tiny ? 19 : 21, primary: i === 0 });
       b.setDepth(50); b.setAlpha(0); b.x += 40;
       this.tweens.add({ targets: b, alpha: 1, x: mx, duration: 500, delay: 300 + i * 90, ease: 'Cubic.out' });
     });
-    T(this, W - 18, H - 14, `v0.9.1 · 빌드 ${__BUILD__}`, 15, '#8a9bbd').setOrigin(1, 1).setDepth(50);
+    T(this, W - 18, H - 14, `v0.9.2 · 빌드 ${__BUILD__}`, 15, '#8a9bbd').setOrigin(1, 1).setDepth(50);
     if (Save.clears) T(this, 18, H - 14, `CLEAR ×${Save.clears}${Save.bestTime ? ` · BEST ${fmt(Save.bestTime)}` : ''}`, 14, C.greenS, { weight: '700' }).setOrigin(0, 1).setDepth(50);
 
     if (!entered) this.enterGate(); else this.startAudio();
+  }
+
+  continueRun() {
+    const snap = loadRun(); if (!snap) return;
+    G.run = restoreRun(snap.run);
+    Audio.play('glitch'); Audio.setMusic('none');
+    this.cameras.main.fadeOut(500, 0, 0, 0);
+    this.cameras.main.once('camerafadeoutcomplete', () => startWorld(this.scene, { resume: true }));
   }
 
   startAudio() { Audio.unlock(); Audio.startAmbient(); Audio.setMusic('title'); }
@@ -253,7 +273,7 @@ export class TitleScene extends BaseScene {
     const by = py + ph - (tiny ? 32 : 52);
     const start = new Button(this, px + pw - 170, by, '연구시설 진입', () => {
       Save.color = color; persist();
-      G.run = newRun(diff, color, chapter);
+      G.run = newRun(diff, color, chapter); clearRun();   // a new game replaces the saved run
       Audio.play('glitch'); Audio.setMusic('none');
       this.cameras.main.fadeOut(500, 0, 0, 0);
       this.cameras.main.once('camerafadeoutcomplete', () => { startWorld(this.scene); });
