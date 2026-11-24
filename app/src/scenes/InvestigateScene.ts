@@ -103,7 +103,19 @@ export class InvestigateScene extends InvestBase {
     const drawCorner = () => { corner.clear(); corner.fillStyle(0xd6cdb4, 1); corner.fillTriangle(cx, cy - 36 * k, cx, cy, cx - 36 * k, cy); corner.lineStyle(1.5, 0x8a7a58, 1); corner.strokeTriangle(cx, cy - 36 * k, cx, cy, cx - 36 * k, cy); };
     drawCorner();
     const cz = this.add.zone(cx - 70, cy - 70, 90, 90).setOrigin(0).setInteractive({ useHandCursor: true, draggable: true }); o.c.add(cz);
-    const turn = () => { page = (page + 1) % pages.length; Audio.play('type'); show(); };
+    // page turn: the right-hand sheet folds over the spine (two short half-turns), the text changes underneath
+    let flipping = false;
+    const turn = () => {
+      if (flipping) return; flipping = true; Audio.play('type');
+      const spine = bx + 350 * k, top = by + 16 * k, ph = 410 * k, pwid = 322 * k;
+      const sheet = this.add.image(spine, top, this.textures.exists('inv_paper') ? 'inv_paper' : '__WHITE').setOrigin(0, 0).setDisplaySize(pwid, ph).setTint(0xf1ead6); o.c.add(sheet);
+      const shade = this.add.rectangle(spine, top, pwid, ph, 0x000000, 0).setOrigin(0, 0); o.c.add(shade);
+      this.tweens.add({ targets: [sheet, shade], scaleX: 0.001, duration: 150, ease: 'Sine.in', onUpdate: () => shade.setFillStyle(0x000000, 0.25 * (1 - sheet.scaleX / (pwid / sheet.width))), onComplete: () => {
+        page = (page + 1) % pages.length; show();
+        sheet.setOrigin(1, 0); shade.setOrigin(1, 0);
+        this.tweens.add({ targets: [sheet, shade], scaleX: pwid / sheet.width, duration: 150, ease: 'Sine.out', onComplete: () => this.tweens.add({ targets: [sheet, shade], alpha: 0, duration: 90, onComplete: () => { sheet.destroy(); shade.destroy(); flipping = false; } }) });
+      } });
+    };
     cz.on('pointerup', turn);
     o.c.add(T(this, cx - 80, cy + 8 * k, '모서리를 눌러 넘기기 ▸', 15, '#ffe0a0', { weight: '700' }).setOrigin(1, 0));
     show();
@@ -125,7 +137,8 @@ export class InvestigateScene extends InvestBase {
     const o = this.overlay('메모지', 520, 340);
     // fit the note inside the panel below its header (texture is 340x260 px)
     const ns = Math.min((o.h - 90) / 260, (o.w - 60) / 340);
-    o.c.add(this.add.image(o.x + o.w / 2, o.y + 50 + (o.h - 50) / 2, 'inv_note').setScale(ns).setAngle(-3));
+    const nt = this.add.image(o.x + o.w / 2, o.y + 50 + (o.h - 50) / 2, 'inv_note').setScale(ns, ns * 0.08).setAngle(-3); o.c.add(nt);
+    this.tweens.add({ targets: nt, scaleY: ns, duration: 260, ease: 'Back.out' });   // the folded note opens
     o.c.add(T(this, o.x + o.w / 2, o.y + 50 + (o.h - 50) / 2 - 4, '서랍 — 숫자 4자리\n순서는 일지 마지막 장\n번호는 S-01 사진', 20, '#4a3608', { ink: true, weight: '800', align: 'center', lineSpacing: 6 }).setOrigin(0.5).setAngle(-3));
     this.addClue('note', '메모 — 숫자는 사진, 순서는 일지');
   }
@@ -187,6 +200,9 @@ export class InvestigateScene extends InvestBase {
     void bm;
     const panel = this.add.image(dx + 22 * k, dy + 22 * k, 'inv_panel').setOrigin(0).setScale(k * 0.5).setInteractive({ useHandCursor: true, draggable: true }); o.c.add(panel);
     const tip = T(this, dx + 300 * k, dy + 140 * k, '서랍이 비어 있다…?\n바닥판 오른쪽의 홈을 잡고 위로 끌어 올려 보세요', 17, '#ffe0a0', { weight: '700', align: 'center', lineSpacing: 4 }).setOrigin(0.5); o.c.add(tip);
+    // the drawer slides out towards you
+    { const parts = [o.c.list.find(q => (q as Phaser.GameObjects.Image).texture?.key === 'inv_drawer'), cs, sc, panel, tip].filter(Boolean) as unknown as Phaser.GameObjects.Components.Transform[];
+      for (const q of parts) { const y0 = q.y; q.y -= 170 * k; this.tweens.add({ targets: q, y: y0, duration: 380, ease: 'Cubic.out' }); } }
     const lift = () => {
       if (this.panelUp) return; this.panelUp = true; Audio.play('open'); tip.setVisible(false);
       this.tweens.add({ targets: panel, y: panel.y - 230 * k, x: panel.x + 40 * k, angle: -8, alpha: 0.0, duration: 600, ease: 'Cubic.out' });

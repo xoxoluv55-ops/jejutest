@@ -5,6 +5,18 @@ import { Audio } from '../../core/audio';
 import { G, Bus } from '../../game/state';
 import { T, C, drawPanel, Button } from '../../ui/widgets';
 import { clueText } from '../../data/escape';
+import { makeOfficeArt } from '../../art/office';
+import { makeEscapeArt } from '../../art/escape';
+import { setPaintFilter } from '../../art/env';
+
+/** rendered prop layers each view needs (public/assets/props/<key>.webp, density 2); loaded on open, released on close */
+export const PROP_KEYS: Record<string, string[]> = {
+  Investigate: ['inv_desk', 'inv_journal', 'inv_journal_open', 'inv_mug', 'inv_note', 'inv_drawer', 'inv_panel', 'inv_case', 'inv_frame', 'inv_frame_back'],
+  InvHumerus: ['inv_clip', 'inv_paper', 'inv_capsule', 'inv_capsule_back', 'inv_knob', 'inv_track', 'inv_lever_red'],
+  InvRadius: ['inv_bench', 'inv_card', 'inv_pad', 'inv_uv', 'inv_pencil', 'inv_mag', 'inv_ldrawer'],
+  InvUlna: ['inv_toolbox', 'inv_toolbox_in', 'inv_tray', 'inv_manual', 'inv_fuse', 'inv_jbox', 'inv_post', 'inv_term_red', 'inv_term_green', 'inv_socket', 'inv_plug', 'inv_lever_green', 'inv_track'],
+  InvClavicle: ['inv_poster_frame', 'inv_wall', 'inv_safe_door', 'inv_safe_inside', 'inv_dial', 'inv_brass', 'inv_handle_brass'],
+};
 
 export type Overlay = { c: Phaser.GameObjects.Container; x: number; y: number; w: number; h: number };
 
@@ -27,9 +39,18 @@ export abstract class InvestBase extends PuzzleBase {
 
   get adv() { return G.run.difficulty === 'adv'; }
   has(id: string) { return G.run.clues.includes(id); }
+  tex(k: string) { return this.textures.exists(k) && this.textures.get(k).key !== '__MISSING'; }
+
+  preload() {
+    for (const k of PROP_KEYS[this.scene.key] ?? []) if (!this.textures.exists(k)) this.load.image(k, `assets/props/${k}.webp`);
+  }
 
   create(data: { kind: string }) {
     this.initView();
+    // any layer that failed to load falls back to the code-drawn version
+    setPaintFilter(k => k.startsWith('inv_')); makeOfficeArt(this); makeEscapeArt(this); setPaintFilter(null);
+    // release this view's layers when it closes (keeps GPU memory low on iPad; the files stay in the HTTP cache)
+    this.events.once('shutdown', () => setTimeout(() => { if (this.scene.isActive()) return; for (const k of PROP_KEYS[this.scene.key] ?? []) if (this.textures.exists(k)) this.textures.remove(k); }, 0));
     this.kind = data.kind; this.hintLv = 0; this.layer = undefined;
     this.build(this.kind);
     const hx = this.px + this.pw - (this.compact ? 250 : 360), hy = this.py + this.hdr / 2;
@@ -62,7 +83,7 @@ export abstract class InvestBase extends PuzzleBase {
     const g = this.add.graphics(); drawPanel(g, x, y, w, h, { accent, header: 50 }); c.add(g);
     c.add(T(this, x + 24, y + 25, title, 20, C.white, { weight: '700' }).setOrigin(0, 0.5));
     c.add(new Button(this, x + w - 80, y + 25, '닫기', () => this.closeLayer(), { w: 120, h: 38, icon: 'close', size: 16 }));
-    c.setAlpha(0); this.tweens.add({ targets: c, alpha: 1, duration: 150 });
+    c.setAlpha(0); c.y = 14; this.tweens.add({ targets: c, alpha: 1, y: 0, duration: 170, ease: 'Cubic.out' });
     this.flushInput();
     return { c, x, y, w, h };
   }
@@ -93,8 +114,19 @@ export abstract class InvestBase extends PuzzleBase {
   /** "specimen recovered" card; Continue hands the bone to the world (pickup + archive + world change) */
   found(id: string, title: string, body: string, tex = `bone_bone_${id}`) {
     this.solved = true;
+    // short reveal: the specimen rises to the centre in a burst of light, then the record card
+    Audio.play('pickup'); this.closeLayer();
+    const { W, H } = View;
+    const burst = this.add.image(W / 2, H / 2, 'light').setTint(0x9fffd0).setBlendMode(Phaser.BlendModes.ADD).setScale(0.3).setAlpha(0.9).setDepth(240);
+    const sp = this.add.image(W / 2, H / 2 + 30, tex).setDepth(241).setAlpha(0);
+    const fs = Math.min(W * 0.4 / sp.width, H * 0.55 / sp.height); sp.setScale(fs * 0.5);
+    this.tweens.add({ targets: sp, y: H / 2, scale: fs, alpha: 1, duration: 280, ease: 'Back.out' });
+    this.tweens.add({ targets: burst, scale: 2.6, alpha: 0, duration: 650, ease: 'Cubic.out' });
+    this.cameras.main.flash(160, 140, 255, 200);
+    this.time.delayedCall(700, () => { sp.destroy(); burst.destroy(); this.foundCard(id, title, body, tex); });
+  }
+  foundCard(id: string, title: string, body: string, tex: string) {
     Audio.play('success');
-    this.closeLayer();
     const o = this.overlay(title, 880, 540, C.green);
     const left = Math.min(320, o.w * 0.36);
     const im = this.add.image(o.x + 30 + left / 2, o.y + 50 + (o.h - 50) / 2, tex); o.c.add(im);

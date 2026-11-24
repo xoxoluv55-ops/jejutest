@@ -72,11 +72,12 @@ export class InvClavicleScene extends InvestBase {
     // wall behind (seen when the corner is peeled): the dial rule
     const wall = this.add.container(0, 0);
     const s = h * 0.5;
-    const wg = this.add.graphics(); wg.fillStyle(0x3a4352, 1); wg.fillRect(x + w - s, y + h - s, s, s); wall.add(wg);
+    wall.add(this.add.image(x + w - s, y + h - s, 'inv_wall').setOrigin(0).setDisplaySize(s + 12, s + 12));
     wall.add(T(this, x + w - s * 0.32, y + h - s * 0.3, '다이얼\nR → L → R', Math.max(15, s * 0.11), '#f2f5f9', { weight: '900', align: 'center', lineSpacing: 2 }).setOrigin(0.5).setAngle(-8).setShadow(0, 0, '#000', 4, true, true));
     const poster = this.add.container(0, 0);
     const frameG = this.add.graphics(); frameG.fillStyle(0xe9e4d6, 1); frameG.fillRect(x - 10, y - 10, w + 20, h + 20); poster.add(frameG);
     this.drawPoster(poster, x, y, w);
+    poster.add(this.add.nineslice(x + w / 2, y + h / 2, 'inv_poster_frame', undefined, w + 36, h + 36, 30, 30, 30, 30));   // aluminium snap frame
     // the loose corner: a mask hides the poster's corner once peeled
     const cornerMaskG = this.make.graphics({}, false);
     const fold = this.add.graphics();
@@ -115,20 +116,22 @@ export class InvClavicleScene extends InvestBase {
     const ch = cBot - cTop;
     const sw = Math.min(this.pw * 0.5, ch * 1.05), sx = this.px + 30, sy = cTop;
     // safe body + door
-    const body = this.add.graphics(); body.fillStyle(0x0b0f16, 1); body.fillRoundedRect(sx, sy, sw, ch, 14);
+    // safe: interior (revealed when the door swings open) behind the door plate; both keep their aspect
+    const fitS = Math.min(sw / 520, ch / 500); const dW = 520 * fitS, dH = 500 * fitS; void dW; void dH;
+    this.add.image(sx + sw / 2, sy + ch / 2, 'inv_safe_inside').setDisplaySize(sw, ch);
     const inside = this.add.image(sx + sw / 2, sy + ch / 2, 'bone_bone_clavicle'); inside.setScale(Math.min((sw - 80) / inside.width, (ch - 80) / inside.height) * 0.9).setAngle(-8);
     const door = this.add.container(sx, sy);
-    const dg = this.add.graphics(); dg.fillStyle(0x3a4352, 1); dg.fillRoundedRect(0, 0, sw, ch, 14); dg.lineStyle(4, 0x1a2029, 1); dg.strokeRoundedRect(0, 0, sw, ch, 14);
-    dg.lineStyle(2, 0x5a6577, 1); dg.strokeRoundedRect(14, 14, sw - 28, ch - 28, 10); door.add(dg);
+    const dg = this.add.image(0, 0, 'inv_safe_door').setOrigin(0).setDisplaySize(sw, ch);
+    door.add(dg);
     const D = Math.min(sw * 0.62, ch * 0.62);
     const dcx = sw * 0.44, dcy = ch * 0.5;
     const dial = this.add.image(dcx, dcy, 'inv_dial').setDisplaySize(D, D); door.add(dial);
     const ptr = this.add.graphics(); ptr.fillStyle(0xff4d5e, 1); ptr.fillTriangle(dcx - 12, dcy - D / 2 - 18, dcx + 12, dcy - D / 2 - 18, dcx, dcy - D / 2 + 4); door.add(ptr);
     // handle (drag down)
     const hx = sw - 46, hTop = ch * 0.3, hBot = ch * 0.7;
-    const hgBase = this.add.graphics(); hgBase.fillStyle(0x1a2029, 1); hgBase.fillRoundedRect(hx - 12, hTop, 24, hBot - hTop, 12); door.add(hgBase);
+    const hgBase = this.add.graphics(); hgBase.fillStyle(0x0b0d10, 0.85); hgBase.fillRoundedRect(hx - 10, hTop, 20, hBot - hTop, 10); door.add(hgBase);
     const handle = this.add.container(sx + hx, sy + hTop + 24).setDepth(10);
-    const hg = this.add.graphics(); hg.fillStyle(0xc9a64b, 1); hg.fillRoundedRect(-22, -24, 44, 48, 10); hg.lineStyle(3, 0x4a3608, 1); hg.strokeRoundedRect(-22, -24, 44, 48, 10); handle.add(hg);
+    handle.add(this.add.image(0, 0, 'inv_handle_brass').setDisplaySize(54, 54));
     handle.setSize(70, 70).setInteractive({ useHandCursor: true, draggable: true });
     door.add(T(this, hx, hBot + 20, '손잡이 ▼', 15, '#ffe0a0', { weight: '700' }).setOrigin(0.5));
     // ---- dial state ----
@@ -145,6 +148,8 @@ export class InvClavicleScene extends InvestBase {
       slots.setText(parts.join('   ·   '));
     };
     let lastN = 0;
+    // a small flash at the pointer on every number: you feel each detent
+    const detent = this.add.image(sx + dcx, sy + dcy - D / 2 + 2, 'light').setTint(0xffd0a0).setBlendMode(Phaser.BlendModes.ADD).setScale(0.12).setAlpha(0).setDepth(6);
     const move = (d: number) => {
       if (Math.abs(d) < 1e-6) return;
       theta += d; dial.rotation = theta;
@@ -152,7 +157,7 @@ export class InvClavicleScene extends InvestBase {
       if (dir === 0) { dir = s; ext = theta; }
       else if (s === dir) ext = theta;
       else if (Math.abs(theta - ext) >= tick * 0.5) { entries.push({ d: dir > 0 ? 'R' : 'L', n: num(ext) }); if (entries.length > 6) entries.shift(); dir = s; ext = theta; }
-      const n = num(theta); if (n !== lastN) { lastN = n; Audio.play('click'); }
+      const n = num(theta); if (n !== lastN) { lastN = n; Audio.play('click'); detent.setAlpha(1); this.tweens.add({ targets: detent, alpha: 0, duration: 110 }); }
       big.setText(String(n)); showSlots();
     };
     showSlots();
@@ -165,7 +170,7 @@ export class InvClavicleScene extends InvestBase {
     const step = (n: number) => { const sgn = Math.sign(n); this.time.addEvent({ delay: 45, repeat: Math.abs(n) - 1, callback: () => move(sgn * tick) }); };
     // ---- brass plate + controls (right) ----
     const rx = sx + sw + 24, rw = this.px + this.pw - 30 - rx;
-    const pg = this.add.graphics(); pg.fillStyle(0xc9a64b, 1); pg.fillRoundedRect(rx, cTop, rw, Math.min(ch * 0.5, 250), 10); pg.lineStyle(3, 0x6a5418, 1); pg.strokeRoundedRect(rx, cTop, rw, Math.min(ch * 0.5, 250), 10);
+    const pH = Math.min(ch * 0.5, 250); this.add.nineslice(rx + rw / 2, cTop + pH / 2, 'inv_brass', undefined, rw, pH, 24, 24, 24, 24);
     const plate = SAFE_ORDER.map((j, i) => `${i + 1}. ${SAFE_DIRS[i] === 'R' ? '오른쪽' : '왼쪽'} — ${JOINT_RIDDLE[j]}${this.adv ? '' : `\n    (${JOINT_KO[j]})`}`).join('\n');
     const pt = T(this, rx + 16, cTop + 14, `S-04 보관 금고\n${plate}`, 16, '#2a1d05', { ink: true, weight: '800', wordWrap: { width: rw - 30 }, lineSpacing: 4 });
     for (const sz of [15, 14]) { if (pt.height <= Math.min(ch * 0.5, 250) - 20) break; pt.setFontSize(sz).setLineSpacing(2); }

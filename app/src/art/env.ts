@@ -13,7 +13,11 @@ export function rng(seed: number) { let s = seed >>> 0 || 1; return () => { s = 
 export const USER_ART = new Set<string>();
 const TILE_KEYS = new Set(['floor_lab', 'floor_grate', 'floor_tile', 'wall_face', 'wall_top', 'wall_top_v']);
 
+/** optional key filter for paint(): lets boot skip the investigation layers (loaded per view as rendered images) */
+export let PAINT_FILTER: ((key: string) => boolean) | null = null;
+export function setPaintFilter(f: ((key: string) => boolean) | null) { PAINT_FILTER = f; }
 export function paint(scene: Phaser.Scene, key: string, w: number, h: number, fn: (c: Ctx, w: number, h: number) => void) {
+  if (PAINT_FILTER && !PAINT_FILTER(key)) return;
   if (scene.textures.exists(key)) {
     if (USER_ART.has(key)) fitUserArt(scene, key, w, h);
     return;

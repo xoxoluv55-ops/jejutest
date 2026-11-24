@@ -126,6 +126,15 @@ export function makeEscapeArt(scene: Phaser.Scene) {
     c.fillStyle = rg(c, cx - 20, cy - 20, 4, 90, [[0, '#cfd6e0'], [1, '#5a6372']]); c.beginPath(); c.arc(cx, cy, 82, 0, Math.PI * 2); c.fill();
     c.fillStyle = '#3a4252'; for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; c.beginPath(); c.arc(cx + Math.cos(a) * 70, cy + Math.sin(a) * 70, 7, 0, Math.PI * 2); c.fill(); }
   });
+  // ---- frost film over the cryo capsule window (soft ice crystals, alpha) ----
+  paint(scene, 'inv_frost', 300, 480, (c, w, h) => {
+    const r = rng(17);
+    c.fillStyle = 'rgba(220,240,255,0.42)'; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 260; i++) { const x = r() * w, y = r() * h, rad = 6 + r() * 34; const g = rg(c, x, y, 0, rad, [[0, `rgba(255,255,255,${0.10 + r() * 0.2})`], [1, 'rgba(255,255,255,0)']]); c.fillStyle = g; c.beginPath(); c.arc(x, y, rad, 0, Math.PI * 2); c.fill(); }
+    c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 0.8;
+    for (let i = 0; i < 70; i++) { let x = r() * w, y = r() * h; c.beginPath(); c.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (r() - 0.5) * 30; y += (r() - 0.5) * 30; c.lineTo(x, y); } c.stroke(); }
+    const e = rg(c, w / 2, h / 2, Math.min(w, h) * 0.2, Math.max(w, h) * 0.7, [[0, 'rgba(255,255,255,0)'], [1, 'rgba(240,250,255,0.5)']]); c.fillStyle = e; c.fillRect(0, 0, w, h);
+  });
   // ---- world versions (origin bottom-centre, 3/4 top-down) ----
   paint(scene, 'w_clip', 50, 64, (c, w, h) => {
     c.fillStyle = '#6b4f33'; c.fillRect(4, 6, w - 8, h - 8); c.fillStyle = '#f4efe2'; c.fillRect(9, 14, w - 18, h - 22);

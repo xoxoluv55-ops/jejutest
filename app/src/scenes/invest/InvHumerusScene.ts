@@ -20,6 +20,7 @@ export class InvHumerusScene extends InvestBase {
   clueIds = ['cryolog'];
   vals: Record<CryoZone, number> = { head: CRYO_MIN, shaft: CRYO_MIN, condyle: CRYO_MIN };
   thawed = false;
+  bezel?: Phaser.GameObjects.NineSlice;
 
   build(kind: string) {
     this.thawed = false;
@@ -36,7 +37,7 @@ export class InvHumerusScene extends InvestBase {
     const bx = this.px + 30 + (this.pw * 0.62 - 620 * k) / 2, by = cTop + (cBot - cTop - 760 * k) / 2;
     // paper area: the clipboard sheet on tall screens; a full-height landscape sheet on short (phone) screens
     const paper = cp ? { x: this.px + 20, y: cTop, w: this.pw * 0.64 - 20, h: cBot - cTop } : { x: bx + 28 * k, y: by + 60 * k, w: 552 * k, h: 660 * k };
-    if (cp) { const pg = this.add.graphics(); pg.fillStyle(0x6b4f33, 1); pg.fillRoundedRect(paper.x - 6, paper.y - 6, paper.w + 12, paper.h + 12, 8); pg.fillStyle(0xf6f2e6, 1); pg.fillRect(paper.x, paper.y, paper.w, paper.h); }
+    if (cp) { const pg = this.add.graphics(); pg.fillStyle(0x6b4f33, 1); pg.fillRoundedRect(paper.x - 6, paper.y - 6, paper.w + 12, paper.h + 12, 8); this.add.image(paper.x, paper.y, 'inv_paper').setOrigin(0).setDisplaySize(paper.w, paper.h); }
     else this.add.image(bx, by, 'inv_clip').setOrigin(0).setScale(k * 0.5);
     const px = paper.x + (cp ? 14 : 16 * k), py = paper.y + (cp ? 8 : 20 * k), pw = paper.w - (cp ? 28 : 32 * k);
     const d = cryo();
@@ -63,7 +64,8 @@ export class InvHumerusScene extends InvestBase {
     sheet2.add(T(this, px, ty + (cp ? 32 : 44) + 4 * rowH + (cp ? 0 : 6), '단위 °C · 구역: 위팔뼈머리 / 위팔뼈몸통 / 위팔뼈관절융기', 14, '#4a5a78', { ink: true, weight: '700', fine: true }));
     // sheet 1: the memo on top, lifted by its corner
     const s1 = this.add.container(0, 0);
-    const sh = this.add.graphics(); sh.fillStyle(0xfbf6e4, 1); sh.fillRect(paper.x, paper.y, paper.w, paper.h); sh.lineStyle(1, 0xc9bf9f, 1); sh.strokeRect(paper.x, paper.y, paper.w, paper.h); s1.add(sh);
+    const sh = this.add.image(paper.x, paper.y, 'inv_paper').setOrigin(0).setDisplaySize(paper.w, paper.h); s1.add(sh);
+    const shd = this.add.graphics(); shd.fillStyle(0x000000, 0.18); shd.fillRect(paper.x + 4, paper.y + paper.h, paper.w, 5); s1.add(shd);
     s1.add(T(this, px, py + (cp ? 2 : 10), '유지보수 메모 — 한 박사', cp ? 18 : 20, '#3a2a14', { ink: true, weight: '800' }));
     s1.add(T(this, px, py + (cp ? 34 : 54), 'S-02 캡슐 해동 절차\n\n1. 아래 기록표에서 마지막으로 \'정상\' 판정을 받은 날을 찾는다.\n2. 그날의 세 구역 온도를 냉각 장치에 그대로 입력한다.\n3. 해동 레버를 내린다.\n\n설정이 하나라도 틀리면 캡슐은 열리지 않는다. (표본 보호)', 17, '#3a2a14', { ink: true, weight: '600', wordWrap: { width: pw - 10 }, lineSpacing: cp ? 2 : 6 }).setFontSize(cp ? 15 : 17));
     const cx = paper.x + paper.w, cy = paper.y + paper.h;
@@ -97,13 +99,12 @@ export class InvHumerusScene extends InvestBase {
     const ch = cBot - cTop;
     // ---- capsule window with the frozen specimen (real humerus model) ----
     const capW = Math.min(this.pw * 0.36, ch * 0.62), capX = this.px + 30, capY = cTop;
-    const g = this.add.graphics();
-    g.fillStyle(0x1a2232, 1); g.fillRoundedRect(capX, capY, capW, ch, 28); g.lineStyle(3, 0x5fd2ff, 0.6); g.strokeRoundedRect(capX, capY, capW, ch, 28);
-    g.fillStyle(0x07121c, 1); g.fillRoundedRect(capX + 16, capY + 16, capW - 32, ch - 32, 20);
+    // capsule: cold interior (nine-slice) -> frozen specimen -> frost -> steel bezel with the window (nine-slice)
+    this.add.nineslice(capX + capW / 2, capY + ch / 2, 'inv_capsule_back', undefined, capW, ch, 50, 50, 50, 50);
     const bone = this.add.image(capX + capW / 2, capY + ch / 2, 'bone_bone_humerus');
     const bs = Math.min((capW - 60) / bone.width, (ch - 60) / bone.height); bone.setScale(bs);
-    const frost = this.add.graphics(); frost.fillStyle(0xdff4ff, 0.5); frost.fillRoundedRect(capX + 16, capY + 16, capW - 32, ch - 32, 20);
-    const rr = Phaser.Math.RND; for (let i = 0; i < 90; i++) { frost.fillStyle(0xffffff, 0.12 + rr.frac() * 0.25); frost.fillCircle(capX + 20 + rr.frac() * (capW - 40), capY + 20 + rr.frac() * (ch - 40), 2 + rr.frac() * 10); }
+    const frost = this.add.image(capX + capW / 2, capY + ch / 2, 'inv_frost').setDisplaySize(capW - 40, ch - 40);
+    this.bezel = this.add.nineslice(capX + capW / 2, capY + ch / 2, 'inv_capsule', undefined, capW, ch, 70, 70, 70, 70);
     const P = (name: string): [number, number] => { const p = bonePoint('humerus', name) ?? [bone.width / 2, bone.height / 2]; return [bone.x + (p[0] - bone.width / 2) * bs, bone.y + (p[1] - bone.height / 2) * bs]; };
     const le = P('lateralEpicondyle'), me = P('medialEpicondyle');
     const zonePt: Record<CryoZone, [number, number]> = { head: P('head'), shaft: P('shaft'), condyle: [(le[0] + me[0]) / 2, (le[1] + me[1]) / 2 - 10] };
@@ -129,11 +130,11 @@ export class InvHumerusScene extends InvestBase {
       if (!this.adv) T(this, cx, cTop + 46, CRYO_DESC[zone].split(' (')[0], 13, '#9fb3d1', { weight: '600', fine: true, wordWrap: { width: colW - 8 }, align: 'center' }).setOrigin(0.5, 0).setMaxLines(2).setDepth(6);
       // track with tick marks
       const tg = this.add.graphics();
-      tg.fillStyle(0x0b1622, 1); tg.fillRoundedRect(cx - 9, trackTop - 8, 18, trackBot - trackTop + 16, 9);
-      tg.lineStyle(2, col, 0.5); tg.strokeRoundedRect(cx - 9, trackTop - 8, 18, trackBot - trackTop + 16, 9);
+      this.add.nineslice(cx, (trackTop + trackBot) / 2, 'inv_track', undefined, 34, trackBot - trackTop + 30, 16, 16, 20, 20);
+      tg.fillStyle(col, 0.9); tg.fillRect(cx - 17, trackTop - 22, 34, 4);
       for (let s = 0; s <= steps; s++) { const y = trackTop + s * (trackBot - trackTop) / steps; tg.lineStyle(2, 0x5a6a86, 1); tg.lineBetween(cx - 22, y, cx - 13, y); if (s % 3 === 0) T(this, cx - 26, y, `${CRYO_MAX - s * CRYO_STEP}`, 13, '#7f93b5', { fine: true }).setOrigin(1, 0.5); }
       const knob = this.add.container(cx, yOf(this.vals[zone]));
-      const kg = this.add.graphics(); kg.fillStyle(col, 1); kg.fillRoundedRect(-30, -16, 60, 32, 10); kg.lineStyle(3, 0x0b1018, 1); kg.strokeRoundedRect(-30, -16, 60, 32, 10); knob.add(kg);
+      knob.add(this.add.image(0, 0, 'inv_knob').setDisplaySize(68, 38).setTint(col));
       knob.setSize(80, 50).setInteractive({ useHandCursor: true, draggable: true });
       const ro = T(this, cx, trackBot + 28, '', 22, '#e8f6ff', { weight: '900', display: true }).setOrigin(0.5); readouts[zone] = ro;
       const set = (v: number) => {
@@ -150,11 +151,11 @@ export class InvHumerusScene extends InvestBase {
     });
     // ---- thaw lever (drag down) ----
     const lx = this.px + this.pw - 30 - leverW / 2, lTop = cTop + 60, lBot = cBot - 40;
-    const lg = this.add.graphics(); lg.fillStyle(0x0b1622, 1); lg.fillRoundedRect(lx - 14, lTop, 28, lBot - lTop, 14); lg.lineStyle(2, C.red, 0.6); lg.strokeRoundedRect(lx - 14, lTop, 28, lBot - lTop, 14);
+    this.add.nineslice(lx, (lTop + lBot) / 2, 'inv_track', undefined, 36, lBot - lTop, 16, 16, 20, 20);
     T(this, lx, cTop + 22, '해동 레버', 17, '#ff9aa8', { weight: '800' }).setOrigin(0.5);
     T(this, lx, lBot + 22, '아래로 ▼', 15, '#ff9aa8', { weight: '700' }).setOrigin(0.5);
     const handle = this.add.container(lx, lTop + 30);
-    const hg = this.add.graphics(); hg.fillStyle(0xd84a5a, 1); hg.fillRoundedRect(-leverW / 2 + 6, -22, leverW - 12, 44, 14); hg.lineStyle(3, 0x3a0f14, 1); hg.strokeRoundedRect(-leverW / 2 + 6, -22, leverW - 12, 44, 14); handle.add(hg);
+    handle.add(this.add.image(0, 0, 'inv_lever_red').setDisplaySize(leverW - 8, 48));
     handle.setSize(leverW, 60).setInteractive({ useHandCursor: true, draggable: true });
     const springBack = () => this.tweens.add({ targets: handle, y: lTop + 30, duration: 300, ease: 'Back.out' });
     let pulled = false;
@@ -169,14 +170,17 @@ export class InvHumerusScene extends InvestBase {
       : '세 구역의 온도를 알아야 합니다. 보관동 문가의 기록지를 먼저 확인하세요.', 'info');
   }
 
-  pull(bone: Phaser.GameObjects.Image, frost: Phaser.GameObjects.Graphics, springBack: () => void) {
+  pull(bone: Phaser.GameObjects.Image, frost: Phaser.GameObjects.Image, springBack: () => void) {
     const d = cryo(), want = d.rows[d.answer].t;
     const wrong = (Object.keys(want) as CryoZone[]).filter(z => this.vals[z] !== want[z]);
     Audio.play('hold');
     if (!wrong.length) {
       this.thawed = true; Audio.play('unlock');
       this.setFeedback('해동 시작… 서리가 걷히고 캡슐 잠금이 풀렸다. 표본을 눌러 꺼내세요.', 'ok');
-      this.tweens.add({ targets: frost, alpha: 0, duration: 1600 });
+      this.tweens.add({ targets: frost, alpha: 0, duration: 900 });
+      // the capsule lid lifts and the specimen comes forward
+      if (this.bezel) { const hb = this.bezel; this.tweens.add({ targets: hb, y: hb.y - hb.height * 0.82, duration: 650, delay: 500, ease: 'Cubic.inOut', onStart: () => Audio.play('door') }); }
+      this.tweens.add({ targets: bone, scale: bone.scale * 1.06, duration: 500, delay: 900, ease: 'Sine.out' });
       const glow = this.add.image(bone.x, bone.y, 'light').setTint(0x9fe6ff).setBlendMode(Phaser.BlendModes.ADD).setScale(1.4).setAlpha(0);
       this.tweens.add({ targets: glow, alpha: 0.5, duration: 900, yoyo: true, repeat: -1 });
       this.time.delayedCall(900, () => {

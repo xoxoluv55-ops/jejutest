@@ -101,7 +101,7 @@ export class InvUlnaScene extends InvestBase {
     const ch = cBot - cTop;
     const g = this.add.graphics();
     const bx = this.px + 30, bw = this.pw - 60;
-    g.fillStyle(0x1b2230, 1); g.fillRoundedRect(bx, cTop, bw, ch, 14); g.lineStyle(3, 0x3a4352, 1); g.strokeRoundedRect(bx, cTop, bw, ch, 14);
+    this.add.nineslice(bx + bw / 2, cTop + ch / 2, 'inv_jbox', undefined, bw, ch, 48, 48, 48, 48);   // steel enclosure
     // ---- schematic plate: the real ulna model with four terminals at its landmarks ----
     const plateW = Math.min(bw * 0.34, ch * 0.55), plateX = bx + bw * 0.36 - plateW / 2;
     g.fillStyle(0x0b1420, 1); g.fillRoundedRect(plateX, cTop + 14, plateW, ch - 28, 10); g.lineStyle(2, 0x4fd8ff, 0.4); g.strokeRoundedRect(plateX, cTop + 14, plateW, ch - 28, 10);
@@ -117,21 +117,21 @@ export class InvUlnaScene extends InvestBase {
       const lm = UP(id), p = { x: lm.x + OFF[id][0], y: lm.y + OFF[id][1] };
       posts[id] = p;
       pg.lineStyle(3, 0xc9a64b, 1); pg.lineBetween(lm.x, lm.y, p.x, p.y); pg.fillStyle(0xc9a64b, 1); pg.fillCircle(lm.x, lm.y, 4);
-      pg.fillStyle(0x2a2f38, 1); pg.fillCircle(p.x, p.y, 15); pg.lineStyle(4, 0xe0c070, 1); pg.strokeCircle(p.x, p.y, 15); pg.fillStyle(0xe0c070, 1); pg.fillCircle(p.x, p.y, 5);
+      this.add.image(p.x, p.y, 'inv_post').setDisplaySize(36, 36).setDepth(5);   // brass binding post
     }
     // POWER (top-left) and LOCK (bottom-right) terminals
     const power = { x: bx + 70, y: cTop + 70 }, lock = { x: plateX + plateW + 70, y: cBot - 60 };
     (this as unknown as { __posts: unknown }).__posts = { ...posts, lock };   // read by the automated tests
     const tg = this.add.graphics().setDepth(4);
-    const term = (p: { x: number; y: number }, col: number, label: string) => { tg.fillStyle(col, 1); tg.fillRoundedRect(p.x - 26, p.y - 18, 52, 36, 8); tg.lineStyle(3, 0x0b1018, 1); tg.strokeRoundedRect(p.x - 26, p.y - 18, 52, 36, 8); T(this, p.x, p.y + 32, label, 16, '#ffffff', { weight: '800' }).setOrigin(0.5); };
-    term(power, 0xd84a5a, '전원'); term(lock, 0x3dffa2, '잠금장치');
+    const term = (p: { x: number; y: number }, key: string, label: string) => { this.add.image(p.x, p.y, key).setDisplaySize(60, 45).setDepth(4); T(this, p.x, p.y + 34, label, 16, '#ffffff', { weight: '800' }).setOrigin(0.5); };
+    term(power, 'inv_term_red', '전원'); term(lock, 'inv_term_green', '잠금장치'); void tg;
     // ---- jumper wire ----
     const route = ulnaRoute();
     const laid: { x: number; y: number }[] = [power];
     let step = 0, wired = false;
     const wire = this.add.graphics().setDepth(6);
     const plug = this.add.container(power.x + 36, power.y).setDepth(8);
-    const plugG = this.add.graphics(); plugG.fillStyle(0xffd34d, 1); plugG.fillRoundedRect(-14, -14, 28, 28, 7); plugG.lineStyle(3, 0x3a2a05, 1); plugG.strokeRoundedRect(-14, -14, 28, 28, 7); plug.add(plugG);
+    plug.add(this.add.image(0, 0, 'inv_plug').setDisplaySize(40, 40));
     plug.setSize(70, 70).setInteractive({ useHandCursor: true, draggable: true });
     const drawWire = (end?: { x: number; y: number }) => {
       wire.clear();
@@ -171,7 +171,7 @@ export class InvUlnaScene extends InvestBase {
     });
     // ---- fuse socket + inventory fuse ----
     const sock = { x: bx + bw - 230, y: cTop + 90 };
-    const sg = this.add.graphics(); sg.fillStyle(0x0b1018, 1); sg.fillRoundedRect(sock.x - 70, sock.y - 30, 140, 60, 8); sg.lineStyle(2, 0x7f8a99, 1); sg.strokeRoundedRect(sock.x - 70, sock.y - 30, 140, 60, 8);
+    this.add.image(sock.x, sock.y, 'inv_socket').setDisplaySize(160, 72);
     T(this, sock.x, sock.y + 44, '퓨즈 소켓', 15, '#c3d3ee', { weight: '700' }).setOrigin(0.5);
     const fuseIn = () => { const f = this.add.image(sock.x, sock.y, 'inv_fuse').setScale(0.5 * 0.85); return f; };
     if (G.run.flags.ulnaFuse) fuseIn();
@@ -189,10 +189,10 @@ export class InvUlnaScene extends InvestBase {
     } else T(this, sock.x, cBot - 80, '소켓이 비어 있다.\n예비 퓨즈가 필요하다.', 15, '#ff9aa8', { weight: '700', align: 'center' }).setOrigin(0.5);
     // ---- breaker lever (drag up) ----
     const lx = bx + bw - 70, lTop = cTop + 150, lBot = cBot - 30;
-    const lgr = this.add.graphics(); lgr.fillStyle(0x0b1018, 1); lgr.fillRoundedRect(lx - 14, lTop, 28, lBot - lTop, 14); lgr.lineStyle(2, C.green, 0.6); lgr.strokeRoundedRect(lx - 14, lTop, 28, lBot - lTop, 14);
+    this.add.nineslice(lx, (lTop + lBot) / 2, 'inv_track', undefined, 36, lBot - lTop, 16, 16, 20, 20);
     T(this, lx, lTop - 20, '차단기 ▲', 16, C.greenS, { weight: '800' }).setOrigin(0.5);
     const handle = this.add.container(lx, lBot - 30).setDepth(8);
-    const hg = this.add.graphics(); hg.fillStyle(0x3dffa2, 1); hg.fillRoundedRect(-40, -20, 80, 40, 12); hg.lineStyle(3, 0x0b2a1a, 1); hg.strokeRoundedRect(-40, -20, 80, 40, 12); handle.add(hg);
+    handle.add(this.add.image(0, 0, 'inv_lever_green').setDisplaySize(90, 44));
     handle.setSize(100, 60).setInteractive({ useHandCursor: true, draggable: true });
     let thrown = false;
     handle.on('drag', (p: Phaser.Input.Pointer) => {

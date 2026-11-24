@@ -1,6 +1,7 @@
 import { makeStealthArt } from '../art/stealth';
 import { makeOfficeArt } from '../art/office';
 import { makeEscapeArt } from '../art/escape';
+import { setPaintFilter } from '../art/env';
 import Phaser from 'phaser';
 import { BaseScene } from './Base';
 import { View } from '../core/view';
@@ -60,7 +61,7 @@ export class BootScene extends BaseScene {
     this.status.setText('구조 데이터 렌더링…');
     try { await Promise.race([Promise.all([document.fonts.load('700 20px Orbitron'), document.fonts.load('900 20px Orbitron'), document.fonts.load('600 20px Rajdhani'), document.fonts.load('700 20px Rajdhani')]), new Promise(r => setTimeout(r, 2500))]); } catch { /* ignore */ }
     await this.nextFrame();
-    buildEnvironment(this); makeStealthArt(this); makeOfficeArt(this); makeEscapeArt(this); this.drawBar(0.82); await this.nextFrame();
+    buildEnvironment(this); makeStealthArt(this); setPaintFilter(k => !k.startsWith('inv_')); makeOfficeArt(this); makeEscapeArt(this); setPaintFilter(null); this.drawBar(0.82); await this.nextFrame();
     setBoneModel(this.cache.json.get('ch1_bones') ?? null);
     for (const id of Object.keys(BONES) as BoneId[]) { makeBoneTexture(this, id, 'bone'); makeBoneTexture(this, id, 'holo'); makeBoneTexture(this, id, 'ghost'); makeBoneLine(this, id); makePrimBoneTexture(this, id, 'bone'); }
     if (this.textures.exists('ch1_ctx') && !this.textures.exists('ctx_holo')) {
@@ -80,7 +81,8 @@ export class BootScene extends BaseScene {
     }
     for (const k of this.textures.getTextureKeys()) { const t = this.textures.get(k); t.setFilter(Phaser.Textures.FilterMode.LINEAR); }
     this.drawBar(1);
-    this.time.delayedCall(150, () => this.scene.start('Title'));
+    // start the title only if nothing else is running yet (a chapter started early must not get the title running behind it)
+    this.time.delayedCall(150, () => { if (this.scene.manager.getScenes(true).some(s => s.scene.key !== 'Boot')) this.scene.stop(); else this.scene.start('Title'); });
   }
   nextFrame() { return new Promise<void>(r => requestAnimationFrame(() => r())); }
   layout() { /* boot: ignore */ }
