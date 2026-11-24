@@ -207,7 +207,7 @@ export class Guard {
 export interface LaserCfg {
   a: V2; b: V2;                       // base segment
   kind: 'blink' | 'sweepX' | 'sweepY';
-  period: number; on?: number;        // blink: seconds on per period
+  period: number; on?: number;        // seconds on per period (blink always; sweeps too when set = they go dark for the rest)
   amp?: number; phase?: number;
   group?: string;
 }
@@ -231,8 +231,8 @@ export class Laser {
     return [{ x: c.a.x + ox, y: c.a.y + oy }, { x: c.b.x + ox, y: c.b.y + oy }];
   }
   phase() { const c = this.cfg; return ((this.t % c.period) + c.period) % c.period; }
-  on() { if (!this.enabled) return false; if (this.cfg.kind !== 'blink') return true; return this.phase() < (this.cfg.on ?? 1); }
-  warning() { return this.enabled && this.cfg.kind === 'blink' && this.phase() > this.cfg.period - 0.6; }
+  on() { if (!this.enabled) return false; if (this.cfg.kind !== 'blink' && this.cfg.on === undefined) return true; return this.phase() < (this.cfg.on ?? 1); }
+  warning() { return this.enabled && (this.cfg.kind === 'blink' || this.cfg.on !== undefined) && this.phase() > this.cfg.period - 0.6; }
   update(dt: number, near: boolean) {
     this.t += dt * this.mul;
     const [a, b] = this.seg(); const g = this.g; g.clear();

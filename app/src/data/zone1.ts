@@ -59,9 +59,10 @@ export const FINAL_GUARD = { name: 'SEC-11', path: [{ x: 1000, y: 1160 }, { x: 1
 
 export const GALLERY_LASERS: LaserCfg[] = [
   { kind: 'blink', a: { x: 1830, y: 1852 }, b: { x: 1830, y: 2296 }, period: 3.4, on: 1.5, phase: 0.4, group: 'gallery' },
-  { kind: 'sweepY', a: { x: 1900, y: 2075 }, b: { x: 2066, y: 2075 }, amp: 190, period: 3.4, group: 'gallery' },
-  { kind: 'sweepX', a: { x: 2250, y: 1852 }, b: { x: 2250, y: 2296 }, amp: 60, period: 2.8, group: 'gallery' },
-  { kind: 'sweepX', a: { x: 2390, y: 1852 }, b: { x: 2390, y: 2296 }, amp: 60, period: 2.8, phase: 1.4, group: 'gallery' },
+  // v0.9.1: sweeping beams also go dark for part of each cycle (a window to cross), with the yellow pre-warning
+  { kind: 'sweepY', a: { x: 1950, y: 2075 }, b: { x: 2110, y: 2075 }, amp: 190, period: 3.4, on: 1.8, group: 'gallery' },   // ~100 px safe gaps on both sides
+  { kind: 'sweepX', a: { x: 2250, y: 1852 }, b: { x: 2250, y: 2296 }, amp: 60, period: 2.8, on: 1.3, group: 'gallery' },
+  { kind: 'sweepX', a: { x: 2390, y: 1852 }, b: { x: 2390, y: 2296 }, amp: 60, period: 2.8, on: 1.3, phase: 1.4, group: 'gallery' },
   { kind: 'blink', a: { x: 2460, y: 1960 }, b: { x: 2636, y: 1960 }, period: 2.8, on: 1.2, group: 'gallery' },
   { kind: 'blink', a: { x: 2460, y: 2190 }, b: { x: 2636, y: 2190 }, period: 2.8, on: 1.2, phase: 1.4, group: 'gallery' },
 ];

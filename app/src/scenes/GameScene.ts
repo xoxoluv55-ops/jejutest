@@ -445,6 +445,7 @@ export class GameScene extends Phaser.Scene {
     for (const c of GALLERY_LASERS) { const l = new Laser(this, c); l.mul = mul; l.hitR = D.laserHit; this.lasers.push(l); }
     for (const c of ALARM_LASERS) { const l = new Laser(this, c); l.hitR = D.laserHit; l.enabled = false; this.lasers.push(l); }
     for (const c of FINAL_LASERS) { const l = new Laser(this, c); l.hitR = D.laserHit; l.enabled = false; this.lasers.push(l); }
+    if (G.run.flags.ulnaCage) for (const c of [GALLERY_LASERS[3], GALLERY_LASERS[4], GALLERY_LASERS[5]]) { const l = this.lasers.find(q => q.cfg === c); if (l) l.enabled = false; }
     if (env) { this.prop('x_barrier', 2580, 2300, {}); this.prop('x_lamp', 1900, 1830, { depth: 1845 }); }
     T(this, 2190, 1880, 'LASER GRID · L-06', 12, '#ff9ab0', { display: true }).setOrigin(0.5).setDepth(5200).setAlpha(0.85);
     // pedestal under the ulna (alarm bait)
@@ -507,8 +508,8 @@ export class GameScene extends Phaser.Scene {
     // ---- S-05 ulna: toolbox in J-03, cage + panel in L-06 ----
     this.prop('p_techbox', 990, 2280, { col: [60, 26] });
     spot('inv_toolbox', 'toolbox', 990, 2235, 80, () => '공구함 조사', () => !G.run.flags.ulnaCage && !(has('fuse') && has('manual')), [990, 2200]);
-    this.prop('p_breaker', 2440, 1850, { depth: 1850 });
-    spot('inv_panel', 'panel', 2440, 1895, 72, () => G.run.flags.ulnaCage ? '케이지 제어반 (전원 복구됨)' : '케이지 제어반 조사', () => !G.run.flags.ulnaCage && has('fuse') && has('manual'), [2440, 1790]);
+    this.prop('p_breaker', 2490, 1850, { depth: 1850 });   // outside the 2390 sweep band (2330..2450)
+    spot('inv_panel', 'panel', 2490, 1895, 72, () => G.run.flags.ulnaCage ? '케이지 제어반 (전원 복구됨)' : '케이지 제어반 조사', () => !G.run.flags.ulnaCage && has('fuse') && has('manual'), [2490, 1790]);
     if (!G.run.flags.ulnaCage) {
       const g = this.add.graphics().setDepth(2125);
       g.lineStyle(3, 0x9aa6b8, 0.95);
@@ -558,9 +559,11 @@ export class GameScene extends Phaser.Scene {
       (c.block.body as Phaser.Physics.Arcade.StaticBody).enable = false;
       this.blockers = this.blockers.filter(r => !(r.x === 2500 && r.y === 1995));
       const it = this.inter.find(i => i.id === 'ulna_cage'); if (it) { it.gone = true; it.marker?.setVisible(false); }
+      // the cage power is rerouted from the corridor security loop: the beams around the cage go dark for good
+      for (const cfg of [GALLERY_LASERS[3], GALLERY_LASERS[4], GALLERY_LASERS[5]]) { const l = this.lasers.find(q => q.cfg === cfg); if (l) l.enabled = false; }
       this.time.delayedCall(800, () => {
         this.addPickup('ulna', 2560, 2075);
-        this.ai('케이지 개방. 표본 S-05(자뼈)를 집으면 보안 경보가 울릴 수 있습니다 — 서쪽 출구를 확인해 두십시오.', 'warn', 4200);
+        this.ai('케이지 개방 · 전원 우회로 케이지 주변 레이저 3개 정지. 자뼈를 집으면 보안 경보가 울립니다 — 서쪽 출구를 확인해 두십시오.', 'warn', 4600);
       });
     }
     Bus.emit('mission');
