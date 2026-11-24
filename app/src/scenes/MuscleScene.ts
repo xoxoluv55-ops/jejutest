@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Audio, MusicMode } from '../core/audio';
-import { Save, unlock } from '../core/save';
+import { unlock } from '../core/save';
 import { G, Bus } from '../game/state';
 import { MAP2 } from '../data/map2';
 import { MUSCLES, MuscleId, LINK_BASIC, LINK_ADV } from '../data/muscles';
@@ -20,6 +20,11 @@ const CORE_SPOTS: Record<string, { x: number; y: number; hidden?: boolean; via?:
 };
 
 const OVERLOAD_TIME = 75;
+/** v0.10: where each core's device is (mission list) */
+const CORE_WHERE: Partial<Record<MuscleId, string>> = {
+  biceps: 'M-02 보관함 (노트 단서)', deltoid: 'M-02 라이트박스 (M-01 차트)', brachialis: 'M-01 해부대 (메모)', triceps: 'M-04 팔꿈치 모형 (매뉴얼)',
+  coracobrachialis: 'M-02 보관함 안쪽 서랍', brachioradialis: 'M-04 팔꿈치 모형 2단계',
+};
 
 /**
  * CHAPTER 2 — 근육 연결실 (MUSCLE LINK LAB).
@@ -165,7 +170,7 @@ export class MuscleScene extends GameScene {
       label: () => G.run.flags.linked ? '근육 연결 콘솔 (복구 완료)' : '근육 연결 콘솔 · 이는곳과 닿는곳',
       locked: () => G.run.flags.linked ? '이미 연결을 복구했습니다.'
         : !G.run.flags.atlas ? '근육 지도 데이터가 없습니다. 먼저 근육 표본실(M-02)에서 근육 지도를 복원하세요.'
-        : G.run.items.length < this.needed.length ? `근육 데이터 코어가 부족합니다 (${G.run.items.length}/${this.needed.length}). 시설을 탐색하고 SCAN을 사용하세요.` : null,
+        : G.run.items.length < this.needed.length ? `근육 데이터 코어가 부족합니다 (${G.run.items.length}/${this.needed.length}). 연구실 곳곳의 장치를 조사하세요.` : null,
       act: () => this.openPuzzle('Link'),
     });
     // ---- M-02 specimen room ----
@@ -222,20 +227,9 @@ export class MuscleScene extends GameScene {
     });
     // research logs
     const logs: [string, number, number, string][] = [['log_4', 560, 1000, '근육 연결실 운영 단말기'], ['log_5', 1470, 912, 'MERIDIAN 로그 단말기'], ['log_6', 1620, 2250, '자극 제어 매뉴얼']];
-    for (const [id, x, y, name] of logs) { this.prop('terminal', x, y, { col: [40, 20] }); this.addInter({ id, x, y, r: 85, icon: 'info', label: () => name, act: () => this.readLog(id) }); }
-    // data cores
-    for (const id of this.needed) {
-      if (G.run.items.includes(id)) continue;   // already recovered (resumed run)
-      const s = CORE_SPOTS[id];
-      if (s.via) {
-        this.addInter({ id: `${s.via}_${id}`, x: s.x, y: s.y + (s.via === 'locker' ? 20 : 40), r: 95, icon: 'hand',
-          label: () => s.via === 'locker' ? '표본 보관함 열기' : '파손된 캡슐 조사', act: () => this.openBox(id as MuscleId, s.via!) });
-        continue;
-      }
-      const c = this.coreSprite(id as MuscleId, s.x, s.y);
-      this.reveal[`core_${id}`] = c;
-      this.addInter({ id: `core_${id}`, x: s.x, y: s.y, r: 80, icon: 'hand', label: () => '근육 데이터 코어 회수', act: () => this.pickCore(id as MuscleId) });
-    }
+    for (const [id, x, y, name] of logs) { this.prop('terminal', x, y, { col: [40, 20] }); if (id === 'log_6') continue; this.addInter({ id, x, y, r: 85, icon: 'info', label: () => name, act: () => this.readLog(id) }); }
+    // v0.10: every data core is behind an escape-room device (buildEscape2)
+    this.buildEscape2();
     // hazards: permanent ones in M-04/M-02 and overload-only arcs across the hub
     this.addHazard('steam', 1150, 2170, 66, 3.6, 1.1, 1.1);
     this.addHazard('spark', 1360, 2200, 62, 2.6, 0.7, 0.4);
@@ -258,6 +252,41 @@ export class MuscleScene extends GameScene {
     this.tweens.add({ targets: glow, alpha: 0.25, duration: 900, yoyo: true, repeat: -1 });
     this.coresInWorld[id] = c;
     return c;
+  }
+
+  /** v0.10: clue objects + devices (InvMuscleScene); each core sits behind a device whose clue is in another room */
+  buildEscape2() {
+    const has = (c: string) => G.run.clues.includes(c), got = (m: MuscleId) => G.run.items.includes(m);
+    const adv = G.run.difficulty === 'adv';
+    const spot = (id: string, kind: string, x: number, y: number, r: number, label: () => string, todo: () => boolean, glint: [number, number]) => {
+      this.addInter({ id, x, y, r, icon: 'eye', label, act: () => this.openInvestigate(kind) });
+      this.escSpots.push({ x, y, todo });
+      const g = this.add.image(glint[0], glint[1], 'light').setTint(0xffd0e0).setBlendMode(Phaser.BlendModes.ADD).setScale(0.08).setAlpha(0).setDepth(5100);
+      this.tweens.add({ targets: g, alpha: 0.9, scale: 0.16, duration: 450, yoyo: true, repeat: -1, repeatDelay: 2200, delay: Math.random() * 1500 });
+    };
+    // M-02: lab notes (desk) -> biceps locker (+ coracobrachialis in advanced); deltoid light box
+    this.add.image(330, 1150, 'w_desk').setOrigin(0.5, 1).setScale(0.5).setDepth(1150); this.solid(330 - 80, 1150 - 42, 160, 42);
+    spot('inv2_notes', 'notes', 330, 1175, 90, () => '해부 실습 노트 조사', () => !got('biceps') && !has('m_notes'), [300, 1090]);
+    const lockerTodo = () => (!got('biceps') || (adv && !got('coracobrachialis')));
+    spot('inv2_locker', 'locker2', 640, 1050, 85, () => lockerTodo() ? '표본 보관함 S-B2 조사' : '표본 보관함 (비어 있음)', () => lockerTodo() && has('m_notes'), [640, 930]);
+    this.prop('xray_box', 470, 1430, { col: [90, 26] });
+    spot('inv2_light', 'lightbox', 470, 1440, 85, () => got('deltoid') ? '라이트박스 (비어 있음)' : '표본 라이트박스 S-D1 조사', () => !got('deltoid') && has('m_chart'), [470, 1340]);
+    // M-01 hub: movement chart (wall), memo (trolley), dissection table
+    this.add.image(1000, 792, 'w_poster').setOrigin(0.5, 1).setScale(0.62).setDepth(800);
+    spot('inv2_chart', 'chart', 1000, 850, 80, () => '어깨 움직임 차트 조사', () => !got('deltoid') && !has('m_chart'), [1020, 750]);
+    spot('inv2_memo', 'memo', 1560, 1490, 75, () => '트롤리 위 메모 조사', () => !got('brachialis') && !has('m_memo'), [1560, 1400]);
+    spot('inv2_dissect', 'dissect', 1700, 1340, 95, () => got('brachialis') ? '해부대 (숨은 칸 비어 있음)' : '해부대 조사', () => !got('brachialis') && has('m_memo'), [1700, 1240]);
+    // M-04: rig manual (terminal) -> elbow rig (+ brachioradialis in advanced)
+    spot('inv2_manual', 'manual2', 1620, 2250, 85, () => '팔꿈치 모형 정비 매뉴얼', () => !got('triceps') && !has('m_manual'), [1620, 2180]);
+    const rigTodo = () => (!got('triceps') || (adv && !got('brachioradialis')));
+    if (this.textures.exists('env') && this.textures.get('env').has('p_joint_rig')) this.prop('p_joint_rig', 1440, 2060, { col: [110, 30] }); else this.prop('joint_rig', 1440, 2060, { col: [110, 30] });
+    spot('inv2_rig', 'rig', 1440, 2095, 90, () => rigTodo() ? '팔꿈치 운동 모형 조사' : '팔꿈치 운동 모형 (비어 있음)', () => rigTodo() && has('m_manual'), [1440, 1960]);
+  }
+
+  /** a core taken in an investigation view */
+  onInvestigateFound(id: string) {
+    this.scene.resume(); this.scene.wake('HUD'); this.busy = false; this.player.frozen = false;
+    this.pickCore(id as MuscleId);
   }
 
   openBox(id: MuscleId, via: 'locker' | 'capsule') {
@@ -298,7 +327,7 @@ export class MuscleScene extends GameScene {
     const seq: [number, () => void][] = [
       [600, () => { Audio.play('glitch'); this.ai('하부 연구동 B2 도착. 근육 연결 시스템 오류 감지.', 'warn', 3200); }],
       [3800, () => this.ai('근육 연결 데이터 손상: 수축 신호가 관절까지 전달되지 않습니다.', 'ai', 3600)],
-      [7600, () => { this.ai(`근육 지도(M-02)를 복원하고, 데이터 코어 ${n}개를 회수해 연결 콘솔(M-01)에서 이는곳과 닿는곳을 재연결하십시오.`, 'ai', 5200); Audio.alarm(false); }],
+      [7600, () => { this.ai(`근육 지도(M-02)를 복원하고, 잠긴 장치 속 데이터 코어 ${n}개를 회수해 연결 콘솔(M-01)에서 이는곳과 닿는곳을 재연결하십시오. 반짝이는 물건은 조사할 수 있습니다.`, 'ai', 5600); Audio.alarm(false); }],
       [9400, () => {
         this.busy = false; this.player.frozen = false; G.run.flags.intro = true; Bus.emit('mission');
         this.toast('CHAPTER 2 · 근육 연결실', 'info');
@@ -312,7 +341,7 @@ export class MuscleScene extends GameScene {
     const f = G.run.flags, n = G.run.items.length, N = this.needed.length;
     const list: Mission[] = [
       { text: '근육 지도 판독 · M-02', done: !!f.atlas, active: !f.atlas, tag: 'LOCK 1' },
-      { text: `근육 데이터 코어 회수 (${n}/${N})`, done: n >= N, active: n < N },
+      ...this.needed.map(id => { const has = G.run.items.includes(id); return { text: has ? `${MUSCLES[id].ko} 코어 회수` : `${MUSCLES[id].ko} 코어 · ${CORE_WHERE[id]}`, done: has, active: !has }; }),
       { text: '이는곳·닿는곳 연결 · M-01', done: !!f.linked, active: !!f.atlas && n >= N && !f.linked, tag: 'LOCK 2' },
     ];
     if (f.overload || f.stabilized) list.push({ text: '자극 과부하 방전 · M-04', done: !!f.stabilized, active: !!f.overload && !f.stabilized });
@@ -326,11 +355,10 @@ export class MuscleScene extends GameScene {
     if (!f.atlas) return { x: 400, y: 1000 };
     if (G.run.items.length < this.needed.length) {
       let best: { x: number; y: number } | null = null, bd = 1e9;
-      for (const i of this.inter) {
-        if (i.gone || !(i.id.startsWith('core_') || i.id.startsWith('locker_') || i.id.startsWith('capsule_'))) continue;
-        if (i.hidden && !Save.settings.hints) continue;
-        const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, i.x, i.y);
-        if (d < bd) { bd = d; best = i; }
+      for (const e of this.escSpots) {
+        if (!e.todo()) continue;
+        const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y);
+        if (d < bd) { bd = d; best = e; }
       }
       return best;
     }

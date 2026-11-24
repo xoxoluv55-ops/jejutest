@@ -6,6 +6,7 @@ export const INV_SCENE: Record<string, string> = {
   bench: 'InvRadius', locker: 'InvRadius',
   toolbox: 'InvUlna', panel: 'InvUlna',
   poster: 'InvClavicle', safe: 'InvClavicle',
+  notes: 'InvMuscle', locker2: 'InvMuscle', chart: 'InvMuscle', lightbox: 'InvMuscle', memo: 'InvMuscle', dissect: 'InvMuscle', manual2: 'InvMuscle', rig: 'InvMuscle',
 };
 /** an investigable spot the guidance arrow may point at while it still has something to give */
 export interface EscSpot { x: number; y: number; todo: () => boolean; store?: boolean }

@@ -569,6 +569,30 @@ B.inv_poster_frame = () => {   // nine-slice aluminium snap frame (corners 30)
 };
 B.inv_wall = () => { const S = stage(256, 256, 0); S.scene.add(at(box(256, 256, 4, new THREE.MeshStandardMaterial({ map: tex(painted(111, '#4a5260', 512, 512, 0.8)), roughness: 0.95 }), 0), 0, 0, 0)); return S; };
 
+B.inv_key = () => {   // brass key, bow at the left, bit at the right (tag hole in the bow)
+  const S = stage(200, 70, 90, { kx: -300, ky: 1500, kz: 400 });
+  const g = new THREE.Group(); S.scene.add(g);
+  const bow = new THREE.Mesh(new THREE.TorusGeometry(22, 9, 20, 40), T.brass); bow.rotation.x = Math.PI / 2; bow.position.x = -62; g.add(bow);
+  const sh = cyl(6, 6, 120, T.brass, 24); sh.rotation.z = Math.PI / 2; sh.position.x = 28; g.add(sh);
+  g.add(at(box(14, 10, 26, T.brass, 2), 76, 0, 10)); g.add(at(box(10, 10, 18, T.brass, 2), 58, 0, 8)); g.add(at(box(8, 10, 14, T.brass, 2), 42, 0, 6));
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  const c = catcher(600, 300, 0.4); c.rotation.x = -Math.PI / 2; c.position.y = -10; S.scene.add(c);
+  S.fit(g, 4); return S;
+};
+B.inv_keyhole = () => {   // brass escutcheon with a key slot (seen from the front)
+  const S = stage(64, 64, 0, { kx: -300, ky: 500, kz: 900 });
+  S.scene.add(at(cyl(30, 30, 8, T.brass, 48).rotateX(Math.PI / 2), 0, 0, 0));
+  S.scene.add(at(cyl(24, 26, 4, T.steelDark, 48).rotateX(Math.PI / 2), 0, 0, 5));
+  S.scene.add(at(cyl(6, 6, 4, T.black, 24).rotateX(Math.PI / 2), 0, 6, 7));
+  S.scene.add(at(box(5, 16, 4, T.black, 1), 0, -4, 7));
+  return S;
+};
+B.inv_button = () => {   // big round push button (white cap, tinted in the game) in a chrome bezel
+  const S = stage(96, 96, 0, { kx: -300, ky: 500, kz: 900 });
+  S.scene.add(at(cyl(46, 46, 10, T.chrome, 48).rotateX(Math.PI / 2), 0, 0, 0));
+  S.scene.add(at(cyl(36, 38, 18, new THREE.MeshStandardMaterial({ color: 0xf2f4f8, roughness: 0.3 }), 48).rotateX(Math.PI / 2), 0, 0, 10));
+  return S;
+};
 window.renderJobs = async (names) => { mats(); const out = {}; for (const n of names) { if (!B[n]) { out[n] = null; continue; } const S = B[n](); out[n] = shot(S); } return out; };
 window.jobList = Object.keys(B);
 window.ready = true;

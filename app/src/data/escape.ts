@@ -100,6 +100,21 @@ export function posterNums(): Record<Joint, number> {
   return { sc: v[0], ac: v[1], gh: v[2], coracoid: v[3] };
 }
 
+// ---------------------------------------------------------------- CH2 (v0.10) muscle data cores
+export type Fibre = 'A' | 'M' | 'P';
+export const FIBRE_KO: Record<Fibre, string> = { A: '앞섬유', M: '중간섬유', P: '뒤섬유' };
+export const FIBRE_ORIGIN: Record<Fibre, string> = { A: '빗장뼈 가쪽 1/3', M: '봉우리', P: '어깨뼈가시' };
+export type Move = 'flex' | 'abd' | 'ext';
+export const MOVE_KO: Record<Move, string> = { flex: '굽힘', abd: '벌림', ext: '폄' };
+export const MOVE_DESC: Record<Move, string> = { flex: '팔을 앞으로 들기', abd: '팔을 옆으로 들기', ext: '팔을 뒤로 젖히기' };
+export const FIBRE_MOVE: Record<Fibre, Move> = { A: 'flex', M: 'abd', P: 'ext' };
+/** deltoid lightbox: the fibre order printed on its plate (4 presses, every fibre at least once) */
+export function deltSeq(): Fibre[] {
+  const c = G.run.codes;
+  if (!c.delt) { let v: Fibre[]; do v = [0, 1, 2, 3].map(() => (['A', 'M', 'P'] as Fibre[])[Phaser.Math.Between(0, 2)]); while (new Set(v).size < 3); c.delt = v.join(''); }
+  return c.delt.split('') as Fibre[];
+}
+
 // ---------------------------------------------------------------- notebook text for every clue
 /** one paragraph per clue id (null = not a text clue) */
 export function clueText(id: string): string | null {
@@ -126,6 +141,14 @@ export function clueText(id: string): string | null {
     case 'fuse': return '🔌 예비 퓨즈 (J-03 공구함에서 챙김)';
     case 'poster': return '🩻 J-03 해부도 포스터: 어깨 부위 관절마다 두 자리 번호 (사본은 금고·포스터 화면의 기록장에)';
     case 'poster_wall': return '🧱 포스터 뒤 벽 글씨: "금고 다이얼 — 오른쪽 → 왼쪽 → 오른쪽. 방향을 바꾸는 순간의 숫자가 입력된다."';
+    case 'm_notes': return a ? '📓 해부 실습 노트: "S-B2 보관함 = 위팔두갈래근. 긴갈래 열쇠는 관절위결절, 짧은갈래 열쇠는 부리돌기에. (부리위팔근 열쇠는 그 근육이 닿는 곳에)"'
+      : '📓 해부 실습 노트: "S-B2 보관함 = 위팔두갈래근(두 갈래). 긴갈래 열쇠 → 관절위결절(관절오목 바로 위의 작은 결절), 짧은갈래 열쇠 → 부리돌기(앞으로 튀어나온 갈고리)."';
+    case 'm_chart': return a ? '📊 어깨 움직임 차트: 어깨세모근 앞섬유 = 빗장뼈 가쪽 1/3, 중간섬유 = 봉우리, 뒤섬유 = 어깨뼈가시에서 일어난다.'
+      : '📊 어깨 움직임 차트: 어깨세모근 앞섬유 → 굽힘(팔을 앞으로), 중간섬유 → 벌림(옆으로), 뒤섬유 → 폄(뒤로).';
+    case 'm_memo': return a ? '📝 메모: "S-BL 위팔근 코어 — 겉층 근육 아래. 잠금 단추 = 위팔근의 닿는곳."'
+      : '📝 메모: "S-BL 위팔근 코어는 위팔두갈래근 아래(깊은 층)에 숨겼다. 잠금 단추 = 위팔근이 닿는 곳: 아래팔 안쪽 뼈(자뼈)의 거친면."';
+    case 'm_manual': return a ? '🔧 팔꿈치 모형 정비 매뉴얼: "S-T3 고정핀 — 팔꿈치를 완전히 펴고, 팔꿈치를 펴는 근육의 닿는곳에 케이블. (S-BR6: 90°에서 중립 자세 굽힘근의 닿는곳)"'
+      : '🔧 팔꿈치 모형 정비 매뉴얼: "S-T3 고정핀 — 팔꿈치를 완전히 편(0°) 상태에서, 팔꿈치를 펴는 근육(위팔세갈래근)의 닿는곳 = 팔꿈치 뒤쪽 끝(팔꿈치머리)에 케이블을 건다."';
     case 'safe_plate': return '🔐 금고 명판 — 순서:\n' + SAFE_ORDER.map((j, i) => `    ${i + 1}. (${SAFE_DIRS[i] === 'R' ? '오른쪽' : '왼쪽'}) ${JOINT_RIDDLE[j]}${a ? '' : ` → ${JOINT_KO[j]}`}`).join('\n');
   }
   return null;

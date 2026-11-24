@@ -107,7 +107,7 @@ export class GameScene extends Phaser.Scene {
     this.resuming = !!data?.resume;
     // a resumed run keeps counting from its saved play time
     run.startTime = this.time.now - (this.resuming ? (run.elapsed || 0) * 1000 : 0);
-    this.inter = []; this.hazards = []; this.locks = []; this.holoSkel = []; this.bonesInWorld = {}; this.reveal = {};
+    this.inter = []; this.hazards = []; this.locks = []; this.holoSkel = []; this.bonesInWorld = {}; this.reveal = {}; this.escSpots = [];
     this.busy = false; this.cabinetOpen = false; this.capsuleOpen = false; this.blackoutLeft = 0; this.focus = null;
     this.blockers = []; this.guards = []; this.lasers = []; this.pickups = []; this.checkpoints = []; this.hideSpots = []; this.hiding = null; this.escape = null; this.invuln = 0; this.scanAmp = false;
     run.hp = run.hp > 0 ? run.hp : 3;

@@ -28,12 +28,11 @@ export class MuscleMotionPuzzle extends PuzzleBase {
 
   preload() {
     // model-rendered frames (loaded on first use)
+    // each data set is checked on its own: the CH2 elbow rig (InvMuscle) may already have loaded the elbow set only
     for (const rk of ['elbow', 'shoulder']) {
-      if (!this.cache.json.exists(`mo_${rk}`)) this.load.json(`mo_${rk}`, `assets/ch2/motion/${rk}.json`);
+      if (this.cache.json.exists(`mo_${rk}`)) this.queueFrames(rk);
+      else { this.load.json(`mo_${rk}`, `assets/ch2/motion/${rk}.json`); this.load.once(`filecomplete-json-mo_${rk}`, () => this.queueFrames(rk)); }
     }
-    this.load.once('filecomplete-json-mo_elbow', () => this.queueFrames('elbow'));
-    this.load.once('filecomplete-json-mo_shoulder', () => this.queueFrames('shoulder'));
-    if (this.cache.json.exists('mo_elbow')) { this.queueFrames('elbow'); this.queueFrames('shoulder'); }
   }
   queueFrames(rk: string) {
     const m = this.cache.json.get(`mo_${rk}`) as MotionMeta;
