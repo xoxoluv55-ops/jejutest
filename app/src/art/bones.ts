@@ -285,6 +285,27 @@ export function makeBoneTexture(scene: Phaser.Scene, id: BoneId, style: BoneStyl
   return makePrimBoneTexture(scene, id, style, key, b);
 }
 
+/**
+ * Outline of the real model's silhouette (white ring + faint fill), padded by PAD px on every side so the
+ * centre matches the bone image. Tinted at runtime: placement targets, drag highlight.
+ */
+export const LINE_PAD = 8;
+export function makeBoneLine(scene: Phaser.Scene, id: BoneId) {
+  const key = `bone_line_${id}`, src = `ch1m_${id}`;
+  if (scene.textures.exists(key) || !scene.textures.exists(src)) return;
+  const img = scene.textures.get(src).getSourceImage() as HTMLImageElement;
+  const P = LINE_PAD, w = img.width + P * 2, h = img.height + P * 2;
+  const sil = document.createElement('canvas'); sil.width = w; sil.height = h;
+  const sc = sil.getContext('2d')!; sc.drawImage(img, P, P); sc.globalCompositeOperation = 'source-in'; sc.fillStyle = '#fff'; sc.fillRect(0, 0, w, h);
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d')!;
+  const r = 4.5;
+  for (let a = 0; a < 16; a++) ctx.drawImage(sil, Math.cos(a / 16 * Math.PI * 2) * r, Math.sin(a / 16 * Math.PI * 2) * r);
+  ctx.globalCompositeOperation = 'destination-out'; ctx.drawImage(sil, 0, 0);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 0.16; ctx.drawImage(sil, 0, 0);
+  scene.textures.addCanvas(key, c);
+}
+
 /** primitive-drawn bone (fallback, and the X-ray film overlay which is aligned to the primitive drawing) */
 export function makePrimBoneTexture(scene: Phaser.Scene, id: BoneId, style: BoneStyle, key = `bone_prim_${style}_${id}`, bb?: ReturnType<typeof boneBounds>) {
   const b = bb ?? primBoneBounds(id);

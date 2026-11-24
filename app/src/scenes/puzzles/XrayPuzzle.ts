@@ -4,7 +4,7 @@ import { View } from '../../core/view';
 import { Audio } from '../../core/audio';
 import { G } from '../../game/state';
 import { LANDMARKS, XRAY_TARGETS, XRAY_DISTRACTORS_BASIC, XRAY_DISTRACTORS_ADV } from '../../data/anatomy';
-import { makeXrayTexture, primBoneBounds, DENSITY } from '../../art/bones';
+import { makeXrayTexture, primBoneBounds, boneModel, bonePoint, DENSITY } from '../../art/bones';
 import { T, C, Button } from '../../ui/widgets';
 
 interface Chip { id: string; c: Phaser.GameObjects.Container; home: { x: number; y: number }; done: boolean; bg: Phaser.GameObjects.Graphics; w: number }
@@ -28,7 +28,17 @@ export class XrayPuzzle extends PuzzleBase {
     const adv = G.run.difficulty === 'adv';
     this.frame('영상 판독기 · 어깨 AP 방사선 사진', '번호가 표시된 구조물에 알맞은 이름표를 끌어다 붙이세요. 이 영상에 보이지 않는 구조의 이름표도 섞여 있습니다.', C.cyan);
     const { W, H } = View; const portrait = H > W;
-    const film = makeXrayTexture(this);
+    // v0.9: simulated radiograph computed from the 3D bone model (falls back to the old drawn film without the model)
+    const bm = boneModel() as any;
+    const sim = !!(bm?.xray && this.textures.exists('ch1_xray'));
+    // the film shows the shoulder (cropped from the rendered chest so the joint is large)
+    const VIEW = { x: 200, y: 80, w: 350, h: 350 };
+    const film = sim ? { key: 'ch1_xray', ...VIEW } : makeXrayTexture(this);
+    const F = (bone: string, name: string): [number, number] => { const p = bonePoint(bone, name)!; const r = bm.rects[bone]; return [r.x + p[0] / 2, r.y + p[1] / 2]; };
+    const MP: Record<string, [number, number]> = sim ? {
+      acromion: F('scapula', 'acromion'), coracoid: F('scapula', 'coracoid'), glenoid: F('scapula', 'glenoid'),
+      head: [bm.landmarks.head[0] - 8, bm.landmarks.head[1] - 6], greater: F('humerus', 'greaterTubercle'),
+    } : {};
     const cp = this.compact; this.chipH = cp ? 40 : 48;
     const areaW = portrait ? this.pw - 60 : this.pw * (cp ? 0.5 : 0.56), areaH = portrait ? this.ph * 0.55 : this.cBot - this.cTop - (cp ? 12 : 20);
     const s = Math.min(areaW / film.w, areaH / film.h);
@@ -37,12 +47,24 @@ export class XrayPuzzle extends PuzzleBase {
     this.film = { x: fx, y: fy, w: film.w * s, h: film.h * s };
     const lb = this.add.graphics(); lb.fillStyle(0xbfe6ff, 0.08); lb.fillRoundedRect(fx - 16, fy - 16, film.w * s + 32, film.h * s + 32, 10);
     lb.lineStyle(2, 0x9fd8ff, 0.5); lb.strokeRoundedRect(fx - 16, fy - 16, film.w * s + 32, film.h * s + 32, 10);
-    this.add.image(fx, fy, film.key).setOrigin(0).setScale(s / DENSITY);
+    if (sim) {
+      const R = bm.xray.rect;
+      this.add.image(fx + (R.x - film.x) * s, fy + (R.y - film.y) * s, film.key).setOrigin(0).setScale(s / DENSITY)
+        .setCrop((film.x - R.x) * DENSITY, (film.y - R.y) * DENSITY, film.w * DENSITY, film.h * DENSITY);
+    } else this.add.image(fx, fy, film.key).setOrigin(0).setScale(s / DENSITY);
+    if (sim) {
+      T(this, fx + 14, fy + 10, 'R', 30, '#f2f5f9', { weight: '900' });
+      T(this, fx + film.w * s - 10, fy + film.h * s - 8, '모의 방사선 영상 · 3D 뼈 모델로 계산 · 실제 환자 영상 아님', 13, '#c9d6e6', { fine: true, weight: '700', backgroundColor: '#000000aa', padding: { x: 6, y: 3 } }).setOrigin(1, 1);
+    }
     // real-bone overlay for comparison (basic mode)
     this.overlay = this.add.container(0, 0).setAlpha(0);
     const mask = this.make.graphics({}, false); mask.fillRect(fx, fy, film.w * s, film.h * s);
     for (const id of ['scapula', 'clavicle', 'humerus'] as const) {
-      // the film and its markers are laid out on the primitive drawing -> overlay the same drawing
+      if (sim) {   // the real bone models in their measured positions (same frame as the simulated film)
+        const r = bm.rects[id];
+        this.overlay.add(this.add.image(fx + (r.x - film.x) * s, fy + (r.y - film.y) * s, `bone_bone_${id}`).setOrigin(0).setScale(s / DENSITY).setTint(0xffd9a0));
+        continue;
+      }
       const b = primBoneBounds(id);
       this.overlay.add(this.add.image(fx + (b.cx - film.x) * s, fy + (b.cy - film.y) * s, `bone_prim_bone_${id}`).setScale(s / DENSITY));
     }
@@ -51,9 +73,10 @@ export class XrayPuzzle extends PuzzleBase {
     const order = Phaser.Utils.Array.Shuffle([...XRAY_TARGETS]) as string[];
     order.forEach((id, i) => {
       const L = LANDMARKS[id];
-      const x = fx + (L.x - film.x) * s, y = fy + (L.y - film.y) * s;
+      const [lx0, ly0] = MP[id] ?? [L.x, L.y];
+      const x = fx + (lx0 - film.x) * s, y = fy + (ly0 - film.y) * s;
       // short leader towards the side with free space (lateral structures -> left, others -> right/down)
-      const leftSide = L.x < 300;
+      const leftSide = sim ? lx0 < 372 : L.x < 300;
       const sx = x + (leftSide ? -54 : 54);
       const sy = y + (i % 2 ? 22 : -22);
       const g = this.add.graphics();

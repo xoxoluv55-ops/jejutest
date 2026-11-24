@@ -20,6 +20,12 @@ def img(b, p):
     r = man['rects'][b]; q = to_frame(np.asarray(p, float)[None])[0]
     return [round((float(q[0]) - r['x']) * 2, 1), round((float(q[1]) - r['y']) * 2, 1)]
 pts = {}
+def load_fib():
+    # same rigid shift as ch1_bones.py (the fibula is rendered beside the forearm)
+    Vf, _ = merge(['FJ3366']); Vf, _ = weld(Vf, _)
+    rad = load('radius'); hum = load('humerus')
+    shift = np.array([hum[:, 0].mean() - Vf[:, 0].mean(), rad[:, 1].mean() - Vf[:, 1].mean(), rad[:, 2].max() + 20 - Vf[:, 2].max()])
+    return Vf + shift
 U = load('ulna'); zmin = U[:, 2].min()
 prox = band(U, 0, 0.22)
 dist = U[(U[:, 2] > zmin + 5) & (U[:, 2] < zmin + 14)]
@@ -32,6 +38,13 @@ A = np.c_[2 * med, np.ones(len(med))]; c = np.linalg.lstsq(A, (med ** 2).sum(1),
 pts['humerus'] = dict(head=img('humerus', c[:3]), greaterTubercle=img('humerus', top[np.argmin(top[:, 0])]),
                       shaft=img('humerus', band(H, 0.48, 0.52).mean(0)),
                       lateralEpicondyle=img('humerus', low[np.argmin(low[:, 0])]), medialEpicondyle=img('humerus', low[np.argmax(low[:, 0])]))
+R_ = load('radius'); rz0, rz1 = R_[:, 2].min(), R_[:, 2].max(); rh = rz1 - rz0
+tub = R_[(R_[:, 2] < rz1 - 0.10 * rh) & (R_[:, 2] > rz1 - 0.25 * rh)]
+pts['radius'] = dict(head=img('radius', R_[R_[:, 2] > rz1 - 8].mean(0)), tuberosity=img('radius', tub[np.argmax(tub[:, 0])]),
+                     shaft=img('radius', band(R_, 0.48, 0.52).mean(0)), styloid=img('radius', R_[np.argmin(R_[:, 2])]))
+Fi = load_fib()
+fz0, fz1 = Fi[:, 2].min(), Fi[:, 2].max()
+pts['fibula'] = dict(head=img('fibula', Fi[Fi[:, 2] > fz1 - 10].mean(0)), shaft=img('fibula', band(Fi, 0.48, 0.52).mean(0)), malleolus=img('fibula', Fi[np.argmin(Fi[:, 2])]))
 Cl = load('clavicle')
 pts['clavicle'] = dict(sternalEnd=img('clavicle', Cl[np.argmax(Cl[:, 0])]), acromialEnd=img('clavicle', Cl[np.argmin(Cl[:, 0])]))
 man['points'] = pts
