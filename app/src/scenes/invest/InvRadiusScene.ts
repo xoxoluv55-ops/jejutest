@@ -189,18 +189,21 @@ export class InvRadiusScene extends InvestBase {
     Audio.play('door');
     clear.clearMask();
     this.tweens.add({ targets: drawer, x: drawer.x - dw * 0.18, duration: 380, ease: 'Cubic.out' });
+    // close-up: the specimen stands upright (proximal up, as on the body) and large beside the locker
+    const cu = this.closeUp(b, i);
     if (b === 'radius') {
       this.setFeedback(`서랍 ${'ABC'[i]}: 진짜 표본 S-03 — 표본을 눌러 꺼내세요.`, 'ok');
-      const glow = this.add.image(drawer.x + clear.x - dw * 0.18, drawer.y + clear.y, 'light').setTint(0xd9a0ff).setBlendMode(Phaser.BlendModes.ADD).setScale(1.2).setAlpha(0.5);
-      this.tweens.add({ targets: glow, alpha: 0.2, duration: 700, yoyo: true, repeat: -1 });
-      const z = this.add.zone(drawer.x - dw * 0.18, drawer.y, dw, _dh).setOrigin(0).setInteractive({ useHandCursor: true }).setDepth(30);
-      this.flushInput();
-      z.once('pointerup', () => {
+      const take = () => {
+        if (this.solved) return;
         Audio.play('pickup');
         this.tweens.add({ targets: drawer, alpha: 0.5, duration: 300 });
-        this.time.delayedCall(350, () => this.found('radius', '표본 S-03 회수 · 노뼈 Radius',
-          '노뼈는 아래팔의 가쪽(엄지 쪽) 긴뼈. 몸쪽 끝의 노뼈머리는 작은 원반 모양으로 위팔뼈 작은머리·자뼈 노패임과 관절하고, 먼쪽 끝은 넓게 퍼져 손목뼈와 손목관절을 만든다(가쪽 끝 = 노뼈붓돌기). 아래팔을 뒤칠 때·엎칠 때 자뼈 둘레를 돈다.'));
-      });
+        this.time.delayedCall(350, () => { cu.destroy(); this.found('radius', '표본 S-03 회수 · 노뼈 Radius',
+          '노뼈는 아래팔의 가쪽(엄지 쪽) 긴뼈. 몸쪽 끝의 노뼈머리는 작은 원반 모양으로 위팔뼈 작은머리·자뼈 노패임과 관절하고, 먼쪽 끝은 넓게 퍼져 손목뼈와 손목관절을 만든다(가쪽 끝 = 노뼈붓돌기). 아래팔을 뒤칠 때·엎칠 때 자뼈 둘레를 돈다.'); });
+      };
+      const z = this.add.zone(drawer.x - dw * 0.18, drawer.y, dw, _dh).setOrigin(0).setInteractive({ useHandCursor: true }).setDepth(30);
+      z.once('pointerup', take);
+      const hz = cu.getData('hit') as Phaser.GameObjects.Zone; hz.once('pointerup', take);
+      this.flushInput();
       return;
     }
     G.run.mistakes++; Audio.play('error');
@@ -210,8 +213,29 @@ export class InvRadiusScene extends InvestBase {
     this.lockUntil = this.time.now + 2000;
     this.time.delayedCall(1800, () => {
       this.tweens.add({ targets: drawer, x: drawer.x + dw * 0.18, duration: 300, ease: 'Cubic.in' });
+      this.tweens.add({ targets: cu, alpha: 0, duration: 250, onComplete: () => cu.destroy() });
       reset();
     });
+  }
+
+  /** large upright view of the specimen in the opened drawer (right column) */
+  closeUp(b: DrawerBone, i: number) {
+    const { cTop, cBot } = this;
+    const rx = this.px + 30 + this.pw * 0.68 + 16, rw = this.px + this.pw - 30 - rx, h = cBot - cTop;
+    const c = this.add.container(0, 0).setDepth(25).setAlpha(0);
+    const g = this.add.graphics();
+    g.fillStyle(0x0c1220, 1); g.fillRoundedRect(rx - 4, cTop - 4, rw + 8, h + 8, 12);
+    g.lineStyle(2, b === 'radius' ? 0x7fffb2 : 0xff7a8a, 0.9); g.strokeRoundedRect(rx, cTop, rw, h, 12);
+    c.add(g);
+    const lab = T(this, rx + rw / 2, cTop + 18, `서랍 ${'ABC'[i]}`, 17, '#ffffff', { weight: '800' }).setOrigin(0.5, 0); c.add(lab);
+    const im = this.add.image(rx + rw / 2, cTop + 40 + (h - 80) / 2, `bone_bone_${b}`);
+    im.setScale(Math.min((rw - 30) / im.width, (h - 90) / im.height)); c.add(im);
+    c.add(T(this, rx + 10, cTop + 46, '몸쪽', 14, '#9fdcf5', { weight: '700' }));
+    c.add(T(this, rx + 10, cBot - 26, '먼쪽', 14, '#9fdcf5', { weight: '700' }));
+    const hit = this.add.zone(rx, cTop, rw, h).setOrigin(0).setInteractive({ useHandCursor: b === 'radius' }); c.add(hit);
+    c.setData('hit', hit);
+    this.tweens.add({ targets: c, alpha: 1, duration: 200 });
+    return c;
   }
 
   hints() {

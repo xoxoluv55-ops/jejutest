@@ -96,7 +96,7 @@ export class HUDScene extends BaseScene {
     T(this, R.x + 16, R.y + 12, this.game2.floorName(), 12, C.cyanS, { display: true }).setOrigin(0, 0.5);
     this.mapDot = this.add.graphics();
     const mz = this.add.zone(R.x, R.y, mw, mh).setOrigin(0).setInteractive({ useHandCursor: true });
-    mz.on('pointerup', () => this.openMap());
+    this.tapOnly(mz, () => this.openMap());
     this.btnPause = new RoundButton(this, R.x - (tn ? 30 : 40), R.y + (tn ? 24 : 30), tn ? 22 : 26, 'pause', () => this.openPause(), C.cyan, '일시정지');
     this.btnPause.setActive2(true);
     // --- blackout timer ---
@@ -150,7 +150,7 @@ export class HUDScene extends BaseScene {
     {
       c.add(T(this, w - 16, h - 12, folded ? `▼ 미션 전체 보기 (${ms.length})` : '▲ 접기', 13, '#9fb0d0', { fine: true }).setOrigin(1, 0.5));
       const z = this.add.zone(0, 0, w, h).setOrigin(0).setInteractive({ useHandCursor: true });
-      z.on('pointerup', () => { this.missionOpen = !this.missionOpen; Audio.play('click'); this.drawMissions(); });
+      this.tapOnly(z, () => { this.missionOpen = !this.missionOpen; Audio.play('click'); this.drawMissions(); });
       c.add(z);
     }
     shown.forEach((m, i) => {
@@ -305,7 +305,16 @@ export class HUDScene extends BaseScene {
     Audio.play('open');
     return { c, x, y, w, h };
   }
-  closeOverlay() { if (!this.overlay) return; if (this.identId) { const id = this.identId; this.identId = null; Bus.emit('ident:cancel', id); } const c = this.overlay; this.overlay = undefined; this.game2.busy = false; Audio.play('close'); this.tweens.add({ targets: c, alpha: 0, duration: 140, onComplete: () => c.destroy() }); }
+  /** a tap that both started and ended on this object, not right after an overlay closed: closing a window with its
+   *  X (which reacts on touch-down) must not let the finger's release open the minimap / mission panel underneath */
+  overlayClosedAt = -1e9;
+  tapOnly(o: Phaser.GameObjects.Zone, fn: () => void) {
+    let armed = false;
+    o.on('pointerdown', () => { armed = !this.overlay && this.time.now - this.overlayClosedAt > 300; });
+    o.on('pointerout', () => { armed = false; });
+    o.on('pointerup', (p: Phaser.Input.Pointer) => { const ok = armed && !this.overlay && p.getDistance() < 30; armed = false; if (ok) fn(); });
+  }
+  closeOverlay() { this.overlayClosedAt = this.time.now; if (!this.overlay) return; if (this.identId) { const id = this.identId; this.identId = null; Bus.emit('ident:cancel', id); } const c = this.overlay; this.overlay = undefined; this.game2.busy = false; Audio.play('close'); this.tweens.add({ targets: c, alpha: 0, duration: 140, onComplete: () => c.destroy() }); }
 
   // ------------------------------------------------------------ bone identification check (v0.6)
   identId: BoneId | null = null;
