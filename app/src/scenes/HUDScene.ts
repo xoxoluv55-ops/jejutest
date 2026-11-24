@@ -455,7 +455,7 @@ export class HUDScene extends BaseScene {
     const bh = this.tiny ? 50 : 62, gap = this.tiny ? 60 : 78;
     items.forEach(([t, ic, fn, acc], i) => m.c.add(new Button(this, cx, m.y + (this.tiny ? 92 : 112) + i * gap, t, fn, { w: 360, h: bh, icon: ic, accent: acc })));
     const sec = Math.floor((this.game.loop.time - G.run.startTime - (this.pausedAt >= 0 ? this.game.loop.time - this.pausedAt : 0)) / 1000);
-    const prog = G.run.chapter === 1 ? `뼈 ${G.run.bones.length}개 회수` : `코어 ${G.run.items.length}개 회수`;
+    const prog = G.run.chapter === 1 ? `뼈 ${G.run.bones.length}개 회수` : G.run.chapter === 3 ? `손목뼈 ${G.run.items.length}개 회수` : `코어 ${G.run.items.length}개 회수`;
     m.c.add(T(this, cx, m.y + m.h - 30, `플레이 ${Math.floor(sec / 60)}분 ${sec % 60}초 · ${prog} · 실수 ${G.run.mistakes}회`, 15, C.dim).setOrigin(0.5));
     // the modal's own close (X) button also resumes
     const x = m.c.list.find(o => o instanceof RoundButton) as RoundButton | undefined; if (x) x.onPress = () => this.closePause();

@@ -1,4 +1,5 @@
 import { MUSCLES, MuscleId } from './muscles';
+import { CARPALS, CARPAL } from './hand';
 
 // Anatomy content for Chapter 1. Geometry is the RIGHT upper limb in ANTERIOR view
 // (anatomical position, palms forward). Viewer's LEFT = patient's LATERAL side.
@@ -164,7 +165,7 @@ export const ALIGN_HINTS: Record<'humerus' | 'ulna' | 'radius', { flip: string; 
   },
 };
 
-export interface ArchiveEntry { id: string; title: string; en: string; cat: '뼈' | '근육' | '개념' | '기록'; bone?: BoneId; muscle?: MuscleId; body: string; }
+export interface ArchiveEntry { id: string; title: string; en: string; cat: '뼈' | '근육' | '개념' | '기록'; bone?: BoneId; muscle?: MuscleId; tex?: string; body: string; }
 export const ARCHIVE: ArchiveEntry[] = [
   { id: 'bone_clavicle', title: '빗장뼈', en: 'Clavicle', cat: '뼈', bone: 'clavicle', body: BONES.clavicle.info + '\n\n임상: 낙상 시 가장 흔히 골절되는 뼈 중 하나로, 중간 1/3 부위 골절이 가장 많다.' },
   { id: 'bone_scapula', title: '어깨뼈', en: 'Scapula', cat: '뼈', bone: 'scapula', body: BONES.scapula.info + '\n\n주요 구조: 관절오목, 봉우리, 부리돌기, 어깨뼈가시, 상각·하각.' },
@@ -189,4 +190,11 @@ export const ARCHIVE: ArchiveEntry[] = [
   { id: 'log_4', title: '근육 연결실 운영 기록', en: 'Muscle lab log', cat: '기록', body: '근육 데이터는 "이는곳–닿는곳" 한 쌍으로 저장된다. 부착 좌표가 하나라도 어긋나면 해당 근육은 수축 신호를 받아도 관절을 움직이지 못한다. — 운영팀' },
   { id: 'log_5', title: 'MERIDIAN 시스템 로그 #2', en: 'AI log', cat: '기록', body: '[04:02:10] 뼈대 구조 복구 확인.\n[04:02:12] 근육 연결 데이터 손상률 64%.\n[04:02:13] 경고: 전기자극 장치가 근육 신호 없이 출력을 올리고 있음.\n[04:02:14] 근육 연결실 봉쇄 유지.' },
   { id: 'log_6', title: '자극 제어 매뉴얼', en: 'Stimulator manual', cat: '기록', body: '근육 연결이 복구되면 전기자극 장치가 재가동된다. 과부하가 발생하면 자극 제어실(M-04)의 방전 레버로 잔류 전하를 빼야 한다. 방전 전에는 운동 재현실 출입문이 열리지 않는다.' },
+  // ---------------- CHAPTER 3 ----------------
+  ...CARPALS.map(c => ({ id: `car_${c}`, title: CARPAL[c].ko, en: CARPAL[c].en, cat: '뼈' as const, tex: `ch3_car_${c}`, body: `${CARPAL[c].row} · ${CARPAL[c].shape}\n\n${CARPAL[c].info}` })),
+  { id: 'c_carpal', title: '손목뼈 8개의 배열', en: 'Carpal bones', cat: '개념', body: '손목뼈는 두 줄로 4개씩 놓인다(엄지 쪽부터).\n몸쪽 줄: 손배뼈 · 반달뼈 · 세모뼈 · 콩알뼈\n먼쪽 줄: 큰마름뼈 · 작은마름뼈 · 알머리뼈 · 갈고리뼈\n\n노뼈는 손배뼈·반달뼈와 손목관절을 이루고, 자뼈는 관절원판을 사이에 두어 손목뼈에 직접 닿지 않는다.\n먼쪽 줄은 손허리뼈와 만난다: 엄지(1)–큰마름뼈(안장관절), 2–작은마름뼈, 3–알머리뼈, 4·5–갈고리뼈.\n\n손바닥 쪽에서 손목뼈는 오목한 고랑을 이루고, 그 위를 굽힘근지지띠(콩알뼈·갈고리뼈 갈고리 ↔ 손배뼈결절·큰마름뼈결절)가 덮어 손목굴을 만든다. 손목굴로 손가락 굽힘근 힘줄과 정중신경이 지난다.' },
+  { id: 'c_handxray', title: '손 PA 영상 판독', en: 'Hand PA radiograph', cat: '개념', body: 'PA(뒤앞) 손 영상에서 손목뼈는 서로 겹쳐 보인다. 콩알뼈는 세모뼈 위에 겹쳐 둥글게 보이고, 갈고리뼈의 갈고리는 고리 모양의 진한 테두리로 보인다.\n알머리뼈는 가운데의 가장 큰 뼈, 손배뼈는 노뼈 붓돌기 바로 먼쪽의 길쭉한 뼈다.\n\n임상: 손을 짚고 넘어진 뒤 해부학코담배갑 압통 → 손배뼈 골절 의심. 첫 영상에서 안 보일 수 있어 손배뼈 전용 촬영이나 추적 검사를 한다.' },
+  { id: 'c_joint', title: '윤활관절의 종류', en: 'Types of synovial joints', cat: '개념', body: '관절면의 모양이 움직임을 정한다.\n· 절구관절(3축): 어깨관절, 엉덩관절\n· 경첩관절(1축): 위팔자관절, 손가락뼈사이관절\n· 중쇠관절(1축, 돌림): 몸쪽 노자관절, 고리중쇠관절\n· 타원관절(2축): 노손목관절, 손허리손가락관절\n· 안장관절(2축 + 맞섬): 엄지 손목손허리관절\n· 평면관절(미끄러짐): 손목뼈사이관절, 봉우리빗장관절' },
+  { id: 'log_7', title: '손목·관절실 운영 기록', en: 'Joint lab log', cat: '기록', body: '손목뼈 표본 8개를 네 장치에 두 개씩 나눠 보관했다. 각 장치의 해제 방법은 다른 방의 문서에 적어 두었다. — 관절팀' },
+  { id: 'log_8', title: '유압 제어 매뉴얼', en: 'Hydraulic manual', cat: '기록', body: '손목뼈 재조립이 끝나면 관절 시험 프레스가 재가동된다. 압력이 치솟으면 유압 제어실(J-04)의 감압 밸브를 돌려야 한다. 감압 전에는 관절 시험실(J-03) 출입문이 열리지 않는다.' },
 ];

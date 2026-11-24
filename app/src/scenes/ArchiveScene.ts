@@ -81,6 +81,11 @@ export class ArchiveScene extends BaseScene {
       const s = Math.min(240 / im.width, (H - ty - (tn ? 50 : 90)) / im.height, 1); im.setScale(s); im.setY(ty + im.displayHeight / 2);
       T(this, dx + 130, im.y + im.displayHeight / 2 + 14, mt.credit, 12, '#a8949e', { align: 'center', wordWrap: { width: 250 }, fine: true }).setOrigin(0.5, 0);
       fitBody(T(this, dx + 290, ty, e.body, 18, '#d3def3', { wordWrap: { width: dw - 300 }, lineSpacing: 8 }));
+    } else if (e.tex && this.textures.exists(e.tex)) {
+      const im = this.add.image(dx + 130, 0, e.tex);
+      const s = Math.min(200 / im.width, 200 / im.height, 2.2); im.setScale(s); im.setY(ty + 20 + im.displayHeight / 2);
+      T(this, dx + 130, im.y + im.displayHeight / 2 + 14, '3D 해부 모델: BodyParts3D © DBCLS (CC BY 4.0)', 12, '#8f9bb3', { align: 'center', wordWrap: { width: 250 }, fine: true }).setOrigin(0.5, 0);
+      fitBody(T(this, dx + 290, ty, e.body, 18, '#d3def3', { wordWrap: { width: dw - 300 }, lineSpacing: 8 }));
     } else {
       fitBody(T(this, dx, ty, e.body, 19, '#d3def3', { wordWrap: { width: dw }, lineSpacing: 9 }));
     }
