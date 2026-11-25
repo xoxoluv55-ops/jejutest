@@ -53,6 +53,13 @@ const game = new Phaser.Game({
   scene: [BootScene, TitleScene, GameScene, MuscleScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene, InvestigateScene, InvHumerusScene, InvRadiusScene, InvUlnaScene, InvClavicleScene, InvMuscleScene, HandScene, InvHandScene, HandXrayPuzzle, CarpalAssemblyPuzzle, JointPuzzle, HipScene, InvHipScene, HipSectionPuzzle, HipMusclePuzzle, HipGaitPuzzle],
 });
 
+// Phaser's resize() leaves canvas.style untouched when zoom is 1 (dpr-1 screens), so after a rotation / window
+// resize the canvas kept its old CSS size (squashed picture, black band, buttons cut off). Always set it here.
+function syncCanvasCss() {
+  const c = game.canvas; if (!c) return;
+  c.style.width = View.cssW + 'px'; c.style.height = View.cssH + 'px';
+}
+game.events.once('ready', syncCanvasCss);
 let rt: number | undefined;
 function onResize() {
   clearTimeout(rt);
@@ -60,6 +67,7 @@ function onResize() {
     const p = measure();
     game.scale.setZoom(1 / View.dpr);
     game.scale.resize(p.pxW, p.pxH);
+    syncCanvasCss();
     viewEvents.emit('resize');
   }, 120);
 }
