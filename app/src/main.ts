@@ -84,3 +84,40 @@ import { Audio } from './core/audio';
 for (const ev of ['touchend', 'pointerup', 'click', 'keydown']) document.addEventListener(ev, () => { Audio.unlock(); Audio.resumeIfNeeded(); }, { capture: true, passive: true });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) Audio.resumeIfNeeded(); });
 document.addEventListener('gesturestart', e => e.preventDefault());
+
+// ---------------------------------------------------------------- phone "back" (Android back button / back swipe)
+// Players naturally press Back to leave a clue or device view; without this the browser left the page and the
+// whole game closed. A guard history entry turns Back into an in-game "back": close the open layer / view,
+// otherwise open the pause menu. The guard is (re)armed on a user gesture, as browsers ignore entries pushed without one.
+import { saveRun } from './core/save';
+import { worldKey } from './game/state';
+let guarded = false;
+function armBackGuard() { if (guarded) return; try { history.pushState({ ae: 1 }, ''); guarded = true; } catch { /* ignore */ } }
+for (const ev of ['pointerup', 'touchend', 'keydown']) document.addEventListener(ev, armBackGuard, { capture: true, passive: true });
+type Backable = Phaser.Scene & { exit?: () => void; layer?: unknown; closeLayer?: () => void; solved?: boolean };
+function inGameBack() {
+  const running = game.scene.getScenes(true) as Backable[];      // top-most last
+  for (let i = running.length - 1; i >= 0; i--) {
+    const s = running[i]; const k = s.scene.key;
+    if (k === 'HUD') {
+      const hud = s as unknown as { overlay?: unknown; closePause(): void; pausedAt: number; closeOverlay(): void };
+      if (hud.overlay) { if (hud.pausedAt >= 0) hud.closePause(); else hud.closeOverlay(); return; }
+      continue;
+    }
+    if (k === worldKey()) { Bus.emit('ui:pause'); return; }
+    if (s.layer && s.closeLayer) { s.closeLayer(); return; }
+    if (s.exit && !s.solved) { s.exit(); return; }
+    return;   // title, result, archive...: stay on the page
+  }
+}
+window.addEventListener('popstate', () => { guarded = false; inGameBack(); armBackGuard(); });
+
+// leaving / backgrounding the page mid-run keeps the progress, so [이어하기] works even if the tab was closed
+function autosave() {
+  const r = G.run as unknown as { flags?: { intro?: boolean; escaped?: boolean }; startTime: number; elapsed?: number };
+  if (!r || !r.flags?.intro || r.flags.escaped || !game.scene.getScene(worldKey())?.sys.isActive() && !game.scene.isPaused(worldKey())) return;
+  r.elapsed = (game.loop.time - r.startTime) / 1000;
+  saveRun(r);
+}
+window.addEventListener('pagehide', autosave);
+document.addEventListener('visibilitychange', () => { if (document.hidden) autosave(); });
