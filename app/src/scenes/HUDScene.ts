@@ -69,9 +69,15 @@ export class HUDScene extends BaseScene {
   missionOpen = false;
 
   layout() {
-    // rebuild everything at the new size, keep state
+    // rebuild everything at the new size, keep state. An open window (pause menu, inventory, map, log, ident check)
+    // cannot survive the rebuild: close it properly, so the world is not left paused / the player frozen (v0.13.1:
+    // phone toolbars and in-app browsers resize the page while a window is open)
+    const paused = this.pausedAt >= 0, hadOverlay = !!this.overlay, ident = this.identId;
     this.children.removeAll(true); this.toasts = []; this.overlay = undefined; this.aiC = undefined;
     this.build();
+    if (ident) { this.identId = null; Bus.emit('ident:cancel', ident); }
+    if (paused) this.time.delayedCall(60, () => { if (!this.overlay) this.openPause(); else this.resumeWorld(); });
+    else if (hadOverlay && this.game2) this.game2.busy = false;
   }
 
   build() {

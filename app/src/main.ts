@@ -124,3 +124,32 @@ function autosave() {
 }
 window.addEventListener('pagehide', autosave);
 document.addEventListener('visibilitychange', () => { if (document.hidden) autosave(); });
+
+// ---------------------------------------------------------------- watchdog (v0.13.1)
+// A friend's phone ended up with the world on screen but no HUD (no joystick/buttons) and could not continue. Whatever
+// the route into it (a resize or Back arriving between scene transitions), these states are never intended:
+//  · world running, HUD asleep, nothing else open        -> wake the HUD
+//  · world paused, HUD awake without a window, nothing else open -> resume the world
+//  · player frozen / world busy for a long time with no window, no cutscene -> release the player
+// Each must hold for two checks in a row (transitions take a few frames) before it is repaired.
+const OVERLAY_OK = new Set(['Boot', 'Title', 'HUD']);
+let strike = { hud: 0, paused: 0, busy: 0 };
+window.setInterval(() => {
+  try {
+    const wk = worldKey(); const sm = game.scene;
+    const world = sm.getScene(wk) as unknown as { sys: Phaser.Scenes.Systems; busy: boolean; hiding?: unknown; player?: { frozen: boolean }; scene: Phaser.Scenes.ScenePlugin } | null;
+    const hud = sm.getScene('HUD') as unknown as { sys: Phaser.Scenes.Systems; overlay?: unknown; pausedAt: number; hidden: boolean } | null;
+    if (!world || !hud || !G.run) { strike = { hud: 0, paused: 0, busy: 0 }; return; }
+    const ST = Phaser.Scenes;
+    const ws = world.sys.settings.status, hs = hud.sys.settings.status;
+    const others = sm.scenes.filter(s => s.scene.key !== wk && !OVERLAY_OK.has(s.scene.key) && s.sys.settings.status >= ST.START && s.sys.settings.status <= ST.SLEEPING);
+    const flags = G.run.flags as Record<string, boolean>;
+    const calm = !others.length && flags.intro && !flags.escaped && !hud.hidden;
+    strike.hud = calm && ws === ST.RUNNING && hs === ST.SLEEPING ? strike.hud + 1 : 0;
+    strike.paused = calm && ws === ST.PAUSED && hs === ST.RUNNING && !hud.overlay ? strike.paused + 1 : 0;
+    strike.busy = calm && ws === ST.RUNNING && hs === ST.RUNNING && !hud.overlay && !world.hiding && (world.busy || world.player?.frozen) ? strike.busy + 1 : 0;
+    if (strike.hud >= 2) { console.warn('watchdog: HUD was asleep over the running world — woken'); sm.wake('HUD'); strike.hud = 0; }
+    if (strike.paused >= 2) { console.warn('watchdog: world was paused with nothing open — resumed'); hud.pausedAt = -1; sm.resume(wk); world.busy = false; if (world.player) world.player.frozen = false; strike.paused = 0; }
+    if (strike.busy >= 15) { console.warn('watchdog: player was frozen with nothing open — released'); world.busy = false; if (world.player) world.player.frozen = false; strike.busy = 0; }
+  } catch { /* never let the watchdog break the game */ }
+}, 1000);
