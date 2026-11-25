@@ -27,6 +27,9 @@ import { InvUlnaScene } from './scenes/invest/InvUlnaScene';
 import { InvClavicleScene } from './scenes/invest/InvClavicleScene';
 import { InvMuscleScene } from './scenes/invest/InvMuscleScene';
 import { InvHandScene } from './scenes/invest/InvHandScene';
+import { HipScene } from './scenes/HipScene';
+import { InvHipScene } from './scenes/invest/InvHipScene';
+import { HipSectionPuzzle, HipMusclePuzzle, HipGaitPuzzle } from './scenes/puzzles/HipPuzzles';
 import { HandScene } from './scenes/HandScene';
 import { HandXrayPuzzle, CarpalAssemblyPuzzle, JointPuzzle } from './scenes/puzzles/HandPuzzles';
 
@@ -47,7 +50,7 @@ const game = new Phaser.Game({
   input: { activePointers: 4 },
   fps: { target: 60, smoothStep: true },
   physics: { default: 'arcade', arcade: { debug: false } },
-  scene: [BootScene, TitleScene, GameScene, MuscleScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene, InvestigateScene, InvHumerusScene, InvRadiusScene, InvUlnaScene, InvClavicleScene, InvMuscleScene, HandScene, InvHandScene, HandXrayPuzzle, CarpalAssemblyPuzzle, JointPuzzle],
+  scene: [BootScene, TitleScene, GameScene, MuscleScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene, InvestigateScene, InvHumerusScene, InvRadiusScene, InvUlnaScene, InvClavicleScene, InvMuscleScene, HandScene, InvHandScene, HandXrayPuzzle, CarpalAssemblyPuzzle, JointPuzzle, HipScene, InvHipScene, HipSectionPuzzle, HipMusclePuzzle, HipGaitPuzzle],
 });
 
 let rt: number | undefined;

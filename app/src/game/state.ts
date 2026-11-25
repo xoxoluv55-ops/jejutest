@@ -32,17 +32,18 @@ export function newRun(difficulty: Difficulty, color: string, chapter = 1): RunS
     difficulty, color, chapter, startTime: 0, elapsed: 0, mistakes: 0, scans: 0, bones: [], items: [], logs: [],
     flags: ch1
       ? { intro: false, assembled: false, blackout: false, power: false, aligned: false, xray: false, gate: false, escaped: false }
+      : chapter === 4 ? { intro: false, section: false, muscles: false, load: false, stopped: false, gait: false, gate: false, escaped: false }
       : chapter === 3 ? { intro: false, hxray: false, carpus: false, press: false, released: false, joints: false, gate: false, escaped: false }
       : { intro: false, atlas: false, linked: false, overload: false, stabilized: false, motion: false, gate: false, escaped: false },
-    stats: ch1 ? { assembly: 0, align: 0, xray: 0 } : chapter === 3 ? { hxray: 0, hasm: 0, joint: 0 } : { atlas: 0, link: 0, motion: 0 },
+    stats: ch1 ? { assembly: 0, align: 0, xray: 0 } : chapter === 4 ? { sect: 0, mus: 0, gait: 0 } : chapter === 3 ? { hxray: 0, hasm: 0, joint: 0 } : { atlas: 0, link: 0, motion: 0 },
     learned: [],
     hp: 3, shield: 0, keycard: false, cp: null, hits: 0,
     clues: [], codes: { scapula: randomCode() }, hintsUsed: 0,
   };
 }
 
-/** Scene key of the world scene for the current chapter (CH1 'Game', CH2 'Game2', CH3 'Game3'). */
-export function worldKey() { return G.run.chapter === 3 ? 'Game3' : G.run.chapter === 2 ? 'Game2' : 'Game'; }
+/** Scene key of the world scene for the current chapter (CH1 'Game', CH2 'Game2', CH3 'Game3', CH4 'Game4'). */
+export function worldKey() { return G.run.chapter === 4 ? 'Game4' : G.run.chapter === 3 ? 'Game3' : G.run.chapter === 2 ? 'Game2' : 'Game'; }
 /** Start the current chapter's world scene. */
 export function startWorld(sp: Phaser.Scenes.ScenePlugin, data?: { resume?: boolean }) { sp.start(worldKey(), data); }
 /** rebuild a RunState from a saved snapshot (fields added in later versions fall back to their defaults) */

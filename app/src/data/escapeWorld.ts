@@ -7,6 +7,7 @@ export const INV_SCENE: Record<string, string> = {
   toolbox: 'InvUlna', panel: 'InvUlna',
   poster: 'InvClavicle', safe: 'InvClavicle',
   notes: 'InvMuscle', locker2: 'InvMuscle', chart: 'InvMuscle', lightbox: 'InvMuscle', memo: 'InvMuscle', dissect: 'InvMuscle', manual2: 'InvMuscle', rig: 'InvMuscle',
+  rehab4: 'InvHip', gtable: 'InvHip', rx4: 'InvHip', rig4: 'InvHip', knee4: 'InvHip', pes4: 'InvHip', chart4: 'InvHip', fridge4: 'InvHip',
   journal3: 'InvHand', vault3: 'InvHand', surgery: 'InvHand', tunnel: 'InvHand', manual3: 'InvHand', aligner: 'InvHand', poster3: 'InvHand', dial3: 'InvHand',
 };
 /** an investigable spot the guidance arrow may point at while it still has something to give */

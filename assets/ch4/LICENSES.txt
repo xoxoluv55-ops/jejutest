@@ -1,0 +1,2 @@
+CH4 hip/thigh images: rendered from BodyParts3D 4.0, (c) The Database Center for Life Science, CC BY 4.0
+https://creativecommons.org/licenses/by/4.0/  (tools/anatomy3d/ch4_art.py, ch4_section.py)

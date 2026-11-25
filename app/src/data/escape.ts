@@ -3,6 +3,7 @@
 import Phaser from 'phaser';
 import { G } from '../game/state';
 import { handClue } from './hand';
+import { hipClue } from './hip';
 
 const adv = () => G.run.difficulty === 'adv';
 const shuffle = <T>(a: T[]) => Phaser.Utils.Array.Shuffle([...a]);
@@ -152,5 +153,5 @@ export function clueText(id: string): string | null {
       : '🔧 팔꿈치 모형 정비 매뉴얼: "S-T3 고정핀 — 팔꿈치를 완전히 편(0°) 상태에서, 팔꿈치를 펴는 근육(위팔세갈래근)의 닿는곳 = 팔꿈치 뒤쪽 끝(팔꿈치머리)에 케이블을 건다."';
     case 'safe_plate': return '🔐 금고 명판 — 순서:\n' + SAFE_ORDER.map((j, i) => `    ${i + 1}. (${SAFE_DIRS[i] === 'R' ? '오른쪽' : '왼쪽'}) ${JOINT_RIDDLE[j]}${a ? '' : ` → ${JOINT_KO[j]}`}`).join('\n');
   }
-  return handClue(id);
+  return handClue(id) ?? hipClue(id);
 }

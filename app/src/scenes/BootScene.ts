@@ -35,6 +35,7 @@ export class BootScene extends BaseScene {
     for (const id of ['clavicle', 'scapula', 'humerus', 'radius', 'ulna', 'fibula']) this.load.image(`ch1m_${id}`, `assets/ch1/bone_${id}.webp`);
     this.load.image('ch1_ctx', 'assets/ch1/ctx.webp');
     this.load.image('ch1_xray', 'assets/ch1/xray.webp');
+    for (const c of ['gmax', 'gmed', 'iliopsoas', 'rf', 'sartorius', 'gracilis', 'bf', 'st']) this.load.image(`ch4_core_${c}`, `assets/ch4/core_${c}.webp`);   // CH4 archive + inventory
     for (const c of ['scaphoid', 'lunate', 'triquetrum', 'pisiform', 'trapezium', 'trapezoid', 'capitate', 'hamate']) this.load.image(`ch3_car_${c}`, `assets/ch3/car_${c}.webp`);   // CH3 archive + inventory   // simulated radiograph (tools/anatomy3d/xray_render.py)
     this.load.atlas('env', 'assets/atlas/env.png', 'assets/atlas/env.json');
     this.load.image('title_bg', 'assets/art/title_bg.jpg');
