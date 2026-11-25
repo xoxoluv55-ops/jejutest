@@ -17,6 +17,7 @@ export const PROP_KEYS: Record<string, string[]> = {
   InvUlna: ['inv_toolbox', 'inv_toolbox_in', 'inv_tray', 'inv_manual', 'inv_fuse', 'inv_jbox', 'inv_post', 'inv_term_red', 'inv_term_green', 'inv_socket', 'inv_plug', 'inv_lever_green', 'inv_track'],
   InvMuscle: ['inv_journal_open', 'inv_jbox', 'inv_key', 'inv_keyhole', 'inv_brass', 'inv_button', 'inv_poster_frame', 'inv_paper', 'inv_manual', 'inv_bench', 'inv_plug', 'inv_track', 'inv_lever_green'],
   InvHip: ['inv_paper', 'inv_jbox', 'inv_poster_frame'],
+  InvNerve: ['inv_paper', 'inv_jbox', 'inv_poster_frame'],
   InvHand: ['inv_journal_open', 'inv_jbox', 'inv_paper', 'inv_manual', 'inv_poster_frame', 'inv_brass', 'inv_knob'],
   InvClavicle: ['inv_poster_frame', 'inv_wall', 'inv_safe_door', 'inv_safe_inside', 'inv_dial', 'inv_brass', 'inv_handle_brass'],
 };

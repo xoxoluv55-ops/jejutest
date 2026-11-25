@@ -134,7 +134,7 @@ export class TitleScene extends BaseScene {
     if (snap) {
       const r = snap.run as { chapter?: number; difficulty?: string; bones?: string[]; items?: string[] };
       const d = new Date(snap.at), when = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      const prog = r.chapter === 4 ? `근육 코어 ${r.items?.length ?? 0}개` : r.chapter === 3 ? `손목뼈 ${r.items?.length ?? 0}개` : r.chapter === 2 ? `코어 ${r.items?.length ?? 0}개` : `뼈 ${r.bones?.length ?? 0}개`;
+      const prog = r.chapter === 5 ? `신경 코어 ${r.items?.length ?? 0}개` : r.chapter === 4 ? `근육 코어 ${r.items?.length ?? 0}개` : r.chapter === 3 ? `손목뼈 ${r.items?.length ?? 0}개` : r.chapter === 2 ? `코어 ${r.items?.length ?? 0}개` : `뼈 ${r.bones?.length ?? 0}개`;
       cont.push(['CONTINUE', `이어하기 · CH${r.chapter ?? 1} ${r.difficulty === 'adv' ? '심화' : '기초'} · ${prog} · ${when}`, 'play', () => this.continueRun(), C.green]);
     }
     const items: [string, string, any, () => void, number?][] = [
@@ -151,7 +151,7 @@ export class TitleScene extends BaseScene {
       b.setDepth(50); b.setAlpha(0); b.x += 40;
       this.tweens.add({ targets: b, alpha: 1, x: mx, duration: 500, delay: 300 + i * 90, ease: 'Cubic.out' });
     });
-    T(this, W - 18, H - 14, `v0.12.3 · 빌드 ${__BUILD__}`, 15, '#8a9bbd').setOrigin(1, 1).setDepth(50);
+    T(this, W - 18, H - 14, `v0.13 · 빌드 ${__BUILD__}`, 15, '#8a9bbd').setOrigin(1, 1).setDepth(50);
     if (Save.clears) T(this, 18, H - 14, `CLEAR ×${Save.clears}${Save.bestTime ? ` · BEST ${fmt(Save.bestTime)}` : ''}`, 14, C.greenS, { weight: '700' }).setOrigin(0, 1).setDepth(50);
 
     if (!entered) this.enterGate(); else this.startAudio();
@@ -187,8 +187,8 @@ export class TitleScene extends BaseScene {
     let diff: Difficulty = 'basic';
     let color = Save.color;
     const ch1Done = Save.cleared.includes(1) || Save.clears > 0;
-    const ch2Done = Save.cleared.includes(2), ch3Done = Save.cleared.includes(3);
-    let chapter = ch3Done && !Save.cleared.includes(4) ? 4 : ch2Done && !ch3Done ? 3 : ch1Done && !ch2Done ? 2 : 1;
+    const ch2Done = Save.cleared.includes(2), ch3Done = Save.cleared.includes(3), ch4Done = Save.cleared.includes(4);
+    let chapter = ch4Done && !Save.cleared.includes(5) ? 5 : ch3Done && !ch4Done ? 4 : ch2Done && !ch3Done ? 3 : ch1Done && !ch2Done ? 2 : 1;
     const m = this.add.container(0, 0).setDepth(300);
     this.modal = m;
     const dim = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.7).setInteractive();
@@ -202,17 +202,17 @@ export class TitleScene extends BaseScene {
     const g = this.add.graphics(); drawPanel(g, px, py, pw, ph, { accent: C.cyan, header: L.hd }); m.add(g);
     const head = T(this, px + 34, py + L.hd / 2, '', 22, C.white, { weight: '700' }).setOrigin(0, 0.5); m.add(head);
     // chapter selector (each chapter unlocks after clearing the previous one)
-    const chs: [number, string][] = [[1, 'CH1 뼈대'], [2, 'CH2 근육'], [3, 'CH3 손목'], [4, 'CH4 하지']];
-    const NC = chs.length, cbw = tiny ? 100 : 114;
+    const chs: [number, string][] = [[1, 'CH1 뼈대'], [2, 'CH2 근육'], [3, 'CH3 손목'], [4, 'CH4 하지'], [5, 'CH5 신경']];
+    const NC = chs.length, cbw = tiny ? 96 : 104;
     const chBtns: { g: Phaser.GameObjects.Graphics; n: number; x: number; t: Phaser.GameObjects.Text }[] = [];
     chs.forEach(([n, label], i) => {
       const x = px + pw - 24 - (NC - i) * (cbw + 8), y = py + (L.hd - 38) / 2;
       const g2 = this.add.graphics(); m.add(g2);
-      const locked = (n === 2 && !ch1Done) || (n === 3 && !ch2Done) || (n === 4 && !ch3Done);
+      const locked = (n === 2 && !ch1Done) || (n === 3 && !ch2Done) || (n === 4 && !ch3Done) || (n === 5 && !ch4Done);
       const t = T(this, x + cbw / 2, y + 19, locked ? `${label} 🔒` : label, 16, locked ? '#5a6782' : C.white, { weight: '700' }).setOrigin(0.5); m.add(t);
       const z = this.add.zone(x, y, cbw, 38).setOrigin(0).setInteractive({ useHandCursor: true });
       z.on('pointerup', () => {
-        if (locked) { Audio.play('error'); story.setText(n === 4 ? 'CHAPTER 4 엉덩이·넙다리 근육실은 CHAPTER 3을 한 번 탈출하면 열립니다.' : n === 3 ? 'CHAPTER 3 손목·관절실은 CHAPTER 2를 한 번 탈출하면 열립니다.' : 'CHAPTER 2 근육 연결실은 CHAPTER 1을 한 번 탈출하면 열립니다.'); return; }
+        if (locked) { Audio.play('error'); story.setText(n === 5 ? 'CHAPTER 5 신경 배선실은 CHAPTER 4를 한 번 탈출하면 열립니다.' : n === 4 ? 'CHAPTER 4 엉덩이·넙다리 근육실은 CHAPTER 3을 한 번 탈출하면 열립니다.' : n === 3 ? 'CHAPTER 3 손목·관절실은 CHAPTER 2를 한 번 탈출하면 열립니다.' : 'CHAPTER 2 근육 연결실은 CHAPTER 1을 한 번 탈출하면 열립니다.'); return; }
         chapter = n; Audio.play('click'); redraw();
       });
       m.add(z); chBtns.push({ g: g2, n, x, t });
@@ -249,12 +249,13 @@ export class TitleScene extends BaseScene {
       1: '인체 구조를 연구하던 지하 시설 BODY LAB.\n중앙 AI의 오작동으로 모든 격벽이 봉쇄됐다.\n\n흩어진 뼈대 표본을 찾아 복구하고\n탈출 게이트의 잠금 3개를 해제하라.',
       2: '뼈대실을 탈출한 실험체는 하부 연구동의\n근육 연결실에 도착했다.\n\n끊어진 근육의 이는곳과 닿는곳을 다시 잇고\n주작용근과 대항근으로 움직임을 되살려라.',
       4: '연구동 최하층 B2, 엉덩이·넙다리 근육실.\n몸을 세우고 걷게 하는 근육 8개가 흩어졌다.\n\n잠긴 장치에서 근육 코어를 되찾아 골격에 붙이고\n엉덩관절과 무릎을 다시 움직여라.',
+      5: '연구동 가장 깊은 곳 B1, 신경 배선실.\n팔과 다리를 움직이고 느끼게 하는 신경 8가닥이 끊겼다.\n\n잠긴 장치에서 신경 코어를 되찾아 다시 배선하고\n손상 증례를 진단해 전도를 회복하라.',
       3: '근육실 아래층, 손목·관절실.\n손을 움직이는 작은 뼈 8개가 흩어졌다.\n\n잠긴 장치에서 손목뼈를 되찾아 제자리에 맞추고\n관절마다 움직이는 방식을 판정하라.',
     };
     const story = T(this, px + 34 + 4 * (cw + 14) + 10, py + L.cY, STORY[chapter], tiny ? 15 : 16, '#c9d6ee', { lineSpacing: tiny ? 3 : 6, wordWrap: { width: Math.max(160, px + pw - (px + 34 + 4 * (cw + 14) + 10) - 30) } });
     m.add(story);
     const redraw = () => {
-      head.setText((tiny ? ['', 'CH1 뼈대 복구실', 'CH2 근육 연결실', 'CH3 손목·관절실', 'CH4 엉덩이·넙다리'] : ['', 'BRIEFING · CH1 뼈대 복구실', 'BRIEFING · CH2 근육 연결실', 'BRIEFING · CH3 손목·관절실', 'BRIEFING · CH4 엉덩이·넙다리 근육실'])[chapter]);
+      head.setText(['', 'CH1 뼈대 복구실', 'CH2 근육 연결실', 'CH3 손목·관절실', 'CH4 엉덩이·넙다리', 'CH5 신경 배선실'][chapter]);   // five chapter buttons share the header: short titles
       story.setText(STORY[chapter]);
       chBtns.forEach(({ g: g2, n, x }) => {
         const on = n === chapter; g2.clear();

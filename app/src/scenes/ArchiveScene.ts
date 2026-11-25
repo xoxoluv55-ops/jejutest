@@ -31,8 +31,8 @@ export class ArchiveScene extends BaseScene {
     const tabY = tn ? m + hd + 8 : 92, tabH = tn ? 40 : 46;
     this.input.keyboard?.on('keydown-ESC', () => this.back());
     const listW = Math.min(420, W * 0.36);
-    const cats: ArchiveEntry['cat'][] = ['뼈', '근육', '개념', '기록'];
-    const tw = (listW - 18) / 4;
+    const cats: ArchiveEntry['cat'][] = ['뼈', '근육', '신경', '개념', '기록'];
+    const tw = (listW - 24) / 5;
     cats.forEach((cat, i) => {
       const x = 40 + i * (tw + 6), on = cat === this.cat;
       const n = ARCHIVE.filter(a => a.cat === cat && Save.archive.includes(a.id)).length, tot = ARCHIVE.filter(a => a.cat === cat).length;

@@ -29,6 +29,9 @@ import { InvMuscleScene } from './scenes/invest/InvMuscleScene';
 import { InvHandScene } from './scenes/invest/InvHandScene';
 import { HipScene } from './scenes/HipScene';
 import { InvHipScene } from './scenes/invest/InvHipScene';
+import { NerveScene } from './scenes/NerveScene';
+import { InvNerveScene } from './scenes/invest/InvNerveScene';
+import { NerveScanPuzzle, NerveWirePuzzle, NerveCasePuzzle } from './scenes/puzzles/NervePuzzles';
 import { HipSectionPuzzle, HipMusclePuzzle, HipGaitPuzzle } from './scenes/puzzles/HipPuzzles';
 import { HandScene } from './scenes/HandScene';
 import { HandXrayPuzzle, CarpalAssemblyPuzzle, JointPuzzle } from './scenes/puzzles/HandPuzzles';
@@ -50,7 +53,7 @@ const game = new Phaser.Game({
   input: { activePointers: 4 },
   fps: { target: 60, smoothStep: true },
   physics: { default: 'arcade', arcade: { debug: false } },
-  scene: [BootScene, TitleScene, GameScene, MuscleScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene, InvestigateScene, InvHumerusScene, InvRadiusScene, InvUlnaScene, InvClavicleScene, InvMuscleScene, HandScene, InvHandScene, HandXrayPuzzle, CarpalAssemblyPuzzle, JointPuzzle, HipScene, InvHipScene, HipSectionPuzzle, HipMusclePuzzle, HipGaitPuzzle],
+  scene: [BootScene, TitleScene, GameScene, MuscleScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene, InvestigateScene, InvHumerusScene, InvRadiusScene, InvUlnaScene, InvClavicleScene, InvMuscleScene, HandScene, InvHandScene, HandXrayPuzzle, CarpalAssemblyPuzzle, JointPuzzle, HipScene, InvHipScene, HipSectionPuzzle, HipMusclePuzzle, HipGaitPuzzle, NerveScene, InvNerveScene, NerveScanPuzzle, NerveWirePuzzle, NerveCasePuzzle],
 });
 
 // Phaser's resize() leaves canvas.style untouched when zoom is 1 (dpr-1 screens), so after a rotation / window

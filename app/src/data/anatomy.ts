@@ -1,6 +1,7 @@
 import { MUSCLES, MuscleId } from './muscles';
 import { CORES, CORE } from './hip';
 import { CARPALS, CARPAL } from './hand';
+import { CORES as NCORES, NERVE } from './nerve';
 
 // Anatomy content for Chapter 1. Geometry is the RIGHT upper limb in ANTERIOR view
 // (anatomical position, palms forward). Viewer's LEFT = patient's LATERAL side.
@@ -166,7 +167,7 @@ export const ALIGN_HINTS: Record<'humerus' | 'ulna' | 'radius', { flip: string; 
   },
 };
 
-export interface ArchiveEntry { id: string; title: string; en: string; cat: '뼈' | '근육' | '개념' | '기록'; bone?: BoneId; muscle?: MuscleId; tex?: string; body: string; }
+export interface ArchiveEntry { id: string; title: string; en: string; cat: '뼈' | '근육' | '신경' | '개념' | '기록'; bone?: BoneId; muscle?: MuscleId; tex?: string; body: string; }
 export const ARCHIVE: ArchiveEntry[] = [
   { id: 'bone_clavicle', title: '빗장뼈', en: 'Clavicle', cat: '뼈', bone: 'clavicle', body: BONES.clavicle.info + '\n\n임상: 낙상 시 가장 흔히 골절되는 뼈 중 하나로, 중간 1/3 부위 골절이 가장 많다.' },
   { id: 'bone_scapula', title: '어깨뼈', en: 'Scapula', cat: '뼈', bone: 'scapula', body: BONES.scapula.info + '\n\n주요 구조: 관절오목, 봉우리, 부리돌기, 어깨뼈가시, 상각·하각.' },
@@ -205,4 +206,11 @@ export const ARCHIVE: ArchiveEntry[] = [
   { id: 'c_twojoint', title: '두관절근과 주작용근·대항근', en: 'Two-joint muscles', cat: '개념', body: '근육의 작용은 그 근육이 어느 관절의 어느 쪽을 지나는지로 정해진다.\n· 엉덩관절 앞: 엉덩허리근, 넙다리곧은근 → 굽힘 / 뒤: 큰볼기근, 뒤넙다리근 → 폄\n· 엉덩관절 위·가쪽: 중간볼기근 → 벌림 / 안쪽: 모음근, 두덩정강근 → 모음\n· 무릎 앞: 넙다리네갈래근 → 폄 / 뒤: 뒤넙다리근 → 굽힘\n\n두관절근(넙다리곧은근, 뒤넙다리근, 넙다리빗근, 두덩정강근)은 두 관절에 동시에 작용한다. 넙다리곧은근은 엉덩관절 굽힘 + 무릎 폄(공 차기), 뒤넙다리근은 엉덩관절 폄 + 무릎 굽힘.\n\n게임의 시험대는 뼈를 강체로 돌리고, 모델에서 잰 근육 경로(이는곳–경유점–닿는곳)의 길이 변화로 수축(빨강)·신장(파랑)을 표시한다.' },
   { id: 'log_9', title: '하지 근육실 운영 기록', en: 'Hip lab log', cat: '기록', body: '근육 코어 8개를 네 장치에 두 개씩 나눠 보관했다. 각 장치의 해제 방법은 다른 방의 문서에 적어 두었다. 볼기 해부대는 H-02, 운동 시험대는 H-04, 거위발 고정기와 신경 구획 냉장고는 H-05. — 하지팀' },
   { id: 'log_10', title: '하중 시험 매뉴얼', en: 'Load test manual', cat: '기록', body: '근육 재배치가 끝나면 하중 시험 트레드밀이 자동으로 가동된다. 모터가 과부하되면 하중 제어실(H-04)의 비상 정지 스위치를 눌러야 한다. 정지 전에는 보행 시험실(H-03) 출입문이 열리지 않는다.' },
+  // ---------------- CHAPTER 5 ----------------
+  ...NCORES.map(c => ({ id: `nerve_${c}`, title: NERVE[c].ko, en: NERVE[c].en, cat: '신경' as const, tex: `ch5_core_${c}`, body: `뿌리: ${NERVE[c].roots} · ${NERVE[c].from}\n경로: ${NERVE[c].course}\n운동: ${NERVE[c].motor}\n감각: ${NERVE[c].sensory}\n\n임상: ${NERVE[c].injury}` })),
+  { id: 'c_nscan', title: '팔다리의 신경 얼기와 주요 신경', en: 'Limb plexuses', cat: '개념', body: '팔신경얼기(C5–T1): 뿌리 → 줄기(위·중간·아래) → 갈래 → 다발(가쪽·안쪽·뒤) → 끝가지.\n· 가쪽다발: 근육피부신경, 정중신경(가쪽 뿌리)\n· 안쪽다발: 자신경, 정중신경(안쪽 뿌리)\n· 뒤다발: 겨드랑신경, 노신경\n\n허리신경얼기(L1–L4): 넙다리신경(앞칸), 폐쇄신경(안쪽칸).\n엉치신경얼기(L4–S4): 궁둥신경(뒤칸) → 무릎 위에서 정강신경 + 온종아리신경.' },
+  { id: 'c_nwire', title: '신경의 경로와 뼈의 관계', en: 'Nerves and bones', cat: '개념', body: '신경이 뼈에 바로 붙어 지나는 곳은 골절·압박에 잘 다친다(모델에서 측정한 접촉 지점).\n· 위팔뼈 수술목 — 겨드랑신경\n· 위팔뼈 몸통 뒤(노신경고랑) — 노신경\n· 안쪽위관절융기 뒤 — 자신경\n· 종아리뼈 목 — 온종아리신경\n\n손목굴(굽힘근지지띠 아래)은 정중신경이 지나는 좁은 통로다.' },
+  { id: 'c_nlesion', title: '말초신경 손상의 징후', en: 'Nerve lesion signs', cat: '개념', body: '· 노신경: 손목 처짐(wrist drop), 손등 엄지 쪽 감각 저하\n· 자신경: 갈퀴손, 새끼손가락 쪽 저림, 손가락 벌림·모음 약화\n· 정중신경(손목굴): 엄지~넷째 반쪽 저림, 엄지두덩 위축\n· 겨드랑신경: 어깨 벌림 약화, 어깨 가쪽 감각 소실\n· 넙다리신경: 무릎 폄 약화, 무릎반사 소실\n· 온종아리신경: 발처짐(foot drop), 발등 저림\n\n심부건반사: 위팔두갈래근 C5–C6(근육피부신경), 무릎 L2–L4(넙다리신경).' },
+  { id: 'log_11', title: '신경 배선실 운영 기록', en: 'Nerve lab log', cat: '기록', body: '신경 코어 8개를 네 장치에 두 개씩 나눠 보관했다. 각 장치의 해제 방법은 다른 방의 문서에 적어 두었다. 반사 검사대는 N-02, 골절 판독기는 N-04, 감각 지도 패널과 다리 배선 추적기는 N-05. — 신경팀' },
+  { id: 'log_12', title: '배전 매뉴얼', en: 'Power manual', cat: '기록', body: '신경 재배선이 끝나면 전도 시험 전류가 자동으로 투입된다. 과전류가 생기면 배전 제어실(N-04)의 주 차단기를 리셋해야 한다. 리셋 전에는 전도 시험실(N-03) 출입문이 열리지 않는다.' },
 ];

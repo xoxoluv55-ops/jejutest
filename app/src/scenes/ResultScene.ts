@@ -37,8 +37,8 @@ export class ResultScene extends BaseScene {
     const compact = H < 820;   // iPad landscape (≈740 logical) — tighten the vertical rhythm so nothing overlaps the buttons
     const title = T(this, W / 2, tiny ? 30 : compact ? 54 : 80, 'ESCAPE SUCCESS', tiny ? 40 : 64, '#ffffff', { display: true, weight: '900' }).setOrigin(0.5);
     title.setShadow(0, 0, '#3dffa2', 24, true, true);
-    const ch2 = r.chapter === 2, ch3 = r.chapter === 3, ch4 = r.chapter === 4;
-    T(this, W / 2, tiny ? 62 : compact ? 102 : 140, ch4 ? 'CHAPTER 4 · 엉덩이·넙다리 근육실 탈출 완료' : ch3 ? 'CHAPTER 3 · 손목·관절실 탈출 완료' : ch2 ? 'CHAPTER 2 · 근육 연결실 탈출 완료' : 'CHAPTER 1 · 뼈대 복구실 탈출 완료', tiny ? 18 : 22, C.greenS, { weight: '700' }).setOrigin(0.5);
+    const ch2 = r.chapter === 2, ch3 = r.chapter === 3, ch4 = r.chapter === 4, ch5 = r.chapter === 5;
+    T(this, W / 2, tiny ? 62 : compact ? 102 : 140, ch5 ? 'CHAPTER 5 · 신경 배선실 탈출 완료' : ch4 ? 'CHAPTER 4 · 엉덩이·넙다리 근육실 탈출 완료' : ch3 ? 'CHAPTER 3 · 손목·관절실 탈출 완료' : ch2 ? 'CHAPTER 2 · 근육 연결실 탈출 완료' : 'CHAPTER 1 · 뼈대 복구실 탈출 완료', tiny ? 18 : 22, C.greenS, { weight: '700' }).setOrigin(0.5);
     const pw = tiny ? W * 0.76 : Math.min(760, W * 0.58), px = tiny ? W * 0.21 : Math.max(W * 0.36, W / 2 - pw / 2), py = tiny ? 80 : compact ? 128 : 190, ph = H - py - (tiny ? 62 : 96);
     const hd = tiny ? 40 : 52;
     const g = this.add.graphics(); drawPanel(g, px, py, pw, ph, { accent: C.green, header: hd });
@@ -47,7 +47,11 @@ export class ResultScene extends BaseScene {
     const rows: [string, string][] = [
       ['소요 시간', `${fmt(r.elapsed)}${Save.best[String(r.chapter)] === r.elapsed ? '  ★ 최고 기록' : ''}`],
       ['난이도', r.difficulty === 'adv' ? '심화 · 응용' : '기초 · 1학년'],
-      ...(ch4 ? [
+      ...(ch5 ? [
+        ['신경 스캐너 오답', `${r.stats.scan}회  (정확도 ${acc(r.stats.scan)}%)`],
+        ['신경 재배선 오답', `${r.stats.wire}회  (정확도 ${acc(r.stats.wire)}%)`],
+        ['손상 진단 오답', `${r.stats.case}회  (정확도 ${acc(r.stats.case)}%)`],
+      ] as [string, string][] : ch4 ? [
         ['근육 스캐너 오답', `${r.stats.sect}회  (정확도 ${acc(r.stats.sect)}%)`],
         ['근육 재배치 오답', `${r.stats.mus}회  (정확도 ${acc(r.stats.mus)}%)`],
         ['보행 재현 역할 오답', `${r.stats.gait}회  (정확도 ${acc(r.stats.gait)}%)`],
@@ -66,7 +70,9 @@ export class ResultScene extends BaseScene {
       ] as [string, string][]),
       ['스캔 사용 / 연구 기록', `${r.scans}회 / ${r.logs.length}개 열람`],
     ];
-    const weak: [string, string][] = ch4
+    const weak: [string, string][] = ch5
+      ? [['scan', '팔다리 주요 신경의 경로'], ['wire', '신경의 기원(신경얼기·다발)과 경로'], ['case', '신경 손상의 징후와 손상 자리']]
+      : ch4
       ? [['sect', '엉덩이·넙다리 근육의 위치와 세 칸'], ['mus', '엉덩이·넙다리 근육의 위치(앞면·뒷면)'], ['gait', '엉덩관절·무릎을 지나는 위치와 주작용근·대항근']]
       : ch3
       ? [['hxray', '방사선 영상에서 손목뼈 구별'], ['hasm', '손목뼈 8개의 배열(몸쪽 줄·먼쪽 줄)'], ['joint', '윤활관절의 종류와 운동축']]
@@ -104,7 +110,7 @@ export class ResultScene extends BaseScene {
     const by = tiny ? H - 30 : H - 56, bh = tiny ? 44 : 58;
     const retry = () => { G.run = newRun(r.difficulty, r.color, r.chapter); this.saved = false; startWorld(this.scene); };
     const toTitle = () => { this.saved = false; this.scene.start('Title'); };
-    if (!ch4) {
+    if (!ch5) {
     const nx = r.chapter + 1;
       const bw = Math.min(220, (W - 80) / 4 - 12), sp = bw + 14;
       new Button(this, W / 2 - sp * 1.5, by, '다시 하기', retry, { w: bw, h: bh, icon: 'retry' });
@@ -116,6 +122,6 @@ export class ResultScene extends BaseScene {
       new Button(this, W / 2, by, '해부학 도감', () => this.scene.start('Archive', { from: 'Title' }), { w: 240, h: bh, icon: 'book' });
       new Button(this, W / 2 + 250, by, '타이틀로', toTitle, { w: 220, h: bh, icon: 'back', accent: C.green, primary: true });
     }
-    if (!tiny) T(this, W / 2, H - 14, ch4 ? 'NEXT · CHAPTER 5 신경 — 개발 예정' : ch3 ? '엉덩이·넙다리 근육실(CHAPTER 4)이 열렸습니다' : ch2 ? '손목·관절실(CHAPTER 3)이 열렸습니다' : '근육 연결실(CHAPTER 2)이 열렸습니다', 13, '#55647f').setOrigin(0.5, 1);
+    if (!tiny) T(this, W / 2, H - 14, ch5 ? '모든 챕터를 탈출했습니다 · BODY LAB 탈출 완료' : ch4 ? '신경 배선실(CHAPTER 5)이 열렸습니다' : ch3 ? '엉덩이·넙다리 근육실(CHAPTER 4)이 열렸습니다' : ch2 ? '손목·관절실(CHAPTER 3)이 열렸습니다' : '근육 연결실(CHAPTER 2)이 열렸습니다', 13, '#55647f').setOrigin(0.5, 1);
   }
 }
