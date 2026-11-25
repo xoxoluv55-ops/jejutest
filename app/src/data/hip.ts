@@ -74,13 +74,31 @@ export const THIGH: Record<string, ThighMuscle> = {
   st: { ko: '반힘줄근', en: 'Semitendinosus', comp: 'post' },
   sm: { ko: '반막근', en: 'Semimembranosus', comp: 'post' },
 };
-export const SECTION_EXTRA: Record<string, string> = { itt: '엉덩정강띠 (근막)', femur: '넙다리뼈' };
 
-/** LOCK 1 targets (section names). adv: the last one is a case question. */
-export function sectionTargets(): string[] {
-  return G.run.difficulty === 'adv' ? ['rf', 'vi', 'vm', 'sartorius', 'gracilis', 'am', 'sm', 'bfl'] : ['rf', 'vl', 'sartorius', 'gracilis', 'bfl'];
+/** LOCK 1 muscle scanner: names of the muscles on the front / back plates */
+const SCAN_KO: Record<string, string> = { tfl: '넙다리근막긴장근', pectineus: '두덩근', psoas: '큰허리근', iliacus: '엉덩근', gmax: '큰볼기근', gmed: '중간볼기근', itt: '엉덩정강띠' };
+export const SCAN_EN: Record<string, string> = { tfl: 'Tensor fasciae latae', pectineus: 'Pectineus', psoas: 'Psoas major', iliacus: 'Iliacus', gmax: 'Gluteus maximus', gmed: 'Gluteus medius', itt: 'Iliotibial tract' };
+for (const [k, v] of Object.entries(THIGH)) SCAN_EN[k] ??= v.en;
+export const scanName = (id: string) => THIGH[id]?.ko ?? SCAN_KO[id] ?? id;
+export const SCAN_COMP: Record<string, Comp | undefined> = Object.fromEntries(Object.entries(THIGH).map(([k, v]) => [k, v.comp]));
+export interface ScanQ { id: string; view: 'ant' | 'post'; hint: string; cands: string[]; case?: string }
+/** basic: 5 questions, each with 3 glowing candidates; adv: 8 without candidates, the last is a case */
+export function scanQuestions(): ScanQ[] {
+  const sh = <T,>(a: T[]) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
+  if (G.run.difficulty !== 'adv') return [
+    { id: 'sartorius', view: 'ant', hint: '위앞엉덩뼈가시에서 안쪽 아래로 비스듬히 가로지르는 가장 긴 띠 모양 근육', cands: sh(['sartorius', 'rf', 'vm']) },
+    { id: 'rf', view: 'ant', hint: '넙다리 앞 한가운데를 곧게 내려가 무릎뼈로 가는 근육', cands: sh(['rf', 'vl', 'sartorius']) },
+    { id: 'al', view: 'ant', hint: '두덩뼈에서 넙다리 안쪽 위로 퍼지는 삼각형 모음근', cands: sh(['al', 'gracilis', 'pectineus']) },
+    { id: 'gmax', view: 'post', hint: '볼기 전체를 덮는 가장 크고 두꺼운 근육', cands: sh(['gmax', 'gmed', 'itt']) },
+    { id: 'bfl', view: 'post', hint: '넙다리 뒤쪽 가쪽(그림의 오른쪽)으로 내려가는 뒤넙다리근', cands: sh(['bfl', 'st', 'sm']) },
+  ];
+  return [
+    { id: 'rf', view: 'ant', hint: '', cands: [] }, { id: 'vl', view: 'ant', hint: '', cands: [] }, { id: 'gracilis', view: 'ant', hint: '', cands: [] },
+    { id: 'tfl', view: 'ant', hint: '', cands: [] }, { id: 'st', view: 'post', hint: '', cands: [] }, { id: 'sm', view: 'post', hint: '', cands: [] },
+    { id: 'bfl', view: 'post', hint: '', cands: [] },
+    { id: 'gmed', view: 'post', hint: '', cands: [], case: '증례: 오른다리로 한 발 서기를 하면 왼쪽 골반이 처진다(트렌델렌부르크 징후). 약해진 근육은?' },
+  ];
 }
-export const SECTION_CASE = '증례: 단거리 선수가 전력 질주 중 넙다리 뒤쪽을 잡고 쓰러졌다. 가장 흔히 손상되는 근육은?';
 
 /** D4 fridge specimens (spec_<id> images) */
 export function fridgeSpecimens(): string[] {
@@ -156,6 +174,7 @@ export interface HipManifest {
   points: Record<string, Record<string, Pt>>;
   rig: Record<string, Record<string, [string, number, number][]>>;
 }
+export interface ScanManifest { density: number; views: Record<'ant' | 'post', { w: number; h: number; names: string[]; grid: { w: number; h: number; step: number; rle: [number, number][] }; muscles: Record<string, { x: number; y: number; area: number; rect: { x: number; y: number; w: number; h: number } }> }> }
 export interface SectionManifest { z: number; pxPerMm: number; w: number; h: number; names: string[]; grid: { w: number; h: number; step: number; rle: [number, number][] }; centre: Record<string, { x: number; y: number; area: number }> }
 
 export function hipClue(id: string): string | null {

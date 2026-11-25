@@ -97,7 +97,7 @@ export class HipScene extends GameScene {
     this.prop('xray_box', 1090, 1080, { col: [210, 40] });
     this.addInter({
       id: 'hsect', x: 1090, y: 1090, r: 140, icon: 'eye',
-      label: () => G.run.flags.section ? '넙다리 단면 판독기 (판독 완료)' : '넙다리 단면 판독기',
+      label: () => G.run.flags.section ? '하지 근육 스캐너 (스캔 완료)' : '하지 근육 스캐너',
       locked: () => G.run.flags.section ? '이미 판독을 마쳤습니다.' : null,
       act: () => this.openPuzzle('HSection'),
     });
@@ -110,7 +110,7 @@ export class HipScene extends GameScene {
       id: 'hasm4', x: 1440, y: 1300, r: 150, icon: 'bone',
       label: () => G.run.flags.muscles ? '근육 재배치대 (복구 완료)' : '근육 재배치대',
       locked: () => G.run.flags.muscles ? '이미 근육을 재배치했습니다.'
-        : !G.run.flags.section ? '근육 배치 기준 데이터가 없습니다. 먼저 넙다리 단면 판독기(H-01 서쪽)를 해결하세요.'
+        : !G.run.flags.section ? '근육 배치 기준 데이터가 없습니다. 먼저 하지 근육 스캐너(H-01 서쪽)를 해결하세요.'
         : G.run.items.length < CORES.length ? `근육 코어가 부족합니다 (${G.run.items.length}/8). 잠긴 장치들을 조사하세요.` : null,
       act: () => this.openPuzzle('HMuscles'),
     });
@@ -155,7 +155,7 @@ export class HipScene extends GameScene {
       id: 'gate', x: this.map.gateX, y: 840, r: 130, icon: 'lock',
       enabled: () => !G.run.flags.gate,
       label: () => '탈출 게이트 · 보행 인증',
-      locked: () => { const f = G.run.flags; const n = [f.section, f.muscles, f.gait].filter(Boolean).length; return n < 3 ? `게이트 잠금 ${n}/3 해제됨. 넙다리 단면 판독 · 근육 재배치 · 보행 재현을 모두 완료해야 합니다.` : null; },
+      locked: () => { const f = G.run.flags; const n = [f.section, f.muscles, f.gait].filter(Boolean).length; return n < 3 ? `게이트 잠금 ${n}/3 해제됨. 근육 스캐너 · 근육 재배치 · 보행 재현을 모두 완료해야 합니다.` : null; },
       act: () => this.openGate(),
     });
     // research logs
@@ -218,7 +218,7 @@ export class HipScene extends GameScene {
     Bus.emit('pickup', id);
     this.toast(`${CORE[id].ko} (${CORE[id].en}) 코어 회수 — ${run.items.length}/8`, 'ok');
     Bus.emit('mission');
-    if (run.items.length === CORES.length) this.time.delayedCall(900, () => this.ai(G.run.flags.section ? '근육 코어 8개 회수 완료. 하지 근육실(H-01) 중앙의 재배치대로 이동하십시오.' : '근육 코어 8개 회수 완료. 하지 근육실(H-01)의 넙다리 단면 판독을 먼저 마치십시오.', 'ok'));
+    if (run.items.length === CORES.length) this.time.delayedCall(900, () => this.ai(G.run.flags.section ? '근육 코어 8개 회수 완료. 하지 근육실(H-01) 중앙의 재배치대로 이동하십시오.' : '근육 코어 8개 회수 완료. 하지 근육실(H-01)의 근육 스캐너를 먼저 마치십시오.', 'ok'));
   }
 
   // ---------------- story ----------------
@@ -230,7 +230,7 @@ export class HipScene extends GameScene {
     const seq: [number, () => void][] = [
       [600, () => { Audio.play('glitch'); this.ai('하부 연구동 B2 도착. 하지 근육 데이터 손상 감지.', 'warn', 3200); }],
       [3800, () => this.ai('엉덩이·넙다리 근육 코어 8개가 네 장치에 두 개씩 잠겨 있습니다. 각 장치의 해제 방법은 다른 방의 문서에 있습니다.', 'ai', 4400)],
-      [8400, () => { this.ai('넙다리 단면 판독(H-01) → 근육 재배치(H-01) → 보행 재현(H-03). 반짝이는 물건은 조사할 수 있습니다.', 'ai', 5200); Audio.alarm(false); }],
+      [8400, () => { this.ai('근육 스캐너(H-01) → 근육 재배치(H-01) → 보행 재현(H-03). 반짝이는 물건은 조사할 수 있습니다.', 'ai', 5200); Audio.alarm(false); }],
       [10200, () => {
         this.busy = false; this.player.frozen = false; G.run.flags.intro = true; Bus.emit('mission');
         this.toast('CHAPTER 4 · 엉덩이·넙다리 근육실', 'info');
@@ -242,7 +242,7 @@ export class HipScene extends GameScene {
 
   missions(): Mission[] {
     const f = G.run.flags, n = G.run.items.length;
-    const list: Mission[] = [{ text: '넙다리 단면 판독 · H-01', done: !!f.section, active: !f.section, tag: 'LOCK 1' }];
+    const list: Mission[] = [{ text: '하지 근육 스캐너 · H-01', done: !!f.section, active: !f.section, tag: 'LOCK 1' }];
     for (const [a, b] of PAIRS) {
       const has = G.run.items.includes(a);
       list.push({ text: has ? `${CORE[a].ko}·${CORE[b].ko} 회수` : `${CORE[a].ko}·${CORE[b].ko} · ${CORE_DEVICE[a]}`, done: has, active: !has });
@@ -276,7 +276,7 @@ export class HipScene extends GameScene {
     const learn = (c: string) => { unlock(c); if (!G.run.learned.includes(c)) G.run.learned.push(c); };
     if (id === 'HSection') {
       f.section = true; learn('c_section'); this.setLock(0);
-      this.ai(G.run.items.length < CORES.length ? '단면 판독 완료. 게이트 잠금 1 해제. 남은 근육 코어를 회수하십시오.' : '단면 판독 완료. 게이트 잠금 1 해제. 재배치대(H-01 중앙)로 이동하십시오.', 'ok', 4400);
+      this.ai(G.run.items.length < CORES.length ? '근육 스캔 완료. 게이트 잠금 1 해제. 남은 근육 코어를 회수하십시오.' : '근육 스캔 완료. 게이트 잠금 1 해제. 재배치대(H-01 중앙)로 이동하십시오.', 'ok', 4400);
     } else if (id === 'HMuscles') {
       f.muscles = true; learn('c_hipmus'); this.setLock(1);
       this.tableGlow.setTint(0x3dffa2);

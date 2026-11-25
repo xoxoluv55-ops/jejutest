@@ -48,7 +48,7 @@ export class ResultScene extends BaseScene {
       ['소요 시간', `${fmt(r.elapsed)}${Save.best[String(r.chapter)] === r.elapsed ? '  ★ 최고 기록' : ''}`],
       ['난이도', r.difficulty === 'adv' ? '심화 · 응용' : '기초 · 1학년'],
       ...(ch4 ? [
-        ['넙다리 단면 판독 오답', `${r.stats.sect}회  (정확도 ${acc(r.stats.sect)}%)`],
+        ['근육 스캐너 오답', `${r.stats.sect}회  (정확도 ${acc(r.stats.sect)}%)`],
         ['근육 재배치 오답', `${r.stats.mus}회  (정확도 ${acc(r.stats.mus)}%)`],
         ['보행 재현 역할 오답', `${r.stats.gait}회  (정확도 ${acc(r.stats.gait)}%)`],
       ] as [string, string][] : ch3 ? [
@@ -67,7 +67,7 @@ export class ResultScene extends BaseScene {
       ['스캔 사용 / 연구 기록', `${r.scans}회 / ${r.logs.length}개 열람`],
     ];
     const weak: [string, string][] = ch4
-      ? [['sect', '넙다리 단면에서 근육과 세 칸 구별'], ['mus', '엉덩이·넙다리 근육의 위치(앞면·뒷면)'], ['gait', '엉덩관절·무릎을 지나는 위치와 주작용근·대항근']]
+      ? [['sect', '엉덩이·넙다리 근육의 위치와 세 칸'], ['mus', '엉덩이·넙다리 근육의 위치(앞면·뒷면)'], ['gait', '엉덩관절·무릎을 지나는 위치와 주작용근·대항근']]
       : ch3
       ? [['hxray', '방사선 영상에서 손목뼈 구별'], ['hasm', '손목뼈 8개의 배열(몸쪽 줄·먼쪽 줄)'], ['joint', '윤활관절의 종류와 운동축']]
       : ch2

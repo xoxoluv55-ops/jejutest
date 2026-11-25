@@ -3,97 +3,96 @@ import { PuzzleBase } from './PuzzleBase';
 import { Audio } from '../../core/audio';
 import { G } from '../../game/state';
 import { T, C, Button } from '../../ui/widgets';
-import { CORE, CORES, CoreId, HIP_CREDIT, THIGH, SECTION_EXTRA, COMP_COL, COMP_KO, COMP_NERVE, sectionTargets, SECTION_CASE, GAIT, gaitCards, Role4, RIG_KO } from '../../data/hip';
-import { hipManifest, sectionManifest, sectionLabel, fitRect, regionAt, Rig } from '../../art/hip';
+import { CORE, CORES, CoreId, HIP_CREDIT, COMP_COL, COMP_KO, COMP_NERVE, scanQuestions, scanName, SCAN_EN, SCAN_COMP, GAIT, gaitCards, Role4, RIG_KO } from '../../data/hip';
+import { hipManifest, scanManifest, scanLabel, fitRect, regionAt, Rig } from '../../art/hip';
 
 const ACC = 0xffb870;
-const nameOf = (id: string) => THIGH[id]?.ko ?? SECTION_EXTRA[id] ?? id;
 const hex = (n: number) => '#' + n.toString(16).padStart(6, '0');
 
-// ====================================================================================== LOCK 1: cross-section
-const WHERE: Record<string, string> = {
-  rf: '앞칸 한가운데 맨 앞, 중간넓은근 위에 얹힌 근육',
-  vl: '가쪽(왼쪽)을 덮는 가장 큰 근육',
-  vi: '넙다리뼈 앞을 바로 감싸는 근육',
-  vm: '앞칸 안쪽(오른쪽) 아래',
-  sartorius: '앞 안쪽(오른쪽 위)의 가늘고 납작한 띠 모양 근육',
-  gracilis: '안쪽칸 가장 안쪽(오른쪽 가장자리)의 가는 근육',
-  am: '안쪽칸 뒤쪽의 큰 근육',
-  al: '안쪽칸 앞쪽',
-  bfl: '뒤칸 가쪽(왼쪽 아래)의 큰 근육',
-  sm: '뒤칸 안쪽(오른쪽 아래), 반힘줄근 아래',
-  st: '뒤칸 안쪽, 반막근 위',
-};
-/** LOCK 1 — 넙다리 단면 판독: find each named muscle on a cross-section computed from the model. */
+// ====================================================================================== LOCK 1: muscle scanner
+/** LOCK 1 — 하지 근육 스캐너: find each requested muscle on the front / back plates of the model.
+ * Basic: three candidate muscles glow and are numbered (pick one). Advanced: no candidates, tap it on the plate. */
 export class HipSectionPuzzle extends PuzzleBase {
   constructor() { super('HSection'); }
   create() {
     this.initView();
-    const adv = G.run.difficulty === 'adv', s = sectionManifest(this);
-    this.frame('넙다리 단면 판독기 · H-01', adv ? '판독 요청에 맞는 근육을 단면에서 누르세요.' : '판독 요청의 근육을 단면에서 찾아 누르세요. 앞 = 위, 가쪽 = 왼쪽입니다.', ACC);
+    const adv = G.run.difficulty === 'adv', m = hipManifest(this), sc = scanManifest(this);
+    this.frame('하지 근육 스캐너 · H-01', adv ? '요청한 근육을 앞면·뒷면 그림에서 찾아 누르세요.' : '요청한 근육을 빛나는 후보 3개 중에서 골라 누르세요.', ACC);
     const { cTop, cBot } = this;
-    const area = { x: this.px + 30, y: cTop, w: this.pw * 0.56, h: cBot - cTop };
-    const img = this.add.image(0, 0, 'ch4_section');
-    const q = Math.min((area.w - 120) / img.width, (area.h - 70) / img.height);
-    img.setScale(q).setPosition(area.x + area.w / 2, area.y + area.h / 2);
-    const x0 = img.x - img.displayWidth / 2, y0 = img.y - img.displayHeight / 2, k = q * s.pxPerMm;
-    const bg = this.add.graphics().setDepth(-1); bg.fillStyle(0x0b0806, 1); bg.fillRoundedRect(x0 - 26, y0 - 26, img.displayWidth + 52, img.displayHeight + 52, 10);
-    bg.lineStyle(2, 0xffc890, 0.5); bg.strokeRoundedRect(x0 - 26, y0 - 26, img.displayWidth + 52, img.displayHeight + 52, 10);
-    const lab = { weight: '800', backgroundColor: '#000000aa', padding: { x: 4, y: 1 } } as const;
-    T(this, img.x, y0 - 24, '앞 (A)', 14, '#ffe0c0', lab).setOrigin(0.5, 0.5);
-    T(this, img.x, y0 + img.displayHeight + 24, '뒤 (P)', 14, '#ffe0c0', lab).setOrigin(0.5, 0.5);
-    T(this, x0 - 30, img.y, '가쪽', 14, '#ffe0c0', lab).setOrigin(1, 0.5);
-    T(this, x0 + img.displayWidth + 30, img.y, '안쪽', 14, '#ffe0c0', lab).setOrigin(0, 0.5);
-    T(this, x0 - 14, y0 - 14, 'R', 26, '#f2f5f9', { weight: '900' });
-    T(this, area.x + 4, cBot, HIP_CREDIT, 11, '#a89c8a', { fine: true }).setOrigin(0, 1);
-    const targets = sectionTargets();
-    const rx = area.x + area.w + 26, rw = this.px + this.pw - 30 - rx;
-    T(this, rx, cTop + 4, '판독 요청', 19, '#ffd6a0', { weight: '700' });
-    const reqT = T(this, rx, cTop + 40, '', 22, C.white, { weight: '800', wordWrap: { width: rw }, lineSpacing: 6 });
-    const subT = T(this, rx, cTop + 120, '', 16, '#e3dccf', { wordWrap: { width: rw }, lineSpacing: 5 });
-    const prog = T(this, rx, cBot - 10, '', 16, C.dim).setOrigin(0, 1);
-    T(this, rx, cBot - 40, `모의 단면 — 3D 모델을 높이 ${s.z} mm(넙다리 중간)에서 자른 면. 피부·지방·혈관·신경은 모델에 없어 생략. 실제 환자 영상이 아닙니다.`, 12, '#b8ad9c', { fine: true, wordWrap: { width: rw }, lineSpacing: 2 }).setOrigin(0, 1);
-    let i = 0;
-    const isCase = () => adv && i === targets.length - 1;
-    const ask = () => {
-      const id = targets[i];
-      reqT.setText(isCase() ? SECTION_CASE : `${i + 1}. ${nameOf(id)}${adv ? '' : `  (${THIGH[id].en})`}`);
-      subT.setText(isCase() ? '그 근육을 단면에서 누르세요.' : adv ? '' : `${COMP_KO[THIGH[id].comp]} · ${WHERE[id] ?? ''}`);
-      prog.setText(`판독 ${i}/${targets.length}`);
-      reqT.setFontSize(isCase() ? 17 : 22);
+    const qs = scanQuestions();
+    const crop = (v: 'ant' | 'post') => { const r = m.regions[`${v}_full`]; return { x: r.x, y: r.y + 150, w: r.w, h: r.h - 150 }; };
+    const bw = Math.min((this.pw * 0.56 - 24) / 2, (cBot - cTop - 26) * crop('ant').w / crop('ant').h);
+    const boards = {
+      ant: fitRect(crop('ant'), this.px + 30, cTop + 22, bw, cBot - cTop - 26),
+      post: fitRect(crop('post'), this.px + 54 + bw, cTop + 22, bw, cBot - cTop - 26),
     };
-    const at = (id: string) => { const c = s.centre[id]; return { x: x0 + c.x * k, y: y0 + c.y * k }; };
-    (this as unknown as { __s: unknown }).__s = { at, cur: () => targets[i] };
-    const z = this.add.zone(x0, y0, img.displayWidth, img.displayHeight).setOrigin(0).setInteractive({ useHandCursor: true });
-    z.on('pointerup', (p: Phaser.Input.Pointer) => {
-      if (this.solved || i >= targets.length) return;
-      const wp = this.lp(p); const id = sectionLabel(s, (wp.x - x0) / k, (wp.y - y0) / k);
-      const want = targets[i];
-      if (id !== want) {
-        Audio.play('error'); this.mistake(); G.run.stats.sect++;
-        this.setFeedback(!id ? '근육이 없는 곳입니다. 단면의 근육 위를 누르세요.' : adv ? `${nameOf(id)}이다. 다시 보세요.` : `그건 ${nameOf(id)}. ${nameOf(want)}: ${WHERE[want]}.`, 'err');
-        return;
-      }
-      Audio.play('snap');
-      const c = at(want), comp = THIGH[want].comp;
-      const ring = this.add.circle(c.x, c.y, 12, COMP_COL[comp], 0.5).setStrokeStyle(3, COMP_COL[comp]);
-      this.tweens.add({ targets: ring, scale: 2.4, alpha: 0, duration: 600, onComplete: () => ring.destroy() });
-      T(this, c.x, c.y, nameOf(want).replace('넙다리두갈래근 ', '두갈래 '), 12, '#0b0806', { weight: '800', backgroundColor: hex(COMP_COL[comp]) + 'dd', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(6);
-      const was = isCase(); i++;
-      if (i >= targets.length) {
-        prog.setText(`판독 ${i}/${targets.length}`); reqT.setFontSize(22).setText('판독 완료'); subT.setText('');
-        // show every muscle with its compartment colour
-        for (const [m, cc] of Object.entries(s.centre)) {
-          const t = THIGH[m]; if (!t || targets.includes(m) || cc.area < 20) continue;
-          T(this, x0 + cc.x * k, y0 + cc.y * k, t.ko.replace('넙다리두갈래근 ', '두갈래 '), 11, '#0b0806', { weight: '700', backgroundColor: hex(COMP_COL[t.comp]) + '99', padding: { x: 2, y: 0 } }).setOrigin(0.5).setDepth(6);
+    const frameG: Record<string, Phaser.GameObjects.Graphics> = {};
+    for (const v of ['ant', 'post'] as const) {
+      const b = boards[v];
+      const g = this.add.graphics(); g.fillStyle(0x140d08, 1); g.fillRoundedRect(b.bx - 6, b.by - 6, b.w + 12, b.h + 12, 8);
+      const im = regionAt(this, m, `${v}_full`, b);
+      const mk = this.make.graphics({}); mk.fillStyle(0xffffff); mk.fillRect(b.bx, b.by, b.w, b.h); im.setMask(mk.createGeometryMask());
+      frameG[v] = this.add.graphics().setDepth(8);
+      T(this, b.bx + b.w / 2, cTop + 2, v === 'ant' ? '앞면 (가쪽 = 왼쪽)' : '뒷면 (가쪽 = 오른쪽)', 14, '#ffd6a0', { weight: '700' }).setOrigin(0.5, 0);
+    }
+    T(this, this.px + 32, cBot, HIP_CREDIT, 11, '#a89c8a', { fine: true }).setOrigin(0, 1).setDepth(40);
+    const rx = this.px + 78 + bw * 2, rw = this.px + this.pw - 30 - rx;
+    T(this, rx, cTop + 4, '스캔 요청', 19, '#ffd6a0', { weight: '700' });
+    const reqT = T(this, rx, cTop + 40, '', 22, C.white, { weight: '800', wordWrap: { width: rw }, lineSpacing: 6 });
+    const subT = T(this, rx, cTop + 130, '', 16, '#e3dccf', { wordWrap: { width: rw }, lineSpacing: 5 });
+    const prog = T(this, rx, cBot - 10, '', 16, C.dim).setOrigin(0, 1);
+    const at = (v: 'ant' | 'post', id: string) => { const c = sc.views[v].muscles[id]; const b = boards[v]; return { x: b.ox + c.x * b.q, y: b.oy + c.y * b.q }; };
+    let i = 0, glow: Phaser.GameObjects.GameObject[] = [];
+    const ask = () => {
+      glow.forEach(o => o.destroy()); glow = [];
+      const Q = qs[i];
+      reqT.setFontSize(Q.case ? 17 : 22).setText(Q.case ?? `${i + 1}. ${scanName(Q.id)}${adv ? '' : `  (${SCAN_EN[Q.id] ?? ''})`}`);
+      subT.setText(Q.case ? '그 근육을 그림에서 누르세요.' : adv ? '' : `${Q.view === 'ant' ? '앞면' : '뒷면'} 그림 · ${Q.hint}`);
+      prog.setText(`스캔 ${i}/${qs.length}`);
+      for (const v of ['ant', 'post'] as const) { const b = boards[v], g = frameG[v]; g.clear(); if (!adv && v === Q.view) { g.lineStyle(3, 0xffd6a0, 0.9); g.strokeRoundedRect(b.bx - 6, b.by - 6, b.w + 12, b.h + 12, 8); } }
+      const CC = [0x4fc8ff, 0xffd24a, 0xff6ad5];
+      if (!adv) Q.cands.forEach((id, n) => {
+        const r = sc.views[Q.view].muscles[id].rect, b = boards[Q.view];
+        const gl = this.add.image(b.ox + (r.x + r.w / 2) * b.q, b.oy + (r.y + r.h / 2) * b.q, `ch4_vis_${Q.view}_${id}`).setScale(b.q / 2).setTint(CC[n]).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.22).setDepth(6);
+        this.tweens.add({ targets: gl, alpha: 0.42, duration: 700, yoyo: true, repeat: -1, delay: n * 230 });
+        const p = at(Q.view, id);
+        const badge = this.add.circle(p.x, p.y, 14, CC[n], 0.95).setStrokeStyle(2.5, 0x140d08).setDepth(7);
+        const t = T(this, p.x, p.y, String(n + 1), 16, '#ffffff', { weight: '900' }).setOrigin(0.5).setDepth(8).setStroke('#140d08', 4);
+        glow.push(gl, badge, t);
+      });
+    };
+    (this as unknown as { __s: unknown }).__s = { at: (id: string) => at(qs[i]?.view ?? 'ant', id), cur: () => qs[i]?.id, cands: () => qs[i]?.cands };
+    for (const v of ['ant', 'post'] as const) {
+      const b = boards[v];
+      const z = this.add.zone(b.bx, b.by, b.w, b.h).setOrigin(0).setInteractive({ useHandCursor: true });
+      z.on('pointerup', (p: Phaser.Input.Pointer) => {
+        if (this.solved || i >= qs.length) return;
+        const wp = this.lp(p), Q = qs[i];
+        const id = scanLabel(sc, v, (wp.x - b.ox) / b.q, (wp.y - b.oy) / b.q);
+        if (v !== Q.view || id !== Q.id) {
+          if (!adv && v === Q.view && id && !Q.cands.includes(id)) { this.setFeedback('빛나는 후보 1·2·3 중에서 고르세요.', 'warn'); return; }
+          Audio.play('error'); this.mistake(); G.run.stats.sect++;
+          this.setFeedback(!id ? '근육이 아닌 곳입니다. 근육 위를 누르세요.' : adv ? `${scanName(id)}이다. 다시 보세요.` : `그건 ${scanName(id)}. ${scanName(Q.id)}: ${Q.hint}.`, 'err');
+          return;
         }
-        subT.setText(`파랑 = 앞칸 (${COMP_NERVE.ant})\n초록 = 안쪽칸 (${COMP_NERVE.med})\n주황 = 뒤칸 (${COMP_NERVE.post})`);
-        this.setFeedback(was ? '넙다리두갈래근 긴갈래 — 달리기 중 가장 흔히 다치는 뒤넙다리근. 판독 완료!' : '판독 완료! 넙다리의 세 칸이 표시됩니다.', 'ok');
-        this.success('c_section', '넙다리 단면에서 근육과 세 칸을 구별했습니다', 2200);
-      } else { this.setFeedback(`${nameOf(want)} 확인 — ${COMP_KO[comp]}.`, 'ok'); ask(); }
-    });
+        Audio.play('snap');
+        const c = at(v, Q.id), comp = SCAN_COMP[Q.id];
+        const ring = this.add.circle(c.x, c.y, 12, 0x3dffa2, 0.5).setStrokeStyle(3, 0x3dffa2).setDepth(9);
+        this.tweens.add({ targets: ring, scale: 2.4, alpha: 0, duration: 600, onComplete: () => ring.destroy() });
+        const lt = T(this, c.x, c.y, scanName(Q.id).replace('넙다리두갈래근 ', '두갈래 '), 12, '#0b0806', { weight: '800', backgroundColor: hex(comp ? COMP_COL[comp] : 0xffd6a0) + 'dd', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(10);
+        lt.x = Phaser.Math.Clamp(lt.x, b.bx + lt.width / 2 + 2, b.bx + b.w - lt.width / 2 - 2);
+        const msg = `${scanName(Q.id)} 확인${comp ? ` — 넙다리 ${COMP_KO[comp]} (${COMP_NERVE[comp]})` : ' — 볼기 근육'}.`;
+        i++;
+        if (i >= qs.length) {
+          glow.forEach(o => o.destroy()); glow = [];
+          prog.setText(`스캔 ${i}/${qs.length}`); reqT.setFontSize(22).setText('스캔 완료'); subT.setText(`파랑 = 넙다리 앞칸 (${COMP_NERVE.ant})\n초록 = 안쪽칸 (${COMP_NERVE.med})\n주황 = 뒤칸 (${COMP_NERVE.post})`);
+          this.setFeedback(Q.case ? '중간볼기근 — 약하면 반대쪽 골반이 처진다(트렌델렌부르크 징후). 스캔 완료!' : '스캔 완료! 근육 위치와 칸을 확인했습니다.', 'ok');
+          this.success('c_section', '엉덩이·넙다리 근육의 위치와 세 칸을 구별했습니다', 2000);
+        } else { this.setFeedback(msg, 'ok'); ask(); }
+      });
+    }
     ask();
-    this.setFeedback(adv ? '오른쪽 넙다리 중간 높이, 아래에서 본 단면입니다 (CT와 같은 방향).' : '아래(발 쪽)에서 본 오른쪽 넙다리 단면: 앞이 위, 가쪽이 왼쪽입니다. 가운데 흰 고리가 넙다리뼈.', 'info');
+    this.setFeedback(adv ? '오른쪽 다리입니다. 앞면은 가쪽이 왼쪽, 뒷면은 가쪽이 오른쪽.' : '오른쪽 다리를 앞(왼쪽 그림)과 뒤(오른쪽 그림)에서 본 모습입니다. 빛나는 후보 중 하나를 누르세요.', 'info');
   }
 }
 

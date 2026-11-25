@@ -1,17 +1,29 @@
 import Phaser from 'phaser';
-import { CORES, HipManifest, HipRect, SectionManifest } from '../data/hip';
+import { CORES, HipManifest, HipRect, SectionManifest, ScanManifest } from '../data/hip';
 
 const BASE = 'assets/ch4/';
 /** CH4 art (≈1.6 MB webp), loaded by the CH4 world scene. Keys: ch4_<file>. */
 export function preloadHipArt(load: Phaser.Loader.LoaderPlugin, tex: Phaser.Textures.TextureManager) {
   const img = (k: string) => { if (!tex.exists(`ch4_${k}`)) load.image(`ch4_${k}`, `${BASE}${k}.webp`); };
-  load.json('ch4_hip', BASE + 'hip.json'); load.json('ch4_section', BASE + 'section.json');
+  load.json('ch4_hip', BASE + 'hip.json'); load.json('ch4_section', BASE + 'section.json'); load.json('ch4_scan', BASE + 'scan.json');
+  for (const k of ['sartorius', 'rf', 'vl', 'vm', 'al', 'gracilis', 'tfl', 'pectineus', 'psoas', 'iliacus']) img(`vis_ant_${k}`);
+  for (const k of ['gmax', 'gmed', 'bfl', 'bfs', 'st', 'sm', 'gracilis', 'am', 'vl', 'itt']) img(`vis_post_${k}`);
   for (const k of ['ant_full', 'ant_rest', 'post_full', 'post_rest', 'glut_full', 'glut_nomax', 'glut_deep', 'glut_max', 'glut_med',
     'rig_pelvis', 'rig_femur', 'rig_leg', 'aby_pelvis', 'aby_limb', 'knee_bones', 'pes_sartorius', 'pes_gracilis', 'pes_st', 'pes_sm', 'section']) img(k);
   for (const c of CORES) img(`core_${c}`);
   for (const s of ['rf', 'vl', 'vm', 'sartorius', 'al', 'ab', 'gracilis', 'bfl', 'bfs', 'st', 'sm']) img(`spec_${s}`);
 }
 export function hipManifest(scene: Phaser.Scene): HipManifest { return scene.cache.json.get('ch4_hip') as HipManifest; }
+export function scanManifest(scene: Phaser.Scene): ScanManifest { return scene.cache.json.get('ch4_scan') as ScanManifest; }
+const scanCache = new WeakMap<object, Int16Array>();
+/** which muscle is visible at frame point (fx, fy) of the full plate of a view ('' = none) */
+export function scanLabel(s: ScanManifest, view: 'ant' | 'post', fx: number, fy: number): string {
+  const v = s.views[view]; let g = scanCache.get(v);
+  if (!g) { g = new Int16Array(v.grid.w * v.grid.h); let i = 0; for (const [val, n] of v.grid.rle) { g.fill(val, i, i + n); i += n; } scanCache.set(v, g); }
+  const px = Math.floor(fx), py = Math.floor(fy);
+  if (px < 0 || py < 0 || px >= v.grid.w || py >= v.grid.h) return '';
+  return v.names[g[py * v.grid.w + px]] ?? '';
+}
 export function sectionManifest(scene: Phaser.Scene): SectionManifest { return scene.cache.json.get('ch4_section') as SectionManifest; }
 
 export type Box = { q: number; bx: number; by: number; ox: number; oy: number; w: number; h: number };
