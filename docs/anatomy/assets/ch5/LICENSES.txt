@@ -1,0 +1,3 @@
+CH5 nerve images: rendered from the Z-Anatomy models, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)
+Z-Anatomy - The open source atlas of anatomy; derived from BodyParts3D, (c) The Database Center for Life Science
+These images are shared under CC BY-SA 4.0. (tools/anatomy3d/ch5_art.py)
