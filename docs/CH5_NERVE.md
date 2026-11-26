@@ -117,3 +117,12 @@ CH1~CH4와 같은 방탈출 방식입니다.
   - 열린 창 없이 캐릭터가 15초 넘게 굳어 있으면 풀어 줍니다.
   - 퍼즐·조사 화면·일시정지 메뉴가 열린 정상 상태는 건드리지 않는 것을 확인했습니다.
 - **확인 못 한 것:** 제보 화면과 똑같은 상태로 들어가는 정확한 경로는 헤드리스 시험에서 재현하지 못했습니다. 안전장치가 그 상태를 2초 안에 복구하는 것만 확인했습니다.
+
+## v0.13.2 — HUD hidden behind the CH3–CH5 worlds (root cause found)
+
+- **Symptom (friend's iPad, KakaoTalk; also the earlier iPhone report):** from Chapter 3 on, no joystick, buttons, mission panel or dialogue box.
+- **Cause:** Phaser draws scenes in the order they are registered. `HandScene` / `HipScene` / `NerveScene` were registered *after* `HUDScene`, so the CH3–CH5 world was drawn over the HUD every frame. CH1/CH2 worlds were registered before the HUD and were unaffected. The HUD was running and receiving input the whole time — only invisible; story dialogue in those chapters was hidden the same way. The v0.13.1 watchdog could not help (the HUD was never asleep). This is the actual cause of the iPhone "조작키 사라짐" report too; the v0.13.1 resize fixes remain valid but were not it.
+- **Fix:** all world scenes are registered before `HUDScene` (`main.ts`). Verified at 1000×660 (iPad KakaoTalk landscape) dpr 2 in CH3/CH4/CH5: HUD drawn.
+- **Missing-texture boxes:** the retired `t_glow` / `t_grate` floor props drew Phaser's green "missing" square in every chapter; `prop()` now skips keys without a texture.
+- **J-04 finger-axis aligner (CH3):** basic mode showed four target rings (incl. hamate) but asked for only three metacarpals. Now all five metacarpals are placed in both modes (4 and 5 → hamate); manual/hint/clue texts updated.
+- **Recovered-bone card (all CH3 devices):** a wrist map with a coloured, numbered ring on each recovered carpal, and matching number/colour + row and position ("먼쪽 줄 · 엄지 쪽부터 2번째") next to each bone, so the two recovered bones can be told apart.

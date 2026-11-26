@@ -81,12 +81,36 @@ export class InvHandScene extends InvestBase {
       sps.forEach(s => s.destroy()); burst.destroy();
       Audio.play('success');
       const o = this.overlay(title, 900, 560, C.green);
-      const left = Math.min(330, o.w * 0.37);
+      // which recovered bone is which: a wrist map with a coloured, numbered ring on each one, and the same
+      // colour / number on its tile + name (friends could not tell the two recovered bones apart)
+      const left = Math.min(360, o.w * 0.4);
+      const COLS = [0xffc94a, 0x5fe0ff, 0xff7ab8], CSS = ['#ffc94a', '#5fe0ff', '#ff7ab8'];
+      const mapH = (o.h - 110) * 0.5;
+      const mb = this.wristBox(o.x + 30, o.y + 64, left, mapH);
+      const mapBg = this.add.graphics(); mapBg.fillStyle(0x0b1626, 1); mapBg.fillRoundedRect(mb.bx - 6, mb.by - 6, mb.w + 12, mb.h + 12, 8); o.c.add(mapBg);
+      o.c.add(this.wristImage('wrist_full', mb));
+      const rings = this.add.graphics(); o.c.add(rings);
+      // neighbouring bones sit close together: push each number tag outward from the group's centre, with a leader line
+      const pts = ids.map(id => this.S(mb, this.m.points[id]));
+      const cx = pts.reduce((a, p) => a + p.x, 0) / pts.length, cy0 = pts.reduce((a, p) => a + p.y, 0) / pts.length;
+      ids.forEach((_id, i) => {
+        const p = pts[i]; let dx = p.x - cx, dy = p.y - cy0; const d = Math.hypot(dx, dy);
+        if (d < 4) { dx = (i % 2 ? 1 : -1); dy = -0.6; } const n = Math.hypot(dx, dy); dx /= n; dy /= n;
+        const lx = Phaser.Math.Clamp(p.x + dx * 44, mb.bx + 14, mb.bx + mb.w - 14), ly = Phaser.Math.Clamp(p.y + dy * 44, mb.by + 14, mb.by + mb.h - 14);
+        rings.lineStyle(4, COLS[i % 3], 1); rings.strokeCircle(p.x, p.y, 11); rings.lineBetween(p.x + dx * 11, p.y + dy * 11, lx, ly);
+        rings.fillStyle(COLS[i % 3], 1); rings.fillCircle(lx, ly, 13);
+        o.c.add(T(this, lx, ly, String(i + 1), 17, '#0b1626', { weight: '900' }).setOrigin(0.5));
+      });
+      o.c.add(T(this, mb.bx + mb.w / 2, mb.by + mb.h + 6, '오른손 손바닥 쪽 · 엄지 = 오른쪽', 12, C.dim).setOrigin(0.5, 0));
+      const rowTop = mb.by + mb.h + 28, rowH = (o.y + o.h - 70 - rowTop) / ids.length;
       ids.forEach((id, i) => {
-        const cy = o.y + 70 + (i + 0.5) * (o.h - 100) / ids.length;
-        const im = this.add.image(o.x + 30 + left / 2 - 50, cy, `ch3_car_${id}`); o.c.add(im);
-        im.setScale(Math.min(150 / im.width, ((o.h - 110) / ids.length - 16) / im.height, 2.2));
-        o.c.add(T(this, o.x + 30 + left / 2 + 40, cy, `${CARPAL[id].ko}\n${CARPAL[id].en}`, 16, '#cfe8ff', { weight: '700', lineSpacing: 2 }).setOrigin(0, 0.5));
+        const cy = rowTop + (i + 0.5) * rowH;
+        const dot = this.add.graphics(); dot.fillStyle(COLS[i % 3], 1); dot.fillCircle(o.x + 44, cy, 15); o.c.add(dot);
+        o.c.add(T(this, o.x + 44, cy, String(i + 1), 19, '#0b1626', { weight: '900' }).setOrigin(0.5));
+        const im = this.add.image(o.x + 100, cy, `ch3_car_${id}`); o.c.add(im);
+        im.setScale(Math.min(80 / im.width, (rowH - 8) / im.height, 2));
+        const prox = PROXIMAL.includes(id), row = prox ? PROXIMAL : DISTAL;
+        o.c.add(T(this, o.x + 150, cy, `${CARPAL[id].ko} (${CARPAL[id].en})\n${prox ? '몸쪽 줄' : '먼쪽 줄'} · 엄지 쪽부터 ${row.indexOf(id) + 1}번째`, 15, CSS[i % 3], { weight: '700', lineSpacing: 2, wordWrap: { width: left - 120 } }).setOrigin(0, 0.5));
       });
       const tx = o.x + 50 + left, tw = o.w - left - 80;
       o.c.add(T(this, tx, o.y + 76, '해부학 도감에 등록되었습니다', 19, C.greenS, { weight: '700' }));
@@ -271,7 +295,7 @@ export class InvHandScene extends InvestBase {
     T(this, x + w * 0.08, y + h * 0.1, '손가락 축 정렬기 · 점검 순서', 18, '#2b2418', { ink: true, weight: '700' });
     T(this, x + w * 0.08, y + h * 0.22, this.adv
       ? '1. 다섯 손허리뼈를 모두 꽂는다.\n2. 각 손허리뼈의 바닥은 그것과 관절하는 먼쪽 줄 손목뼈 위에.\n3. 엄지의 관절은 안장 모양이다.'
-      : '1. 손허리뼈 바닥을 먼쪽 줄 손목뼈에 꽂는다.\n   · 엄지(1) → 큰마름뼈 (안장관절)\n   · 검지(2) → 작은마름뼈\n   · 가운데(3) → 알머리뼈\n   · (4·5 → 갈고리뼈: 심화 점검)\n2. 세 개가 맞으면 하부 칸이 열린다.', 15, '#2b2418', { ink: true, weight: '600', wordWrap: { width: w * 0.84 }, lineSpacing: 6 });
+      : '1. 손허리뼈 다섯 개의 바닥을 먼쪽 줄 손목뼈에 꽂는다.\n   · 엄지(1) → 큰마름뼈 (안장관절)\n   · 검지(2) → 작은마름뼈\n   · 가운데(3) → 알머리뼈\n   · 넷째(4) · 새끼(5) → 갈고리뼈 (둘이 함께)\n2. 다섯 개가 모두 맞으면 하부 칸이 열린다.', 15, '#2b2418', { ink: true, weight: '600', wordWrap: { width: w * 0.84 }, lineSpacing: 6 });
     const { rx, rw } = this.rightCol();
     const im = this.add.image(rx + rw / 2, (cTop + cBot) / 2, 'ch3_hand_full'); im.setScale(Math.min(rw / im.width, (cBot - cTop - 20) / im.height));
     if (!this.adv) {
@@ -302,7 +326,7 @@ export class InvHandScene extends InvestBase {
     }
     (this as unknown as { __tp: unknown }).__tp = tp;
     const PART: Record<number, CarpalId> = { 1: 'trapezium', 2: 'trapezoid', 3: 'capitate', 4: 'hamate', 5: 'hamate' };
-    const list = this.adv ? [1, 2, 3, 4, 5] : [1, 2, 3];
+    const list = [1, 2, 3, 4, 5];   // all four rings are used: 4 and 5 both seat on the hamate
     const { rx, rw } = this.rightCol();
     T(this, rx, this.cTop + 4, '손허리뼈 (1 = 엄지)', 19, '#bfe6ff', { weight: '700' });
     const cw = rw / list.length; let done = 0;
@@ -434,7 +458,7 @@ export class InvHandScene extends InvestBase {
     switch (this.kind) {
       case 'vault3': return ['노뼈 아래 관절면과 직접 맞닿는 몸쪽 줄 손목뼈 두 개를 찾으세요.', '자뼈 쪽 받침은 관절원판 위입니다 — 정답 자리가 아닙니다.', a ? '배 모양(엄지 쪽)과 반달 모양(가운데) 뼈입니다. 발배뼈는 함정.' : '손배뼈 → 노뼈 가쪽 면, 반달뼈 → 노뼈 안쪽 면.'];
       case 'tunnel': return ['굽힘근지지띠는 손바닥 쪽으로 튀어나온 뼈 돌기에 붙습니다.', '안쪽(새끼 쪽) 기둥은 동그란 작은 뼈와, 갈고리처럼 튀어나온 돌기입니다.', a ? '안쪽: 콩알뼈·갈고리뼈 갈고리 / 가쪽: 손배뼈결절·큰마름뼈결절' : '안쪽 핀 → 콩알뼈, 갈고리뼈의 갈고리.'];
-      case 'aligner': return ['각 손허리뼈의 바닥(손목 쪽 끝)은 먼쪽 줄 손목뼈와 만납니다.', '엄지는 안장관절 — 먼쪽 줄 가장 엄지 쪽 뼈와 만납니다.', a ? '1 → 큰마름뼈, 2 → 작은마름뼈, 3 → 알머리뼈, 4·5 → 갈고리뼈' : '1 → 큰마름뼈, 2 → 작은마름뼈, 3 → 알머리뼈'];
+      case 'aligner': return ['각 손허리뼈의 바닥(손목 쪽 끝)은 먼쪽 줄 손목뼈와 만납니다.', '엄지는 안장관절 — 먼쪽 줄 가장 엄지 쪽 뼈와 만납니다.', '1 → 큰마름뼈, 2 → 작은마름뼈, 3 → 알머리뼈, 4·5 → 갈고리뼈'];
       case 'dial3': return ['위 줄이 먼쪽 줄, 아래 줄이 몸쪽 줄입니다. 오른쪽이 엄지 쪽.', '알머리뼈(가장 큰 뼈)는 먼쪽 줄 가운데, 콩알뼈(가장 작은 뼈)는 몸쪽 줄 새끼 쪽 끝입니다.', '먼쪽 줄 오른쪽부터: 큰마름 · 작은마름 · 알머리 · 갈고리 / 몸쪽 줄 오른쪽부터: 손배 · 반달 · 세모 · 콩알'];
       default: return ['이 문서의 내용은 기록장에 저장되었습니다. 관련된 장치를 찾아가 보세요.'];
     }

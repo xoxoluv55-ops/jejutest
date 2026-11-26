@@ -257,6 +257,8 @@ export class GameScene extends Phaser.Scene {
       if (o.col) { const cw = Math.min(img.displayWidth * 0.85, Math.max(o.col[0], img.displayWidth * 0.6)), ch = o.col[1]; this.solid(x - cw / 2, y - ch, cw, ch); }
       return img;
     }
+    // a decor key with no texture (e.g. the retired t_glow / t_grate floor tiles) drew Phaser's green 'missing' box
+    if (!this.textures.exists(key)) return this.add.image(x, y, '__WHITE').setVisible(false);
     const sc = o.scale ?? PROP_SCALE[key] ?? 1;
     const img = this.add.image(x, y, key).setOrigin(0.5, 1).setScale(sc * 0.5).setDepth(o.depth ?? y);
     if (o.flip) img.setFlipX(true);

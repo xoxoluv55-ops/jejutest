@@ -53,7 +53,7 @@ const game = new Phaser.Game({
   input: { activePointers: 4 },
   fps: { target: 60, smoothStep: true },
   physics: { default: 'arcade', arcade: { debug: false } },
-  scene: [BootScene, TitleScene, GameScene, MuscleScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene, InvestigateScene, InvHumerusScene, InvRadiusScene, InvUlnaScene, InvClavicleScene, InvMuscleScene, HandScene, InvHandScene, HandXrayPuzzle, CarpalAssemblyPuzzle, JointPuzzle, HipScene, InvHipScene, HipSectionPuzzle, HipMusclePuzzle, HipGaitPuzzle, NerveScene, InvNerveScene, NerveScanPuzzle, NerveWirePuzzle, NerveCasePuzzle],
+  scene: [BootScene, TitleScene, GameScene, MuscleScene, HandScene, HipScene, NerveScene, HUDScene, AssemblyPuzzle, AlignPuzzle, XrayPuzzle, MuscleAtlasPuzzle, MuscleLinkPuzzle, MuscleMotionPuzzle, ArchiveScene, ResultScene, InfoScene, InvestigateScene, InvHumerusScene, InvRadiusScene, InvUlnaScene, InvClavicleScene, InvMuscleScene, InvHandScene, HandXrayPuzzle, CarpalAssemblyPuzzle, JointPuzzle, InvHipScene, HipSectionPuzzle, HipMusclePuzzle, HipGaitPuzzle, InvNerveScene, NerveScanPuzzle, NerveWirePuzzle, NerveCasePuzzle],
 });
 
 // Phaser's resize() leaves canvas.style untouched when zoom is 1 (dpr-1 screens), so after a rotation / window
@@ -125,7 +125,7 @@ function autosave() {
 window.addEventListener('pagehide', autosave);
 document.addEventListener('visibilitychange', () => { if (document.hidden) autosave(); });
 
-// ---------------------------------------------------------------- watchdog (v0.13.1)
+// ---------------------------------------------------------------- watchdog (v0.13.1; the "no HUD" report itself was the scene draw order, fixed in v0.13.2)
 // A friend's phone ended up with the world on screen but no HUD (no joystick/buttons) and could not continue. Whatever
 // the route into it (a resize or Back arriving between scene transitions), these states are never intended:
 //  · world running, HUD asleep, nothing else open        -> wake the HUD
